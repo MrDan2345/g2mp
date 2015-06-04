@@ -1,0 +1,637 @@
+{#g2fx
+ name = "Powerup"
+ scale = 1
+ {#atlas
+  {#page
+   texture = "Powerup_fx_atlas_0.png"
+   width = 132
+   height = 200
+   {#frame
+    name = "Shield.png"
+    pos_l = 2
+    pos_t = 2
+    width = 128
+    height = 128
+   #}
+   {#frame
+    name = "Flare.png"
+    pos_l = 2
+    pos_t = 134
+    width = 64
+    height = 64
+   #}
+   {#frame
+    name = "Flare.png"
+    pos_l = 2
+    pos_t = 134
+    width = 64
+    height = 64
+   #}
+   {#frame
+    name = "Flare.png"
+    pos_l = 2
+    pos_t = 134
+    width = 64
+    height = 64
+   #}
+  #}
+ #}
+ {#emitter
+  name = "Emitter"
+  frame = "Flare.png"
+  time_start = 0.1039999961
+  time_end = 0.3280008792
+  orientation = 0
+  shape = 0
+  shape_radius_0 = 0
+  shape_radius_1 = 0
+  shape_angle = 6.283185482
+  shape_width_0 = 0
+  shape_width_1 = 1
+  shape_height_0 = 0
+  shape_height_1 = 1
+  emission = 54
+  layer = 0
+  infinite = 0
+  particle_center_x = 0.2200002193
+  particle_center_y = 0.5
+  particle_width_min = 1
+  particle_width_max = 1
+  particle_height_min = 0.3999999046
+  particle_height_max = 0.5999999046
+  particle_scale_min = 0.7999999523
+  particle_scale_max = 1.500000095
+  particle_duration_min = 0.3000002861
+  particle_duration_max = 0.4000002861
+  particle_rotation_min = 0
+  particle_rotation_max = 0
+  particle_rotation_local = 1
+  particle_orientation_min = 0
+  particle_orientation_max = 0
+  particle_velocity_min = 0
+  particle_velocity_max = 0
+  particle_color_0 = "FFFFFF"
+  particle_color_1 = "FFFFFF"
+  particle_opacity = 0.701960802
+  {#blend_mode
+   ColorSrc = "SrcAlpha"
+   ColorDst = "DstAlpha"
+   AlphaSrc = "One"
+   AlphaDst = "One"
+  #}
+  {#mod
+   name = "Width Graph"
+   guid = "4b3cbb53-42b9-40f1-a639-5546a2193f78"
+   graph_scale = 5
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 5
+    {#point
+     x = 0
+     y = 1
+    #}
+    {#point
+     x = 1
+     y = 4.460227489
+    #}
+   #}
+  #}
+  {#mod
+   name = "Opacity Graph"
+   guid = "df171382-9708-47aa-84e6-728073083b92"
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 0
+    #}
+    {#point
+     x = 0.09776535987
+     y = 1
+    #}
+    {#point
+     x = 0.8547486305
+     y = 1
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+  {#mod
+   name = "Color Graph"
+   guid = "b680c31b-b593-4bdd-9846-632b42d47c0c"
+   {#color_section
+    color = "76E2EB"
+    position = 0.3759999752
+   #}
+   {#color_section
+    color = "E84AD8"
+    position = 0.6426666259
+   #}
+   {#color_section
+    color = "F5F265"
+    position = 0.8906666755
+   #}
+  #}
+  {#mod
+   name = "Scale Graph"
+   guid = "cc60e497-dce8-4682-81ef-cc0b1865ff8c"
+   graph_scale = 1
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 0
+    #}
+    {#point
+     x = 0.03631284713
+     y = 1
+    #}
+    {#point
+     x = 0.06145251274
+     y = 0
+    #}
+    {#point
+     x = 0.1089385509
+     y = 1
+    #}
+    {#point
+     x = 0.1340782046
+     y = 0
+    #}
+    {#point
+     x = 0.1815642356
+     y = 1
+    #}
+    {#point
+     x = 0.2094971895
+     y = 0
+    #}
+    {#point
+     x = 0.2597765445
+     y = 1
+    #}
+    {#point
+     x = 0.2905027866
+     y = 0
+    #}
+    {#point
+     x = 0.3463686943
+     y = 1
+    #}
+    {#point
+     x = 0.3770949602
+     y = 0
+    #}
+    {#point
+     x = 0.4357542037
+     y = 1
+    #}
+    {#point
+     x = 0.4748602867
+     y = 0
+    #}
+    {#point
+     x = 0.5391061305
+     y = 1
+    #}
+    {#point
+     x = 0.5782122611
+     y = 0
+    #}
+    {#point
+     x = 0.6396647453
+     y = 1
+    #}
+    {#point
+     x = 0.6815642356
+     y = 0
+    #}
+    {#point
+     x = 0.7513966083
+     y = 1
+    #}
+    {#point
+     x = 0.7877094745
+     y = 0
+    #}
+    {#point
+     x = 0.8547486305
+     y = 1
+    #}
+    {#point
+     x = 0.8994413375
+     y = 0
+    #}
+    {#point
+     x = 1
+     y = 1
+    #}
+   #}
+  #}
+ #}
+ {#emitter
+  name = "Emitter1"
+  frame = "Shield.png"
+  time_start = 0.101999998
+  time_end = 0.1220000028
+  orientation = 0
+  shape = 0
+  shape_radius_0 = 0
+  shape_radius_1 = 0
+  shape_angle = 6.283185482
+  shape_width_0 = 0
+  shape_width_1 = 1
+  shape_height_0 = 0
+  shape_height_1 = 1
+  emission = 1
+  layer = 0
+  infinite = 0
+  particle_center_x = 0.5
+  particle_center_y = 0.5
+  particle_width_min = 1
+  particle_width_max = 1
+  particle_height_min = 1
+  particle_height_max = 1
+  particle_scale_min = 1
+  particle_scale_max = 1
+  particle_duration_min = 0.2800001907
+  particle_duration_max = 0.2800001907
+  particle_rotation_min = 0
+  particle_rotation_max = 6.283185482
+  particle_rotation_local = 0
+  particle_orientation_min = 0
+  particle_orientation_max = 0
+  particle_velocity_min = 0
+  particle_velocity_max = 0
+  particle_color_0 = "FFFFFF"
+  particle_color_1 = "FFFFFF"
+  particle_opacity = 0.3686274528
+  {#blend_mode
+   ColorSrc = "SrcAlpha"
+   ColorDst = "DstAlpha"
+   AlphaSrc = "One"
+   AlphaDst = "One"
+  #}
+  {#mod
+   name = "Scale Graph"
+   guid = "cc60e497-dce8-4682-81ef-cc0b1865ff8c"
+   graph_scale = 6.5
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 6.5
+    {#point
+     x = 0
+     y = 1
+    #}
+    {#point
+     x = 0.2290502786
+     y = 3.988636207
+    #}
+    {#point
+     x = 1
+     y = 5.982954502
+    #}
+   #}
+  #}
+  {#mod
+   name = "Opacity Graph"
+   guid = "df171382-9708-47aa-84e6-728073083b92"
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 0.01136363625
+    #}
+    {#point
+     x = 0.1592178821
+     y = 1
+    #}
+    {#point
+     x = 0.3659217596
+     y = 1
+    #}
+    {#point
+     x = 0.6424580574
+     y = 0.1761363744
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+ #}
+ {#emitter
+  name = "Emitter2"
+  frame = "Flare.png"
+  time_start = 0
+  time_end = 0.2199999332
+  orientation = 0
+  shape = 0
+  shape_radius_0 = 0
+  shape_radius_1 = 0.3999999046
+  shape_angle = 6.283185482
+  shape_width_0 = 0
+  shape_width_1 = 1
+  shape_height_0 = 0
+  shape_height_1 = 1
+  emission = 25
+  layer = 0
+  infinite = 0
+  particle_center_x = -1.099997758
+  particle_center_y = 0.5
+  particle_width_min = 3.899998664
+  particle_width_max = 4.199998378
+  particle_height_min = 0.2000000238
+  particle_height_max = 0.3
+  particle_scale_min = 0.3999999046
+  particle_scale_max = 1
+  particle_duration_min = 0.3800004482
+  particle_duration_max = 0.5000004768
+  particle_rotation_min = 0
+  particle_rotation_max = 0
+  particle_rotation_local = 1
+  particle_orientation_min = 0
+  particle_orientation_max = 0
+  particle_velocity_min = -12.22000312
+  particle_velocity_max = -8.699980735
+  particle_color_0 = "FFFFFF"
+  particle_color_1 = "FFFFFF"
+  particle_opacity = 1
+  {#blend_mode
+   ColorSrc = "SrcAlpha"
+   ColorDst = "DstAlpha"
+   AlphaSrc = "One"
+   AlphaDst = "One"
+  #}
+  {#mod
+   name = "Opacity Graph"
+   guid = "df171382-9708-47aa-84e6-728073083b92"
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 0.005681818008
+    #}
+    {#point
+     x = 0.09840425491
+     y = 1
+    #}
+    {#point
+     x = 0.6843575477
+     y = 1
+    #}
+    {#point
+     x = 0.7513966083
+     y = 0.5464356422
+    #}
+    {#point
+     x = 0.8519553184
+     y = 0.1430265331
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+  {#mod
+   name = "Color Graph"
+   guid = "b680c31b-b593-4bdd-9846-632b42d47c0c"
+   {#color_section
+    color = "FFFFFF"
+    position = 0
+   #}
+   {#color_section
+    color = "7CE1ED"
+    position = 0.1599999904
+   #}
+   {#color_section
+    color = "EEA357"
+    position = 0.4773333549
+   #}
+   {#color_section
+    color = "F9BDF4"
+    position = 0.7653333663
+   #}
+  #}
+ #}
+ {#emitter
+  name = "Emitter3"
+  frame = "Flare.png"
+  time_start = 0.09600000381
+  time_end = 0.125999999
+  orientation = 0
+  shape = 0
+  shape_radius_0 = 0
+  shape_radius_1 = 0
+  shape_angle = 0
+  shape_width_0 = 0
+  shape_width_1 = 1
+  shape_height_0 = 0
+  shape_height_1 = 1
+  emission = 1
+  layer = 0
+  infinite = 0
+  particle_center_x = 0.5
+  particle_center_y = 0.5
+  particle_width_min = 1
+  particle_width_max = 1
+  particle_height_min = 1
+  particle_height_max = 1
+  particle_scale_min = 1.80000019
+  particle_scale_max = 1.80000019
+  particle_duration_min = 0.4400004386
+  particle_duration_max = 0.4400004386
+  particle_rotation_min = 0
+  particle_rotation_max = 0
+  particle_rotation_local = 1
+  particle_orientation_min = 0
+  particle_orientation_max = 0
+  particle_velocity_min = 0
+  particle_velocity_max = 0
+  particle_color_0 = "FFFFFF"
+  particle_color_1 = "FFFFFF"
+  particle_opacity = 1
+  {#blend_mode
+   ColorSrc = "SrcAlpha"
+   ColorDst = "DstAlpha"
+   AlphaSrc = "One"
+   AlphaDst = "One"
+  #}
+  {#mod
+   name = "Scale Graph"
+   guid = "cc60e497-dce8-4682-81ef-cc0b1865ff8c"
+   graph_scale = 2
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 2
+    {#point
+     x = 0
+     y = 1
+    #}
+    {#point
+     x = 0.03631284713
+     y = 0.3181818008
+    #}
+    {#point
+     x = 0.0670391035
+     y = 1
+    #}
+    {#point
+     x = 0.09776535987
+     y = 0.2840909004
+    #}
+    {#point
+     x = 0.1424580955
+     y = 1
+    #}
+    {#point
+     x = 0.1731843471
+     y = 0.3636363744
+    #}
+    {#point
+     x = 0.203910613
+     y = 1.011363626
+    #}
+    {#point
+     x = 0.2374301433
+     y = 0.3863636493
+    #}
+    {#point
+     x = 0.265363121
+     y = 1.022727251
+    #}
+    {#point
+     x = 0.2905027866
+     y = 0.4090909481
+    #}
+    {#point
+     x = 0.3212290287
+     y = 1.022727251
+    #}
+    {#point
+     x = 0.3463686943
+     y = 0.3522727489
+    #}
+    {#point
+     x = 0.3770949602
+     y = 1.022727251
+    #}
+    {#point
+     x = 0.405027914
+     y = 0.329545474
+    #}
+    {#point
+     x = 0.4329608917
+     y = 1.022727251
+    #}
+    {#point
+     x = 0.4608938217
+     y = 0.329545474
+    #}
+    {#point
+     x = 0.4916201114
+     y = 1.022727251
+    #}
+    {#point
+     x = 0.5195530891
+     y = 0.3863636493
+    #}
+    {#point
+     x = 0.544692707
+     y = 1.011363626
+    #}
+    {#point
+     x = 0.5754189491
+     y = 0.3181818008
+    #}
+    {#point
+     x = 0.5977653503
+     y = 1.045454621
+    #}
+    {#point
+     x = 0.6368715286
+     y = 0.3181818008
+    #}
+    {#point
+     x = 0.6648044586
+     y = 1.022727251
+    #}
+    {#point
+     x = 0.6871508598
+     y = 0.375
+    #}
+    {#point
+     x = 0.7234636306
+     y = 1.045454621
+    #}
+    {#point
+     x = 0.7458100318
+     y = 0.3863636493
+    #}
+    {#point
+     x = 0.779329586
+     y = 1.056818246
+    #}
+    {#point
+     x = 0.810055828
+     y = 0.2613636493
+    #}
+    {#point
+     x = 0.837988758
+     y = 1.045454621
+    #}
+    {#point
+     x = 0.8547486305
+     y = 0.3068181991
+    #}
+    {#point
+     x = 0.8882680892
+     y = 1
+    #}
+    {#point
+     x = 0.9106144905
+     y = 0.3068181991
+    #}
+    {#point
+     x = 0.9273742675
+     y = 1.113636374
+    #}
+    {#point
+     x = 0.9497205734
+     y = 0.3068181991
+    #}
+    {#point
+     x = 0.9692736625
+     y = 0.9886363983
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+ #}
+#}

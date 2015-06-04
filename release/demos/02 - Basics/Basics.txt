@@ -1,0 +1,7 @@
+this sample demonstrates the basic process of working with the engine such as initialization, and gaining access to various pipelines of the engine.
+
+the general life of g2mp application consists of four major parts:
+Initialization - this is where the application begins and where you can arrange all the initial settings and resources.
+Finalization - this is where the application ends and where you free all the resources.
+Render - this is where all the render calls happen. note that g2mp does not use immediate rendering, instead all the calls are buffered, batched where possible, and then rendered in a separate internal piplene which can optionally run in a separate thread.
+Update - this is where all the game logic happens, this section is frame rate independent and is executed a set (g2.Params.TargetUPS) number of times per second.

@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <Compiler Value="/usr/bin/fpc" Date="1324640501"/>
+  <Params Value=" -MObjFPC -Scghi -O1 -g -gl -vewnhi &quot;-Fi/home/dan/WIP/06 - CrossPlatformTemplate/_linux/lib/i386-linux&quot; &quot;-Fu/home/dan/WIP/06 - CrossPlatformTemplate/_linux/&quot; &quot;-FU/home/dan/WIP/06 - CrossPlatformTemplate/_linux/lib/i386-linux/&quot; -l &quot;-FE/home/dan/WIP/06 - CrossPlatformTemplate/&quot; -og2template_linux -Fl../ g2template.lpr"/>
+</CONFIG>

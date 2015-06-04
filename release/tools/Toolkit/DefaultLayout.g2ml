@@ -1,0 +1,84 @@
+{#g2mp_toolkit_layout
+ {#view
+  name = "Main"
+  {#workspace
+   type = "TUIWorkspaceSplitter"
+   orientation = "vertical"
+   split = 0.1773195838
+   {#workspace
+    type = "TUIWorkspaceSplitter"
+    orientation = "horizontal"
+    split = 0.5
+    {#workspace
+     type = "TUIWorkspaceFrame"
+     {#workspace
+      type = "TUIWorkspaceProject"
+     #}
+    #}
+    {#workspace
+     type = "TUIWorkspaceFrame"
+     {#workspace
+      type = "TUIWorkspaceSettings"
+     #}
+    #}
+   #}
+   {#workspace
+    type = "TUIWorkspaceSplitter"
+    orientation = "horizontal"
+    split = 0.1927083206
+    {#workspace
+     type = "TUIWorkspaceFrame"
+     {#workspace
+      type = "TUIWorkspaceProjectBrowser"
+     #}
+    #}
+    {#workspace
+     type = "TUIWorkspaceFrame"
+     {#workspace
+      type = "TUIWorkspaceConsole"
+     #}
+    #}
+   #}
+  #}
+ #}
+ {#view
+  name = "Code"
+  {#workspace
+   type = "TUIWorkspaceSplitter"
+   orientation = "horizontal"
+   split = 0.1348958015
+   {#workspace
+    type = "TUIWorkspaceFrame"
+    {#workspace
+     type = "TUIWorkspaceCodeBrowser"
+    #}
+   #}
+   {#workspace
+    type = "TUIWorkspaceSplitter"
+    orientation = "vertical"
+    split = 0.8752576828
+    {#workspace
+     type = "TUIWorkspaceFrame"
+     {#workspace
+      type = "TUIWorkspaceCode"
+     #}
+    #}
+    {#workspace
+     type = "TUIWorkspaceFrame"
+     {#workspace
+      type = "TUIWorkspaceConsole"
+     #}
+    #}
+   #}
+  #}
+ #}
+ {#view
+  name = "Atlas Packer"
+  {#workspace
+   type = "TUIWorkspaceFrame"
+   {#workspace
+    type = "TUIWorkspaceAtlasPacker"
+   #}
+  #}
+ #}
+#}

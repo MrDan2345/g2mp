@@ -1,0 +1,313 @@
+unit G2Types;
+{$include Gen2MP.inc}
+interface
+
+const
+  G2K_Escape = 0;
+  G2K_F1 = 1;
+  G2K_F2 = 2;
+  G2K_F3 = 3;
+  G2K_F4 = 4;
+  G2K_F5 = 5;
+  G2K_F6 = 6;
+  G2K_F7 = 7;
+  G2K_F8 = 8;
+  G2K_F9 = 9;
+  G2K_F10 = 10;
+  G2K_F11 = 11;
+  G2K_F12 = 12;
+  G2K_ScrlLock = 13;
+  G2K_Pause = 14;
+  G2K_Tilda = 15;
+  G2K_1 = 16;
+  G2K_2 = 17;
+  G2K_3 = 18;
+  G2K_4 = 19;
+  G2K_5 = 20;
+  G2K_6 = 21;
+  G2K_7 = 22;
+  G2K_8 = 23;
+  G2K_9 = 24;
+  G2K_0 = 25;
+  G2K_Minus = 26;
+  G2K_Plus = 27;
+  G2K_Back = 28;
+  G2K_Tab = 29;
+
+  G2K_A = 30;
+  G2K_B = 31;
+  G2K_C = 32;
+  G2K_D = 33;
+  G2K_E = 34;
+  G2K_F = 35;
+  G2K_G = 36;
+  G2K_H = 37;
+  G2K_I = 38;
+  G2K_J = 39;
+  G2K_K = 40;
+  G2K_L = 41;
+  G2K_M = 42;
+  G2K_N = 43;
+  G2K_O = 44;
+  G2K_P = 45;
+  G2K_Q = 46;
+  G2K_R = 47;
+  G2K_S = 48;
+  G2K_T = 49;
+  G2K_U = 50;
+  G2K_V = 51;
+  G2K_W = 52;
+  G2K_X = 53;
+  G2K_Y = 54;
+  G2K_Z = 55;
+
+  G2K_BrktL = 56;
+  G2K_BrktR = 57;
+  G2K_SemiCol = 58;
+  G2K_Quote = 59;
+  G2K_Comma = 60;
+  G2K_Period = 61;
+  G2K_Slash = 62;
+  G2K_SlashR = 63;
+  G2K_CapsLock = 64;
+  G2K_ShiftL = 65;
+  G2K_ShiftR = 66;
+  G2K_CtrlL = 67;
+  G2K_CtrlR = 68;
+  G2K_WinL = 69;
+  G2K_WinR = 70;
+  G2K_AltL = 71;
+  G2K_AltR = 72;
+  G2K_Menu = 73;
+  G2K_Return = 74;
+  G2K_Space = 75;
+
+  G2K_Insert = 76;
+  G2K_Home = 77;
+  G2K_PgUp = 78;
+  G2K_Delete = 79;
+  G2K_End = 80;
+  G2K_PgDown = 81;
+
+  G2K_Up = 82;
+  G2K_Down = 83;
+  G2K_Left = 84;
+  G2K_Right = 85;
+
+  G2K_NumLock = 86;
+  G2K_NumDiv = 87;
+  G2K_NumMul = 88;
+  G2K_NumMinus = 89;
+  G2K_NumPlus = 90;
+  G2K_NumReturn = 91;
+  G2K_NumPeriod = 92;
+  G2K_Num0 = 93;
+  G2K_Num1 = 94;
+  G2K_Num2 = 95;
+  G2K_Num3 = 96;
+  G2K_Num4 = 97;
+  G2K_Num5 = 98;
+  G2K_Num6 = 99;
+  G2K_Num7 = 100;
+  G2K_Num8 = 101;
+  G2K_Num9 = 102;
+
+  G2K_Ctrl = G2K_CtrlL;
+  G2K_Shift = G2K_ShiftL;
+  G2K_Alt = G2K_AltL;
+
+  G2MB_Undefined = 0;
+  G2MB_Left = 1;
+  G2MB_Right = 2;
+  G2MB_Middle = 3;
+
+  TwoPi = Pi * 2;
+  HalfPi = Pi * 0.5;
+  QuatPi = Pi * 0.25;
+  RcpPi = 1 / Pi;
+  Rcp255 = 1 / $ff;
+  G2EPS = 1E-6;
+
+  {$if defined(G2Target_Windows)}
+  PathSep: WideChar = '\';
+  PathSepRev: WideChar = '/';
+  {$elseif defined(G2Target_Linux)}
+  PathSep: WideChar = '/';
+  PathSepRev: WideChar = '\';
+  {$elseif defined(G2Target_OSX)}
+  PathSep: WideChar = '/';
+  PathSepRev: WideChar = '\';
+  {$elseif defined(G2Target_Android)}
+  PathSep: AnsiChar = '/';
+  PathSepRev: AnsiChar = '\';
+  {$endif}
+
+type
+  IntS64 = Int64;
+  IntU32 = LongWord;
+  IntS32 = Integer;
+  IntU16 = Word;
+  IntS16 = SmallInt;
+  IntU8 = Byte;
+  IntS8 = ShortInt;
+  G2Float = Single;
+  G2Bool = Boolean;
+  IntS64Arr = array[Word] of IntS64;
+  IntU32Arr = array[Word] of IntU32;
+  IntS32Arr = array[Word] of IntS32;
+  IntU16Arr = array[Word] of IntU16;
+  IntS16Arr = array[Word] of IntS16;
+  IntU8Arr = array[Word] of IntU8;
+  IntS8Arr = array[Word] of IntS8;
+  G2FloatArr = array[Word] of G2Float;
+  PIntS64 = ^IntS64;
+  PIntU32 = ^IntU32;
+  PIntS32 = ^IntS32;
+  PIntU16 = ^IntU16;
+  PIntS16 = ^IntS16;
+  PIntU8 = ^IntU8;
+  PIntS8 = ^IntS8;
+  PG2Float = ^G2Float;
+  PG2Bool = ^G2Bool;
+  PIntS64Arr = ^IntS64Arr;
+  PIntU32Arr = ^IntU32Arr;
+  PIntS32Arr = ^IntS32Arr;
+  PIntU16Arr = ^IntU16Arr;
+  PIntS16Arr = ^IntS16Arr;
+  PIntU8Arr = ^IntU8Arr;
+  PIntS8Arr = ^IntS8Arr;
+  PG2FloatArr = ^G2FloatArr;
+  PPIntS32 = ^PIntS32;
+  PPG2Float = ^PG2Float;
+
+  TG2StrArrA = array of AnsiString;
+  TG2StrArrW = array of WideString;
+  {$if defined(G2Target_Android)}
+  FileString = AnsiString;
+  {$else}
+  FileString = WideString;
+  {$endif}
+
+  TG2Color = packed record
+    {$if defined(G2Gfx_D3D9)}
+    b, g, r, a: IntU8;
+    {$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
+    r, g, b, a: IntU8;
+    {$endif}
+  end;
+  PG2Color = ^TG2Color;
+  PPG2Color = ^PG2Color;
+
+  {$MINENUMSIZE 1}
+  TG2BlendOperation = (
+    boDisable = 0,
+    boZero = 1,
+    boOne = 2,
+    boSrcColor = 3,
+    boInvSrcColor = 4,
+    boDstColor = 5,
+    boInvDstColor = 6,
+    boSrcAlpha = 7,
+    boInvSrcAlpha = 8,
+    boDstAlpha = 9,
+    boInvDstAlpha = 10
+  );
+  {$MINENUMSIZE 4}
+
+  TG2BlendMode = packed object
+    ColorSrc: TG2BlendOperation;
+    ColorDst: TG2BlendOperation;
+    AlphaSrc: TG2BlendOperation;
+    AlphaDst: TG2BlendOperation;
+    function BlendEnable: Boolean;
+    function BlendSeparate: Boolean;
+    procedure SwapColorAlpha;
+  end;
+  PG2BlendMode = ^TG2BlendMode;
+
+  operator := (c: TG2Color) cr: IntU32;
+  operator := (c: IntU32) cr: TG2Color;
+  operator := (bm: TG2BlendMode) bmr: IntU32;
+  operator := (bm: IntU32) bmr: TG2BLendMode;
+  operator = (bm0, bm1: TG2BlendMode) r: Boolean;
+
+  function G2Color(const r, g, b, a: IntU8): TG2Color;
+
+const
+  bmInvalid = $ffffffff;
+  bmDisable = (IntU8(boDisable)) or (IntU8(boDisable) shl 8) or (IntU8(boDisable) shl 16) or (IntU8(boDisable) shl 24);
+  bmNormal = (IntU8(boSrcAlpha)) or (IntU8(boInvSrcAlpha) shl 8) or (IntU8(boOne) shl 16) or (IntU8(boOne) shl 24);
+  bmAdd = (IntU8(boSrcAlpha)) or (IntU8(boDstAlpha) shl 8) or (IntU8(boOne) shl 16) or (IntU8(boOne) shl 24);
+  bmSub = (IntU8(boZero)) or (IntU8(boInvSrcColor) shl 8) or (IntU8(boZero) shl 16) or (IntU8(boInvSrcColor) shl 24);
+  bmMul = (IntU8(boZero)) or (IntU8(boSrcColor) shl 8) or (IntU8(boZero) shl 16) or (IntU8(boSrcAlpha) shl 24);
+
+implementation
+
+//TG2BlendMode BIEGN
+function TG2BlendMode.BlendEnable: Boolean;
+begin
+  Result := PIntU32(@Self)^ <> 0;
+end;
+
+function TG2BlendMode.BlendSeparate: Boolean;
+begin
+  Result := (ColorSrc <> AlphaSrc) or (ColorDst <> AlphaDst);
+end;
+
+procedure TG2BlendMode.SwapColorAlpha;
+  var TmpSrcColor, TmpDstColor: Byte;
+begin
+  TmpSrcColor := ColorSrc;
+  TmpDstColor := ColorDst;
+  ColorSrc := AlphaSrc;
+  ColorDst := AlphaDst;
+  AlphaSrc := TmpSrcColor;
+  AlphaDst := TmpDstColor;
+end;
+//TG2BlendMode END
+
+operator := (c: TG2Color) cr: IntU32;
+begin
+  {$if defined(G2Gfx_D3D9)}
+  Result := PIntU32(@c)^;
+  {$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
+  Result := c.b or (c.g shl 8) or (c.r shl 16) or (c.a shl 24);
+  {$endif}
+end;
+
+operator := (c: IntU32) cr: TG2Color;
+begin
+  {$if defined(G2Gfx_D3D9)}
+  Result := PG2Color(@c)^;
+  {$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
+  Result.r := PG2Color(@c)^.b;
+  Result.g := PG2Color(@c)^.g;
+  Result.b := PG2Color(@c)^.r;
+  Result.a := PG2Color(@c)^.a;
+  {$endif}
+end;
+
+operator := (bm: TG2BlendMode) bmr: IntU32;
+begin
+  Result := PIntU32(@bm)^;
+end;
+
+operator := (bm: IntU32) bmr: TG2BLendMode;
+begin
+  Result := PG2BlendMode(@bm)^;
+end;
+
+operator = (bm0, bm1: TG2BlendMode) r: Boolean;
+begin
+  Result := PIntU32(@bm0)^ = PIntU32(@bm1)^;
+end;
+
+function G2Color(const r, g, b, a: IntU8): TG2Color;
+begin
+  Result.a := a;
+  Result.r := r;
+  Result.g := g;
+  Result.b := b;
+end;
+
+end.

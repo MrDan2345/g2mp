@@ -1,0 +1,25 @@
+Gen2 v1.0 Log
+Application Compiler: Delphi 2007
+Gen2 Config Options:
+  Write Log - ON
+  Report Memory Leaks - ON
+  Enable PerfHUD - OFF
+  Use Inline - OFF
+System Specs:
+  CPU: 
+    Access Denied
+    Extensions: [MMX][SSE][SSE2]
+  Memory:
+    Total: 4014Mb
+    Available: 1649Mb
+    58% in use
+  Video Memory:
+    Total: 2737Mb
+    Available: 2729Mb
+  Display Device: NVIDIA GeForce GT 330M
+DirectX Info:
+  D3DX SDK Version: 33
+  D3DX Lib: d3dx9_33.dll
+  DirectX Installed Version: Unspecified
+[00:00:00] Application started.
+[00:10:20] Application closed.

@@ -1,0 +1,1 @@
+{#g2af {#page  image = "atlas_0.png"  width = 1024  height = 1024  {#frame   name = "TestCharC.png"   pos_l = 0   pos_t = 0   width = 512   height = 512  #}  {#frame   name = "TestCharB.png"   pos_l = 0   pos_t = 512   width = 512   height = 512  #}  {#frame   name = "TestCharA.png"   pos_l = 512   pos_t = 0   width = 512   height = 512  #} #}#}

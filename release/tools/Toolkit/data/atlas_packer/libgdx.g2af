@@ -1,0 +1,13 @@
+$(page_begin)
+$(page_file)
+format: RGBA8888
+filter: Nearest,Nearest
+repeat: none
+$(frame_begin)$(frame_name)
+  rotate: false
+  xy: $(frame_l), $(frame_t)
+  size: $(frame_width), $(frame_height)
+  orig: $(frame_width), $(frame_height)
+  offset: 0, 0
+  index: -1
+$(frame_end)$(page_end)

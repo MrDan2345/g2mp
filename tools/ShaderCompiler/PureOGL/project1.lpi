@@ -1,0 +1,237 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <ProjectOptions>
+    <Version Value="9"/>
+    <PathDelim Value="\"/>
+    <General>
+      <Flags>
+        <MainUnitHasCreateFormStatements Value="False"/>
+        <MainUnitHasTitleStatement Value="False"/>
+      </Flags>
+      <MainUnit Value="0"/>
+      <ResourceType Value="res"/>
+      <UseXPManifest Value="True"/>
+      <Icon Value="0"/>
+      <ActiveWindowIndexAtStart Value="0"/>
+    </General>
+    <i18n>
+      <EnableI18N LFM="False"/>
+    </i18n>
+    <VersionInfo>
+      <StringTable ProductVersion=""/>
+    </VersionInfo>
+    <BuildModes Count="1" Active="Default">
+      <Item1 Name="Default" Default="True"/>
+    </BuildModes>
+    <PublishOptions>
+      <Version Value="2"/>
+      <IncludeFileFilter Value="*.(pas|pp|inc|lfm|lpr|lrs|lpi|lpk|sh|xml)"/>
+      <ExcludeFileFilter Value="*.(bak|ppu|o|so);*~;backup"/>
+    </PublishOptions>
+    <RunParams>
+      <local>
+        <FormatVersion Value="1"/>
+      </local>
+    </RunParams>
+    <Units Count="5">
+      <Unit0>
+        <Filename Value="project1.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="project1"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="0"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="420"/>
+        <CursorPos X="1" Y="437"/>
+        <UsageCount Value="47"/>
+        <Loaded Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="E:\[SDK]\Gen2MP\Gen2MP.pas"/>
+        <UnitName Value="Gen2MP"/>
+        <EditorIndex Value="2"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="4365"/>
+        <CursorPos X="3" Y="4370"/>
+        <UsageCount Value="24"/>
+        <Loaded Value="True"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="E:\[SDK]\Gen2MP\G2Math.pas"/>
+        <UnitName Value="G2Math"/>
+        <EditorIndex Value="3"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="24"/>
+        <Loaded Value="True"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="E:\[SDK]\Gen2MP\G2OpenGL.pas"/>
+        <UnitName Value="G2OpenGL"/>
+        <EditorIndex Value="1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1804"/>
+        <CursorPos X="3" Y="1821"/>
+        <UsageCount Value="24"/>
+        <Loaded Value="True"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="E:\[SDK]\Gen2MP\Gen2MP.inc"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="7"/>
+      </Unit4>
+    </Units>
+    <JumpHistory Count="30" HistoryIndex="29">
+      <Position1>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="12" Column="11" TopLine="1"/>
+      </Position1>
+      <Position2>
+        <Filename Value="E:\[SDK]\Gen2MP\G2OpenGL.pas"/>
+        <Caret Line="1897" Column="151" TopLine="1881"/>
+      </Position2>
+      <Position3>
+        <Filename Value="E:\[SDK]\Gen2MP\G2OpenGL.pas"/>
+        <Caret Line="1885" Column="83" TopLine="1865"/>
+      </Position3>
+      <Position4>
+        <Filename Value="E:\[SDK]\Gen2MP\G2OpenGL.pas"/>
+        <Caret Line="2467" Column="89" TopLine="2454"/>
+      </Position4>
+      <Position5>
+        <Filename Value="E:\[SDK]\Gen2MP\G2OpenGL.pas"/>
+        <Caret Line="2377" Column="1" TopLine="2363"/>
+      </Position5>
+      <Position6>
+        <Filename Value="E:\[SDK]\Gen2MP\G2OpenGL.pas"/>
+        <Caret Line="2467" Column="159" TopLine="2457"/>
+      </Position6>
+      <Position7>
+        <Filename Value="E:\[SDK]\Gen2MP\G2OpenGL.pas"/>
+        <Caret Line="1811" Column="3" TopLine="1779"/>
+      </Position7>
+      <Position8>
+        <Filename Value="E:\[SDK]\Gen2MP\G2OpenGL.pas"/>
+        <Caret Line="1906" Column="9" TopLine="1883"/>
+      </Position8>
+      <Position9>
+        <Filename Value="E:\[SDK]\Gen2MP\G2OpenGL.pas"/>
+        <Caret Line="3472" Column="20" TopLine="3451"/>
+      </Position9>
+      <Position10>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="395" Column="12" TopLine="368"/>
+      </Position10>
+      <Position11>
+        <Filename Value="E:\[SDK]\Gen2MP\G2OpenGL.pas"/>
+        <Caret Line="2963" Column="171" TopLine="2942"/>
+      </Position11>
+      <Position12>
+        <Filename Value="E:\[SDK]\Gen2MP\G2OpenGL.pas"/>
+        <Caret Line="2902" Column="58" TopLine="2884"/>
+      </Position12>
+      <Position13>
+        <Filename Value="E:\[SDK]\Gen2MP\G2OpenGL.pas"/>
+        <Caret Line="57" Column="20" TopLine="40"/>
+      </Position13>
+      <Position14>
+        <Filename Value="E:\[SDK]\Gen2MP\G2OpenGL.pas"/>
+        <Caret Line="3589" Column="52" TopLine="3564"/>
+      </Position14>
+      <Position15>
+        <Filename Value="E:\[SDK]\Gen2MP\G2OpenGL.pas"/>
+        <Caret Line="3497" Column="1" TopLine="3490"/>
+      </Position15>
+      <Position16>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="386" Column="33" TopLine="368"/>
+      </Position16>
+      <Position17>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="448" Column="44" TopLine="418"/>
+      </Position17>
+      <Position18>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="437" Column="38" TopLine="420"/>
+      </Position18>
+      <Position19>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="431" Column="1" TopLine="420"/>
+      </Position19>
+      <Position20>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="603" Column="1" TopLine="584"/>
+      </Position20>
+      <Position21>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="431" Column="1" TopLine="414"/>
+      </Position21>
+      <Position22>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="432" Column="1" TopLine="414"/>
+      </Position22>
+      <Position23>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="436" Column="14" TopLine="372"/>
+      </Position23>
+      <Position24>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="385" Column="1" TopLine="372"/>
+      </Position24>
+      <Position25>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="612" Column="1" TopLine="584"/>
+      </Position25>
+      <Position26>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="385" Column="1" TopLine="368"/>
+      </Position26>
+      <Position27>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="386" Column="1" TopLine="368"/>
+      </Position27>
+      <Position28>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="387" Column="1" TopLine="368"/>
+      </Position28>
+      <Position29>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="388" Column="8" TopLine="368"/>
+      </Position29>
+      <Position30>
+        <Filename Value="project1.lpr"/>
+        <Caret Line="390" Column="178" TopLine="365"/>
+      </Position30>
+    </JumpHistory>
+  </ProjectOptions>
+  <CompilerOptions>
+    <Version Value="9"/>
+    <PathDelim Value="\"/>
+    <Target>
+      <Filename Value="project1"/>
+    </Target>
+    <SearchPaths>
+      <IncludeFiles Value="$(ProjOutDir)"/>
+      <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+    </SearchPaths>
+    <Other>
+      <CompilerPath Value="$(CompPath)"/>
+    </Other>
+  </CompilerOptions>
+  <Debugging>
+    <Exceptions Count="3">
+      <Item1>
+        <Name Value="EAbort"/>
+      </Item1>
+      <Item2>
+        <Name Value="ECodetoolError"/>
+      </Item2>
+      <Item3>
+        <Name Value="EFOpenError"/>
+      </Item3>
+    </Exceptions>
+  </Debugging>
+</CONFIG>

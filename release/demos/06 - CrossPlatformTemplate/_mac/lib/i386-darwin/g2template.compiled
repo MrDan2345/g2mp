@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <Compiler Value="/usr/local/bin/ppc386" Date="1289335232"/>
+  <Params Value=" -MObjFPC -Scghi -O1 -gl -WG -vewnhi -l &quot;-Fi/[WIP]/06 - CrossPlatformTemplate/_mac/lib/i386-darwin&quot; &quot;-Fu/[WIP]/06 - CrossPlatformTemplate/_mac/&quot; -Fu. &quot;-FU/[WIP]/06 - CrossPlatformTemplate/_mac/lib/i386-darwin/&quot; &quot;-FE/[WIP]/06 - CrossPlatformTemplate/&quot; -og2template_mac -Fl../ g2template.lpr"/>
+</CONFIG>

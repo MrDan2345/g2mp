@@ -1,0 +1,555 @@
+{#g2fx
+ name = "Flame"
+ scale = 0.95
+ {#atlas
+  {#page
+   texture = "Flame_fx_atlas_0.png"
+   width = 264
+   height = 264
+   {#frame
+    name = "flame4.png"
+    pos_l = 2
+    pos_t = 2
+    width = 128
+    height = 128
+   #}
+   {#frame
+    name = "flame11.png"
+    pos_l = 2
+    pos_t = 134
+    width = 128
+    height = 128
+   #}
+   {#frame
+    name = "Smoke0.png"
+    pos_l = 134
+    pos_t = 2
+    width = 128
+    height = 128
+   #}
+   {#frame
+    name = "flame9.png"
+    pos_l = 134
+    pos_t = 134
+    width = 128
+    height = 128
+   #}
+  #}
+ #}
+ {#emitter
+  name = "Emitter"
+  frame = "flame9.png"
+  time_start = 0.09
+  time_end = 0.5019999504
+  orientation = -1.507964611
+  shape = 1
+  shape_radius_0 = 0
+  shape_radius_1 = 1
+  shape_angle = 1.570796394
+  shape_width_0 = 0
+  shape_width_1 = 0.2
+  shape_height_0 = 0
+  shape_height_1 = 4.999998569
+  emission = 10
+  layer = 0
+  infinite = 1
+  particle_center_x = 0.5
+  particle_center_y = 0.5
+  particle_width_min = 1
+  particle_width_max = 1
+  particle_height_min = 1
+  particle_height_max = 1
+  particle_scale_min = 0.3999999046
+  particle_scale_max = 2.000000238
+  particle_duration_min = 1
+  particle_duration_max = 1.999999046
+  particle_rotation_min = -0.7539822578
+  particle_rotation_max = 0.7539822578
+  particle_rotation_local = 0
+  particle_orientation_min = 0
+  particle_orientation_max = 0
+  particle_velocity_min = 0.6399999141
+  particle_velocity_max = 0.7000002861
+  particle_color_0 = "FFFFFF"
+  particle_color_1 = "FFFFFF"
+  particle_opacity = 1
+  {#blend_mode
+   ColorSrc = "SrcAlpha"
+   ColorDst = "DstAlpha"
+   AlphaSrc = "One"
+   AlphaDst = "One"
+  #}
+  {#mod
+   name = "Opacity Graph"
+   guid = "df171382-9708-47aa-84e6-728073083b92"
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 0.005681818008
+    #}
+    {#point
+     x = 0.2011173009
+     y = 0.267045474
+    #}
+    {#point
+     x = 0.3184357643
+     y = 1
+    #}
+    {#point
+     x = 0.6284915924
+     y = 1
+    #}
+    {#point
+     x = 0.7262569427
+     y = 0.4090909481
+    #}
+    {#point
+     x = 0.8407820701
+     y = 0.125
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+  {#mod
+   name = "Velocity Graph"
+   guid = "d75e2d11-68ab-494d-8d05-151fd4f0d69f"
+   graph_scale = 3
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = -3
+    y_max = 3
+    {#point
+     x = 0
+     y = 0.1022727489
+    #}
+    {#point
+     x = 0.2877094745
+     y = 0.2386364936
+    #}
+    {#point
+     x = 0.7374301433
+     y = 1.5
+    #}
+    {#point
+     x = 1
+     y = 3
+    #}
+   #}
+  #}
+  {#mod
+   name = "Scale Graph"
+   guid = "cc60e497-dce8-4682-81ef-cc0b1865ff8c"
+   graph_scale = 1
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 0.5227272987
+    #}
+    {#point
+     x = 0.1871508407
+     y = 1
+    #}
+    {#point
+     x = 0.5782122611
+     y = 0.8011363983
+    #}
+    {#point
+     x = 1
+     y = 1
+    #}
+   #}
+  #}
+  {#mod
+   name = "Rotation Graph"
+   guid = "69d28969-766a-4365-a560-d8f116cd4e1a"
+   graph_scale = 3
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = -3
+    y_max = 3
+    {#point
+     x = 0
+     y = 0
+    #}
+    {#point
+     x = 1
+     y = 0.9886364936
+    #}
+   #}
+  #}
+  {#emitter
+   name = "Emitter"
+   frame = "Smoke0.png"
+   time_start = 0.0780000019
+   time_end = 0.6980001449
+   orientation = 0
+   shape = 0
+   shape_radius_0 = 0
+   shape_radius_1 = 0
+   shape_angle = 0.2513274192
+   shape_width_0 = 0
+   shape_width_1 = 1
+   shape_height_0 = 0
+   shape_height_1 = 1
+   emission = 2
+   layer = -1
+   infinite = 0
+   particle_center_x = 0.5
+   particle_center_y = 0.5
+   particle_width_min = 1
+   particle_width_max = 1
+   particle_height_min = 1
+   particle_height_max = 1
+   particle_scale_min = 0.5999999523
+   particle_scale_max = 2.000000238
+   particle_duration_min = 1.719999313
+   particle_duration_max = 2.219998836
+   particle_rotation_min = 0
+   particle_rotation_max = 6.283185482
+   particle_rotation_local = 0
+   particle_orientation_min = 0
+   particle_orientation_max = 0
+   particle_velocity_min = 0.4000002384
+   particle_velocity_max = 1.120000004
+   particle_color_0 = "000000"
+   particle_color_1 = "000000"
+   particle_opacity = 1
+   {#blend_mode
+    ColorSrc = "SrcAlpha"
+    ColorDst = "InvSrcAlpha"
+    AlphaSrc = "One"
+    AlphaDst = "One"
+   #}
+   {#mod
+    name = "Opacity Graph"
+    guid = "df171382-9708-47aa-84e6-728073083b92"
+    {#graph
+     x_min = 0
+     x_max = 1
+     y_min = 0
+     y_max = 1
+     {#point
+      x = 0
+      y = 0
+     #}
+     {#point
+      x = 0.2047872304
+      y = 0.7159090995
+     #}
+     {#point
+      x = 0.6888298034
+      y = 0.6306818008
+     #}
+     {#point
+      x = 1
+      y = 0
+     #}
+    #}
+   #}
+  #}
+ #}
+ {#emitter
+  name = "Emitter1"
+  frame = "flame11.png"
+  time_start = 0.05400000095
+  time_end = 0.5
+  orientation = -1.507964611
+  shape = 1
+  shape_radius_0 = 0
+  shape_radius_1 = 1
+  shape_angle = 1.570796394
+  shape_width_0 = 0
+  shape_width_1 = 0.0999999237
+  shape_height_0 = 0
+  shape_height_1 = 4.999998092
+  emission = 10
+  layer = 0
+  infinite = 1
+  particle_center_x = 0.5
+  particle_center_y = 0.5
+  particle_width_min = 1
+  particle_width_max = 1
+  particle_height_min = 1
+  particle_height_max = 1
+  particle_scale_min = 0.3999999046
+  particle_scale_max = 2
+  particle_duration_min = 1
+  particle_duration_max = 1.999999046
+  particle_rotation_min = -0.7539822578
+  particle_rotation_max = 0.7539822578
+  particle_rotation_local = 0
+  particle_orientation_min = 0
+  particle_orientation_max = 0
+  particle_velocity_min = 0.859999752
+  particle_velocity_max = 1
+  particle_color_0 = "FFFFFF"
+  particle_color_1 = "FFFFFF"
+  particle_opacity = 1
+  {#blend_mode
+   ColorSrc = "SrcAlpha"
+   ColorDst = "DstAlpha"
+   AlphaSrc = "One"
+   AlphaDst = "One"
+  #}
+  {#mod
+   name = "Opacity Graph"
+   guid = "df171382-9708-47aa-84e6-728073083b92"
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 0.01136363625
+    #}
+    {#point
+     x = 0.1536312818
+     y = 0.2386363744
+    #}
+    {#point
+     x = 0.2849161911
+     y = 1
+    #}
+    {#point
+     x = 0.5810055732
+     y = 1
+    #}
+    {#point
+     x = 0.6927373886
+     y = 0.3920454788
+    #}
+    {#point
+     x = 0.837988758
+     y = 0.1136363625
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+  {#mod
+   name = "Velocity Graph"
+   guid = "d75e2d11-68ab-494d-8d05-151fd4f0d69f"
+   graph_scale = 3
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = -3
+    y_max = 3
+    {#point
+     x = 0
+     y = 0.1704547405
+    #}
+    {#point
+     x = 0.3212290287
+     y = 0.2386364936
+    #}
+    {#point
+     x = 0.7486033439
+     y = 1.261363983
+    #}
+    {#point
+     x = 1
+     y = 2.965909481
+    #}
+   #}
+  #}
+  {#mod
+   name = "Scale Graph"
+   guid = "cc60e497-dce8-4682-81ef-cc0b1865ff8c"
+   graph_scale = 1
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 0.4772727489
+    #}
+    {#point
+     x = 0.2513966321
+     y = 1
+    #}
+    {#point
+     x = 0.6368715286
+     y = 0.7840909481
+    #}
+    {#point
+     x = 1
+     y = 1
+    #}
+   #}
+  #}
+  {#mod
+   name = "Rotation Graph"
+   guid = "69d28969-766a-4365-a560-d8f116cd4e1a"
+   graph_scale = 3
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = -3
+    y_max = 3
+    {#point
+     x = 0
+     y = 0
+    #}
+    {#point
+     x = 1
+     y = -0.9886362075
+    #}
+   #}
+  #}
+ #}
+ {#emitter
+  name = "Emitter2"
+  frame = "flame4.png"
+  time_start = 0
+  time_end = 0.5
+  orientation = -1.507964706
+  shape = 1
+  shape_radius_0 = 0
+  shape_radius_1 = 1
+  shape_angle = 1.570796394
+  shape_width_0 = 0
+  shape_width_1 = 0.0999999237
+  shape_height_0 = 0
+  shape_height_1 = 4.999998092
+  emission = 10
+  layer = 0
+  infinite = 1
+  particle_center_x = 0.5
+  particle_center_y = 0.5
+  particle_width_min = 1
+  particle_width_max = 1
+  particle_height_min = 1
+  particle_height_max = 1
+  particle_scale_min = 0.3999999046
+  particle_scale_max = 2.000000238
+  particle_duration_min = 1
+  particle_duration_max = 1.999999046
+  particle_rotation_min = -0.7539822578
+  particle_rotation_max = 0.7539822578
+  particle_rotation_local = 0
+  particle_orientation_min = 0
+  particle_orientation_max = 0
+  particle_velocity_min = 0.5200000762
+  particle_velocity_max = 0.8000000953
+  particle_color_0 = "FFFFFF"
+  particle_color_1 = "FFFFFF"
+  particle_opacity = 1
+  {#blend_mode
+   ColorSrc = "SrcAlpha"
+   ColorDst = "DstAlpha"
+   AlphaSrc = "One"
+   AlphaDst = "One"
+  #}
+  {#mod
+   name = "Opacity Graph"
+   guid = "df171382-9708-47aa-84e6-728073083b92"
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 0.005681818008
+    #}
+    {#point
+     x = 0.1871508407
+     y = 0.267045474
+    #}
+    {#point
+     x = 0.3435754299
+     y = 1
+    #}
+    {#point
+     x = 0.6033519744
+     y = 1
+    #}
+    {#point
+     x = 0.6759776592
+     y = 0.3636363744
+    #}
+    {#point
+     x = 0.8463686943
+     y = 0.09659090995
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+  {#mod
+   name = "Velocity Graph"
+   guid = "d75e2d11-68ab-494d-8d05-151fd4f0d69f"
+   graph_scale = 3
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = -3
+    y_max = 3
+    {#point
+     x = 0
+     y = 0.1704547405
+    #}
+    {#point
+     x = 0.3212290287
+     y = 0.2727274894
+    #}
+    {#point
+     x = 0.7625698089
+     y = 1.363636493
+    #}
+    {#point
+     x = 1
+     y = 3
+    #}
+   #}
+  #}
+  {#mod
+   name = "Scale Graph"
+   guid = "cc60e497-dce8-4682-81ef-cc0b1865ff8c"
+   graph_scale = 1
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 0.5511363983
+    #}
+    {#point
+     x = 0.2625698089
+     y = 1
+    #}
+    {#point
+     x = 0.653631258
+     y = 0.7727272987
+    #}
+    {#point
+     x = 1
+     y = 1
+    #}
+   #}
+  #}
+ #}
+#}

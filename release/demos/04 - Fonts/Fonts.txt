@@ -1,0 +1,1 @@
+the font files (g2f) are created using the font editor tool. these fonts can then be loaded and used to print text in the engine.
