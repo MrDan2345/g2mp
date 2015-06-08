@@ -1521,6 +1521,8 @@ type
     function CreateInstance: TG2Effect2DInst; inline;
   end;
 
+  TG2Effect2DTRansformProc = function: TG2Transform2 of Object;
+
   TG2Effect2DInst = class (TG2Res)
   private
     var _EmitterCache: TG2Effect2DEmitterList;
@@ -1535,6 +1537,7 @@ type
     var _Scale: TG2Float;
     var _Speed: TG2Float;
     var _OnFinish: TG2ProcPtrObj;
+    var _OnProvideTransform: TG2Effect2DTRansformProc;
     procedure OnUpdate;
     procedure Clear;
     function FindLayer(const Layer: TG2IntS32): TG2Effect2DLayer; inline;
@@ -1546,6 +1549,7 @@ type
     property Scale: TG2Float read _Scale write _Scale;
     property Speed: TG2Float read _Speed write _Speed;
     property OnFinish: TG2ProcPtrObj read _OnFinish write _OnFinish;
+    property OnProvideTransform: TG2Effect2DTRansformProc read _OnProvideTransform write _OnProvideTransform;
     constructor Create(const ParentEffect: TG2Effect2D);
     destructor Destroy; override;
     procedure Play;
@@ -9736,6 +9740,7 @@ end;
 //TG2Effect2DInst BEGIN
 procedure TG2Effect2DInst.OnUpdate;
   var dt: TG2Float;
+  var gxf: TG2Transform2;
   procedure ProcessEmitter(const Emitter: TG2Effect2DEmitter);
     var xf, pxf: TG2Transform2;
     var t, aw, ah, at, rn: TG2Float;
@@ -9752,9 +9757,9 @@ procedure TG2Effect2DInst.OnUpdate;
       Exit;
     end;
     if Emitter.Parent = nil then
-    xf := G2Transform2
+    xf := gxf
     else
-    xf := Emitter.Parent.xf;
+    Emitter.Parent.xf;
     if Emitter.Delay > 0 then
     begin
       Emitter.Delay -= dt;
@@ -9919,6 +9924,10 @@ begin
     if Assigned(_OnFinish) then _OnFinish(Self);
     Exit;
   end;
+  if Assigned(_OnProvideTransform) then
+  gxf := _OnProvideTransform()
+  else
+  gxf := G2Transform2;
   dt := g2.DeltaTimeSec * _Speed;
   for i := _Emitters.Count - 1 downto 0 do
   ProcessEmitter(_Emitters[i]);

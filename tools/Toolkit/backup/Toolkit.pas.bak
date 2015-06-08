@@ -1934,6 +1934,7 @@ type
     var _MenuFrame: TG2Rect;
     var _Menu: TUIWorkspaceCustom;
     var _BtnSimulate: TUIWorkspaceCustomButton;
+    var _ItemHeight: TG2Float;
     function PtInItem(const pt: TG2Vec2; var InExpand: Boolean): TG2Scene2DEntity;
     function ItemOpen(const Item: TG2Scene2DEntity): Boolean;
     function GetContentSize: TG2Float;
@@ -3400,6 +3401,7 @@ type
     var Scale: TG2Float;
     var Speed: TG2Float;
     var Repeating: Boolean;
+    var LocalSpace: Boolean;
     var EffectPath: String;
     var Effect: TAssetEffect2D;
   public
@@ -3411,6 +3413,7 @@ type
     procedure OnChangeScale(const Sender: Pointer);
     procedure OnChangeSpeed(const Sender: Pointer);
     procedure OnChangeRepeating(const Sender: Pointer);
+    procedure OnChangeLocalSpace(const Sender: Pointer);
     procedure OnChangeEffect(const Sender: Pointer);
     procedure OnPlay;
     procedure OnStop;
@@ -14004,7 +14007,7 @@ begin
   //r.r := r.r - _ScrollV.Frame.w;
   x := r.l;
   y := r.t - _ScrollV.GetPosAbsolute;
-  h := App.UI.Font1.TextHeight('A');
+  h := _ItemHeight;
   w := r.w;
   for i := 0 to App.Scene2DData.Scene.EntityCount - 1 do
   if App.Scene2DData.Scene.Entities[i].Parent = nil then
@@ -14112,6 +14115,8 @@ begin
   _ScrollV.Orientation := sbVertical;
   _Menu := TUIWorkspaceCustom.Create;
   _Menu.Parent := Self;
+  _ItemHeight := App.UI.Font1.TextHeight('A') + 16;
+
   p := _Menu.Panel;
   p.Client.SpacingTop := 2;
   sm := p.Client.SplitterM(6);
@@ -14191,7 +14196,7 @@ procedure TUIWorkspaceScene2DStructure.OnRender;
     g2.PrimRect(x, y, w, h, App.UI.GetColorSecondary(0.5, 0.5));
     App.UI.Font1.Print(
       Round(x + Offset),
-      Round(y),
+      Round(y + (h - App.UI.Font1.TextHeight('A')) * 0.5),
       1, 1, $ffffffff, Item.Name, bmNormal, tfPoint
     );
     if Item.ChildCount > 0 then
@@ -14199,7 +14204,7 @@ procedure TUIWorkspaceScene2DStructure.OnRender;
       if Open then s := '-' else s := '+';
       App.UI.Font1.Print(
         Round(x + Offset - 8 - App.UI.Font1.TextWidth(s) * 0.5),
-        Round(y),
+        Round(y + (h - App.UI.Font1.TextHeight('A')) * 0.5),
         1, 1, $ffffffff, s, bmNormal, tfPoint
       );
     end;
@@ -14220,7 +14225,7 @@ begin
   App.UI.PushClipRect(r);
   x := r.l;
   y := r.t - _ScrollV.GetPosAbsolute;
-  h := App.UI.Font1.TextHeight('A');
+  h := _ItemHeight;
   w := r.w;
   for i := 0 to App.Scene2DData.Scene.EntityCount - 1 do
   if App.Scene2DData.Scene.Entities[i].Parent = nil then
@@ -22053,7 +22058,7 @@ begin
   if (Button = G2MB_Left)
   and _FrameClose.Contains(x, y) then
   begin
-    if Assigned(_OnClose) then App.UI.MsgCallProc(@_OnClose);
+    if Assigned(_OnClose) then App.UI.MsgCallProc(_OnClose);
   end;
 end;
 //TWorkspaceParticleMod END
@@ -25491,6 +25496,7 @@ begin
   EffectPath := '';
   PropertySet.PropPath('Effect', @EffectPath, TAssetEffect2D, Group, @OnChangeEffect);
   Layer := Component.Layer;
+  LocalSpace := Component.LocalSpace;
   if Component.EffectInst <> nil then
   begin
     Scale := Component.EffectInst.Scale;
@@ -25507,6 +25513,7 @@ begin
   PropertySet.PropFloat('Scale', @Scale, Group, @OnChangeScale);
   PropertySet.PropFloat('Speed', @Speed, Group, @OnChangeSpeed);
   PropertySet.PropBool('Repeat', @Repeating, Group, @OnChangeRepeating);
+  PropertySet.PropBool('LocalSpace', @Repeating, Group, @OnChangeLocalSpace);
   PropertySet.PropButton('Play', @OnPlay, Group);
   PropertySet.PropButton('Stop', @OnStop, Group);
 end;
@@ -25532,6 +25539,11 @@ procedure TScene2DComponentDataEffect.OnChangeRepeating(const Sender: Pointer);
 begin
   if Component.EffectInst <> nil then
   Component.EffectInst.Repeating := Repeating;
+end;
+
+procedure TScene2DComponentDataEffect.OnChangeLocalSpace(const Sender: Pointer);
+begin
+  Component.LocalSpace := LocalSpace;
 end;
 
 procedure TScene2DComponentDataEffect.OnChangeEffect(const Sender: Pointer);
@@ -26848,8 +26860,10 @@ begin
     j := _Scene.Joints[i];
     DeleteJoint(j);
   end;
-  for i := _Scene.EntityCount - 1 downto 0 do
+  while _Scene.EntityCount > 0 do
   begin
+    i := _Scene.EntityCount - 1;
+    while (i > 0) and (_Scene.Entities[i].Parent <> nil) do Dec(i);
     e := _Scene.Entities[i];
     DeleteEntity(e);
   end;

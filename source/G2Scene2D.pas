@@ -306,6 +306,8 @@ type
     var _Repeating: Boolean;
     var _RefEffect: Boolean;
     var _AutoDestruct: Boolean;
+    var _LocalSpace: Boolean;
+    function OnProvideTransform: TG2Transform2;
     procedure OnEffectFinish(const Inst: Pointer);
     procedure SetEffectInst(const Value: TG2Effect2DInst); inline;
     procedure SetLayer(const Value: TG2IntS32); inline;
@@ -316,6 +318,7 @@ type
     procedure SetRepeating(const Value: Boolean); inline;
     function GetRepeating: Boolean; inline;
     function GetPlaying: Boolean; inline;
+    procedure SetLocalSpace(const Value: Boolean); inline;
   protected
     procedure OnInitialize; override;
     procedure OnFinalize; override;
@@ -330,6 +333,7 @@ type
     property Repeating: Boolean read GetRepeating write SetRepeating;
     property Playing: Boolean read GetPlaying;
     property AutoDestruct: Boolean read _AutoDestruct write _AutoDestruct;
+    property LocalSpace: Boolean read _LocalSpace write SetLocalSpace;
     class constructor CreateClass;
     class function GetName: String; override;
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
@@ -1714,6 +1718,12 @@ end;
 //TG2Scene2DComponentSprite END
 
 //TG2Scene2DComponentEffect BEGIN
+function TG2Scene2DComponentEffect.OnProvideTransform: TG2Transform2;
+begin
+  if (Owner <> nil) and not (_LocalSpace) then
+  Result := Owner.Transform else Result := G2Transform2;
+end;
+
 procedure TG2Scene2DComponentEffect.OnEffectFinish(const Inst: Pointer);
 begin
   if _AutoDestruct and (Owner <> nil) then Owner.Free;
@@ -1736,6 +1746,7 @@ begin
     _Scale := _EffectInst.Scale;
     _Speed := _EffectInst.Speed;
     _Repeating := _EffectInst.Repeating;
+    _EffectInst.OnProvideTransform := @OnProvideTransform;
     _EffectInst.OnFinish := @OnEffectFinish;
   end;
 end;
@@ -1784,6 +1795,17 @@ begin
   if _EffectInst <> nil then Result := _EffectInst.Playing else Result := False;
 end;
 
+procedure TG2Scene2DComponentEffect.SetLocalSpace(const Value: Boolean);
+begin
+  if Value = _LocalSpace then Exit;
+  _LocalSpace := Value;
+  if Playing then
+  begin
+    Stop;
+    Play;
+  end;
+end;
+
 procedure TG2Scene2DComponentEffect.OnInitialize;
 begin
   _EffectInst := nil;
@@ -1794,6 +1816,7 @@ begin
   _Speed := 1;
   _Repeating := False;
   _AutoDestruct := False;
+  _LocalSpace := True;
 end;
 
 procedure TG2Scene2DComponentEffect.OnFinalize;
@@ -1814,8 +1837,13 @@ begin
 end;
 
 procedure TG2Scene2DComponentEffect.OnRender(const Display: TG2Display2D);
+  var xf: TG2Transform2;
 begin
-  if _EffectInst <> nil then _EffectInst.Render(Owner.Transform, Display);
+  if _EffectInst <> nil then
+  begin
+    if _LocalSpace then xf := Owner.Transform else xf := G2Transform2;
+    _EffectInst.Render(xf, Display);
+  end;
 end;
 
 class constructor TG2Scene2DComponentEffect.CreateClass;
@@ -1875,6 +1903,7 @@ begin
   Stream.Write(s, SizeOf(s));
   if _EffectInst <> nil then b := _EffectInst.Repeating else b := False;
   Stream.Write(b, SizeOf(b));
+  Stream.Write(_LocalSpace, SizeOf(_LocalSpace));
 end;
 
 procedure TG2Scene2DComponentEffect.Load(const Stream: TStream);
@@ -1916,6 +1945,7 @@ begin
   if _EffectInst <> nil then _EffectInst.Speed := s;
   Stream.Read(b, SizeOf(b));
   if _EffectInst <> nil then _EffectInst.Repeating := b;
+  Stream.Read(_LocalSpace, SizeOf(_LocalSpace));
 end;
 //TG2Scene2DComponentEffect END
 
