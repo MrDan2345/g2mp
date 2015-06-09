@@ -1082,13 +1082,21 @@ type
   end;
   {$endif}
 
-  TG2Res = class
+  TG2Ref = class
+  private
+    var _Ref: TG2IntS32;
+  public
+    procedure RefInc; inline;
+    procedure RefDec; inline;
+    constructor Create; virtual;
+    destructor Destroy; override;
+  end;
+
+  TG2Res = class (TG2Ref)
   public
     class var List: TG2Res;
     var Next: TG2Res;
     var Prev: TG2Res;
-  private
-    var _Ref: TG2IntS32;
   protected
     procedure Initialize; virtual;
     procedure Finalize; virtual;
@@ -1096,10 +1104,8 @@ type
     class constructor CreateClass;
     class procedure CleanUp;
     property RefCount: TG2IntS32 read _Ref;
-    constructor Create;
+    constructor Create; override;
     destructor Destroy; override;
-    procedure RefInc; inline;
-    procedure RefDec; inline;
   end;
 
   TG2Mgr = class
@@ -7106,10 +7112,30 @@ begin
   {$endif}
 end;
 
-procedure TG2GfxOGL.Clear(const Color: TG2Color);
+procedure TG2GfxOGL.Clear(
+  const Color: Boolean; const ColorValue: TG2Color;
+  const Depth: Boolean; const DepthValue: TG2Float;
+  const Stencil: Boolean; const StencilValue: TG2IntU8
+);
+  var Target: TGLbitfield;
 begin
-  glClearColor(Color.r * G2Rcp255, Color.g * G2Rcp255, Color.b * G2Rcp255, Color.a * G2Rcp255);
-  glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
+  Target := 0;
+  if Color then
+  begin
+    Target := GL_COLOR_BUFFER_BIT;
+    glClearColor(ColorValue.r * G2Rcp255, ColorValue.g * G2Rcp255, ColorValue.b * G2Rcp255, ColorValue.a * G2Rcp255);
+  end;
+  if Depth then
+  begin
+    Target := Target or GL_DEPTH_BUFFER_BIT;
+    glClearDepth(DepthValue);
+  end;
+  if Stencil then
+  begin
+    Target := Target or GL_STENCIL_BUFFER_BIT;
+    glClearStencil(StencilValue);
+  end;
+  if Target > 0 then glClear(Target);
 end;
 
 procedure TG2GfxOGL.SetProj2D;
@@ -7579,6 +7605,30 @@ end;
 //TG2Renderer END
 {$endif}
 
+//TG2Ref BEGIN
+procedure TG2Ref.RefInc;
+begin
+  Inc(_Ref);
+end;
+
+procedure TG2Ref.RefDec;
+begin
+  Dec(_Ref);
+  if _Ref <= 0 then Free;
+end;
+
+constructor TG2Ref.Create;
+begin
+  inherited Create;
+  _Ref := 0;
+end;
+
+destructor TG2Ref.Destroy;
+begin
+  inherited Destroy;
+end;
+//TG2Ref END
+
 //TG2Res BEGIN
 procedure TG2Res.Initialize;
 begin
@@ -7613,7 +7663,6 @@ begin
   Next := List;
   if List <> nil then List.Prev := Self;
   List := Self;
-  _Ref := 0;
   Initialize;
 end;
 
@@ -7624,17 +7673,6 @@ begin
   if Next <> nil then Next.Prev := Prev;
   if List = Self then List := Next;
   inherited Destroy;
-end;
-
-procedure TG2Res.RefInc;
-begin
-  Inc(_Ref);
-end;
-
-procedure TG2Res.RefDec;
-begin
-  Dec(_Ref);
-  if _Ref <= 0 then Free;
 end;
 //TG2Res END
 
@@ -9759,7 +9797,7 @@ procedure TG2Effect2DInst.OnUpdate;
     if Emitter.Parent = nil then
     xf := gxf
     else
-    Emitter.Parent.xf;
+    xf := Emitter.Parent.xf;
     if Emitter.Delay > 0 then
     begin
       Emitter.Delay -= dt;
@@ -12366,7 +12404,7 @@ begin
   end;
 end;
 
-procedure TG2ShaderGroup.Load(const FileName: FileString);
+procedure TG2ShaderGroup.Load(const FileName: String);
   var dm: TG2DataManager;
 begin
   dm := TG2DataManager.Create(FileName, dmAsset);
