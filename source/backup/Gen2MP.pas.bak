@@ -3400,6 +3400,17 @@ type
   end;
 //TG2GameState END
 
+//IG2Serializable BEGIN
+  {$push}
+  {$interfaces corba}
+  const IG2SerializableGUID = '{b78dfd2d-7d67-4f40-a4cb-841f32451707}';
+  type IG2Serializable = interface
+    procedure SerializeTo(const Stream: TStream);
+    procedure SerializeFrom(const Stream: TStream);
+  end;
+  {$pop}
+//IG2Serializable END
+
   TG2QuickListVec2 = specialize TG2QuickListG<TG2Vec2>;
   PG2QuickListVec2 = ^TG2QuickListVec2;
   TG2QuickListVec3 = specialize TG2QuickListG<TG2Vec3>;
@@ -3427,8 +3438,13 @@ function G2TraceEnd: TG2IntU32;
 procedure G2BreakPoint; assembler;
 {$endif}
 procedure SafeRelease(var i);
+procedure G2RegisterSerializable(const SerializableClass: TClass);
+procedure G2SerializeToStream(const Obj: TObject; const Stream: TStream);
+function G2SerializeFromStream(const Stream: TStream): TObject;
 
 implementation
+
+var G2Serializable: array of TClass;
 
 {$ifdef G2Target_Windows}
 var G2WndClassName: AnsiString;
@@ -3439,7 +3455,6 @@ var SysSSE: Boolean = False;
 var SysSSE2: Boolean = False;
 var SysSSE3: Boolean = False;
 var TraceTime: TG2IntU32;
-var SerializableClasses: array of TClass;
 
 {$if defined(G2Cpu386) and (defined(G2Target_Windows) or defined(G2Target_Linux))}
 procedure CPUExtensions; assembler;
@@ -19245,6 +19260,65 @@ end;
 procedure SafeRelease(var i);
 begin
   if IUnknown(i) <> nil then IUnknown(i) := nil;
+end;
+
+procedure G2RegisterSerializable(const SerializableClass: TClass);
+  var i: TG2IntS32;
+  var Intf: IG2Serializable;
+begin
+  if not (SerializableClass.GetInterfaceByStr(IG2SerializableGUID, Intf)) then Exit;
+  for i := 0 to High(G2Serializable) do
+  if G2Serializable[i] = SerializableClass then
+  Exit;
+  SetLength(G2Serializable, Length(G2Serializable) + 1);
+  G2Serializable[High(G2Serializable)] := SerializableClass;
+end;
+
+procedure G2SerializeToStream(const Obj: TObject; const Stream: TStream);
+  var n: TG2IntU8;
+  var Intf: IG2Serializable;
+begin
+  if Obj.GetInterfaceByStr(IG2SerializableGUID, Intf) then
+  begin
+    n := Length(Obj.ClassName);
+    Stream.Write(n, SizeOf(n));
+    Stream.Write(Obj.ClassName[1], n);
+    Intf.SerializeTo(Stream);
+  end;
+end;
+
+function G2SerializeFromStream(const Stream: TStream): TObject;
+  var i: TG2IntS32;
+  var InitPos: TG2IntS64;
+  var n: TG2IntU8;
+  var ClassName: AnsiString;
+  var ObjClass: TClass;
+  var Intf: IG2Serializable;
+begin
+  InitPos := Stream.Position;
+  if Stream.Position > Stream.Size - 1 then Exit(nil);
+  Stream.Read(n, SizeOf(n));
+  if Stream.Position > Stream.Size - n then
+  begin
+    Stream.Position := InitPos;
+    Exit(nil);
+  end;
+  SetLength(ClassName, n);
+  Stream.Read(ClassName[1], n);
+  for i := 0 to High(G2Serializable) do
+  if G2Serializable[i].ClassName = ClassName then
+  begin
+    Result := G2Serializable[i].Create;
+    if Result.GetInterfaceByStr(IG2SerializableGUID, Intf) then
+    begin
+      Intf.SerializeFrom(Stream);
+      Exit;
+    end
+    else
+    Result.Free;
+  end;
+  Stream.Position := InitPos;
+  Result := nil;
 end;
 
 initialization
