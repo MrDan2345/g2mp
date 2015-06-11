@@ -13,6 +13,7 @@ uses
   {$elseif defined(G2Target_iOS)}
   iPhoneAll,
   {$endif}
+  Classes,
   SysUtils,
   G2Math;
 
@@ -413,7 +414,9 @@ end;
 function TG2QuickListG.GetData: TItemPtr;
 begin
   if _ItemCount > 0 then
-  Result := @_Items[0];
+  Result := @_Items[0]
+  else
+  Result := nil;
 end;
 
 constructor TG2QuickListG.Create;
@@ -871,6 +874,30 @@ begin
   _Dead := True;
 end;
 //TG2GroupItem END
+
+//TG2StreamHelper BEGIN
+constructor TG2StreamHelper.Create(const HijackStream: TStream);
+begin
+  inherited Create;
+  _Stream := HijackStream;
+  _InitPos := _Stream.Position;
+end;
+
+procedure TG2StreamHelper.Reset;
+begin
+  Stream.Position := _InitPos;
+end;
+
+procedure TG2StreamHelper.Write(const Buffer: Pointer; const Size: TG2IntS64);
+begin
+  Stream.Write(Buffer^, Size);
+end;
+
+procedure TG2StreamHelper.Read(const Buffer: Pointer; const Size: TG2IntS64);
+begin
+  Stream.Read(Buffer^, Size);
+end;
+//TG2StreamHelper END
 
 //TG2Parser BEGIN
 function TG2Parser.GetText: AnsiString;

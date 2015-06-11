@@ -101,6 +101,7 @@ type
     property Transform: TG2Transform2 read _Transform write SetTransform;
     constructor Create(const OwnerScene: TG2Scene2D); virtual;
     destructor Destroy; override;
+    procedure NewGUID;
     procedure DebugDraw(const Display: TG2Display2D);
     procedure Render(const Display: TG2Display2D);
     procedure Save(const Stream: TStream); virtual;
@@ -794,15 +795,13 @@ begin
 end;
 
 constructor TG2Scene2DEntity.Create(const OwnerScene: TG2Scene2D);
-  var NewGUID: TGUID;
 begin
   _Parent := nil;
   _Children.Clear;
   _Transform.SetIdentity;
   _Name := 'Entity';
   _Scene := OwnerScene;
-  CreateGUID(NewGUID);
-  _GUID := GUIDToString(NewGUID);
+  NewGUID;
   _Scene.EntityAdd(Self);
 end;
 
@@ -825,6 +824,13 @@ begin
     n.Free;
   end;
   _Scene.EntityRemove(Self);
+end;
+
+procedure TG2Scene2DEntity.NewGUID;
+  var new_guid: TGUID;
+begin
+  CreateGUID(new_guid);
+  _GUID := GUIDToString(new_guid);
 end;
 
 procedure TG2Scene2DEntity.DebugDraw(const Display: TG2Display2D);
@@ -1935,6 +1941,7 @@ begin
       _RefEffect := True;
       Effect.RefInc;
       _EffectInst.RefInc;
+      _EffectInst.OnProvideTransform := @;
     end;
   end;
   Stream.Read(n, SizeOf(n));
@@ -1945,6 +1952,7 @@ begin
   if _EffectInst <> nil then _EffectInst.Speed := s;
   Stream.Read(b, SizeOf(b));
   if _EffectInst <> nil then _EffectInst.Repeating := b;
+  Stream.Read(_LocalSpace, SizeOf(_LocalSpace));
 end;
 //TG2Scene2DComponentEffect END
 

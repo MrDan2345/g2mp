@@ -13,6 +13,7 @@ uses
   {$elseif defined(G2Target_iOS)}
   iPhoneAll,
   {$endif}
+  Classes,
   SysUtils,
   G2Math;
 

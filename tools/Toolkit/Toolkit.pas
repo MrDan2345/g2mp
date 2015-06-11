@@ -20,6 +20,7 @@ uses
   Classes,
   Math,
   Interfaces,
+  LCLType,
   Clipbrd,
   Dialogs,
   Process,
@@ -661,6 +662,7 @@ type
     procedure SetChild(const Index: Integer; const Value: TUIWorkspace); inline;
     procedure SetParent(const NewParent: TUIWorkspace);
     procedure SetFrame(const NewFrame: TG2Rect); inline;
+    function GetFocused: Boolean; inline;
   protected
     property CustomHeader: Boolean read _CustomHeader write _CustomHeader;
     property HeaderFrame: TG2Rect read _HeaderFrame write _HeaderFrame;
@@ -672,6 +674,8 @@ type
     procedure OnRender; virtual;
     procedure OnMouseDown(const Button, x, y: Integer); virtual;
     procedure OnMouseUp(const Button, x, y: Integer); virtual;
+    procedure OnKeyDown(const Key: Integer); virtual;
+    procedure OnKeyUp(const Key: Integer); virtual;
     procedure OnScroll(const y: Integer); virtual;
     procedure OnChildAdd(const Child: TUIWorkspace); virtual;
     procedure OnChildRemove(const Child: TUIWorkspace); virtual;
@@ -686,6 +690,7 @@ type
     class var Focus: TUIWorkspace;
     class function GetWorkspaceName: AnsiString; virtual;
     class function GetWorkspacePath: AnsiString; virtual;
+    property Focused: Boolean read GetFocused;
     property Parent: TUIWorkspace read _Parent write SetParent;
     property Frame: TG2Rect read _Frame write SetFrame;
     property ChildCount: Integer read GetChildCount;
@@ -698,6 +703,8 @@ type
     procedure Render; virtual;
     procedure MouseDown(const Button, x, y: Integer); virtual;
     procedure MouseUp(const Button, x, y: Integer); virtual;
+    procedure KeyDown(const Key: Integer); virtual;
+    procedure KeyUp(const Key: Integer); virtual;
     procedure Scroll(const y: Integer); virtual;
     function GetMinWidth: Single; virtual;
     function GetMinHeight: Single; virtual;
@@ -1981,6 +1988,8 @@ type
     procedure OnCreateEntity;
     procedure OnCreateJointDistance;
     procedure OncreateJointRevolute;
+    procedure OnCopyEntity;
+    procedure OnPasteEntity;
     procedure OnDeleteEntity;
     function PtInSelRotate(const pt: TG2Vec2): Boolean;
     function PtInSelDrag(const pt: TG2Vec2): Boolean;
@@ -1995,6 +2004,7 @@ type
     procedure OnUpdate; override;
     procedure OnMouseDown(const Button, x, y: Integer); override;
     procedure OnMouseUp(const Button, x, y: Integer); override;
+    procedure OnKeyDown(const Key: Integer); override;
     procedure OnScroll(const y: Integer); override;
   public
     class function GetWorkspaceName: AnsiString; override;
@@ -3337,6 +3347,8 @@ type
     procedure OnPositionChange(const Sender: Pointer);
     procedure OnRotationChange(const Sender: Pointer);
     procedure UpdateProperties;
+    procedure Save(const Stream: TStream);
+    procedure Load(const Stream: TStream);
   end;
   PScene2DEntityData = ^TScene2DEntityData;
 //TScene2DEntityData END
@@ -3626,9 +3638,13 @@ type
     property PropertySet: TPropertySet read _PropertySet write _PropertySet;
     property Scene: TG2Scene2D read _Scene write _Scene;
     property Editor: TScene2DEditor read _Editor write SetEditor;
-    function FindEntity(const Name: AnsiString): TG2Scene2DEntity;
+    function FindEntity(const Name: AnsiString; const IgnoreEntity: TG2Scene2DEntity = nil): TG2Scene2DEntity;
     function CreateEntity(const Transform: TG2Transform2): TG2Scene2DEntity;
     procedure DeleteEntity(var Entity: TG2Scene2DEntity);
+    procedure CopySelectedEntity;
+    procedure PasteEntity(const Pos: TG2Vec2);
+    procedure CreateEntityData(const Entity: TG2Scene2DEntity);
+    procedure VerifyEntityName(const Entity: TG2Scene2DEntity);
     function CreateJointDistance(const Position: TG2Vec2): TG2Scene2DDistanceJoint;
     function CreateJointRevolute(const Position: TG2Vec2): TG2Scene2DRevoluteJoint;
     procedure DeleteJoint(var Joint: TG2Scene2DJoint);
@@ -3874,6 +3890,7 @@ type
     var Scene2DData: TScene2DData;
     var CodeInsight: TCodeInsight;
     var AssetManager: TAssetManager;
+    var cbf_scene2d_object: TClipboardFormat;
     procedure Initialize;
     procedure Finalize;
     procedure Update;
@@ -14447,6 +14464,16 @@ begin
   App.Scene2DData.CreateJointRevolute(_Display.CoordToDisplay(_PopUp.Position));
 end;
 
+procedure TUIWorkspaceScene2D.OnCopyEntity;
+begin
+  App.Scene2DData.CopySelectedEntity;
+end;
+
+procedure TUIWorkspaceScene2D.OnPasteEntity;
+begin
+  App.Scene2DData.PasteEntity(_Display.CoordToDisplay(g2.MousePos));
+end;
+
 procedure TUIWorkspaceScene2D.OnDeleteEntity;
   var i: Integer;
   var e: TG2Scene2DEntity;
@@ -14498,6 +14525,10 @@ begin
   _PopUp.AddButton('Create/Entity', @OnCreateEntity);
   _PopUp.AddButton('Create/Joint/Distance Joint', @OnCreateJointDistance);
   _PopUp.AddButton('Create/Joint/Revolute Joint', @OnCreateJointRevolute);
+  if App.Scene2DData.Selection.Count > 0 then
+  _PopUp.AddButton('Copy', @OnCopyEntity);
+  if Clipboard.HasFormat(App.cbf_scene2d_object) then
+  _PopUp.AddButton('Paste', @OnPasteEntity);
   if App.Scene2DData.Selection.Count > 0 then
   _PopUp.AddButton('Delete', @OnDeleteEntity);
 end;
@@ -14718,6 +14749,15 @@ begin
   if (App.Scene2DData.Editor <> nil)
   and Frame.Contains(g2.MouseDownPos[Button]) then
   App.Scene2DData.Editor.MouseUp(_Display, Button, x, y);
+end;
+
+procedure TUIWorkspaceScene2D.OnKeyDown(const Key: Integer);
+begin
+  if g2.KeyDown[G2K_CtrlL] or g2.KeyDown[G2K_CtrlR] then
+  begin
+    if Key = G2K_C then OnCopyEntity
+    else if Key = G2K_V then OnPasteEntity;
+  end;
 end;
 
 procedure TUIWorkspaceScene2D.OnScroll(const y: Integer);
@@ -16982,6 +17022,7 @@ end;
 procedure TG2Toolkit.Initialize;
 begin
   g2.Window.Caption := 'g2mp toolkit v0.2';
+  cbf_scene2d_object := RegisterClipboardFormat('g2mp toolkit scene2d object');
   AssetManager.Initialize;
   UI.Initialize;
   Project.Initialize;
@@ -17132,6 +17173,11 @@ begin
   OnAdjust;
 end;
 
+function TUIWorkspace.GetFocused: Boolean;
+begin
+  Result := Focus = Self;
+end;
+
 procedure TUIWorkspace.OnInitialize;
 begin
 
@@ -17168,6 +17214,16 @@ begin
 end;
 
 procedure TUIWorkspace.OnMouseUp(const Button, x, y: Integer);
+begin
+
+end;
+
+procedure TUIWorkspace.OnKeyDown(const Key: Integer);
+begin
+
+end;
+
+procedure TUIWorkspace.OnKeyUp(const Key: Integer);
 begin
 
 end;
@@ -17321,6 +17377,24 @@ begin
   for i := High(_Children) downto 0 do
   _Children[i].MouseUp(Button, x, y);
   OnMouseUp(Button, x, y);
+end;
+
+procedure TUIWorkspace.KeyDown(const Key: Integer);
+  var i: Integer;
+begin
+  if not Focused then Exit;
+  for i := High(_Children) downto 0 do
+  _Children[i].KeyDown(Key);
+  OnKeyDown(Key);
+end;
+
+procedure TUIWorkspace.KeyUp(const Key: Integer);
+  var i: Integer;
+begin
+  if not Focused then Exit;
+  for i := High(_Children) downto 0 do
+  _Children[i].KeyUp(Key);
+  OnKeyUp(Key);
 end;
 
 procedure TUIWorkspace.Scroll(const y: Integer);
@@ -20301,7 +20375,8 @@ begin
   end
   else
   begin
-
+    if TUIWorkspace.Focus <> nil then
+    TUIWorkspace.Focus.KeyDown(Key);
   end;
 end;
 
@@ -20313,7 +20388,8 @@ begin
   end
   else
   begin
-
+    if TUIWorkspace.Focus <> nil then
+    TUIWorkspace.Focus.KeyUp(Key);
   end;
 end;
 
@@ -25280,6 +25356,23 @@ begin
   TScene2DComponentData(Entity.Components[i].UserData).AddToProperties(Properties);
   Properties.PropButton('Add Component', @App.Scene2DData.BtnAddComponent);
 end;
+
+procedure TScene2DEntityData.Save(const Stream: TStream);
+  var i: Integer;
+begin
+  Entity.Save(Stream);
+  i := Entity.ChildCount;
+  Stream.Write(i, SizeOf(i));
+  for i := 0 to Entity.ChildCount - 1 do
+  begin
+    PScene2DEntityData(Entity.Children[i])^.Save(Stream);
+  end;
+end;
+
+procedure TScene2DEntityData.Load(const Stream: TStream);
+begin
+
+end;
 //TScene2DEntityData END
 
 //TScene2DComponentData BEGIN
@@ -26478,10 +26571,11 @@ begin
   Result := G2PathClean(App.Project.FilePath + G2PathSep + 'bin' + G2PathSep + Path);
 end;
 
-function TScene2DData.FindEntity(const Name: AnsiString): TG2Scene2DEntity;
+function TScene2DData.FindEntity(const Name: AnsiString; const IgnoreEntity: TG2Scene2DEntity): TG2Scene2DEntity;
   var i: Integer;
 begin
   for i := 0 to _Scene.EntityCount - 1 do
+  if _Scene.Entities[i] <> IgnoreEntity then
   begin
     if LowerCase(_Scene.Entities[i].Name) = LowerCase(Name) then
     Exit(_Scene.Entities[i]);
@@ -26496,7 +26590,6 @@ function TScene2DData.CreateEntity(
   var NameBase, EntityName: AnsiString;
   var NameIndex: Integer;
   var EntityData: PScene2DEntityData;
-  var Sprite: TG2Scene2DComponentSprite;
 begin
   NameBase := 'Entity';
   NameIndex := 0;
@@ -26546,6 +26639,198 @@ begin
   Dispose(EntityData);
   Entity.Free;
   Entity := nil;
+end;
+
+procedure TScene2DData.CopySelectedEntity;
+  var CopyStream: TMemoryStream;
+  var TopEntities: TG2Scene2DEntityList;
+  var i, j: Integer;
+  var b: Boolean;
+  var dm: TG2DataManager;
+begin
+  if Selection.Count = 0 then Exit;
+  CopyStream := TMemoryStream.Create;
+  try
+    TopEntities.Clear;
+    for i := 0 to Selection.Count - 1 do
+    begin
+      if Selection[i].Parent = nil then
+      TopEntities.Add(Selection[i])
+      else
+      begin
+        b := True;
+        for j := 0 to Selection.Count - 1 do
+        if Selection[j] = Selection[i].Parent then
+        begin
+          b := False;
+          Break;
+        end;
+        if b then
+        begin
+          TopEntities.Add(Selection[i]);
+        end;
+      end;
+    end;
+    dm := TG2DataManager.Create(CopyStream, dmWrite);
+    dm.WriteIntS32(TopEntities.Count);
+    for i := 0 to TopEntities.Count - 1 do
+    TopEntities[i].Save(CopyStream);
+    dm.Free;
+    Clipboard.SetFormat(App.cbf_scene2d_object, CopyStream);
+  finally
+    CopyStream.Free;
+  end;
+end;
+
+procedure TScene2DData.PasteEntity(const Pos: TG2Vec2);
+  var NewEntities: TG2Scene2DEntityList;
+  procedure CreateNewEntityData(const Entity: TG2Scene2DEntity);
+    var i: Integer;
+  begin
+    Entity.NewGUID;
+    VerifyEntityName(Entity);
+    NewEntities.Add(Entity);
+    CreateEntityData(Entity);
+    for i := 0 to Entity.ChildCount - 1 do
+    CreateNewEntityData(Entity.Children[i]);
+    for i := 0 to TUIWorkspaceScene2DStructure.WorkspaceList.Count - 1 do
+    TUIWorkspaceScene2DStructure.WorkspaceList[i].OnCreateEntity(Entity);
+  end;
+  var PasteStream: TMemoryStream;
+  var n, i: Integer;
+  var dm: TG2DataManager;
+  var Entity: TG2Scene2DEntity;
+  var v: TG2Vec2;
+begin
+  if not Clipboard.HasFormat(App.cbf_scene2d_object) then Exit;
+  PasteStream := TMemoryStream.Create;
+  Clipboard.GetFormat(App.cbf_scene2d_object, PasteStream);
+  PasteStream.Position := 0;
+  dm := TG2DataManager.Create(PasteStream);
+  n := dm.ReadIntS32;
+  NewEntities.Clear;
+  for i := 0 to n - 1 do
+  begin
+    Entity := TG2Scene2DEntity.Create(_Scene);
+    Entity.Load(PasteStream);
+    CreateNewEntityData(Entity);
+  end;
+  dm.Free;
+  if NewEntities.Count > 0 then
+  begin
+    v := NewEntities[0].Transform.p;
+    for i := 1 to NewEntities.Count - 1 do
+    v += NewEntities[i].Transform.p;
+    v := Pos - (v * (1 / NewEntities.Count));
+    for i := 0 to NewEntities.Count - 1 do
+    NewEntities[i].Transform.p := NewEntities[i].Transform.p + v;
+  end;
+  PasteStream.Free;
+end;
+
+procedure TScene2DData.CreateEntityData(const Entity: TG2Scene2DEntity);
+  var EntityData: PScene2DEntityData;
+  var Component: TG2Scene2DComponent;
+  var ComponentData: TScene2DComponentData;
+  var j: Integer;
+begin
+  New(EntityData);
+  EntityData^.Entity := Entity;
+  EntityData^.Selected := False;
+  EntityData^.OpenStructure.Clear;
+  EntityData^.Properties := TPropertySet.Create;
+  EntityData^.SyncProperties;
+  Entity.UserData := EntityData;
+  for j := 0 to Entity.ComponentCount - 1 do
+  begin
+    Component := Entity.Components[j];
+    if Component is TG2Scene2DComponentSprite then
+    begin
+      ComponentData := TScene2DComponentDataSprite.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataSprite(ComponentData).Component := TG2Scene2DComponentSprite(Component);
+    end
+    else if Component is TG2Scene2DComponentBackground then
+    begin
+      ComponentData := TScene2DComponentDataBackground.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataBackground(ComponentData).Component := TG2Scene2DComponentBackground(Component);
+    end
+    else if Component is TG2Scene2DComponentEffect then
+    begin
+      ComponentData := TScene2DComponentDataEffect.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataEffect(ComponentData).Component := TG2Scene2DComponentEffect(Component);
+      if TG2Scene2DComponentEffect(Component).EffectInst <> nil then
+      TG2Scene2DComponentEffect(Component).EffectInst.Play;
+    end
+    else if Component is TG2Scene2DComponentRigidBody then
+    begin
+      ComponentData := TScene2DComponentDataRigidBody.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataRigidBody(ComponentData).Component := TG2Scene2DComponentRigidBody(Component);
+    end
+    else if Component is TG2Scene2DComponentCollisionShapeBox then
+    begin
+      ComponentData := TScene2DComponentDataShapeBox.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataShapeBox(ComponentData).Component := TG2Scene2DComponentCollisionShapeBox(Component);
+    end
+    else if Component is TG2Scene2DComponentCollisionShapeChain then
+    begin
+      ComponentData := TScene2DComponentDataShapeChain.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataShapeChain(ComponentData).Component := TG2Scene2DComponentCollisionShapeChain(Component);
+    end
+    else if Component is TG2Scene2DComponentCollisionShapeCircle then
+    begin
+      ComponentData := TScene2DComponentDataShapeCircle.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataShapeCircle(ComponentData).Component := TG2Scene2DComponentCollisionShapeCircle(Component);
+    end
+    else if Component is TG2Scene2DComponentCollisionShapeEdge then
+    begin
+      ComponentData := TScene2DComponentDataShapeEdge.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataShapeEdge(ComponentData).Component := TG2Scene2DComponentCollisionShapeEdge(Component);
+    end
+    else if Component is TG2Scene2DComponentCollisionShapePoly then
+    begin
+      ComponentData := TScene2DComponentDataShapePoly.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataShapePoly(ComponentData).Component := TG2Scene2DComponentCollisionShapePoly(Component);
+    end;
+  end;
+  EntityData^.UpdateProperties;
+end;
+
+procedure TScene2DData.VerifyEntityName(const Entity: TG2Scene2DEntity);
+  var NameBase, EntityName, str: String;
+  var NameIndex, n, i: Integer;
+begin
+  if Entity.Name <> '' then
+  NameBase := Entity.Name
+  else
+  NameBase := 'Entity';
+  n := Length(NameBase);
+  while (n > 0) and (StrToIntDef(NameBase[n], 0) = StrToIntDef(NameBase[n], 1)) do Dec(n);
+  if n < Length(NameBase) then
+  begin
+    str := '';
+    for i := n + 1 to Length(NameBase) do
+    str += NameBase[i];
+    NameIndex := StrToIntDef(str, 0) + 1;
+    Delete(NameBase, n + 1, Length(NameBase) - n);
+  end
+  else
+  NameIndex := 0;
+  EntityName := NameBase;
+  while FindEntity(EntityName, Entity) <> nil do
+  begin
+    Inc(NameIndex);
+    EntityName := NameBase + IntToStr(NameIndex);
+  end;
+  Entity.Name := EntityName;
 end;
 
 function TScene2DData.CreateJointDistance(const Position: TG2Vec2): TG2Scene2DDistanceJoint;
@@ -26906,83 +27191,13 @@ end;
 procedure TScene2DData.OnLoad;
   var i, j: Integer;
   var Entity: TG2Scene2DEntity;
-  var EntityData: PScene2DEntityData;
-  var Component: TG2Scene2DComponent;
-  var ComponentData: TScene2DComponentData;
   var Joint: TG2Scene2DJoint;
   var JointData: TScene2DJointData;
 begin
   for i := 0 to Scene.EntityCount - 1 do
   begin
     Entity := Scene.Entities[i];
-    New(EntityData);
-    EntityData^.Entity := Entity;
-    EntityData^.Selected := False;
-    EntityData^.OpenStructure.Clear;
-    EntityData^.Properties := TPropertySet.Create;
-    EntityData^.SyncProperties;
-    Entity.UserData := EntityData;
-    for j := 0 to Entity.ComponentCount - 1 do
-    begin
-      Component := Entity.Components[j];
-      if Component is TG2Scene2DComponentSprite then
-      begin
-        ComponentData := TScene2DComponentDataSprite.Create;
-        Component.UserData := ComponentData;
-        TScene2DComponentDataSprite(ComponentData).Component := TG2Scene2DComponentSprite(Component);
-      end
-      else if Component is TG2Scene2DComponentBackground then
-      begin
-        ComponentData := TScene2DComponentDataBackground.Create;
-        Component.UserData := ComponentData;
-        TScene2DComponentDataBackground(ComponentData).Component := TG2Scene2DComponentBackground(Component);
-      end
-      else if Component is TG2Scene2DComponentEffect then
-      begin
-        ComponentData := TScene2DComponentDataEffect.Create;
-        Component.UserData := ComponentData;
-        TScene2DComponentDataEffect(ComponentData).Component := TG2Scene2DComponentEffect(Component);
-        if TG2Scene2DComponentEffect(Component).EffectInst <> nil then
-        TG2Scene2DComponentEffect(Component).EffectInst.Play;
-      end
-      else if Component is TG2Scene2DComponentRigidBody then
-      begin
-        ComponentData := TScene2DComponentDataRigidBody.Create;
-        Component.UserData := ComponentData;
-        TScene2DComponentDataRigidBody(ComponentData).Component := TG2Scene2DComponentRigidBody(Component);
-      end
-      else if Component is TG2Scene2DComponentCollisionShapeBox then
-      begin
-        ComponentData := TScene2DComponentDataShapeBox.Create;
-        Component.UserData := ComponentData;
-        TScene2DComponentDataShapeBox(ComponentData).Component := TG2Scene2DComponentCollisionShapeBox(Component);
-      end
-      else if Component is TG2Scene2DComponentCollisionShapeChain then
-      begin
-        ComponentData := TScene2DComponentDataShapeChain.Create;
-        Component.UserData := ComponentData;
-        TScene2DComponentDataShapeChain(ComponentData).Component := TG2Scene2DComponentCollisionShapeChain(Component);
-      end
-      else if Component is TG2Scene2DComponentCollisionShapeCircle then
-      begin
-        ComponentData := TScene2DComponentDataShapeCircle.Create;
-        Component.UserData := ComponentData;
-        TScene2DComponentDataShapeCircle(ComponentData).Component := TG2Scene2DComponentCollisionShapeCircle(Component);
-      end
-      else if Component is TG2Scene2DComponentCollisionShapeEdge then
-      begin
-        ComponentData := TScene2DComponentDataShapeEdge.Create;
-        Component.UserData := ComponentData;
-        TScene2DComponentDataShapeEdge(ComponentData).Component := TG2Scene2DComponentCollisionShapeEdge(Component);
-      end
-      else if Component is TG2Scene2DComponentCollisionShapePoly then
-      begin
-        ComponentData := TScene2DComponentDataShapePoly.Create;
-        Component.UserData := ComponentData;
-        TScene2DComponentDataShapePoly(ComponentData).Component := TG2Scene2DComponentCollisionShapePoly(Component);
-      end;
-    end;
-    EntityData^.UpdateProperties;
+    CreateEntityData(Entity);
     for j := 0 to TUIWorkspaceScene2DStructure.WorkspaceList.Count - 1 do
     TUIWorkspaceScene2DStructure.WorkspaceList[j].OnCreateEntity(Entity);
   end;
@@ -27056,9 +27271,9 @@ begin
       if (TUIWorkspace.Focus is TUIWorkspaceScene2D)
       or (TUIWorkspace.Focus is TUIWorkspaceScene2DStructure) then
       begin
-        for i := Selection.Count - 1 downto 0 do
+        while Selection.Count > 0 do
         begin
-          e := Selection[i];
+          e := Selection.Last;
           DeleteEntity(e);
         end;
       end;
