@@ -153,6 +153,8 @@ type
   TG2RenderControlPrim3D = class;
   TG2RenderControlPoly2D = class;
   TG2RenderControlPoly3D = class;
+  TG2VertexBuffer = class;
+  TG2IndexBuffer = class;
   TG2Display2D = class;
   //TG2S2DObject = class;
   //TG2S2DFrame = class;
@@ -847,6 +849,8 @@ type
     _DepthWriteEnable: Boolean;
     _BlendEnable: Boolean;
     _BlendSeparate: Boolean;
+    _VertexBuffer: TG2VertexBuffer;
+    _IndexBuffer: TG2IndexBuffer;
     procedure ProcessRenderQueue;
     procedure SetRenderTarget(const Value: TG2Texture2DRT); virtual; abstract;
     procedure SetBlendMode(const Value: TG2BlendMode); virtual; abstract;
@@ -854,6 +858,8 @@ type
     procedure SetScissor(const Value: PRect); virtual; abstract;
     procedure SetDepthEnable(const Value: Boolean); virtual; abstract;
     procedure SetDepthWriteEnable(const Value: Boolean); virtual; abstract;
+    procedure SetVertexBuffer(const Value: TG2VertexBuffer); virtual; abstract;
+    procedure SetIndexBuffer(const Value: TG2IndexBuffer); virtual; abstract;
     {$if defined(G2RM_SM2)}
     procedure SetShaderMethod(const Value: PG2ShaderMethod); virtual; abstract;
     {$endif}
@@ -872,6 +878,8 @@ type
     property Filter: TG2Filter read _Filter write SetFilter;
     property DepthEnable: Boolean read _DepthEnable write SetDepthEnable;
     property DepthWriteEnable: Boolean read _DepthWriteEnable write SetDepthWriteEnable;
+    property VertexBuffer: TG2VertexBuffer read _VertexBuffer write SetVertexBuffer;
+    property IndexBuffer: TG2IndexBuffer read _IndexBuffer write SetIndexBuffer;
     {$if defined(G2RM_SM2)}
     property ShaderMethod: PG2ShaderMethod read _ShaderMethod write SetShaderMethod;
     {$endif}
@@ -917,6 +925,8 @@ type
     procedure SetScissor(const Value: PRect); override;
     procedure SetDepthEnable(const Value: Boolean); override;
     procedure SetDepthWriteEnable(const Value: Boolean); override;
+    procedure SetVertexBuffer(const Value: TG2VertexBuffer); override;
+    procedure SetIndexBuffer(const Value: TG2IndexBuffer); override;
     {$if defined(G2RM_SM2)}
     procedure SetShaderMethod(const Value: PG2ShaderMethod); override;
     {$endif}
@@ -955,6 +965,8 @@ type
     procedure SetScissor(const Value: PRect); override;
     procedure SetDepthEnable(const Value: Boolean); override;
     procedure SetDepthWriteEnable(const Value: Boolean); override;
+    procedure SetVertexBuffer(const Value: TG2VertexBuffer); override;
+    procedure SetIndexBuffer(const Value: TG2IndexBuffer); override;
     {$if defined(G2RM_SM2)}
     procedure SetShaderMethod(const Value: PG2ShaderMethod); override;
     {$endif}
@@ -1320,8 +1332,8 @@ type
     class function CreateMod(const GUID: AnsiString): TG2Effect2DMod;
     class constructor CreateClass;
     constructor Create; virtual;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float); virtual;
-    procedure OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const t, dt: TG2Float); virtual;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); virtual;
+    procedure OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const Inst: TG2Effect2DInst; const t, dt: TG2Float); virtual;
     procedure LoadG2ML(const g2ml: PG2MLObject); virtual;
   end;
 
@@ -1341,7 +1353,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1352,7 +1364,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1367,7 +1379,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1378,7 +1390,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1389,7 +1401,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1400,7 +1412,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1411,7 +1423,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1422,7 +1434,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1435,7 +1447,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1446,7 +1458,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const t, dt: TG2Float); override;
+    procedure OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1457,7 +1469,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const t, dt: TG2Float); override;
+    procedure OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1543,7 +1555,9 @@ type
     var _Scale: TG2Float;
     var _Speed: TG2Float;
     var _OnFinish: TG2ProcPtrObj;
-    var _OnProvideTransform: TG2Effect2DTRansformProc;
+    var _Transform: PG2Transform2;
+    var _LocalSpace: Boolean;
+    var _FixedOrientation: Boolean;
     procedure OnUpdate;
     procedure Clear;
     function FindLayer(const Layer: TG2IntS32): TG2Effect2DLayer; inline;
@@ -1554,13 +1568,15 @@ type
     property Repeating: Boolean read _Repeating write _Repeating;
     property Scale: TG2Float read _Scale write _Scale;
     property Speed: TG2Float read _Speed write _Speed;
+    property LocalSpace: Boolean read _LocalSpace write _LocalSpace;
+    property FixedOrientation: Boolean read _FixedOrientation write _FixedOrientation;
+    property Transform: PG2Transform2 read _Transform write _Transform;
     property OnFinish: TG2ProcPtrObj read _OnFinish write _OnFinish;
-    property OnProvideTransform: TG2Effect2DTRansformProc read _OnProvideTransform write _OnProvideTransform;
     constructor Create(const ParentEffect: TG2Effect2D);
     destructor Destroy; override;
     procedure Play;
     procedure Stop;
-    procedure Render(const xf: TG2Transform2; const Display: TG2Display2D = nil);
+    procedure Render(const Display: TG2Display2D = nil);
   end;
 
   TG2SoundBuffer = class (TG2Res)
@@ -1929,6 +1945,7 @@ type
     _Method: TG2IntS32;
     function GetMethod: AnsiString;
     procedure SetMethod(const Value: AnsiString);
+    procedure SetMethodIndex(const Value: TG2IntS32); inline;
     {$if defined(G2Gfx_D3D9)}
     function ParamVS(const Name: AnsiString): TG2IntS32;
     function ParamPS(const Name: AnsiString): TG2IntS32;
@@ -1940,6 +1957,8 @@ type
     procedure Finalize; override;
   public
     property Method: AnsiString read GetMethod write SetMethod;
+    property MethodIndex: TG2IntS32 read _Method write SetMethodIndex;
+    function FindMethodIndex(const Name: String): TG2IntS32;
     procedure Load(const Stream: TStream); overload;
     procedure Load(const FileName: String); overload;
     procedure Load(const Buffer: Pointer; const Size: TG2IntS32); overload;
@@ -1949,8 +1968,11 @@ type
     procedure UniformMatrix4x3(const Name: AnsiString; const m: TG2Mat);
     procedure UniformMatrix4x3Arr(const Name: AnsiString; const m: PG2Mat; const ArrPos, Count: TG2IntS32);
     procedure UniformFloat4(const Name: AnsiString; const v: TG2Vec4);
+    procedure UniformFloat3(const Name: AnsiString; const v: TG2Vec3);
+    procedure UniformFloat2(const Name: AnsiString; const v: TG2Vec2);
+    procedure UniformFloat1(const Name: AnsiString; const v: TG2Float);
     procedure UniformInt1(const Name: AnsiString; const i: TG2IntS32);
-    procedure Sampler(const Name: AnsiString; const Texture: TG2TextureBase{$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}; const Stage: TG2IntS32 = 0{$endif});
+    procedure Sampler(const Name: AnsiString; const Texture: TG2TextureBase; const Stage: TG2IntS32 = 0);
     {$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
     function Attribute(const Name: AnsiString): GLInt;
     {$endif}
@@ -2058,49 +2080,78 @@ type
     destructor Destroy; override;
   end;
 
-  TG2BufferRenderData = record
-    VertexBuffer: TG2VertexBuffer;
-    IndexBuffer: TG2IndexBuffer;
-    PrimitiveType: TG2PrimitiveType;
-    VertexStart: TG2IntS32;
-    VertexCount: TG2IntS32;
-    IndexStart: TG2IntS32;
-    IndexCount: TG2IntS32;
-    PrimitiveCount: TG2IntS32;
-    Texture: TG2Texture2DBase;
-    W, V, P: TG2Mat;
-  end;
-  PG2BufferRenderData = ^TG2BufferRenderData;
-
   TG2RenderControlBuffer = class (TG2RenderControl)
   private
-    _Queue: array[0..1] of array of PG2BufferRenderData;
-    _QueueCapacity: array[0..1] of TG2IntS32;
-    _QueueCount: array[0..1] of TG2IntS32;
-    {$if defined(G2RM_SM2)}
-    _ShaderGroup: TG2ShaderGroup;
-    {$endif}
+    type TParamType = (
+      pt_float,
+      pt_vec2,
+      pt_vec3,
+      pt_vec4,
+      pt_mat4x4,
+      pt_mat4x3
+    );
+    type TShaderParam = record
+      ParamType: TParamType;
+      Name: String;
+      Index: TG2IntS32;
+      Count: TG2IntS32;
+      Data: array of TG2IntU8;
+    end;
+    type TShaderSampler  = record
+      Name: String;
+      Texture: TG2TextureBase;
+    end;
+    type TBufferData = record
+      PrimType: TG2PrimitiveType;
+      VertexBuffer: TG2VertexBuffer;
+      IndexBuffer: TG2IndexBuffer;
+      ShaderGroup: TG2ShaderGroup;
+      Method: TG2IntS32;
+      Params: array of TShaderParam;
+      ParamCount: TG2IntS32;
+      Samplers: array of TShaderSampler;
+      SamplerCount: TG2IntS32;
+      VertexStart: TG2IntS32;
+      VertexCount: TG2IntS32;
+      IndexStart: TG2IntS32;
+      PrimCount: TG2IntS32;
+    end;
+    type PBufferData = ^TBufferData;
+    var _Queue: array[0..1] of array of PBufferData;
+    var _QueueCapacity: array[0..1] of TG2IntS32;
+    var _QueueCount: array[0..1] of TG2IntS32;
+    var _CurData: PBufferData;
+    var _Cache: TG2QuickList;
     procedure CheckCapacity;
+    procedure AddParam(
+      const ParamType: TParamType;
+      const Name: String;
+      const Index: TG2IntS32;
+      const Count: TG2IntS32;
+      const Data: PG2IntU8;
+      const DataSize: TG2IntS32
+    ); inline;
   public
-    procedure RenderPrimitive(
-      const VB: TG2VertexBuffer;
-      const PrimitiveType: TG2PrimitiveType;
-      const VertexStart: TG2IntS32;
-      const PrimitiveCount: TG2IntS32;
-      const Texture: TG2Texture2DBase;
-      const W, V, P: TG2Mat
-    ); overload;
-    procedure RenderPrimitive(
-      const VB: TG2VertexBuffer;
-      const IB: TG2IndexBuffer;
-      const PrimitiveType: TG2PrimitiveType;
+    procedure BufferBegin(
+      const PrimType: TG2PrimitiveType;
+      const VertexBuffer: TG2VertexBuffer;
+      const IndexBuffer: TG2IndexBuffer;
+      const ShaderGroup: TG2ShaderGroup;
+      const Method: String;
       const VertexStart: TG2IntS32;
       const VertexCount: TG2IntS32;
       const IndexStart: TG2IntS32;
-      const PrimitiveCount: TG2IntS32;
-      const Texture: TG2Texture2DBase;
-      const W, V, P: TG2Mat
+      const PrimCount: TG2IntS32
     );
+    procedure BufferEnd;
+    procedure ParamVec2(const Name: String; const Data: TG2Vec2);
+    procedure ParamVec3(const Name: String; const Data: TG2Vec3);
+    procedure ParamVec4(const Name: String; const Data: TG2Vec4);
+    procedure ParamMat4x4(const name: String; const Data: TG2Mat);
+    procedure ParamMat4x3(const name: String; const Data: TG2Mat);
+    procedure ParamMat4x4Arr(const Name: String; const Data: PG2MatArr; const Index, Count: TG2IntS32);
+    procedure ParamMat4x3Arr(const Name: String; const Data: PG2MatArr; const Index, Count: TG2IntS32);
+    procedure Sampler(const Name: String; const Texture: TG2Texture2DBase);
     procedure RenderBegin; override;
     procedure RenderEnd; override;
     procedure RenderData(const Data: Pointer); override;
@@ -6540,6 +6591,8 @@ begin
   _DepthWriteEnable := True;
   _BlendEnable := True;
   _BlendSeparate := False;
+  _VertexBuffer := nil;
+  _IndexBuffer := nil;
   BlendMode := bmNormal;
   Filter := tfPoint;
 end;
@@ -6757,6 +6810,20 @@ begin
   if Value = _DepthWriteEnable then Exit;
   _DepthWriteEnable := Value;
   _Device.SetRenderState(D3DRS_ZWRITEENABLE, TG2IntU32(Value));
+end;
+
+procedure TG2GfxD3D9.SetVertexBuffer(const Value: TG2VertexBuffer);
+begin
+  if _VertexBuffer = Value then Exit;
+  _VertexBuffer := Value;
+  if _VertexBuffer <> nil then _VertexBuffer.Bind;
+end;
+
+procedure TG2GfxD3D9.SetIndexBuffer(const Value: TG2IndexBuffer);
+begin
+  if _IndexBuffer  = Value then Exit;
+  _IndexBuffer := Value;
+  if _IndexBuffer <> nil then _IndexBuffer.Bind;
 end;
 
 {$if defined(G2RM_SM2)}
@@ -7044,6 +7111,22 @@ begin
   if Value = _DepthWriteEnable then Exit;
   _DepthWriteEnable := Value;
   glDepthMask(_DepthWriteEnable);
+end;
+
+procedure TG2GfxOGL.SetVertexBuffer(const Value: TG2VertexBuffer);
+begin
+  if _VertexBuffer = Value then Exit;
+  if _VertexBuffer <> nil then _VertexBuffer.Unbind;
+  _VertexBuffer := Value;
+  if _VertexBuffer <> nil then _VertexBuffer.Bind;
+end;
+
+procedure TG2GfxOGL.SetIndexBuffer(const Value: TG2IndexBuffer);
+begin
+  if _IndexBuffer = Value then Exit;
+  if _IndexBuffer <> nil then _IndexBuffer.Unbind;
+  _IndexBuffer := Value;
+  if _IndexBuffer <> nil then _IndexBuffer.Bind;
 end;
 
 {$if defined(G2RM_SM2)}
@@ -8983,12 +9066,12 @@ begin
 
 end;
 
-procedure TG2Effect2DMod.OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float);
+procedure TG2Effect2DMod.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
 
 end;
 
-procedure TG2Effect2DMod.OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const t, dt: TG2Float);
+procedure TG2Effect2DMod.OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
 
 end;
@@ -9076,7 +9159,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TG2Effect2DModOpacityGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float);
+procedure TG2Effect2DModOpacityGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Color.a := Round(Particle.ColorInit.a * Graph.GetYAt(t));
 end;
@@ -9110,7 +9193,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TG2Effect2DModScaleGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float);
+procedure TG2Effect2DModScaleGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Scale := Particle.ScaleInit * Graph.GetYAt(t);
 end;
@@ -9142,7 +9225,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TG2Effect2DModColorGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float);
+procedure TG2Effect2DModColorGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
   var i, n: Integer;
   var c: TG2Color;
   var t0, td: TG2Float;
@@ -9213,7 +9296,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TG2Effect2DModWidthGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float);
+procedure TG2Effect2DModWidthGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Width := Particle.WidthInit * Graph.GetYAt(t);
 end;
@@ -9247,7 +9330,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TG2Effect2DModHeightGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float);
+procedure TG2Effect2DModHeightGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Height := Particle.HeightInit * Graph.GetYAt(t);
 end;
@@ -9281,7 +9364,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TG2Effect2DModRotationGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float);
+procedure TG2Effect2DModRotationGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Rotation := Particle.RotationInit + Graph.GetYAt(t);
 end;
@@ -9315,7 +9398,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TG2Effect2DModOrientationGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float);
+procedure TG2Effect2DModOrientationGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.xf.r.Angle := Particle.RotationInit + Graph.GetYAt(t);
 end;
@@ -9349,7 +9432,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TG2Effect2DModVelocityGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float);
+procedure TG2Effect2DModVelocityGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Velocity := Particle.VelocityInit * Graph.GetYAt(t);
 end;
@@ -9385,7 +9468,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TG2Effect2DModAcceleration.OnParticleUpdate(const Particle: TG2Effect2DParticle; const t, dt: TG2Float);
+procedure TG2Effect2DModAcceleration.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
   var r: TG2Rotation2;
   var a, v: TG2Vec2;
   var vl: TG2Float;
@@ -9432,7 +9515,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TG2Effect2DModEmitterOrientationGraph.OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const t, dt: TG2Float);
+procedure TG2Effect2DModEmitterOrientationGraph.OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Emitter.Orientation := Emitter.Data.Orientation + Graph.GetYAt(t);
 end;
@@ -9466,7 +9549,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TG2Effect2DModEmitterScaleGraph.OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const t, dt: TG2Float);
+procedure TG2Effect2DModEmitterScaleGraph.OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
   var d: TG2Float;
 begin
   d := Graph.GetYAt(t);
@@ -9797,7 +9880,7 @@ procedure TG2Effect2DInst.OnUpdate;
   var gxf: TG2Transform2;
   procedure ProcessEmitter(const Emitter: TG2Effect2DEmitter);
     var xf, pxf: TG2Transform2;
-    var t, aw, ah, at, rn: TG2Float;
+    var t, aw, ah, w0, w1, h0, h1, at, rn: TG2Float;
     var i, j, ec: Integer;
     var p: TG2Effect2DParticle;
     var v0: TG2Vec2;
@@ -9863,7 +9946,7 @@ procedure TG2Effect2DInst.OnUpdate;
       p.Width := p.WidthInit;
       p.HeightInit := Emitter.Data.ParticleHeightMin + Random * (Emitter.Data.ParticleHeightMax - Emitter.Data.ParticleHeightMin);
       p.Height := p.HeightInit;
-      p.ScaleInit := Emitter.Data.ParticleScaleMin + Random * (Emitter.Data.ParticleScaleMax - Emitter.Data.ParticleScaleMin);
+      p.ScaleInit := (Emitter.Data.ParticleScaleMin + Random * (Emitter.Data.ParticleScaleMax - Emitter.Data.ParticleScaleMin)) * _Scale;
       p.Scale := p.ScaleInit;
       p.RotationLocal := Emitter.Data.ParticleRotationLocal;
       p.RotationInit := Emitter.Data.ParticleRotationMin + Random * (Emitter.Data.ParticleRotationMax - Emitter.Data.ParticleRotationMin);
@@ -9883,39 +9966,41 @@ procedure TG2Effect2DInst.OnUpdate;
         end;
         g2_e2ds_rectangular:
         begin
-          aw := Emitter.Width1 * (Emitter.Height1 - Emitter.Height0);
-          if aw < 0.01 then aw := 0.01;
-          ah := Emitter.Height0 * (Emitter.Width1 - Emitter.Width0);
-          if ah < 0.01 then ah := 0.01;
+          w0 := Emitter.Width0; w1 := Emitter.Width1;
+          h0 := Emitter.Height0; h1 := Emitter.Height1;
+          aw := w1 * (h1 - h0);
+          if aw < 0.001 then aw := 0.001;
+          ah := h0 * (w1 - w0);
+          if ah < 0.001 then ah := 0.001;
           at := aw + ah;
           rn := Random * at;
           if rn <= aw * 0.5 then
           begin
-            v0.x := G2LerpFloat(-Emitter.Width1 * 0.5, Emitter.Width1 * 0.5, Random);
-            v0.y := G2LerpFloat(-Emitter.Height1 * 0.5, -Emitter.Height0 * 0.5, Random);
+            v0.x := G2LerpFloat(-w1 * 0.5, w1 * 0.5, Random);
+            v0.y := G2LerpFloat(-h1 * 0.5, -h0 * 0.5, Random);
           end
           else if rn <= aw then
           begin
-            v0.x := G2LerpFloat(-Emitter.Width1 * 0.5, Emitter.Width1 * 0.5, Random);
-            v0.y := G2LerpFloat(Emitter.Height0 * 0.5, Emitter.Height1 * 0.5, Random);
+            v0.x := G2LerpFloat(-w1 * 0.5, w1 * 0.5, Random);
+            v0.y := G2LerpFloat(h0 * 0.5, h1 * 0.5, Random);
           end
           else if rn <= aw + ah * 0.5 then
           begin
-            v0.x := G2LerpFloat(-Emitter.Width1 * 0.5, -Emitter.Width0 * 0.5, Random);
-            v0.y := G2LerpFloat(-Emitter.Height0 * 0.5, Emitter.Height0 * 0.5, Random);
+            v0.x := G2LerpFloat(-w1 * 0.5, -w0 * 0.5, Random);
+            v0.y := G2LerpFloat(-h0 * 0.5, h0 * 0.5, Random);
           end
           else if rn <= at then
           begin
-            v0.x := G2LerpFloat(Emitter.Width0 * 0.5, Emitter.Width1 * 0.5, Random);
-            v0.y := G2LerpFloat(-Emitter.Height0 * 0.5, Emitter.Height0 * 0.5, Random);
+            v0.x := G2LerpFloat(w0 * 0.5, w1 * 0.5, Random);
+            v0.y := G2LerpFloat(-h0 * 0.5, h0 * 0.5, Random);
           end;
           r0 := G2Rotation2(Emitter.Orientation);
-          v0 := r0.Transform(v0);
-          pxf.p := v0;
+          pxf.p := r0.Transform(v0);
           pxf.r := r0;
         end;
       end;
-      G2Transform2Mul(@p.xf, @pxf, @p.xf);
+      pxf.p := pxf.p * _Scale;
+      G2Transform2Mul(@p.xf, @p.xf, @pxf);
       G2Transform2Mul(@p.xf, @p.xf, @xf);
       p.OrientationInit := p.xf.r.Angle;
       for j := 0 to Emitter.Data.Emitters.Count - 1 do
@@ -9923,12 +10008,10 @@ procedure TG2Effect2DInst.OnUpdate;
       p.Layer := FindLayer(p.Data.Layer);
       Inc(p.Layer.Ref);
       p.Layer.Particles.Add(p);
-      //for j := 0 to Emitter.Data.Mods.Count - 1 do
-      //Emitter.Data.Mods[j].OnParticleCreate(p);
       Inc(_ParticlesAlive);
     end;
     for i := 0 to Emitter.Data.Mods.Count - 1 do
-    Emitter.Data.Mods[i].OnEmitterUpdate(Emitter, t, dt);
+    Emitter.Data.Mods[i].OnEmitterUpdate(Emitter, Self, t, dt);
   end;
   procedure ProcessParticle(const Particle: TG2Effect2DParticle);
     var i: Integer;
@@ -9938,8 +10021,6 @@ procedure TG2Effect2DInst.OnUpdate;
     Particle.Duration -= dt;
     if Particle.Duration <= 0 then
     begin
-      //for i := 0 to Particle.Data.Mods.Count - 1 do
-      //Particle.Data.Mods[i].OnParticleDestroy(Particle);
       Particle.Layer.Particles.Remove(Particle);
       Dec(Particle.Layer.Ref);
       if Particle.Layer.Ref <= 0 then
@@ -9964,8 +10045,8 @@ procedure TG2Effect2DInst.OnUpdate;
     begin
       t := 1 - (Particle.Duration / Particle.DurationTotal);
       for i := 0 to Particle.Data.Mods.Count - 1 do
-      Particle.Data.Mods[i].OnParticleUpdate(Particle, t, dt);
-      Particle.xf.p := Particle.xf.p + Particle.xf.r.AxisX * Particle.Velocity * dt;
+      Particle.Data.Mods[i].OnParticleUpdate(Particle, Self, t, dt);
+      Particle.xf.p := Particle.xf.p + (Particle.xf.r.AxisX * (Particle.Velocity * dt * _Scale));
     end;
   end;
   var i, j: Integer;
@@ -9978,8 +10059,11 @@ begin
     if Assigned(_OnFinish) then _OnFinish(Self);
     Exit;
   end;
-  if Assigned(_OnProvideTransform) then
-  gxf := _OnProvideTransform()
+  if (_Transform <> nil) and not _LocalSpace then
+  begin
+    gxf := _Transform^;
+    if _FixedOrientation then gxf.r := G2Rotation2;
+  end
   else
   gxf := G2Transform2;
   dt := g2.DeltaTimeSec * _Speed;
@@ -10070,6 +10154,9 @@ begin
   _Repeating := False;
   _Scale := _Effect.Scale;
   _Speed := 1;
+  _LocalSpace := True;
+  _FixedOrientation := False;
+  _Transform := nil;
   _OnFinish := nil;
 end;
 
@@ -10102,11 +10189,12 @@ begin
   _Playing := False;
 end;
 
-procedure TG2Effect2DInst.Render(const xf: TG2Transform2; const Display: TG2Display2D);
+procedure TG2Effect2DInst.Render(const Display: TG2Display2D);
   procedure RenderParticle(const Particle: TG2Effect2DParticle);
     var v0, v1, v2, v3: TG2Vec2;
     var px0, px1, py0, py1, a: TG2Float;
     var xfl: TG2Transform2;
+    var xfg: TG2Transform2;
   begin
     if Particle.Data.Frame = nil then Exit;
     if Particle.Data.ParticleRotationLocal then
@@ -10119,14 +10207,20 @@ procedure TG2Effect2DInst.Render(const xf: TG2Transform2; const Display: TG2Disp
     begin
       xfl := G2Transform2(Particle.xf.p, G2Rotation2(Particle.Rotation));
     end;
+    if (_Transform <> nil) and _LocalSpace then
+    begin
+      xfg := _Transform^;
+      if _FixedOrientation then xfg.r := G2Rotation2;
+      G2Transform2Mul(@xfl, @xfl, @xfg);
+    end;
     px0 := -(Particle.Width * Particle.Scale) * (Particle.CenterX);
     px1 := (Particle.Width * Particle.Scale) * (1 - Particle.CenterX);
     py0 := -(Particle.Height * Particle.Scale) * (Particle.CenterY);
     py1 := (Particle.Height * Particle.Scale) * (1 - Particle.CenterY);
-    v0 := xf.Transform(xfl.Transform(G2Vec2(px0, py0)) * _Scale);
-    v1 := xf.Transform(xfl.Transform(G2Vec2(px1, py0)) * _Scale);
-    v2 := xf.Transform(xfl.Transform(G2Vec2(px0, py1)) * _Scale);
-    v3 := xf.Transform(xfl.Transform(G2Vec2(px1, py1)) * _Scale);
+    v0 := xfl.Transform(G2Vec2(px0, py0));
+    v1 := xfl.Transform(G2Vec2(px1, py0));
+    v2 := xfl.Transform(G2Vec2(px0, py1));
+    v3 := xfl.Transform(G2Vec2(px1, py1));
     if Display <> nil then
     begin
       Display.PicQuad(
@@ -12337,19 +12431,21 @@ begin
 end;
 
 procedure TG2ShaderGroup.SetMethod(const Value: AnsiString);
-  var i, n: TG2IntS32;
-  {$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
-  var p: GLHandle;
-  {$endif}
 begin
-  n := -1;
-  for i := 0 to _Methods.Count - 1 do
-  if PG2ShaderMethod(_Methods[i])^.Name = Value then
+  _Method := FindMethodIndex(Value);
+  if _Method > -1 then
   begin
-    n := i;
-    Break;
+    _Gfx.ShaderMethod := PG2ShaderMethod(_Methods[_Method]);
+  end
+  else
+  begin
+    _Gfx.ShaderMethod := nil;
   end;
-  _Method := n;
+end;
+
+procedure TG2ShaderGroup.SetMethodIndex(const Value: TG2IntS32);
+begin
+  _Method := Value;
   if _Method > -1 then
   begin
     _Gfx.ShaderMethod := PG2ShaderMethod(_Methods[_Method]);
@@ -12407,6 +12503,18 @@ end;
 procedure TG2ShaderGroup.Finalize;
 begin
   Clear;
+end;
+
+function TG2ShaderGroup.FindMethodIndex(const Name: String): TG2IntS32;
+  var i: TG2IntS32;
+begin
+  for i := 0 to _Methods.Count - 1 do
+  if PG2ShaderMethod(_Methods[i])^.Name = Name then
+  begin
+    Result := i;
+    Exit;
+  end;
+  Result := -1;
 end;
 
 procedure TG2ShaderGroup.Load(const Stream: TStream);
@@ -12695,6 +12803,63 @@ begin
   end;
 end;
 
+procedure TG2ShaderGroup.UniformFloat3(const Name: AnsiString; const v: TG2Vec3);
+  var psid, vsid, Size: TG2IntS32;
+  var v4: TG2Vec4;
+begin
+  v4 := v.AsVec4;
+  vsid := ParamVS(Name);
+  if vsid > -1 then
+  begin
+    Size := Min(1, PG2ShaderMethod(_Methods[_Method])^.VertexShader^.Params[vsid].Size);
+    _Gfx.Device.SetVertexShaderConstantF(PG2ShaderMethod(_Methods[_Method])^.VertexShader^.Params[vsid].Pos, @v4, Size);
+  end;
+  psid := ParamPS(Name);
+  if psid > -1 then
+  begin
+    Size := Min(1, PG2ShaderMethod(_Methods[_Method])^.PixelShader^.Params[psid].Size);
+    _Gfx.Device.SetPixelShaderConstantF(PG2ShaderMethod(_Methods[_Method])^.PixelShader^.Params[psid].Pos, @v4, Size);
+  end;
+end;
+
+procedure TG2ShaderGroup.UniformFloat2(const Name: AnsiString; const v: TG2Vec2);
+  var psid, vsid, Size: TG2IntS32;
+  var v4: TG2Vec4;
+begin
+  v4 := v.AsVec4;
+  vsid := ParamVS(Name);
+  if vsid > -1 then
+  begin
+    Size := Min(1, PG2ShaderMethod(_Methods[_Method])^.VertexShader^.Params[vsid].Size);
+    _Gfx.Device.SetVertexShaderConstantF(PG2ShaderMethod(_Methods[_Method])^.VertexShader^.Params[vsid].Pos, @v4, Size);
+  end;
+  psid := ParamPS(Name);
+  if psid > -1 then
+  begin
+    Size := Min(1, PG2ShaderMethod(_Methods[_Method])^.PixelShader^.Params[psid].Size);
+    _Gfx.Device.SetPixelShaderConstantF(PG2ShaderMethod(_Methods[_Method])^.PixelShader^.Params[psid].Pos, @v4, Size);
+  end;
+end;
+
+procedure TG2ShaderGroup.UniformFloat1(const Name: AnsiString; const v: TG2Float);
+  var psid, vsid, Size: TG2IntS32;
+  var v4: TG2Vec4;
+begin
+  v4 := G2Vec4(v, 0, 0, 0);
+  vsid := ParamVS(Name);
+  if vsid > -1 then
+  begin
+    Size := Min(1, PG2ShaderMethod(_Methods[_Method])^.VertexShader^.Params[vsid].Size);
+    _Gfx.Device.SetVertexShaderConstantF(PG2ShaderMethod(_Methods[_Method])^.VertexShader^.Params[vsid].Pos, @v4, Size);
+  end;
+  psid := ParamPS(Name);
+  if psid > -1 then
+  begin
+    Size := Min(1, PG2ShaderMethod(_Methods[_Method])^.PixelShader^.Params[psid].Size);
+    _Gfx.Device.SetPixelShaderConstantF(PG2ShaderMethod(_Methods[_Method])^.PixelShader^.Params[psid].Pos, @v4, Size);
+  end;
+end;
+
 procedure TG2ShaderGroup.UniformInt1(const Name: AnsiString; const i: TG2IntS32);
   var psid, vsid: TG2IntS32;
   var IntArr: array[0..3] of TG2IntS32;
@@ -12747,6 +12912,30 @@ begin
   glUniform4fv(shid, 1, @v);
 end;
 
+procedure TG2ShaderGroup.UniformFloat3(const Name: AnsiString; const v: TG2Vec3);
+  var shid: GLInt;
+begin
+  shid := Param(Name);
+  if shid > -1 then
+  glUniform3fv(shid, 1, @v);
+end;
+
+procedure TG2ShaderGroup.UniformFloat2(const Name: AnsiString; const v: TG2Vec2);
+  var shid: GLInt;
+begin
+  shid := Param(Name);
+  if shid > -1 then
+  glUniform2fv(shid, 1, @v);
+end;
+
+procedure TG2ShaderGroup.UniformFloat1(const Name: AnsiString; const v: TG2Float);
+  var shid: GLInt;
+begin
+  shid := Param(Name);
+  if shid > -1 then
+  glUniform1fv(shid, 1, @v);
+end;
+
 procedure TG2ShaderGroup.UniformInt1(const Name: AnsiString; const i: TG2IntS32);
   var shid: GLInt;
 begin
@@ -12756,7 +12945,7 @@ begin
 end;
 {$endif}
 
-procedure TG2ShaderGroup.Sampler(const Name: AnsiString; const Texture: TG2TextureBase{$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}; const Stage: TG2IntS32 = 0{$endif});
+procedure TG2ShaderGroup.Sampler(const Name: AnsiString; const Texture: TG2TextureBase; const Stage: TG2IntS32 = 0);
 {$if defined(G2Gfx_D3D9)}
   var psid: TG2IntS32;
 begin
@@ -13116,68 +13305,111 @@ begin
   end;
 end;
 
-procedure TG2RenderControlBuffer.RenderPrimitive(
-  const VB: TG2VertexBuffer;
-  const PrimitiveType: TG2PrimitiveType;
-  const VertexStart: TG2IntS32;
-  const PrimitiveCount: TG2IntS32;
-  const Texture: TG2Texture2DBase;
-  const W, V, P: TG2Mat
+procedure TG2RenderControlBuffer.AddParam(
+  const ParamType: TParamType;
+  const Name: String;
+  const Index: TG2IntS32;
+  const Count: TG2IntS32;
+  const Data: PG2IntU8;
+  const DataSize: TG2IntS32
 );
-  var BufferRenderData: PG2BufferRenderData;
+  var p: ^TShaderParam;
 begin
-  CheckCapacity;
-  BufferRenderData := _Queue[_FillID^][_QueueCount[_FillID^]];
-  BufferRenderData^.VertexBuffer := VB;
-  BufferRenderData^.IndexBuffer := nil;
-  BufferRenderData^.PrimitiveType := PrimitiveType;
-  BufferRenderData^.VertexStart := VertexStart;
-  BufferRenderData^.PrimitiveCount := PrimitiveCount;
-  BufferRenderData^.Texture := Texture;
-  BufferRenderData^.W := W;
-  BufferRenderData^.V := V;
-  BufferRenderData^.P := P;
-  _Gfx.AddRenderQueueItem(Self, BufferRenderData);
-  Inc(_QueueCount[_FillID^]);
+  if _CurData = nil then Exit;
+  if _CurData^.ParamCount >= Length(_CurData^.Params) then
+  SetLength(_CurData^.Params, _CurData^.ParamCount + 32);
+  p := @_CurData^.Params[_CurData^.ParamCount];
+  p^.Name := name;
+  p^.ParamType := ParamType;
+  p^.Index := Index;
+  p^.Count := Count;
+  if Length(p^.Data) < DataSize then
+  SetLength(p^.Data, DataSize);
+  Move(Data^, p^.Data[0], DataSize);
+  _CurData^.ParamCount := _CurData^.ParamCount + 1;
 end;
 
-procedure TG2RenderControlBuffer.RenderPrimitive(
-  const VB: TG2VertexBuffer;
-  const IB: TG2IndexBuffer;
-  const PrimitiveType: TG2PrimitiveType;
-  const VertexStart: TG2IntS32;
-  const VertexCount: TG2IntS32;
-  const IndexStart: TG2IntS32;
-  const PrimitiveCount: TG2IntS32;
-  const Texture: TG2Texture2DBase;
-  const W, V, P: TG2Mat
+procedure TG2RenderControlBuffer.BufferBegin(
+  const PrimType: TG2PrimitiveType;
+  const VertexBuffer: TG2VertexBuffer; const IndexBuffer: TG2IndexBuffer;
+  const ShaderGroup: TG2ShaderGroup; const Method: String;
+  const VertexStart: TG2IntS32; const VertexCount: TG2IntS32;
+  const IndexStart: TG2IntS32; const PrimCount: TG2IntS32
 );
-  var BufferRenderData: PG2BufferRenderData;
 begin
   CheckCapacity;
-  BufferRenderData := _Queue[_FillID^][_QueueCount[_FillID^]];
-  BufferRenderData^.VertexBuffer := VB;
-  BufferRenderData^.IndexBuffer := IB;
-  BufferRenderData^.PrimitiveType := PrimitiveType;
-  BufferRenderData^.VertexStart := VertexStart;
-  BufferRenderData^.VertexCount := VertexCount;
-  BufferRenderData^.IndexStart := IndexStart;
-  BufferRenderData^.PrimitiveCount := PrimitiveCount;
-  BufferRenderData^.Texture := Texture;
-  BufferRenderData^.W := W;
-  BufferRenderData^.V := V;
-  BufferRenderData^.P := P;
-  _Gfx.AddRenderQueueItem(Self, BufferRenderData);
+  _CurData := _Queue[_FillID^][_QueueCount[_FillID^]];
+  _CurData^.PrimType := PrimType;
+  _CurData^.VertexBuffer := VertexBuffer;
+  _CurData^.IndexBuffer := IndexBuffer;
+  _CurData^.ShaderGroup := ShaderGroup;
+  _CurData^.Method := ShaderGroup.FindMethodIndex(Method);
+  _CurData^.ParamCount := 0;
+  _CurData^.SamplerCount := 0;
+  _CurData^.VertexStart := VertexStart;
+  _CurData^.VertexCount := VertexCount;
+  _CurData^.IndexStart := IndexStart;
+  _CurData^.PrimCount := PrimCount;
+end;
+
+procedure TG2RenderControlBuffer.BufferEnd;
+begin
+  _Gfx.AddRenderQueueItem(Self, _CurData);
   Inc(_QueueCount[_FillID^]);
+  _CurData := nil;
+end;
+
+procedure TG2RenderControlBuffer.ParamVec2(const Name: String; const Data: TG2Vec2);
+begin
+  AddParam(pt_vec2, Name, 0, 1, @Data, SizeOf(TG2Vec2));
+end;
+
+procedure TG2RenderControlBuffer.ParamVec3(const Name: String; const Data: TG2Vec3);
+begin
+  AddParam(pt_vec3, Name, 0, 1, @Data, SizeOf(TG2Vec3));
+end;
+
+procedure TG2RenderControlBuffer.ParamVec4(const Name: String; const Data: TG2Vec4);
+begin
+  AddParam(pt_vec4, Name, 0, 1, @Data, SizeOf(TG2Vec4));
+end;
+
+procedure TG2RenderControlBuffer.ParamMat4x4(const name: String; const Data: TG2Mat);
+begin
+  AddParam(pt_mat4x4, Name, 0, 1, @Data, SizeOf(TG2Mat));
+end;
+
+procedure TG2RenderControlBuffer.ParamMat4x3(const name: String; const Data: TG2Mat);
+begin
+  AddParam(pt_mat4x3, Name, 0, 1, @Data, SizeOf(TG2Mat));
+end;
+
+procedure TG2RenderControlBuffer.ParamMat4x4Arr(const Name: String; const Data: PG2MatArr; const Index, Count: TG2IntS32);
+begin
+  AddParam(pt_mat4x4, Name, Index, Count, PG2IntU8(Data), SizeOf(TG2Mat) * Count);
+end;
+
+procedure TG2RenderControlBuffer.ParamMat4x3Arr(const Name: String; const Data: PG2MatArr; const Index, Count: TG2IntS32);
+begin
+  AddParam(pt_mat4x3, Name, Index, Count, PG2IntU8(Data), SizeOf(TG2Mat) * Count);
+end;
+
+procedure TG2RenderControlBuffer.Sampler(const Name: String; const Texture: TG2Texture2DBase);
+  var s: ^TShaderSampler;
+begin
+  if _CurData = nil then Exit;
+  if _CurData^.SamplerCount >= Length(_CurData^.Samplers) then
+  SetLength(_CurData^.Samplers, _CurData^.SamplerCount + 8);
+  s := @_CurData^.Samplers[_CurData^.SamplerCount];
+  s^.Name := Name;
+  s^.Texture := Texture;
+  _CurData^.SamplerCount := _CurData^.SamplerCount + 1;
 end;
 
 procedure TG2RenderControlBuffer.RenderBegin;
 begin
-  {$if defined(G2RM_SM2)}
-  _ShaderGroup.Method := 'Pic';
-  {$endif}
   {$if defined(G2Gfx_D3D9)}
-  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+
   {$elseif defined(G2Gfx_OGL)}
 
   {$elseif defined(G2Gfx_GLES)}
@@ -13188,7 +13420,7 @@ end;
 procedure TG2RenderControlBuffer.RenderEnd;
 begin
   {$if defined(G2Gfx_D3D9)}
-  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+
   {$elseif defined(G2Gfx_OGL)}
 
   {$elseif defined(G2Gfx_GLES)}
@@ -13197,88 +13429,101 @@ begin
 end;
 
 procedure TG2RenderControlBuffer.RenderData(const Data: Pointer);
-  var BufferRenderData: PG2BufferRenderData;
-  {$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
-  var m: TG2Mat;
-  {$endif}
-  {$if defined(G2RM_SM2)}
-  var WVP: TG2Mat;
-  {$endif}
-begin
-  BufferRenderData := PG2BufferRenderData(Data);
-  {$if defined(G2Gfx_D3D9)}
-  {$if defined(G2RM_FF)}
-  _Gfx.Device.SetTexture(0, BufferRenderData^.Texture.GetTexture);
-  _Gfx.Device.SetTransform(D3DTS_WORLD, BufferRenderData^.W);
-  _Gfx.Device.SetTransform(D3DTS_VIEW, BufferRenderData^.V);
-  _Gfx.Device.SetTransform(D3DTS_PROJECTION, BufferRenderData^.P);
-  {$elseif defined(G2RM_SM2)}
-  _ShaderGroup.Sampler('Tex0', BufferRenderData^.Texture);
-  WVP := BufferRenderData^.W * BufferRenderData^.V * BufferRenderData^.P;
-  _ShaderGroup.UniformMatrix4x4('WVP', WVP);
-  {$endif}
-  BufferRenderData^.VertexBuffer.Bind;
-  if BufferRenderData^.IndexBuffer <> nil then
-  begin
-    BufferRenderData^.IndexBuffer.Bind;
-    _Gfx.Device.DrawIndexedPrimitive(
-      TD3DPrimitiveType(BufferRenderData^.PrimitiveType),
-      0,
-      BufferRenderData^.VertexStart, BufferRenderData^.VertexCount,
-      BufferRenderData^.IndexStart, BufferRenderData^.PrimitiveCount
-    );
-    BufferRenderData^.IndexBuffer.Unbind;
-  end
-  else
-  _Gfx.Device.DrawPrimitive(
-    TD3DPrimitiveType(BufferRenderData^.PrimitiveType),
-    BufferRenderData^.VertexStart,
-    BufferRenderData^.PrimitiveCount
+{$if defined(G2Gfx_D3D9)}
+  const PrimTypeRemap: array[0..5] of TD3DPrimitiveType = (
+    D3DPT_POINTLIST,
+    D3DPT_LINESTRIP,
+    D3DPT_LINELIST,
+    D3DPT_TRIANGLESTRIP,
+    D3DPT_TRIANGLELIST,
+    D3DPT_TRIANGLEFAN
   );
-  BufferRenderData^.VertexBuffer.Unbind;
-  {$elseif defined(G2Gfx_OGL)}
-  {$if defined(G2RM_FF)}
-  glBindTexture(GL_TEXTURE_2D, BufferRenderData^.Texture.GetTexture);
-  _Gfx.EnableMipMaps(BufferRenderData^.Texture.Usage = tuUsage3D);
-  glMatrixMode(GL_MODELVIEW);
-  m := BufferRenderData^.W * BufferRenderData^.V;
-  glLoadMatrixf(@m);
-  glMatrixMode(GL_PROJECTION);
-  glLoadMatrixf(@BufferRenderData^.P);
-  {$elseif defined(G2RM_SM2)}
-  _ShaderGroup.Sampler('Tex0', BufferRenderData^.Texture);
-  WVP := BufferRenderData^.W * BufferRenderData^.V * BufferRenderData^.P;
-  _ShaderGroup.UniformMatrix4x4('WVP', WVP);
-  {$endif}
-  BufferRenderData^.VertexBuffer.Bind;
-  if BufferRenderData^.IndexBuffer <> nil then
+{$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
+  const PrimTypeRemap: array[0..5] of GLenum = (
+    GL_POINTS,
+    GL_LINE_STRIP,
+    GL_LINES,
+    GL_TRIANGLE_STRIP,
+    GL_TRIANGLES,
+    GL_TRIANGLE_FAN
+  );
+{$endif}
+  var BufferData: PBufferData;
+  var i: TG2IntS32;
+  var p: ^TShaderParam;
+begin
+  BufferData := PBufferData(Data);
+  BufferData^.ShaderGroup.MethodIndex := BufferData^.Method;
+  _Gfx.VertexBuffer := BufferData^.VertexBuffer;
+  _Gfx.IndexBuffer := BufferData^.IndexBuffer;
+  for i := 0 to BufferData^.SamplerCount - 1 do
+  BufferData^.ShaderGroup.Sampler(BufferData^.Samplers[i].Name, BufferData^.Samplers[i].Texture, i);
+  for i := 0 to BufferData^.ParamCount - 1 do
   begin
-    BufferRenderData^.IndexBuffer.Bind;
-    glDrawElements(GL_TRIANGLES, BufferRenderData^.PrimitiveCount * 3, GL_UNSIGNED_SHORT, PGLVoid(0));
-    BufferRenderData^.IndexBuffer.Unbind;
+    p := @BufferData^.Params[i];
+    case BufferData^.Params[i].ParamType of
+      pt_float:
+      begin
+        BufferData^.ShaderGroup.UniformFloat1(p^.Name, PG2Float(@p^.Data[0])^);
+      end;
+      pt_vec2:
+      begin
+	BufferData^.ShaderGroup.UniformFloat2(p^.Name, PG2Vec2(@p^.Data[0])^);
+      end;
+      pt_vec3:
+      begin
+        BufferData^.ShaderGroup.UniformFloat3(p^.Name, PG2Vec3(@p^.Data[0])^);
+      end;
+      pt_vec4:
+      begin
+        BufferData^.ShaderGroup.UniformFloat4(p^.Name, PG2Vec4(@p^.Data[0])^);
+      end;
+      pt_mat4x4:
+      begin
+	if p^.Count > 1 then BufferData^.ShaderGroup.UniformMatrix4x4(p^.Name, PG2Mat(@p^.Data[0])^)
+        else BufferData^.ShaderGroup.UniformMatrix4x4Arr(p^.Name, PG2Mat(@p^.Data[0]), p^.Index, p^.Count);
+      end;
+      pt_mat4x3:
+      begin
+	if p^.Count > 1 then BufferData^.ShaderGroup.UniformMatrix4x3(p^.Name, PG2Mat(@p^.Data[0])^)
+        else BufferData^.ShaderGroup.UniformMatrix4x3Arr(p^.Name, PG2Mat(@p^.Data[0]), p^.Index, p^.Count);
+      end;
+    end;
+  end;
+{$if defined(G2Gfx_D3D9)}
+  if BufferData^.IndexBuffer <> nil then
+  begin
+    _Gfx.Device.DrawIndexedPrimitive(
+      PrimTypeRemap[Ord(BufferData^.PrimType)], 0,
+      BufferData^.VertexStart, BufferData^.VertexCount,
+      BufferData^.IndexStart, BufferData^.PrimCount
+    );
   end
   else
-  glDrawArrays(GL_TRIANGLES, BufferRenderData^.VertexStart, BufferRenderData^.PrimitiveCount * 3);
-  BufferRenderData^.VertexBuffer.Unbind;
-  {$elseif defined(G2Gfx_GLES)}
-  glBindTexture(GL_TEXTURE_2D, BufferRenderData^.Texture.GetTexture);
-  _Gfx.Filter := tfPoint;
-  glMatrixMode(GL_PROJECTION);
-  m := BufferRenderData^.V * BufferRenderData^.P;
-  glLoadMatrixf(@m);
-  glMatrixMode(GL_MODELVIEW);
-  glLoadMatrixf(@BufferRenderData^.W);
-  BufferRenderData^.VertexBuffer.Bind;
-  if BufferRenderData^.IndexBuffer <> nil then
   begin
-    BufferRenderData^.IndexBuffer.Bind;
-    glDrawElements(GL_TRIANGLES, BufferRenderData^.PrimitiveCount * 3, GL_UNSIGNED_SHORT, PGLVoid(0));
-    BufferRenderData^.IndexBuffer.Unbind;
+    _Gfx.Device.DrawPrimitive(
+      PrimTypeRemap[Ord(BufferData^.PrimType)],
+      BufferData^.VertexStart, BufferData^.PrimCount
+    );
+  end;
+{$elseif defined(G2Gfx_OGL)}
+  if BufferData^.IndexBuffer <> nil then
+  begin
+    glDrawElements(
+      PrimTypeRemap[Ord(BufferData^.PrimType)],
+      BufferData^.PrimCount * 3, GL_UNSIGNED_SHORT,
+      PGLvoid(BufferData^.IndexStart * 2)
+    );
   end
   else
-  glDrawArrays(GL_TRIANGLES, BufferRenderData^.VertexStart, BufferRenderData^.PrimitiveCount * 3);
-  BufferRenderData^.VertexBuffer.Unbind;
-  {$endif}
+  begin
+    glDrawArrays(
+      PrimTypeRemap[Ord(BufferData^.PrimType)],
+      BufferData^.VertexStart,
+      BufferData^.PrimCount * 3
+    );
+  end;
+{$endif}
 end;
 
 procedure TG2RenderControlBuffer.Reset;
@@ -13293,9 +13538,8 @@ begin
   _QueueCapacity[1] := 0;
   _QueueCount[0] := 0;
   _QueueCount[1] := 0;
-  {$if defined(G2RM_SM2)}
-  _ShaderGroup := _Gfx.RequestShader('StandardShaders');
-  {$endif}
+  _CurData := nil;
+  _Cache.Clear;
 end;
 
 destructor TG2RenderControlBuffer.Destroy;
@@ -13304,6 +13548,8 @@ begin
   for n := 0 to 1 do
   for i := 0 to _QueueCapacity[n] - 1 do
   Dispose(_Queue[n][i]);
+  for i := 0 to _Cache.Count - 1 do
+  Dispose(PBufferData(_Cache[i]));
   inherited Destroy;
 end;
 //TG2RenderControlBuffer END

@@ -3414,6 +3414,7 @@ type
     var Speed: TG2Float;
     var Repeating: Boolean;
     var LocalSpace: Boolean;
+    var FixedOrientation: Boolean;
     var EffectPath: String;
     var Effect: TAssetEffect2D;
   public
@@ -3426,6 +3427,7 @@ type
     procedure OnChangeSpeed(const Sender: Pointer);
     procedure OnChangeRepeating(const Sender: Pointer);
     procedure OnChangeLocalSpace(const Sender: Pointer);
+    procedure OnChangeFixedOrientation(const Sender: Pointer);
     procedure OnChangeEffect(const Sender: Pointer);
     procedure OnPlay;
     procedure OnStop;
@@ -25590,23 +25592,16 @@ begin
   PropertySet.PropPath('Effect', @EffectPath, TAssetEffect2D, Group, @OnChangeEffect);
   Layer := Component.Layer;
   LocalSpace := Component.LocalSpace;
-  if Component.EffectInst <> nil then
-  begin
-    Scale := Component.EffectInst.Scale;
-    Speed := Component.EffectInst.Speed;
-    Repeating := Component.EffectInst.Repeating;
-  end
-  else
-  begin
-    Scale := 1;
-    Speed := 1;
-    Repeating := False;
-  end;
+  Scale := Component.Scale;
+  Speed := Component.Speed;
+  Repeating := Component.Repeating;
+  FixedOrientation := Component.FixedOrientation;
   PropertySet.PropInt('Layer', @Layer, Group, @OnChangeLayer);
   PropertySet.PropFloat('Scale', @Scale, Group, @OnChangeScale);
   PropertySet.PropFloat('Speed', @Speed, Group, @OnChangeSpeed);
   PropertySet.PropBool('Repeat', @Repeating, Group, @OnChangeRepeating);
-  PropertySet.PropBool('LocalSpace', @LocalSpace, Group, @OnChangeLocalSpace);
+  PropertySet.PropBool('Local Space', @LocalSpace, Group, @OnChangeLocalSpace);
+  PropertySet.PropBool('Fixed Orientation', @FixedOrientation, Group, @OnChangeFixedOrientation);
   PropertySet.PropButton('Play', @OnPlay, Group);
   PropertySet.PropButton('Stop', @OnStop, Group);
 end;
@@ -25637,6 +25632,11 @@ end;
 procedure TScene2DComponentDataEffect.OnChangeLocalSpace(const Sender: Pointer);
 begin
   Component.LocalSpace := LocalSpace;
+end;
+
+procedure TScene2DComponentDataEffect.OnChangeFixedOrientation(const Sender: Pointer);
+begin
+  Component.FixedOrientation := FixedOrientation;
 end;
 
 procedure TScene2DComponentDataEffect.OnChangeEffect(const Sender: Pointer);

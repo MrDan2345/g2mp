@@ -308,7 +308,7 @@ type
     var _RefEffect: Boolean;
     var _AutoDestruct: Boolean;
     var _LocalSpace: Boolean;
-    function OnProvideTransform: TG2Transform2;
+    var _FixedOrientation: Boolean;
     procedure OnEffectFinish(const Inst: Pointer);
     procedure SetEffectInst(const Value: TG2Effect2DInst); inline;
     procedure SetLayer(const Value: TG2IntS32); inline;
@@ -319,7 +319,10 @@ type
     procedure SetRepeating(const Value: Boolean); inline;
     function GetRepeating: Boolean; inline;
     function GetPlaying: Boolean; inline;
-    procedure SetLocalSpace(const Value: Boolean); inline;
+    function GetLocalSpace: Boolean; inline;
+    procedure SetLocalSpace(const Value: Boolean);
+    function GetFixedOrientation: Boolean; inline;
+    procedure SetFixedOrientation(const Value: Boolean); inline;
   protected
     procedure OnInitialize; override;
     procedure OnFinalize; override;
@@ -334,7 +337,8 @@ type
     property Repeating: Boolean read GetRepeating write SetRepeating;
     property Playing: Boolean read GetPlaying;
     property AutoDestruct: Boolean read _AutoDestruct write _AutoDestruct;
-    property LocalSpace: Boolean read _LocalSpace write SetLocalSpace;
+    property LocalSpace: Boolean read GetLocalSpace write SetLocalSpace;
+    property FixedOrientation: Boolean read GetFixedOrientation write SetFixedOrientation;
     class constructor CreateClass;
     class function GetName: String; override;
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
@@ -1724,12 +1728,6 @@ end;
 //TG2Scene2DComponentSprite END
 
 //TG2Scene2DComponentEffect BEGIN
-function TG2Scene2DComponentEffect.OnProvideTransform: TG2Transform2;
-begin
-  if (Owner <> nil) and not (_LocalSpace) then
-  Result := Owner.Transform else Result := G2Transform2;
-end;
-
 procedure TG2Scene2DComponentEffect.OnEffectFinish(const Inst: Pointer);
 begin
   if _AutoDestruct and (Owner <> nil) then Owner.Free;
@@ -1752,7 +1750,9 @@ begin
     _Scale := _EffectInst.Scale;
     _Speed := _EffectInst.Speed;
     _Repeating := _EffectInst.Repeating;
-    _EffectInst.OnProvideTransform := @OnProvideTransform;
+    _LocalSpace := _EffectInst.LocalSpace;
+    _FixedOrientation := _EffectInst.FixedOrientation;
+    _EffectInst.Transform := @Owner.Transform;
     _EffectInst.OnFinish := @OnEffectFinish;
   end;
 end;
@@ -1801,15 +1801,32 @@ begin
   if _EffectInst <> nil then Result := _EffectInst.Playing else Result := False;
 end;
 
+function TG2Scene2DComponentEffect.GetLocalSpace: Boolean;
+begin
+  if _EffectInst <> nil then Result := _EffectInst.LocalSpace else Result := _LocalSpace;
+end;
+
 procedure TG2Scene2DComponentEffect.SetLocalSpace(const Value: Boolean);
 begin
   if Value = _LocalSpace then Exit;
   _LocalSpace := Value;
+  if _EffectInst <> nil then _EffectInst.LocalSpace := Value;
   if Playing then
   begin
     Stop;
     Play;
   end;
+end;
+
+function TG2Scene2DComponentEffect.GetFixedOrientation: Boolean;
+begin
+  if _EffectInst <> nil then Result := _EffectInst.FixedOrientation else Result := _FixedOrientation;
+end;
+
+procedure TG2Scene2DComponentEffect.SetFixedOrientation(const Value: Boolean);
+begin
+  _FixedOrientation := Value;
+  if _EffectInst <> nil then _EffectInst.Repeating := Value;
 end;
 
 procedure TG2Scene2DComponentEffect.OnInitialize;
@@ -1823,6 +1840,7 @@ begin
   _Repeating := False;
   _AutoDestruct := False;
   _LocalSpace := True;
+  _FixedOrientation := False;
 end;
 
 procedure TG2Scene2DComponentEffect.OnFinalize;
@@ -1843,13 +1861,9 @@ begin
 end;
 
 procedure TG2Scene2DComponentEffect.OnRender(const Display: TG2Display2D);
-  var xf: TG2Transform2;
 begin
   if _EffectInst <> nil then
-  begin
-    if _LocalSpace then xf := Owner.Transform else xf := G2Transform2;
-    _EffectInst.Render(xf, Display);
-  end;
+  _EffectInst.Render(Display);
 end;
 
 class constructor TG2Scene2DComponentEffect.CreateClass;
@@ -1909,7 +1923,10 @@ begin
   Stream.Write(s, SizeOf(s));
   if _EffectInst <> nil then b := _EffectInst.Repeating else b := False;
   Stream.Write(b, SizeOf(b));
-  Stream.Write(_LocalSpace, SizeOf(_LocalSpace));
+  if _EffectInst <> nil then b := _EffectInst.LocalSpace else b := True;
+  Stream.Write(b, SizeOf(b));
+  if _EffectInst <> nil then b := _EffectInst.FixedOrientation else b := False;
+  Stream.Write(b, SizeOf(b));
 end;
 
 procedure TG2Scene2DComponentEffect.Load(const Stream: TStream);
@@ -1941,7 +1958,7 @@ begin
       _RefEffect := True;
       Effect.RefInc;
       _EffectInst.RefInc;
-      _EffectInst.OnProvideTransform := @;
+      _EffectInst.Transform := @Owner.Transform;
     end;
   end;
   Stream.Read(n, SizeOf(n));
@@ -1953,6 +1970,9 @@ begin
   Stream.Read(b, SizeOf(b));
   if _EffectInst <> nil then _EffectInst.Repeating := b;
   Stream.Read(_LocalSpace, SizeOf(_LocalSpace));
+  if _EffectInst <> nil then _EffectInst.LocalSpace := _LocalSpace;
+  Stream.Read(_FixedOrientation, SizeOf(_FixedOrientation));
+  if _EffectInst <> nil then _EffectInst.FixedOrientation := _FixedOrientation;
 end;
 //TG2Scene2DComponentEffect END
 

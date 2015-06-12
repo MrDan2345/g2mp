@@ -94,6 +94,8 @@ type
     function Transform3x3(const m: TG2Mat): TG2Vec2;
     function Transform4x3(const m: TG2Mat): TG2Vec2;
     function Transform4x4(const m: TG2Mat): TG2Vec2;
+    function AsVec3: TG2Vec3Ref; inline;
+    function AsVec4: TG2Vec4Ref; inline;
   end;
 
   PG2Vec3 = ^TG2Vec3;
@@ -114,6 +116,7 @@ type
     function Transform3x3(const m: TG2Mat): TG2Vec3;
     function Transform4x3(const m: TG2Mat): TG2Vec3;
     function Transform4x4(const m: TG2Mat): TG2Vec3;
+    function AsVec4: TG2Vec4Ref; inline;
   end;
 
   PG2Vec4 = ^TG2Vec4;
@@ -337,6 +340,8 @@ type
   operator := (p: TPoint) vr: TG2Vec2; inline;
   operator := (v: TG2Vec3) vr: TG2Vec3Ref; inline;
   operator := (vr: TG2Vec3Ref) v: TG2Vec3; inline;
+  operator := (v: TG2Vec4) vr: TG2Vec4Ref; inline;
+  operator := (vr: TG2Vec4Ref) v: TG2Vec4; inline;
   operator := (m: TG2Mat) mr: TG2MatRef; inline;
   operator := (mr: TG2MatRef) m: TG2Mat; inline;
   operator := (r: TG2Rect) rr: TRect; inline;
@@ -738,6 +743,16 @@ function TG2Vec2.Transform4x4(const m: TG2Mat): TG2Vec2;
 begin
   G2Vec2MatMul4x4(@Result, @Self, @m);
 end;
+
+function TG2Vec2.AsVec3: TG2Vec3Ref;
+begin
+  Result := G2Vec3(x, y, 0);
+end;
+
+function TG2Vec2.AsVec4: TG2Vec4Ref;
+begin
+  Result := G2Vec4(x, y, 0, 0);
+end;
 //TG2Vec2 END
 
 //TG2Vec3 BEGIN
@@ -799,6 +814,11 @@ end;
 function TG2Vec3.Transform4x4(const m: TG2Mat): TG2Vec3;
 begin
   G2Vec3MatMul4x4(@Result, @Self, @m);
+end;
+
+function TG2Vec3.AsVec4: TG2Vec4Ref;
+begin
+  Result := G2Vec4(x, y, z, 0);
 end;
 //TG2Vec3 END
 
@@ -1449,6 +1469,16 @@ end;
 operator := (vr: TG2Vec3Ref) v: TG2Vec3;
 begin
   v.x := vr[0]; v.y := vr[1]; v.z := vr[2];
+end;
+
+operator := (v: TG2Vec4) vr: TG2Vec4Ref;
+begin
+  vr[0] := v.x; vr[1] := v.y; vr[2] := v.z; vr[3] := v.w;
+end;
+
+operator := (vr: TG2Vec4Ref) v: TG2Vec4;
+begin
+  v.x := vr[0]; v.y := vr[1]; v.z := vr[2]; v.w := vr[3];
 end;
 
 operator := (m: TG2Mat) mr: TG2MatRef;
