@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="9"/>
+    <BuildModes Active="Default"/>
+    <Units Count="7">
+      <Unit0>
+        <Filename Value="project2.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="project2"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="15"/>
+        <CursorPos X="17" Y="33"/>
+        <UsageCount Value="87"/>
+        <Loaded Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="box2d.pas"/>
+        <UnitName Value="box2d"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="13367"/>
+        <CursorPos X="53" Y="13387"/>
+        <UsageCount Value="42"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\inc\heaph.inc"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="49"/>
+        <CursorPos X="56" Y="83"/>
+        <UsageCount Value="42"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="..\Gen2MP\Gen2MP\Gen2MP.pas"/>
+        <UnitName Value="Gen2MP"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="588"/>
+        <CursorPos X="20" Y="290"/>
+        <UsageCount Value="10"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="..\Gen2MP\Gen2MP\Tools\Toolkit\TestProject\source\box2d.pas"/>
+        <UnitName Value="box2d"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="194"/>
+        <CursorPos X="48" Y="204"/>
+        <UsageCount Value="10"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="TestProject.lpr"/>
+        <UnitName Value="TestProject"/>
+        <EditorIndex Value="0"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="10" Y="4"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="GameUnit.pas"/>
+        <UnitName Value="GameUnit"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="13"/>
+        <CursorPos X="18" Y="12"/>
+        <UsageCount Value="10"/>
+      </Unit6>
+    </Units>
+    <General>
+      <ActiveWindowIndexAtStart Value="0"/>
+    </General>
+    <JumpHistory Count="2" HistoryIndex="1">
+      <Position1>
+        <Filename Value="TestProject.lpr"/>
+        <Caret Line="4" Column="10" TopLine="1"/>
+      </Position1>
+      <Position2>
+        <Filename Value="project2.lpr"/>
+        <Caret Line="7" Column="24" TopLine="1"/>
+      </Position2>
+    </JumpHistory>
+  </ProjectSession>
+  <Debugging>
+    <Watches Count="1">
+      <Item1>
+        <Expression Value=" @proxy_a"/>
+      </Item1>
+    </Watches>
+  </Debugging>
+  <EditorMacros Count="0"/>
+</CONFIG>

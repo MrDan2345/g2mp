@@ -651,6 +651,12 @@ type
     procedure Poly3DAdd(const x, y, z, u, v: TG2Float; const Color: TG2Color); inline;
     procedure Poly3DAdd(const Pos: TG2Vec3; const TexCoord: TG2Vec2; const Color: TG2Color); inline;
     procedure Poly3DAddQuad(const p0, p1, p2, p3: TG2Vec3; const t0, t1, t2, t3: TG2Vec2; const c0, c1, c2, c3: TG2Color); inline;
+    procedure Clear(const Color: TG2Color); overload; inline;
+    procedure Clear(
+      const Color: Boolean; const ColorValue: TG2Color;
+      const Depth: Boolean = True; const DepthValue: TG2Float = 1;
+      const Stencil: Boolean = False; const StencilValue: TG2IntU8 = 0
+    ); overload; inline;
     constructor Create;
     destructor Destroy; override;
   end;
@@ -3456,8 +3462,8 @@ type
   {$interfaces corba}
   const IG2SerializableGUID = '{b78dfd2d-7d67-4f40-a4cb-841f32451707}';
   type IG2Serializable = interface
-    procedure SerializeTo(const Stream: TStream);
-    procedure SerializeFrom(const Stream: TStream);
+    procedure Serialize(const Stream: TStream);
+    procedure Deserialize(const Stream: TStream);
   end;
   {$pop}
 //IG2Serializable END
@@ -5784,6 +5790,20 @@ begin
   Poly3DAdd(p2, t2, c2);
   Poly3DAdd(p1, t1, c1);
   Poly3DAdd(p3, t3, c3);
+end;
+
+procedure TG2Core.Clear(const Color: TG2Color);
+begin
+  _Gfx.StateChange.StateClear(Color);
+end;
+
+procedure TG2Core.Clear(
+  const Color: Boolean; const ColorValue: TG2Color;
+  const Depth: Boolean; const DepthValue: TG2Float;
+  const Stencil: Boolean; const StencilValue: TG2IntU8
+);
+begin
+  _Gfx.StateChange.StateClear(Color, ColorValue, Depth, DepthValue, Stencil, StencilValue);
 end;
 
 constructor TG2Core.Create;
@@ -10155,7 +10175,7 @@ begin
   _Scale := _Effect.Scale;
   _Speed := 1;
   _LocalSpace := True;
-  _FixedOrientation := False;;
+  _FixedOrientation := False;
   _Transform := nil;
   _OnFinish := nil;
 end;
@@ -19529,7 +19549,7 @@ begin
     n := Length(Obj.ClassName);
     Stream.Write(n, SizeOf(n));
     Stream.Write(Obj.ClassName[1], n);
-    Intf.SerializeTo(Stream);
+    Intf.Serialize(Stream);
   end;
 end;
 

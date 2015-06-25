@@ -3439,6 +3439,7 @@ type
   private
     var _Position: TG2Vec2;
     var _Rotation: TG2Float;
+    var _FixedRotation: Boolean;
     var _BodyType: TG2Scene2DComponentRigidBodyType;
   public
     var Component: TG2Scene2DComponentRigidBody;
@@ -3449,6 +3450,7 @@ type
     function GetWorldPoint(const LocalPoint: TG2Vec2): TG2Vec2;
     procedure OnChangePosition(const Sender: Pointer);
     procedure OnChangeRotation(const Sender: Pointer);
+    procedure OnChangeFixedRotation(const Sender: Pointer);
     procedure OnChangeBodyType(const Sender: Pointer);
   end;
 //TScene2DComponentDataRigidBody END
@@ -25636,7 +25638,7 @@ end;
 
 procedure TScene2DComponentDataEffect.OnChangeFixedOrientation(const Sender: Pointer);
 begin
-
+  Component.FixedOrientation := FixedOrientation;
 end;
 
 procedure TScene2DComponentDataEffect.OnChangeEffect(const Sender: Pointer);
@@ -25688,6 +25690,7 @@ begin
   Group := PropertySet.PropComponent('Rigid Body', Component);
   PropertySet.PropVec2('Position', @_Position, Group, @OnChangePosition);
   PropertySet.PropFloat('Rotation', @_Rotation, Group, @OnChangeRotation);
+  PropertySet.PropBool('Fixed Rotation', @_FixedRotation, Group, @OnChangeFixedRotation);
   Enum := PropertySet.PropEnum('Type', @_BodyType, Group, @OnChangeBodyType);
   Enum.AddValue('Static', Byte(g2_s2d_rbt_static_body));
   Enum.AddValue('Kinematic', Byte(g2_s2d_rbt_kinematic_body));
@@ -25721,6 +25724,11 @@ end;
 procedure TScene2DComponentDataRigidBody.OnChangeRotation(const Sender: Pointer);
 begin
   Component.Rotation := _Rotation * G2DegToRad;
+end;
+
+procedure TScene2DComponentDataRigidBody.OnChangeFixedRotation(const Sender: Pointer);
+begin
+  Component.FixedRotation := _FixedRotation;
 end;
 
 procedure TScene2DComponentDataRigidBody.OnChangeBodyType(const Sender: Pointer);

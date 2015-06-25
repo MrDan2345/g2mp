@@ -404,6 +404,8 @@ type
     function GetPosition: TG2Vec2; inline;
     procedure SetRotation(const Value: TG2Float); inline;
     function GetRotation: TG2Float; inline;
+    procedure SetFixedRotation(const Value: Boolean); inline;
+    function GetFixedRotation: Boolean; inline;
     procedure SetTransform(const Value: TG2Transform2); inline;
     function GetTransform: TG2Transform2; inline;
   protected
@@ -422,6 +424,7 @@ type
     property BodyType: TG2Scene2DComponentRigidBodyType read GetBodyType write SetBodyType;
     property Position: TG2Vec2 read GetPosition write SetPosition;
     property Rotation: TG2Float read GetRotation write SetRotation;
+    property FixedRotation: Boolean read GetFixedRotation write SetFixedRotation;
     property Enabled: Boolean read _Enabled write SetEnabled;
     property PhysBody: pb2_body read _Body;
     procedure MakeStatic; inline;
@@ -569,6 +572,28 @@ type
     property HasVertexPrev: Boolean read _ChainShape.has_prev_vertex write _ChainShape.has_prev_vertex;
     property HasVertexNext: Boolean read _ChainShape.has_next_vertex write _ChainShape.has_next_vertex;
     procedure SetUp(const v: PG2Vec2Arr; const vc: TG2IntS32);
+    procedure Save(const Stream: TStream); override;
+    procedure Load(const Stream: TStream); override;
+  end;
+
+  TG2Scene2DComponentPoly = class (TG2Scene2DComponent)
+  public
+    type TG2Scene2DComponentPolyVertex = record
+      x, y: TG2Float;
+      c: TG2Color;
+    end;
+    type PG2Scene2DComponentPolyVertex = ^TG2Scene2DComponentPolyVertex;
+  private
+    var _Vertices: array of TG2Scene2DComponentPolyVertex;
+    var _Indices: array of TG2IntU16;
+  public
+    class constructor CreateClass;
+    class function GetName: String; override;
+    procedure SetUp(const Triangles: PG2Vec2Arr; const TriangleCount: TG2IntS32); overload;
+    procedure SetUp(
+      const Vertices: PG2Vec2; const VertexCount, VertexStride: TG2IntS32;
+      const Indices: PG2IntU16; const IndexCount, IndexStride: TG2IntS32
+    ); overload;
     procedure Save(const Stream: TStream); override;
     procedure Load(const Stream: TStream); override;
   end;
@@ -1826,7 +1851,7 @@ end;
 procedure TG2Scene2DComponentEffect.SetFixedOrientation(const Value: Boolean);
 begin
   _FixedOrientation := Value;
-  if _EffectInst <> nil then _EffectInst.Repeating := Value;
+  if _EffectInst <> nil then _EffectInst.FixedOrientation := Value;
 end;
 
 procedure TG2Scene2DComponentEffect.OnInitialize;
@@ -2253,6 +2278,22 @@ begin
   Result := _Body^.get_angle
   else
   Result := _BodyDef.angle;
+end;
+
+procedure TG2Scene2DComponentRigidBody.SetFixedRotation(const Value: Boolean);
+begin
+  if _Enabled then
+  _Body^.set_fixed_rotation(Value)
+  else
+  _BodyDef.fixed_rotation := Value;
+end;
+
+function TG2Scene2DComponentRigidBody.GetFixedRotation: Boolean;
+begin
+  if _Enabled then
+  Result := _Body^.is_fixed_rotation
+  else
+  Result := _BodyDef.fixed_rotation;
 end;
 
 procedure TG2Scene2DComponentRigidBody.SetTransform(const Value: TG2Transform2);
@@ -2871,6 +2912,89 @@ begin
   Reattach;
 end;
 //TG2Scene2DComponentCollisionShapeChain END
+
+//TG2Scene2DComponentPoly BEGIN
+class constructor TG2Scene2DComponentPoly.CreateClass;
+begin
+  SetLength(ComponentList, Length(ComponentList) + 1);
+  ComponentList[High(ComponentList)] := CG2Scene2DComponent(ClassType);
+end;
+
+class function TG2Scene2DComponentPoly.GetName: String;
+begin
+  Result := 'Polygone Mesh';
+end;
+
+procedure TG2Scene2DComponentPoly.SetUp(const Triangles: PG2Vec2Arr; const TriangleCount: TG2IntS32);
+  var vc, ic: TG2IntS32;
+  function AddVertex(const v: TG2Vec2): TG2IntU16;
+    var i: TG2IntS32;
+  begin
+    for i := 0 to vc - 1 do
+    if (v - G2Vec2(_Vertices[i].x, _Vertices[i].y)).LenSq <= G2EPS then
+    begin
+      Result := i;
+      Exit;
+    end;
+    Result := vc;
+    _Vertices[vc].x := v.x;
+    _Vertices[vc].y := v.y;
+    _Vertices[vc].c := $ffffffff;
+    Inc(vc);
+  end;
+  procedure AddTri(const v0, v1, v2: TG2Vec2);
+  begin
+    _Indices[ic] := AddVertex(v0); Inc(ic);
+    _Indices[ic] := AddVertex(v1); Inc(ic);
+    _Indices[ic] := AddVertex(v2); Inc(ic);
+  end;
+  var i, j: Integer;
+begin
+  SetLength(_Vertices, TriangleCount * 3);
+  SetLength(_Indices, TriangleCount * 3);
+  vc := 0;
+  ic := 0;
+  for i := 0 to TriangleCount - 1 do
+  AddTri(Triangles^[i * 3 + 0], Triangles^[i * 3 + 1], Triangles^[i * 3 + 2]);
+  if vc <
+end;
+
+procedure TG2Scene2DComponentPoly.SetUp(
+  const Vertices: PG2Vec2; const VertexCount, VertexStride: TG2IntS32;
+  const Indices: PG2IntU16; const IndexCount, IndexStride: TG2IntS32
+);
+  var pv: PG2Vec2;
+  var pi: PG2IntU16;
+  var i: TG2IntS32;
+begin
+  pv := Vertices;
+  SetLength(_Vertices, VertexCount);
+  for i := 0 to VertexCount + 1 do
+  begin
+    _Vertices[i].x := pv^.x;
+    _Vertices[i].y := pv^.y;
+    _Vertices[i].c := $ffffffff;
+    pv += VerticeStride;
+  end;
+  pi := Indices;
+  SetLength(_Indices, IndexCount);
+  for i := 0 to IndexCount - 1 do
+  begin
+    _Indices[i] := pi^;
+    pi += IndexStride;
+  end;
+end;
+
+procedure TG2Scene2DComponentPoly.Save(const Stream: TStream);
+begin
+
+end;
+
+procedure TG2Scene2DComponentPoly.Load(const Stream: TStream);
+begin
+
+end;
+//TG2Scene2DComponentPoly END
 
 operator := (v: tb2_vec2): TG2Vec2;
 begin
