@@ -376,6 +376,9 @@ type
   operator * (f: TG2Float; v: TG2Vec2) vr: TG2Vec2; inline;
   operator * (f: TG2Float; v: TG2Vec3) vr: TG2Vec3; inline;
   operator * (f: TG2Float; v: TG2Vec4) vr: TG2Vec4; inline;
+  operator * (v0: TG2Vec2; v1: TG2Vec2) vr: TG2Vec2; inline;
+  operator * (v0: TG2Vec3; v1: TG2Vec3) vr: TG2Vec3; inline;
+  operator * (v0: TG2Vec4; v1: TG2Vec4) vr: TG2Vec4; inline;
   operator * (v: TG2Vec2; m: TG2Mat) vr: TG2Vec2; inline;
   operator * (v: TG2Vec3; m: TG2Mat) vr: TG2Vec3; inline;
   operator * (m0, m1: TG2Mat) mr: TG2Mat; inline;
@@ -1478,7 +1481,7 @@ end;
 
 operator := (vr: TG2Vec4Ref) v: TG2Vec4;
 begin
-  v.x := vr[0]; v.y := vr[1]; v.z := vr[2];
+  v.x := vr[0]; v.y := vr[1]; v.z := vr[2]; v.w := vr[3];
 end;
 
 operator := (m: TG2Mat) mr: TG2MatRef;
@@ -1739,6 +1742,26 @@ begin
   vr.y := v.y * f;
   vr.z := v.z * f;
   vr.w := v.w * f;
+end;
+
+operator * (v0: TG2Vec2; v1: TG2Vec2) vr: TG2Vec2;
+begin
+  vr.x := v0.x * v1.x;
+  vr.y := v0.y * v1.y;
+end;
+
+operator * (v0: TG2Vec3; v1: TG2Vec3) vr: TG2Vec3;
+begin
+  vr.x := v0.x * v1.x;
+  vr.y := v0.y * v1.y;
+  vr.z := v0.z * v1.z;
+end;
+
+operator * (v0: TG2Vec4; v1: TG2Vec4) vr: TG2Vec4;
+begin
+  vr.x := v0.x * v1.x;
+  vr.y := v0.y * v1.y;
+  vr.z := v0.z * v1.z;
 end;
 
 operator * (v: TG2Vec2; m: TG2Mat) vr: TG2Vec2;

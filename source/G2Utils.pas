@@ -110,6 +110,8 @@ type
   PG2QuickListIntU16 = ^TG2QuickListIntU16;
   TG2QuickListIntS32 = specialize TG2QuickListG<TG2IntS32>;
   PG2QuickListIntS32 = ^TG2QuickListIntS32;
+  TG2QuickListFloat = specialize TG2QuickListG<TG2Float>;
+  PG2QuickListFloat = ^TG2QuickListFloat;
   TG2QuickListAnsiString = specialize TG2QuickListG<AnsiString>;
   PG2QuickListAnsiString = ^TG2QuickListAnsiString;
   TG2QuickListString = specialize TG2QuickListG<String>;

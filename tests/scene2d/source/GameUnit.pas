@@ -84,6 +84,9 @@ procedure TGame.Initialize;
   var fs: TFileStream;
   var jd: TG2Scene2DDistanceJoint;
   var jr: TG2Scene2DRevoluteJoint;
+  var pm: TG2Scene2DComponentPoly;
+  var varr: TG2QuickListVec2;
+  var i: Integer;
 begin
   TexBox := TG2Texture2D.Create;
   TexBox.Load('../assets/Wall.png', tuUsage3D);
@@ -92,6 +95,7 @@ begin
   Disp := TG2Display2D.Create;
   Disp.Height := 10;
   Disp.Width := Round(g2.Params.Width / g2.Params.Height) * Disp.Height;
+  Disp.Zoom := 0.5;
   Scene := TG2Scene2D.Create;
   if True then
   begin
@@ -108,19 +112,20 @@ begin
     //EdgeShape.SetUp(G2Vec2(5, 0), G2Vec2(-5, 0));
     //EdgeShape.Attach(Ground);
     Box := TG2Scene2DEntity.Create(Scene);
-    Sprite := TG2Scene2DComponentSprite.Create(Scene);
-    Sprite.Texture := TexBox;
-    Sprite.TexCoords := TexBox.TexCoords;
-    Sprite.Width := TexBox.SizeTU * 0.5;
-    Sprite.Height := TexBox.SizeTV * 0.5;
-    Sprite.Scale := 5;
-    Sprite.Filter := tfLinear;
-    Sprite.Attach(Box);
-    Sprite.Layer := 1;
-    Background := TG2Scene2DComponentBackground.Create(Scene);
-    Background.Texture := TexStone;
-    Background.Scale.SetValue(5, 5);
-    Background.Attach(Box);
+    //Sprite := TG2Scene2DComponentSprite.Create(Scene);
+    //Sprite.Texture := TexBox;
+    //Sprite.TexCoords := TexBox.TexCoords;
+    //Sprite.Width := TexBox.SizeTU * 0.5;
+    //Sprite.Height := TexBox.SizeTV * 0.5;
+    //Sprite.Scale := 5;
+    //Sprite.Filter := tfLinear;
+    //Sprite.Attach(Box);
+    //Sprite.Layer := 1;
+    //Background := TG2Scene2DComponentBackground.Create(Scene);
+    //Background.Texture := TexStone;
+    //Background.Scale.SetValue(5, 5);
+    //Background.Attach(Box);
+
     //RigidBody := TG2Scene2DComponentRigidBody.Create(Scene);
     //RigidBody.Attach(Box);
     //RigidBody.Enabled := True;
@@ -181,6 +186,25 @@ begin
     jr.Anchor := (jr.RigidBodyA.Position + jr.RigidBodyB.Position) * 0.5;
     jr.Enabled := True;
 
+    varr.Clear;
+    varr.Add(G2Vec2(-2, -2));
+    varr.Add(G2Vec2(1, -1));
+    varr.Add(G2Vec2(-1, 1));
+    varr.Add(G2Vec2(-1, 1));
+    varr.Add(G2Vec2(1, -1));
+    varr.Add(G2Vec2(1, 1));
+    pm := TG2Scene2DComponentPoly.Create(Scene);
+    pm.SetUp(PG2Vec2Arr(varr.Data), 2);
+    pm.LayerCount := 1;
+    pm.Layers[0].Texture := TexBox;
+    for i := 0 to pm.VertexCount - 1 do
+    pm.Layers[0].Opacity[i] := 1;
+    pm.Layers[0].Opacity[1] := 0;
+    pm.Layers[0].Layer := 40;
+    pm.Layers[0].Visible := True;
+    pm.Layers[0].Scale.SetValue(0.5, 0.5);
+    pm.Attach(Ground);
+
     fs := TFileStream.Create('scene.g2s2d', fmCreate);
     try
       Scene.Save(fs);
@@ -215,6 +239,7 @@ end;
 
 procedure TGame.Render;
 begin
+  g2.Clear($ff808080);
   Scene.Render(Disp);
   Scene.DebugDraw(Disp);
 end;

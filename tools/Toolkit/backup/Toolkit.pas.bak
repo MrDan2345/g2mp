@@ -3252,8 +3252,8 @@ type
 
   TScene2DComponentDataShapePoly = class;
 
-//TScene2DEditorPoly BEGIN
-  TScene2DEditorPoly = class (TScene2DEditorShape)
+//TScene2DEditorShapePoly BEGIN
+  TScene2DEditorShapePoly = class (TScene2DEditorShape)
   private
     var _Component: TScene2DComponentDataShapePoly;
     var _Limits: TVec3List;
@@ -3262,7 +3262,7 @@ type
   protected
     function GetOwner: TG2Scene2DEntity; override;
   public
-    class var Instance: TScene2DEditorPoly;
+    class var Instance: TScene2DEditorShapePoly;
     property Component: TScene2DComponentDataShapePoly read _Component write _Component;
     constructor Create;
     destructor Destroy; override;
@@ -3272,7 +3272,28 @@ type
     procedure MouseUp(const Display: TG2Display2D; const Button, x, y: Integer); override;
     procedure Initialize; override;
   end;
-//TScene2DEditorChain END
+//TScene2DEditorShapePoly END
+
+  TScene2DComponentDataPoly = class;
+
+//TScene2DEditorPoly BEGIN
+  TScene2DEditorPoly = class (TScene2DEditorShape)
+  private
+    _Component: TScene2DComponentDataPoly;
+  protected
+    function GetOwner: TG2Scene2DEntity; override;
+  public
+    class var Instance: TScene2DEditorPoly;
+    property Component: TScene2DComponentDataPoly read _Component write _Component;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Update(const Display: TG2Display2D); override;
+    procedure Render(const Display: TG2Display2D); override;
+    procedure MouseDown(const Display: TG2Display2D; const Button, x, y: Integer); override;
+    procedure MouseUp(const Display: TG2Display2D; const Button, x, y: Integer); override;
+    procedure Initialize; override;
+  end;
+//TScene2DEditorPoly END
 
   TScene2DJointDataDistance = class;
 
@@ -3405,6 +3426,53 @@ type
     procedure OnChangeTexture(const Sender: Pointer);
   end;
 //TScene2DComponentDataBackground END
+
+//TScene2DComponentDataPoly BEIGN
+  TScene2DComponentDataPolyVertex = class;
+  TScene2DComponentDataPolyEdge = class;
+  TScene2DComponentDataPolyFace = class;
+
+  TScene2DComponentDataPolyVertexList = specialize TG2QuickListG<TScene2DComponentDataPolyVertex>;
+  TScene2DComponentDataPolyEdgeList = specialize TG2QuickListG<TScene2DComponentDataPolyEdge>;
+  TScene2DComponentDataPolyFaceList = specialize TG2QuickListG<TScene2DComponentDataPolyFace>;
+
+  TScene2DComponentDataPolyVertex = class
+  public
+    v: TG2Vec2;
+    c: TG2Color;
+    o: TG2QuickListFloat;
+    e: TScene2DComponentDataPolyEdgeList;
+    f: TScene2DComponentDataPolyFaceList;
+  end;
+
+  TScene2DComponentDataPolyEdge = class
+  public
+    v: array[0..1] of TScene2DComponentDataPolyVertex;
+    f: array[0..1] of TScene2DComponentDataPolyFace;
+  end;
+
+  TScene2DComponentDataPolyFace = class
+  public
+    v: array[0..2] of TScene2DComponentDataPolyVertex;
+    e: array[0..2] of TScene2DComponentDataPolyEdge;
+  end;
+
+  TScene2DComponentDataPoly = class (TScene2DComponentData)
+  private
+    var Group: TPropertySet.TProperty;
+    var Vertices: TScene2DComponentDataPolyVertexList;
+    var Edges: TScene2DComponentDataPolyEdgeList;
+    var Faces: TScene2DComponentDataPolyFaces;
+  public
+    var Component: TG2Scene2DComponentPoly;
+    class function GetName: String; override;
+    constructor Create; override;
+    destructor Destroy; override;
+    procedure AddToProperties(var PropertySet: TPropertySet); override;
+    procedure OnAddLayer;
+    procedure OnEdit;
+  end;
+//TScene2DComponentDataPoly END
 
 //TScene2DComponentDataEffect BEIGN
   TScene2DComponentDataEffect = class (TScene2DComponentData)
@@ -3661,6 +3729,7 @@ type
     function CreateComponentShapeCircle: TG2Scene2DComponentCollisionShapeCircle;
     function CreateComponentShapeEdge: TG2Scene2DComponentCollisionShapeEdge;
     function CreateComponentShapeChain: TG2Scene2DComponentCollisionShapeChain;
+    function CreateComponentPoly: TG2Scene2DComponentPoly;
     function Pick(const ScenePos: TG2Vec2): TG2Scene2DEntity;
     procedure DeleteComponent(var Component: TG2Scene2DComponent);
     procedure SelectionUpdateStart;
@@ -3676,6 +3745,7 @@ type
     procedure BtnComponentShapeCircle;
     procedure BtnComponentShapeEdge;
     procedure BtnComponentShapeChain;
+    procedure BtnComponentPoly;
     procedure BtnComponentCancel;
     procedure ClearScene;
     procedure Simulate;
@@ -24495,8 +24565,8 @@ begin
 end;
 //TScene2DEditorChain END
 
-//TScene2DEditorPoly BEGIN
-procedure TScene2DEditorPoly.SetLimits;
+//TScene2DEditorShapePoly BEGIN
+procedure TScene2DEditorShapePoly.SetLimits;
   var i, i0, i1: Integer;
   var v0, v1, n: TG2Vec2;
   var l: TG2Vec3;
@@ -24539,25 +24609,25 @@ begin
   end;
 end;
 
-function TScene2DEditorPoly.GetOwner: TG2Scene2DEntity;
+function TScene2DEditorShapePoly.GetOwner: TG2Scene2DEntity;
 begin
   Result := _Component.Component.Owner;
 end;
 
-constructor TScene2DEditorPoly.Create;
+constructor TScene2DEditorShapePoly.Create;
 begin
   _Component := nil;
   Instance := Self;
   _Limits.Clear;
 end;
 
-destructor TScene2DEditorPoly.Destroy;
+destructor TScene2DEditorShapePoly.Destroy;
 begin
   Instance := nil;
   inherited Destroy;
 end;
 
-procedure TScene2DEditorPoly.Update(const Display: TG2Display2D);
+procedure TScene2DEditorShapePoly.Update(const Display: TG2Display2D);
   var xf: TG2Transform2;
   var mc, v, v0, v1, v2, v3: TG2Vec2;
   var l, l0, l1: TG2Vec3;
@@ -24595,7 +24665,7 @@ begin
   end;
 end;
 
-procedure TScene2DEditorPoly.Render(const Display: TG2Display2D);
+procedure TScene2DEditorShapePoly.Render(const Display: TG2Display2D);
   var xf: TG2Transform2;
   var i, n: Integer;
   var v0, v1: TG2Vec2;
@@ -24623,7 +24693,7 @@ begin
   end;
 end;
 
-procedure TScene2DEditorPoly.MouseDown(const Display: TG2Display2D; const Button, x, y: Integer);
+procedure TScene2DEditorShapePoly.MouseDown(const Display: TG2Display2D; const Button, x, y: Integer);
   var xf: TG2Transform2;
   var i, j, i0, i1, e, iv: Integer;
   var v, v0, v1, n: TG2Vec2;
@@ -24724,7 +24794,7 @@ begin
   end;
 end;
 
-procedure TScene2DEditorPoly.MouseUp(const Display: TG2Display2D; const Button, x, y: Integer);
+procedure TScene2DEditorShapePoly.MouseUp(const Display: TG2Display2D; const Button, x, y: Integer);
   var varr: array[0..b2_max_polygon_vertices] of TG2Vec2;
   var c: Integer;
 begin
@@ -24738,10 +24808,57 @@ begin
   VSelect := -1;
 end;
 
-procedure TScene2DEditorPoly.Initialize;
+procedure TScene2DEditorShapePoly.Initialize;
 begin
   _Limits.Clear;
   VSelect := -1;
+end;
+//TScene2DEditorShapePoly END
+
+//TScene2DEditorPoly BEGIN
+function TScene2DEditorPoly.GetOwner: TG2Scene2DEntity;
+begin
+  Result := _Component.Component.Owner;
+end;
+
+constructor TScene2DEditorPoly.Create;
+begin
+  inherited Create;
+  _Component := nil;
+  Instance := Self;
+end;
+
+destructor TScene2DEditorPoly.Destroy;
+begin
+  Instance := nil;
+  inherited Destroy;
+end;
+
+procedure TScene2DEditorPoly.Update(const Display: TG2Display2D);
+begin
+  inherited Update(Display);
+end;
+
+procedure TScene2DEditorPoly.Render(const Display: TG2Display2D);
+begin
+  inherited Render(Display);
+end;
+
+procedure TScene2DEditorPoly.MouseDown(const Display: TG2Display2D;
+  const Button, x, y: Integer);
+begin
+  inherited MouseDown(Display, Button, x, y);
+end;
+
+procedure TScene2DEditorPoly.MouseUp(const Display: TG2Display2D; const Button,
+  x, y: Integer);
+begin
+  inherited MouseUp(Display, Button, x, y);
+end;
+
+procedure TScene2DEditorPoly.Initialize;
+begin
+  inherited Initialize;
 end;
 //TScene2DEditorPoly END
 
@@ -25571,6 +25688,50 @@ begin
 end;
 //TScene2DComponentDataBackground END
 
+//TScene2DComponentDataPoly BEGIN
+class function TScene2DComponentDataPoly.GetName: String;
+begin
+  Result := 'Triangle Mesh';
+end;
+
+constructor TScene2DComponentDataPoly.Create;
+begin
+  inherited Create;
+  if TScene2DEditorPoly.Instance = nil then
+  TScene2DEditorPoly.Instance := TScene2DEditorPoly.Create;
+  TScene2DEditorPoly.Instance.RefInc;
+end;
+
+destructor TScene2DComponentDataPoly.Destroy;
+begin
+  TScene2DEditorPoly.Instance.RefDec;
+  inherited Destroy;
+end;
+
+procedure TScene2DComponentDataPoly.AddToProperties(var PropertySet: TPropertySet);
+begin
+  Group := PropertySet.PropComponent(GetName, Component);
+  PropertySet.PropButton('Add Layer', @OnAddLayer, Group);
+  PropertySet.PropButton('Edit', @OnEdit, Group);
+end;
+
+procedure TScene2DComponentDataPoly.OnAddLayer;
+begin
+
+end;
+
+procedure TScene2DComponentDataPoly.OnEdit;
+begin
+  if App.Scene2DData.Editor = TScene2DEditorPoly.Instance then
+  App.Scene2DData.Editor := nil
+  else
+  begin
+    TScene2DEditorPoly.Instance.Component := Self;
+    App.Scene2DData.Editor := TScene2DEditorPoly.Instance;
+  end;
+end;
+//TScene2DComponentDataPoly END
+
 //TScene2DComponentDataEffect BEGIN
 class function TScene2DComponentDataEffect.GetName: String;
 begin
@@ -25686,6 +25847,7 @@ procedure TScene2DComponentDataRigidBody.AddToProperties(var PropertySet: TPrope
 begin
   _Position := Component.Position;
   _Rotation := Component.Rotation * G2RadToDeg;
+  _FixedRotation := Component.FixedRotation;
   _BodyType := Component.BodyType;
   Group := PropertySet.PropComponent('Rigid Body', Component);
   PropertySet.PropVec2('Position', @_Position, Group, @OnChangePosition);
@@ -25746,14 +25908,14 @@ end;
 constructor TScene2DComponentDataShapePoly.Create;
 begin
   inherited Create;
-  if TScene2DEditorPoly.Instance = nil then
-  TScene2DEditorPoly.Instance := TScene2DEditorPoly.Create;
-  TScene2DEditorPoly.Instance.RefInc;
+  if TScene2DEditorShapePoly.Instance = nil then
+  TScene2DEditorShapePoly.Instance := TScene2DEditorShapePoly.Create;
+  TScene2DEditorShapePoly.Instance.RefInc;
 end;
 
 destructor TScene2DComponentDataShapePoly.Destroy;
 begin
-  TScene2DEditorPoly.Instance.RefDec;
+  TScene2DEditorShapePoly.Instance.RefDec;
   inherited Destroy;
 end;
 
@@ -25818,12 +25980,12 @@ end;
 
 procedure TScene2DComponentDataShapePoly.OnEdit;
 begin
-  if App.Scene2DData.Editor = TScene2DEditorPoly.Instance then
+  if App.Scene2DData.Editor = TScene2DEditorShapePoly.Instance then
   App.Scene2DData.Editor := nil
   else
   begin
-    TScene2DEditorPoly.Instance.Component := Self;
-    App.Scene2DData.Editor := TScene2DEditorPoly.Instance;
+    TScene2DEditorShapePoly.Instance.Component := Self;
+    App.Scene2DData.Editor := TScene2DEditorShapePoly.Instance;
   end;
 end;
 //TScene2DComponentDataShapePoly END
@@ -26939,6 +27101,13 @@ begin
   TScene2DComponentDataShapeChain(Result.UserData).Component := Result;
 end;
 
+function TScene2DData.CreateComponentPoly: TG2Scene2DComponentPoly;
+begin
+  Result := TG2Scene2DComponentPoly.Create(_Scene);
+  Result.UserData := TScene2DComponentDataPoly.Create;
+  TScene2DComponentDataPoly(Result.UserData).Component := Result;
+end;
+
 function TScene2DData.Pick(const ScenePos: TG2Vec2): TG2Scene2DEntity;
   var Entity: TG2Scene2DEntity;
   var Component: TG2Scene2DComponent;
@@ -27131,6 +27300,18 @@ begin
   end;
 end;
 
+procedure TScene2DData.BtnComponentPoly;
+  var Component: TG2Scene2DComponentPoly;
+begin
+  if Selection.Count = 1 then
+  begin
+    Component := CreateComponentPoly;
+    Component.Attach(Selection[0]);
+    SelectionUpdateStart;
+    SelectionUpdateEnd;
+  end;
+end;
+
 procedure TScene2DData.BtnComponentCancel;
 begin
   SelectionUpdateStart;
@@ -27250,6 +27431,7 @@ begin
   AddComponentTypePair(TG2Scene2DComponentCollisionShapeCircle, TScene2DComponentDataShapeCircle, @BtnComponentShapeCircle);
   AddComponentTypePair(TG2Scene2DComponentCollisionShapeEdge, TScene2DComponentDataShapeEdge, @BtnComponentShapeEdge);
   AddComponentTypePair(TG2Scene2DComponentCollisionShapeChain, TScene2DComponentDataShapeChain, @BtnComponentShapeChain);
+  AddComponentTypePair(TG2Scene2DComponentPoly, TScene2DComponentDataPoly, @BtnComponentPoly);
 end;
 
 procedure TScene2DData.Finalize;

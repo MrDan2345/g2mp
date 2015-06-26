@@ -16220,7 +16220,7 @@ end;
 
 procedure TG2Display2D.PolyAdd(const Pos, TexCoord: TG2Vec2; const Color: TG2Color);
 begin
-  g2.PolyAdd(Pos, TexCoord, Color);
+  g2.PolyAdd(CoordToScreen(Pos, TexCoord, Color);
 end;
 //TG2Display2D END
 
@@ -19577,7 +19577,7 @@ begin
     Result := G2Serializable[i].Create;
     if Result.GetInterfaceByStr(IG2SerializableGUID, Intf) then
     begin
-      Intf.SerializeFrom(Stream);
+      Intf.Deserialize(Stream);
       Exit;
     end
     else

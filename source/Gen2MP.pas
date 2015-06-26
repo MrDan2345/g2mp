@@ -16220,7 +16220,7 @@ end;
 
 procedure TG2Display2D.PolyAdd(const Pos, TexCoord: TG2Vec2; const Color: TG2Color);
 begin
-  g2.PolyAdd(Pos, TexCoord, Color);
+  g2.PolyAdd(CoordToScreen(Pos), TexCoord, Color);
 end;
 //TG2Display2D END
 

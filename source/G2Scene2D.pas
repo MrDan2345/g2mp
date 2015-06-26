@@ -583,16 +583,68 @@ type
       c: TG2Color;
     end;
     type PG2Scene2DComponentPolyVertex = ^TG2Scene2DComponentPolyVertex;
+    type TG2Scene2DComponentPolyLayer = class
+    private
+      var _Owner: TG2Scene2DComponentPoly;
+      var _Hook: TG2Scene2DRenderHook;
+      var _Layer: TG2IntS32;
+      var _RefTexture: Boolean;
+      var _Texture: TG2Texture2DBase;
+      function GetVisible: Boolean; inline;
+      procedure SetVisible(const Value: Boolean); inline;
+      procedure SetLayer(const Value: TG2IntS32); inline;
+      procedure OnRender(const Display: TG2Display2D);
+      procedure SetTexture(const Value: TG2Texture2DBase);
+    public
+      Opacity: array of TG2Float;
+      Scale: TG2Vec2;
+      property Texture: TG2Texture2DBase read _Texture write SetTexture;
+      property Visible: Boolean read GetVisible write SetVisible;
+      property Layer: TG2IntS32 read _Layer write SetLayer;
+      constructor Create(const Component: TG2Scene2DComponentPoly);
+      destructor Destroy; override;
+    end;
   private
     var _Vertices: array of TG2Scene2DComponentPolyVertex;
-    var _Indices: array of TG2IntU16;
+    var _Faces: array of array[0..2] of TG2IntU16;
+    var _Layers: array of TG2Scene2DComponentPolyLayer;
+    var _RenderHook: TG2Scene2DRenderHook;
+    var _DebugLayer: TG2IntS32;
+    var _DebugRender: Boolean;
+    procedure ClearLayers;
+    procedure CreateLayers;
+    procedure SetDebugLayer(const Value: TG2IntS32); inline;
+    procedure SetDebugRender(const Value: Boolean); inline;
+    function GetLayerCount: TG2IntS32; inline;
+    procedure SetLayerCount(const Value: TG2IntS32); inline;
+    function GetLayer(const Index: TG2IntS32): TG2Scene2DComponentPolyLayer; inline;
+    procedure RenderLayer(const Layer: TG2Scene2DComponentPolyLayer; const Display: TG2Display2D);
+    function GetVertexCount: TG2IntS32; inline;
+    function GetVertex(const Index: TG2IntS32): PG2Scene2DComponentPolyVertex; inline;
+    function GetFaceCount: TG2IntS32; inline;
+    function GetFace(const Index: TG2IntS32): PG2IntU16Arr; inline;
+  protected
+    procedure OnInitialize; override;
+    procedure OnFinalize; override;
+    procedure OnAttach; override;
+    procedure OnDetach; override;
+    procedure OnDebugRender(const Display: TG2Display2D);
   public
+    property DebugLayer: TG2IntS32 read _DebugLayer write SetDebugLayer;
+    property DebugRender: Boolean read _DebugRender write SetDebugRender;
+    property LayerCount: TG2IntS32 read GetLayerCount write SetLayerCount;
+    property Layers[const Index: TG2IntS32]: TG2Scene2DComponentPolyLayer read GetLayer;
+    property VertexCount: TG2IntS32 read GetVertexCount;
+    property Vertices[const Index: TG2IntS32]: PG2Scene2DComponentPolyVertex read GetVertex;
+    property FaceCount: TG2IntS32 read GetFaceCount;
+    property Faces[const Index: TG2IntS32]: PG2IntU16Arr read GetFace;
     class constructor CreateClass;
+    class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
     class function GetName: String; override;
     procedure SetUp(const Triangles: PG2Vec2Arr; const TriangleCount: TG2IntS32); overload;
     procedure SetUp(
-      const Vertices: PG2Vec2; const VertexCount, VertexStride: TG2IntS32;
-      const Indices: PG2IntU16; const IndexCount, IndexStride: TG2IntS32
+      const NewVertices: PG2Vec2; const NewVertexCount, VertexStride: TG2IntS32;
+      const NewIndices: PG2IntU16; const NewIndexCount, IndexStride: TG2IntS32
     ); overload;
     procedure Save(const Stream: TStream); override;
     procedure Load(const Stream: TStream); override;
@@ -2914,10 +2966,234 @@ end;
 //TG2Scene2DComponentCollisionShapeChain END
 
 //TG2Scene2DComponentPoly BEGIN
+function TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.GetVisible: Boolean;
+begin
+  Result := _Hook <> nil;
+end;
+
+procedure TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.SetVisible(const Value: Boolean);
+begin
+  if GetVisible = Value then Exit;
+  if _Hook <> nil then _Owner.Scene.RenderHookRemove(_Hook);
+  if Value then
+  begin
+    _Hook := _Owner.Scene.RenderHookAdd(@OnRender, _Layer);
+  end;
+end;
+
+procedure TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.SetLayer(const Value: TG2IntS32);
+begin
+  if Value = _Layer then Exit;
+  _Layer := Value;
+  if _Hook <> nil then
+  _Hook.Layer := _Layer;
+end;
+
+procedure TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.OnRender(const Display: TG2Display2D);
+begin
+  _Owner.RenderLayer(Self, Display);
+end;
+
+procedure TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.SetTexture(const Value: TG2Texture2DBase);
+begin
+  if Value = _Texture then Exit;
+  if (_Texture <> nil) and (_RefTexture) then _Texture.RefDec;
+  _RefTexture := False;
+  _Texture := Value;
+end;
+
+constructor TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.Create(const Component: TG2Scene2DComponentPoly);
+begin
+  inherited Create;
+  _Owner := Component;
+  SetLength(Opacity, Length(_Owner._Vertices));
+  FillChar(Opacity[0], SizeOf(TG2Float) * Length(Opacity), 0);
+  Scale := G2Vec2(1, 1);
+  Texture := nil;
+  _Hook := nil;
+  _Layer := 0;
+  _RefTexture := False;
+end;
+
+destructor TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.Destroy;
+begin
+  if _RefTexture then Texture.RefDec;
+  if _Hook <> nil then _Owner.Scene.RenderHookRemove(_Hook);
+  inherited Destroy;
+end;
+
+procedure TG2Scene2DComponentPoly.ClearLayers;
+  var i: Integer;
+begin
+  for i := 0 to High(_Layers) do
+  _Layers[i].Free;
+end;
+
+procedure TG2Scene2DComponentPoly.CreateLayers;
+  var i: TG2IntS32;
+begin
+  for i := 0 to High(_Layers) do
+  begin
+    _Layers[i] := TG2Scene2DComponentPolyLayer.Create(Self);
+  end;
+end;
+
+procedure TG2Scene2DComponentPoly.SetDebugLayer(const Value: TG2IntS32);
+begin
+  if _DebugLayer = Value then Exit;
+  _DebugLayer := Value;
+  if _RenderHook <> nil then
+  begin
+    _RenderHook.Layer := _DebugLayer;
+  end;
+end;
+
+procedure TG2Scene2DComponentPoly.SetDebugRender(const Value: Boolean);
+begin
+  if _DebugRender = Value then Exit;
+  _DebugRender := Value;
+  if _DebugRender then
+  begin
+    _RenderHook := Scene.RenderHookAdd(@OnDebugRender, _DebugLayer);
+  end
+  else
+  begin
+    Scene.RenderHookRemove(_RenderHook);
+  end;
+end;
+
+function TG2Scene2DComponentPoly.GetLayerCount: TG2IntS32;
+begin
+  Result := Length(_Layers);
+end;
+
+procedure TG2Scene2DComponentPoly.SetLayerCount(const Value: TG2IntS32);
+  var i, n: TG2IntS32;
+begin
+  if Value = Length(_Layers) then
+  begin
+    Exit;
+  end
+  else if Value > Length(_Layers) then
+  begin
+    n := Length(_Layers);
+    SetLength(_Layers, Value);
+    for i := n to High(_Layers) do
+    begin
+      _Layers[i] := TG2Scene2DComponentPolyLayer.Create(Self);
+    end;
+  end
+  else
+  begin
+    for i := Value to High(_Layers) do
+    begin
+      _Layers[i].Free;
+    end;
+    SetLength(_Layers, Value);
+  end;
+end;
+
+function TG2Scene2DComponentPoly.GetLayer(const Index: TG2IntS32): TG2Scene2DComponentPolyLayer;
+begin
+  Result := _Layers[Index];
+end;
+
+procedure TG2Scene2DComponentPoly.RenderLayer(const Layer: TG2Scene2DComponentPolyLayer; const Display: TG2Display2D);
+  var i, j: Integer;
+  var v, t: TG2Vec2;
+  var c: TG2Color;
+begin
+  if (Owner = nil) or (Layer.Texture = nil) then Exit;
+  Display.PolyBegin(ptTriangles, Layer.Texture, bmNormal, tfLinear);
+  for i := 0 to High(_Faces) do
+  begin
+    for j := 0 to 2 do
+    begin
+      v := G2Vec2(_Vertices[_Faces[i][j]].x, _Vertices[_Faces[i][j]].y);
+      c := _Vertices[_Faces[i][j]].c;
+      c.a := Round(c.a * Layer.Opacity[_Faces[i][j]]);
+      t := v * Layer.Scale;
+      v := Owner.Transform.Transform(v);
+      Display.PolyAdd(v, t, c);
+    end;
+  end;
+  Display.PolyEnd;
+end;
+
+function TG2Scene2DComponentPoly.GetVertexCount: TG2IntS32;
+begin
+  Result := Length(_Vertices);
+end;
+
+function TG2Scene2DComponentPoly.GetVertex(const Index: TG2IntS32): PG2Scene2DComponentPolyVertex;
+begin
+  Result := @_Vertices[Index];
+end;
+
+function TG2Scene2DComponentPoly.GetFaceCount: TG2IntS32;
+begin
+  Result := Length(_Faces);
+end;
+
+function TG2Scene2DComponentPoly.GetFace(const Index: TG2IntS32): PG2IntU16Arr;
+begin
+  Result := @_Faces[Index][0];
+end;
+
+procedure TG2Scene2DComponentPoly.OnInitialize;
+begin
+  _Layers := nil;
+  _DebugLayer := 100;
+  _DebugRender := True;
+  _RenderHook := nil;
+end;
+
+procedure TG2Scene2DComponentPoly.OnFinalize;
+begin
+  ClearLayers;
+end;
+
+procedure TG2Scene2DComponentPoly.OnAttach;
+begin
+  if _DebugRender then
+  begin
+    _RenderHook := Scene.RenderHookAdd(@OnDebugRender, _DebugLayer);
+  end;
+end;
+
+procedure TG2Scene2DComponentPoly.OnDetach;
+begin
+  if _RenderHook <> nil then Scene.RenderHookRemove(_RenderHook);
+end;
+
+procedure TG2Scene2DComponentPoly.OnDebugRender(const Display: TG2Display2D);
+  var i, j, n: TG2IntS32;
+  var v: TG2Vec2;
+begin
+  Display.PrimBegin(ptLines, bmNormal);
+  for i := 0 to High(_Faces) do
+  begin
+    for j := 0 to 2 do
+    begin
+      n := (j + 1) mod 3;
+      v := Owner.Transform.Transform(G2Vec2(_Vertices[_Faces[i][j]].x, _Vertices[_Faces[i][j]].y));
+      Display.PrimAdd(v, $ff0000ff);
+      v := Owner.Transform.Transform(G2Vec2(_Vertices[_Faces[i][n]].x, _Vertices[_Faces[i][n]].y));
+      Display.PrimAdd(v, $ff0000ff);
+    end;
+  end;
+  Display.PrimEnd;
+end;
+
 class constructor TG2Scene2DComponentPoly.CreateClass;
 begin
   SetLength(ComponentList, Length(ComponentList) + 1);
   ComponentList[High(ComponentList)] := CG2Scene2DComponent(ClassType);
+end;
+
+class function TG2Scene2DComponentPoly.CanAttach(const Node: TG2Scene2DEntity): Boolean;
+begin
+  Result := True;
 end;
 
 class function TG2Scene2DComponentPoly.GetName: String;
@@ -2926,7 +3202,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentPoly.SetUp(const Triangles: PG2Vec2Arr; const TriangleCount: TG2IntS32);
-  var vc, ic: TG2IntS32;
+  var vc, fc: TG2IntS32;
   function AddVertex(const v: TG2Vec2): TG2IntU16;
     var i: TG2IntS32;
   begin
@@ -2944,55 +3220,142 @@ procedure TG2Scene2DComponentPoly.SetUp(const Triangles: PG2Vec2Arr; const Trian
   end;
   procedure AddTri(const v0, v1, v2: TG2Vec2);
   begin
-    _Indices[ic] := AddVertex(v0); Inc(ic);
-    _Indices[ic] := AddVertex(v1); Inc(ic);
-    _Indices[ic] := AddVertex(v2); Inc(ic);
+    _Faces[fc][0] := AddVertex(v0);
+    _Faces[fc][1] := AddVertex(v1);
+    _Faces[fc][2] := AddVertex(v2);
+    Inc(fc);
   end;
   var i, j: Integer;
 begin
   SetLength(_Vertices, TriangleCount * 3);
-  SetLength(_Indices, TriangleCount * 3);
+  SetLength(_Faces, TriangleCount);
   vc := 0;
-  ic := 0;
+  fc := 0;
   for i := 0 to TriangleCount - 1 do
   AddTri(Triangles^[i * 3 + 0], Triangles^[i * 3 + 1], Triangles^[i * 3 + 2]);
   if vc < Length(_Vertices) then SetLength(_Vertices, vc);
+  ClearLayers;
+  CreateLayers;
 end;
 
 procedure TG2Scene2DComponentPoly.SetUp(
-  const Vertices: PG2Vec2; const VertexCount, VertexStride: TG2IntS32;
-  const Indices: PG2IntU16; const IndexCount, IndexStride: TG2IntS32
+  const NewVertices: PG2Vec2; const NewVertexCount, VertexStride: TG2IntS32;
+  const NewIndices: PG2IntU16; const NewIndexCount, IndexStride: TG2IntS32
 );
   var pv: PG2Vec2;
   var pi: PG2IntU16;
   var i: TG2IntS32;
 begin
-  pv := Vertices;
-  SetLength(_Vertices, VertexCount);
-  for i := 0 to VertexCount + 1 do
+  pv := NewVertices;
+  SetLength(_Vertices, NewVertexCount);
+  for i := 0 to NewVertexCount + 1 do
   begin
     _Vertices[i].x := pv^.x;
     _Vertices[i].y := pv^.y;
     _Vertices[i].c := $ffffffff;
-    pv += VerticeStride;
+    pv += VertexStride;
   end;
-  pi := Indices;
-  SetLength(_Indices, IndexCount);
-  for i := 0 to IndexCount - 1 do
+  pi := NewIndices;
+  SetLength(_Faces, NewIndexCount div 3);
+  for i := 0 to (NewIndexCount div 3) - 1 do
   begin
-    _Indices[i] := pi^;
+    _Faces[i][0] := pi^;
+    pi += IndexStride;
+    _Faces[i][1] := pi^;
+    pi += IndexStride;
+    _Faces[i][2] := pi^;
     pi += IndexStride;
   end;
+  ClearLayers;
+  CreateLayers;
 end;
 
 procedure TG2Scene2DComponentPoly.Save(const Stream: TStream);
+  var i, n: TG2IntS32;
+  var b: Boolean;
+  var TexFile: String;
 begin
-
+  SaveClassType(Stream);
+  i := Length(_Vertices);
+  Stream.Write(i, SizeOf(i));
+  Stream.Write(_Vertices[0], SizeOf(TG2Scene2DComponentPolyVertex) * Length(_Vertices));
+  i := Length(_Faces);
+  Stream.Write(i, SizeOf(i));
+  Stream.Write(_Faces[0], SizeOf(_Faces[0]) * Length(_Faces));
+  i := Length(_Layers);
+  Stream.Write(i, SizeOf(i));
+  for i := 0 to High(_Layers) do
+  begin
+    Stream.Write(_Layers[i].Opacity[0], SizeOf(TG2Float) * Length(_Vertices));
+    Stream.Write(_Layers[i].Scale, SizeOf(TG2Vec2));
+    if (_Layers[i].Texture = nil)
+    or not (_Layers[i].Texture is TG2Texture2D)
+    or (TG2Texture2D(_Layers[i].Texture).TextureFileName = '') then
+    begin
+      n := 0;
+    end
+    else
+    begin
+      if Assigned(Scene.ModifySavePath) then
+      TexFile := Scene.ModifySavePath(TG2Texture2D(_Layers[i].Texture).TextureFileName)
+      else
+      TexFile := TG2Texture2D(_Layers[i].Texture).TextureFileName;
+      n := Length(TexFile);
+    end;
+    Stream.Write(n, SizeOf(n));
+    if n > 0 then Stream.Write(TexFile[1], n);
+    n := _Layers[i].Layer;
+    Stream.Write(n, SizeOf(n));
+    b := _Layers[i].Visible;
+    Stream.Write(b, SizeOf(b));
+  end;
 end;
 
 procedure TG2Scene2DComponentPoly.Load(const Stream: TStream);
+  var i, n: TG2IntS32;
+  var b: Boolean;
+  var TexFile: String;
 begin
-
+  Stream.Read(n, SizeOf(n));
+  SetLength(_Vertices, n);
+  Stream.Read(_Vertices[0], SizeOf(TG2Scene2DComponentPolyVertex) * Length(_Vertices));
+  Stream.Read(n, SizeOf(n));
+  SetLength(_Faces, n);
+  Stream.Read(_Faces[0], SizeOf(_Faces[0]) * Length(_Faces));
+  Stream.Read(n, SizeOf(n));
+  SetLength(_Layers, n);
+  CreateLayers;
+  for i := 0 to High(_Layers) do
+  begin
+    Stream.Read(_Layers[i].Opacity[0], SizeOf(TG2Float) * Length(_Vertices));
+    Stream.Read(_Layers[i].Scale, SizeOf(TG2Vec2));
+    Stream.Read(n, SizeOf(n));
+    if n > 0 then
+    begin
+      SetLength(TexFile, n);
+      Stream.Read(TexFile[1], n);
+      if Assigned(Scene.ModifyLoadPath) then
+      TexFile := Scene.ModifyLoadPath(TexFile);
+      _Layers[i]._Texture := TG2Texture2D.FindTexture(TexFile);
+      if _Layers[i]._Texture = nil then
+      begin
+        if FileExists(TexFile) then
+        begin
+          _Layers[i]._Texture := TG2Texture2D.Create;
+          TG2Texture2D(_Layers[i]._Texture).Load(TexFile);
+        end;
+      end;
+      if _Layers[i]._Texture <> nil then
+      begin
+        _Layers[i]._RefTexture := True;
+        _Layers[i]._Texture.RefInc;
+      end;
+    end;
+    Stream.Read(n, SizeOf(n));
+    _Layers[i].Layer := n;
+    Stream.Read(b, SizeOf(b));
+    _Layers[i].Visible := b;
+  end;
 end;
 //TG2Scene2DComponentPoly END
 
