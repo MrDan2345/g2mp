@@ -4878,8 +4878,6 @@ const Bin_round_plus_16: array[0..664] of byte = (
   $49, $45, $4E, $44, $AE, $42, $60, $82
 );
 
-
-
 implementation
 
 end.

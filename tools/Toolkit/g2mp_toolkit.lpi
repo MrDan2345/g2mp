@@ -51,27 +51,27 @@
         <Filename Value="..\..\Gen2MP.pas"/>
         <TopLine Value="4375"/>
         <CursorPos Y="4396"/>
-        <UsageCount Value="33"/>
+        <UsageCount Value="32"/>
       </Unit1>
       <Unit2>
         <Filename Value="..\..\G2Math.pas"/>
         <TopLine Value="279"/>
         <CursorPos X="11" Y="286"/>
-        <UsageCount Value="50"/>
+        <UsageCount Value="49"/>
       </Unit2>
       <Unit3>
         <Filename Value="..\..\G2DataManager.pas"/>
         <TopLine Value="1081"/>
         <CursorPos Y="1115"/>
-        <UsageCount Value="30"/>
+        <UsageCount Value="29"/>
       </Unit3>
       <Unit4>
         <Filename Value="res.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="res"/>
         <EditorIndex Value="16"/>
-        <TopLine Value="4590"/>
-        <CursorPos X="92" Y="4871"/>
+        <TopLine Value="4809"/>
+        <CursorPos Y="4932"/>
         <UsageCount Value="226"/>
         <Loaded Value="True"/>
       </Unit4>
@@ -79,51 +79,51 @@
         <Filename Value="..\..\G2Utils.pas"/>
         <TopLine Value="202"/>
         <CursorPos X="14" Y="222"/>
-        <UsageCount Value="21"/>
+        <UsageCount Value="20"/>
       </Unit5>
       <Unit6>
         <Filename Value="..\..\G2Image.pas"/>
         <TopLine Value="489"/>
         <CursorPos X="19" Y="509"/>
-        <UsageCount Value="43"/>
+        <UsageCount Value="42"/>
       </Unit6>
       <Unit7>
         <Filename Value="..\..\G2ImagePNG.pas"/>
         <TopLine Value="671"/>
         <CursorPos X="42" Y="681"/>
-        <UsageCount Value="40"/>
+        <UsageCount Value="39"/>
       </Unit7>
       <Unit8>
         <Filename Value="..\..\G2Types.pas"/>
         <TopLine Value="323"/>
         <CursorPos Y="346"/>
-        <UsageCount Value="30"/>
+        <UsageCount Value="29"/>
       </Unit8>
       <Unit9>
         <Filename Value="Builder.pas"/>
         <TopLine Value="2455"/>
         <CursorPos X="72" Y="2466"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit9>
       <Unit10>
         <Filename Value="C:\lazarus\fpc\2.6.2\source\rtl\inc\systemh.inc"/>
         <TopLine Value="507"/>
         <CursorPos X="11" Y="526"/>
-        <UsageCount Value="31"/>
+        <UsageCount Value="30"/>
       </Unit10>
       <Unit11>
         <Filename Value="C:\lazarus\fpc\2.6.2\source\rtl\win\wininc\messages.inc"/>
         <TopLine Value="1036"/>
         <CursorPos X="6" Y="1055"/>
-        <UsageCount Value="13"/>
+        <UsageCount Value="12"/>
       </Unit11>
       <Unit12>
         <Filename Value="Toolkit.pas"/>
         <UnitName Value="Toolkit"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="3437"/>
-        <CursorPos X="6" Y="3457"/>
+        <TopLine Value="24930"/>
+        <CursorPos X="46" Y="24955"/>
         <UsageCount Value="114"/>
         <Loaded Value="True"/>
       </Unit12>
@@ -132,7 +132,7 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="212"/>
         <CursorPos X="10" Y="229"/>
-        <UsageCount Value="91"/>
+        <UsageCount Value="90"/>
       </Unit13>
       <Unit14>
         <Filename Value="C:\lazarus\lcl\clipbrd.pp"/>
@@ -156,21 +156,21 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="39"/>
         <CursorPos X="3" Y="56"/>
-        <UsageCount Value="91"/>
+        <UsageCount Value="90"/>
       </Unit16>
       <Unit17>
         <Filename Value="C:\lazarus\lcl\dialogs.pp"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="132"/>
         <CursorPos X="5" Y="155"/>
-        <UsageCount Value="92"/>
+        <UsageCount Value="91"/>
       </Unit17>
       <Unit18>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\objpas\math.pp"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="682"/>
         <CursorPos X="44" Y="750"/>
-        <UsageCount Value="91"/>
+        <UsageCount Value="90"/>
       </Unit18>
       <Unit19>
         <Filename Value="..\..\source\Gen2MP.pas"/>
@@ -203,22 +203,22 @@
         <Filename Value="..\..\source\G2Math.pas"/>
         <UnitName Value="G2Math"/>
         <EditorIndex Value="8"/>
-        <TopLine Value="325"/>
-        <CursorPos X="25" Y="341"/>
+        <TopLine Value="457"/>
+        <CursorPos X="10" Y="394"/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
       </Unit22>
       <Unit23>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\inc\objpas.inc"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="91"/>
+        <UsageCount Value="90"/>
       </Unit23>
       <Unit24>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\objpas\sysutils\diskh.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="2"/>
         <CursorPos X="10" Y="20"/>
-        <UsageCount Value="91"/>
+        <UsageCount Value="90"/>
       </Unit24>
       <Unit25>
         <Filename Value="..\..\source\Gen2MP.inc"/>
@@ -268,21 +268,21 @@
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\inc\system.inc"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="43" Y="15"/>
-        <UsageCount Value="100"/>
+        <UsageCount Value="99"/>
       </Unit30>
       <Unit31>
         <Filename Value="C:\lazarus\components\lazutils\fileutil.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="601"/>
         <CursorPos X="32" Y="619"/>
-        <UsageCount Value="91"/>
+        <UsageCount Value="90"/>
       </Unit31>
       <Unit32>
         <Filename Value="..\..\source\G2MeshData.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="240"/>
         <CursorPos X="35" Y="256"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="89"/>
       </Unit32>
       <Unit33>
         <Filename Value="..\..\source\G2MeshG2M.pas"/>
@@ -297,21 +297,21 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="8"/>
         <CursorPos X="10" Y="27"/>
-        <UsageCount Value="81"/>
+        <UsageCount Value="80"/>
       </Unit34>
       <Unit35>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\inc\objpash.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="193"/>
         <CursorPos X="43" Y="206"/>
-        <UsageCount Value="19"/>
+        <UsageCount Value="18"/>
       </Unit35>
       <Unit36>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\packages\winunits-base\src\activex.pp"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="1326"/>
         <CursorPos X="4" Y="1345"/>
-        <UsageCount Value="26"/>
+        <UsageCount Value="25"/>
       </Unit36>
       <Unit37>
         <Filename Value="..\..\source\G2Image.pas"/>
@@ -319,7 +319,7 @@
         <EditorIndex Value="12"/>
         <TopLine Value="52"/>
         <CursorPos X="15" Y="47"/>
-        <UsageCount Value="81"/>
+        <UsageCount Value="88"/>
         <Loaded Value="True"/>
       </Unit37>
       <Unit38>
@@ -327,21 +327,21 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="7"/>
         <CursorPos X="10" Y="38"/>
-        <UsageCount Value="18"/>
+        <UsageCount Value="17"/>
       </Unit38>
       <Unit39>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\objpas\sysutils\syspch.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="19"/>
         <CursorPos X="3" Y="35"/>
-        <UsageCount Value="18"/>
+        <UsageCount Value="17"/>
       </Unit39>
       <Unit40>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\win\wininc\base.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="257"/>
         <CursorPos X="6" Y="201"/>
-        <UsageCount Value="17"/>
+        <UsageCount Value="16"/>
       </Unit40>
       <Unit41>
         <Filename Value="C:\lazarus\lcl\lcltype.pp"/>
@@ -349,7 +349,7 @@
         <EditorIndex Value="4"/>
         <TopLine Value="2662"/>
         <CursorPos X="3" Y="2676"/>
-        <UsageCount Value="30"/>
+        <UsageCount Value="37"/>
         <Loaded Value="True"/>
       </Unit41>
       <Unit42>
@@ -357,129 +357,129 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="940"/>
         <CursorPos X="3" Y="954"/>
-        <UsageCount Value="7"/>
+        <UsageCount Value="6"/>
       </Unit42>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3693" Column="15" TopLine="3682"/>
+        <Caret Line="3435" Column="26" TopLine="3414"/>
       </Position1>
       <Position2>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3678" Column="14" TopLine="3667"/>
+        <Caret Line="25725" Column="3" TopLine="25723"/>
       </Position2>
       <Position3>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3694" Column="30" TopLine="3670"/>
+        <Caret Line="3291" Column="15" TopLine="3273"/>
       </Position3>
       <Position4>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="25604" Column="62" TopLine="25588"/>
+        <Caret Line="3369" Column="25" TopLine="3343"/>
       </Position4>
       <Position5>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="641" Column="30" TopLine="617"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="3466" Column="23" TopLine="3448"/>
       </Position5>
       <Position6>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="642" Column="30" TopLine="627"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="3467" Column="33" TopLine="3448"/>
       </Position6>
       <Position7>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3643" Column="47" TopLine="3642"/>
+        <Caret Line="3446" Column="17" TopLine="3432"/>
       </Position7>
       <Position8>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="25615" Column="45" TopLine="25606"/>
+        <Caret Line="3990" Column="36" TopLine="3983"/>
       </Position8>
       <Position9>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="24759" Column="22" TopLine="24745"/>
+        <Caret Line="3453" Column="17" TopLine="3431"/>
       </Position9>
       <Position10>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3265" Column="44" TopLine="3248"/>
+        <Caret Line="3991" Column="36" TopLine="3984"/>
       </Position10>
       <Position11>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="25620" Column="50" TopLine="25598"/>
+        <Caret Line="3460" Column="17" TopLine="3435"/>
       </Position11>
       <Position12>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="25615" Column="45" TopLine="25602"/>
+        <Caret Line="3992" Column="36" TopLine="3982"/>
       </Position12>
       <Position13>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3286" Column="10" TopLine="3267"/>
+        <Caret Line="3461" Column="23" TopLine="3441"/>
       </Position13>
       <Position14>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3951" Column="36" TopLine="3938"/>
+        <Caret Line="3454" Column="23" TopLine="3444"/>
       </Position14>
       <Position15>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3282" Column="14" TopLine="3265"/>
+        <Caret Line="25877" Column="16" TopLine="25853"/>
       </Position15>
       <Position16>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="25679" Column="64" TopLine="25667"/>
+        <Caret Line="24858" Column="33" TopLine="24840"/>
       </Position16>
       <Position17>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="18" Column="46" TopLine="58"/>
+        <Caret Line="25752" Column="122" TopLine="25745"/>
       </Position17>
       <Position18>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3406" Column="28" TopLine="3389"/>
+        <Caret Line="3472" Column="100" TopLine="3472"/>
       </Position18>
       <Position19>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3280" Column="17" TopLine="3263"/>
+        <Caret Line="25774" Column="31" TopLine="25757"/>
       </Position19>
       <Position20>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3277" Column="37" TopLine="3251"/>
+        <Caret Line="25827" Column="14" TopLine="25811"/>
       </Position20>
       <Position21>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3505" Column="15" TopLine="3446"/>
+        <Caret Line="25853" Column="55" TopLine="25836"/>
       </Position21>
       <Position22>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3274" Column="35" TopLine="3255"/>
+        <Caret Line="24871" Column="16" TopLine="24846"/>
       </Position22>
       <Position23>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="25683" TopLine="25677"/>
+        <Caret Line="24900" Column="13" TopLine="24869"/>
       </Position23>
       <Position24>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="5" Column="98"/>
+        <Caret Line="3297" Column="15" TopLine="3279"/>
       </Position24>
       <Position25>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="25683" Column="58" TopLine="25655"/>
+        <Caret Line="3974" Column="27" TopLine="3956"/>
       </Position25>
       <Position26>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="25687" Column="32" TopLine="25659"/>
+        <Caret Line="2690" Column="35" TopLine="2666"/>
       </Position26>
       <Position27>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="25688" Column="58" TopLine="25660"/>
+        <Caret Line="20895" Column="53" TopLine="20880"/>
       </Position27>
       <Position28>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="25869" Column="3" TopLine="25850"/>
+        <Caret Line="24935" TopLine="24907"/>
       </Position28>
       <Position29>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3437" Column="17" TopLine="3415"/>
+        <Caret Line="24936" TopLine="24907"/>
       </Position29>
       <Position30>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="3435" Column="26" TopLine="3414"/>
+        <Caret Line="24937" TopLine="24908"/>
       </Position30>
     </JumpHistory>
   </ProjectOptions>
