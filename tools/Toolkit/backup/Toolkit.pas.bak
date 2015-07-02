@@ -3277,6 +3277,12 @@ type
 //TScene2DEditorShapePoly END
 
   TScene2DComponentDataPoly = class;
+  TScene2DComponentDataPolyVertex = class;
+  TScene2DComponentDataPolyEdge = class;
+  TScene2DComponentDataPolyFace = class;
+  TScene2DComponentDataPolyVertexList = specialize TG2QuickListG<TScene2DComponentDataPolyVertex>;
+  TScene2DComponentDataPolyEdgeList = specialize TG2QuickListG<TScene2DComponentDataPolyEdge>;
+  TScene2DComponentDataPolyFaceList = specialize TG2QuickListG<TScene2DComponentDataPolyFace>;
 
 //TScene2DEditorPoly BEGIN
   TScene2DEditorPoly = class (TScene2DEditorShape)
@@ -3287,10 +3293,24 @@ type
     var _FrameMode: TG2Rect;
     var _Component: TScene2DComponentDataPoly;
     var _PopUp: TOverlayPopUp;
+    var _MOverEdge: TScene2DComponentDataPolyEdge;
+    var _MOverVertex: TScene2DComponentDataPolyVertex;
+    var _MOverFace: TScene2DComponentDataPolyFace;
+    var _MdInEdge: TScene2DComponentDataPolyEdge;
+    var _MdInVertex: TScene2DComponentDataPolyVertex;
+    var _MdInFace: TScene2DComponentDataPolyFace;
+    var _SelectVertex: TScene2DComponentDataPolyVertexList;
+    var _SelectEdge: TScene2DComponentDataPolyEdgeList;
+    var _SelectFace: TScene2DComponentDataPolyFaceList;
+    var _Drag: Boolean;
+    var _VDrag: TScene2DComponentDataPolyVertexList;
+    var _VOffset: array of TG2Vec2;
+    procedure StartDrag(const mc: TG2Vec2);
     procedure SetUpPopUpModes;
     procedure OnModeVertices;
     procedure OnModeEdges;
     procedure OnModeFaces;
+    function IsSelecting: Boolean;
   protected
     function GetOwner: TG2Scene2DEntity; override;
   public
@@ -3440,14 +3460,6 @@ type
 //TScene2DComponentDataBackground END
 
 //TScene2DComponentDataPoly BEIGN
-  TScene2DComponentDataPolyVertex = class;
-  TScene2DComponentDataPolyEdge = class;
-  TScene2DComponentDataPolyFace = class;
-
-  TScene2DComponentDataPolyVertexList = specialize TG2QuickListG<TScene2DComponentDataPolyVertex>;
-  TScene2DComponentDataPolyEdgeList = specialize TG2QuickListG<TScene2DComponentDataPolyEdge>;
-  TScene2DComponentDataPolyFaceList = specialize TG2QuickListG<TScene2DComponentDataPolyFace>;
-
   TScene2DComponentDataPolyVertex = class
   public
     var v: TG2Vec2;
@@ -24862,6 +24874,11 @@ end;
 //TScene2DEditorShapePoly END
 
 //TScene2DEditorPoly BEGIN
+procedure TScene2DEditorPoly.StartDrag(const mc: TG2Vec2);
+begin
+  _Drag := True;
+end;
+
 procedure TScene2DEditorPoly.SetUpPopUpModes;
 begin
   _PopUp.Clear;
@@ -24883,6 +24900,11 @@ end;
 procedure TScene2DEditorPoly.OnModeFaces;
 begin
   EditMode := em_face;
+end;
+
+function TScene2DEditorPoly.IsSelecting: Boolean;
+begin
+  Result := _Drag and (_SelectVertex.Count = 0) and (_SelectEdge.Count = 0) and (_SelectFace.Count = 0);
 end;
 
 function TScene2DEditorPoly.GetOwner: TG2Scene2DEntity;
@@ -24908,8 +24930,80 @@ begin
 end;
 
 procedure TScene2DEditorPoly.Update(const Display: TG2Display2D);
+  var i: Integer;
+  var varr: array[0..2] of TG2Vec2;
+  var v, v0, v1, pv0, pv1, mc, pmc, pn, n: TG2Vec2;
+  var xf: TG2Transform2;
+  var b: Boolean;
+  var c, c1: TG2Color;
+  var r: TG2Rect;
 begin
-  inherited Update(Display);
+  pmc := g2.MousePos;
+  if not TG2Rect(Display.ViewPort).Contains(pmc) then Exit;
+  if not _Drag
+  and g2.MouseDown[G2MB_Left]
+  and TG2Rect(Display.ViewPort).Contains(g2.MouseDownPos[G2MB_Left])
+  and ((G2Vec2(g2.MouseDownPos[G2MB_Left]) - G2Vec2(g2.MousePos)).Len > 2) then
+  begin
+    _Drag := True;
+  end;
+  mc := Display.CoordToDisplay(pmc);
+  if _Drag then
+  begin
+    //if _MOverVertex <> nil then
+    //begin
+    //  _MOverVertex.v := mc + _VOffset[0];
+    //end
+    //else if _MOverEdge <> nil then
+    //begin
+    //  _MOverEdge.v[0].v := mc + _VOffset[0];
+    //  _MOverEdge.v[1].v := mc + _VOffset[1];
+    //end
+    //else if _MOverFace <> nil then
+    //begin
+    //  _MOverFace.v[0].v := mc + _VOffset[0];
+    //  _MOverFace.v[1].v := mc + _VOffset[1];
+    //  _MOverFace.v[2].v := mc + _VOffset[2];
+    //end;
+  end
+  else
+  begin
+    _MOverEdge := nil;
+    _MOverVertex := nil;
+    _MOverFace := nil;
+    xf := _Component.Component.Owner.Transform;
+    if EditMode = em_vertex then
+    for i := 0 to _Component.Vertices.Count - 1 do
+    begin
+      v0 := xf.Transform(_Component.Vertices[i].v);
+      v1 := Display.CoordToScreen(v0);
+      v1 := Display.CoordToDisplay(v1 + G2Vec2(4, 4)) - v0;
+      if G2Rect(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2).Contains(mc) then
+      _MOverVertex := _Component.Vertices[i];
+      Display.PrimRect(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ff0000ff);
+    end;
+    if EditMode = em_edge then
+    for i := 0 to _Component.Edges.Count - 1 do
+    begin
+      v0 := xf.Transform(_Component.Edges[i].v[0].v);
+      v1 := xf.Transform(_Component.Edges[i].v[1].v);
+      pv0 := Display.CoordToScreen(v0);
+      pv1 := Display.CoordToScreen(v1);
+      v := G2Project2DPointToLine(pv0, pv1, pmc, b);
+      if b and ((pmc - v).LenSq <= 4 * 4) then
+      _MOverEdge := _Component.Edges[i];
+      Display.PrimLine(v0, v1, $ff0000ff);
+    end;
+    if EditMode = em_face then
+    for i := 0 to _Component.Faces.Count - 1 do
+    begin
+      varr[0] := xf.Transform(_Component.Faces[i].v[0].v);
+      varr[1] := xf.Transform(_Component.Faces[i].v[1].v);
+      varr[2] := xf.Transform(_Component.Faces[i].v[2].v);
+      if G2Vec2InPoly(mc, @varr[0], 3) then
+      _MOverFace := _Component.Faces[i];
+    end;
+  end;
 end;
 
 procedure TScene2DEditorPoly.Render(const Display: TG2Display2D);
@@ -24919,15 +25013,12 @@ procedure TScene2DEditorPoly.Render(const Display: TG2Display2D);
   var xf: TG2Transform2;
   var b: Boolean;
   var c, c1: TG2Color;
-  var MOverEdge: TScene2DComponentDataPolyEdge;
-  var MOverVertex: TScene2DComponentDataPolyVertex;
-  var MOverFace: TScene2DComponentDataPolyFace;
   var r: TG2Rect;
+  var sr: TRect;
+  var tc: array[0..4] of TG2Float;
   var str: AnsiString;
+  var bm: TG2BlendMode;
 begin
-  MOverEdge := nil;
-  MOverVertex := nil;
-  MOverFace := nil;
   pmc := g2.MousePos;
   mc := Display.CoordToDisplay(pmc);
   xf := _Component.Component.Owner.Transform;
@@ -24935,11 +25026,6 @@ begin
   begin
     v0 := xf.Transform(_Component.Edges[i].v[0].v);
     v1 := xf.Transform(_Component.Edges[i].v[1].v);
-    pv0 := Display.CoordToScreen(v0);
-    pv1 := Display.CoordToScreen(v1);
-    v := G2Project2DPointToLine(pv0, pv1, pmc, b);
-    if b and ((pmc - v).LenSq <= 4 * 4) then
-    MOverEdge := _Component.Edges[i];
     Display.PrimLine(v0, v1, $ff0000ff);
   end;
   for i := 0 to _Component.Vertices.Count - 1 do
@@ -24947,46 +25033,97 @@ begin
     v0 := xf.Transform(_Component.Vertices[i].v);
     v1 := Display.CoordToScreen(v0);
     v1 := Display.CoordToDisplay(v1 + G2Vec2(4, 4)) - v0;
-    if G2Rect(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2).Contains(mc) then
-    MOverVertex := _Component.Vertices[i];
     Display.PrimRect(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ff0000ff);
   end;
-  for i := 0 to _Component.Faces.Count - 1 do
+  if (EditMode = em_vertex) then
   begin
-    varr[0] := xf.Transform(_Component.Faces[i].v[0].v);
-    varr[1] := xf.Transform(_Component.Faces[i].v[1].v);
-    varr[2] := xf.Transform(_Component.Faces[i].v[2].v);
-    if G2Vec2InPoly(mc, @varr[0], 3) then
-    MOverFace := _Component.Faces[i];
+    for i := 0 to _SelectVertex.Count - 1 do
+    begin
+      v0 := xf.Transform(_SelectVertex[i].v);
+      v1 := Display.CoordToScreen(v0);
+      v1 := Display.CoordToDisplay(v1 + G2Vec2(4, 4)) - v0;
+      Display.PrimRect(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ff008800);
+    end;
+    if (_MOverVertex <> nil) then
+    begin
+      v0 := xf.Transform(_MOverVertex.v);
+      v1 := Display.CoordToScreen(v0);
+      v1 := Display.CoordToDisplay(v1 + G2Vec2(4, 4)) - v0;
+      Display.PrimRectHollow(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ffff0000);
+    end;
   end;
-  if (EditMode = em_vertex) and (MOverVertex <> nil) then
+  if (EditMode = em_edge) then
   begin
-    v0 := xf.Transform(MOverVertex.v);
-    v1 := Display.CoordToScreen(v0);
-    v1 := Display.CoordToDisplay(v1 + G2Vec2(4, 4)) - v0;
-    Display.PrimRect(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ffff0000);
+    for i := 0 to _SelectEdge.Count - 1 do
+    begin
+      v0 := xf.Transform(_SelectEdge[i].v[0].v);
+      v1 := xf.Transform(_SelectEdge[i].v[1].v);
+      pv0 := Display.CoordToScreen(v0);
+      pv1 := Display.CoordToScreen(v1);
+      pn := (pv1 - pv0).Perp.Norm * 2;
+      n := Display.CoordToDisplay(pv0 + pn) - v0;
+      Display.PrimQuad(v0 - n, v1 - n, v0 + n, v1 + n, $ff008800);
+    end;
+    if (_MOverEdge <> nil) then
+    begin
+      v0 := xf.Transform(_MOverEdge.v[0].v);
+      v1 := xf.Transform(_MOverEdge.v[1].v);
+      pv0 := Display.CoordToScreen(v0);
+      pv1 := Display.CoordToScreen(v1);
+      pn := (pv1 - pv0).Perp.Norm * 2;
+      n := Display.CoordToDisplay(pv0 + pn) - v0;
+      Display.PrimQuadHollowCol(v0 - n, v1 - n, v0 + n, v1 + n, $ffff0000, $ffff0000, $ffff0000, $ffff0000);
+    end;
   end;
-  if (EditMode = em_edge) and (MOverEdge <> nil) then
+  if (EditMode = em_face) then
   begin
-    v0 := xf.Transform(MOverEdge.v[0].v);
-    v1 := xf.Transform(MOverEdge.v[1].v);
-    pv0 := Display.CoordToScreen(v0);
-    pv1 := Display.CoordToScreen(v1);
-    pn := (pv1 - pv0).Perp.Norm * 2;
-    n := Display.CoordToDisplay(pv0 + pn) - v0;
-    Display.PrimQuad(v0 - n, v1 - n, v0 + n, v1 + n, $ffff0000);
+    for i := 0 to _SelectFace.Count - 1 do
+    begin
+      varr[0] := xf.Transform(_SelectFace[i].v[0].v);
+      varr[1] := xf.Transform(_SelectFace[i].v[1].v);
+      varr[2] := xf.Transform(_SelectFace[i].v[2].v);
+      Display.PrimTriCol(varr[0], varr[1], varr[2], $ff008800, $ff008800, $ff008800);
+    end;
+    if (_MOverFace <> nil) then
+    begin
+      varr[0] := xf.Transform(_MOverFace.v[0].v);
+      varr[1] := xf.Transform(_MOverFace.v[1].v);
+      varr[2] := xf.Transform(_MOverFace.v[2].v);
+      Display.PrimTriHollowCol(varr[0], varr[1], varr[2], $ffff0000, $ffff0000, $ffff0000);
+    end;
   end;
-  if (EditMode = em_face) and (MOverFace <> nil) then
+  if IsSelecting then
   begin
-    varr[0] := xf.Transform(MOverFace.v[0].v);
-    varr[1] := xf.Transform(MOverFace.v[1].v);
-    varr[2] := xf.Transform(MOverFace.v[2].v);
-    Display.PrimTriCol(varr[0], varr[1], varr[2], $80ff0000, $80ff0000, $80ff0000);
+    sr.Left := G2Min(g2.MousePos.x, g2.MouseDownPos[G2MB_Left].x);
+    sr.Top := G2Min(g2.MousePos.y, g2.MouseDownPos[G2MB_Left].y);
+    sr.Right := G2Max(g2.MousePos.x, g2.MouseDownPos[G2MB_Left].x);
+    sr.Bottom := G2Max(g2.MousePos.y, g2.MouseDownPos[G2MB_Left].y);
+    tc[0] := 0 + G2TimeInterval();
+    tc[1] := tc[0] + (sr.Right - sr.Left) * 0.05;
+    tc[2] := tc[1] + (sr.Bottom - sr.Top) * 0.05;
+    tc[3] := tc[2] + (sr.Right - sr.Left) * 0.05;
+    tc[4] := tc[3] + (sr.Bottom - sr.Top) * 0.05;
+    c := G2LerpColor($ffffffff, $ff80ff80, Sin(G2PiTime()) * 0.5 + 0.5);
+    bm.AlphaDst := boOne;
+    bm.AlphaSrc := boOne;
+    bm.ColorDst := boInvSrcAlpha;
+    bm.ColorSrc := boInvDstColor;
+    g2.PolyBegin(ptLines, App.UI.TexDots, bm, tfLinear);
+    g2.PolyAdd(sr.Right, sr.Top, tc[0], 0, c);
+    g2.PolyAdd(sr.Left, sr.Top, tc[1], 0, c);
+    g2.PolyAdd(sr.Left, sr.Top, tc[1], 0, c);
+    g2.PolyAdd(sr.Left, sr.Bottom, tc[2], 0, c);
+    g2.PolyAdd(sr.Left, sr.Bottom, tc[2], 0, c);
+    g2.PolyAdd(sr.Right, sr.Bottom, tc[3], 0, c);
+    g2.PolyAdd(sr.Right, sr.Bottom, tc[3], 0, c);
+    g2.PolyAdd(sr.Right, sr.Top, tc[4], 0, c);
+    g2.PolyEnd;
   end;
   r := _FrameMode;
   r.x := Display.ViewPort.Left + r.x;
   r.y := Display.ViewPort.Bottom + r.y;
-  if r.Contains(g2.MousePos) then
+  if r.Contains(g2.MousePos)
+  and (App.UI.Overlay = nil) then
   begin
     c := $ffa0a0a0;
     c1 := $ff000000;
@@ -25011,30 +25148,133 @@ end;
 
 procedure TScene2DEditorPoly.MouseDown(const Display: TG2Display2D; const Button, x, y: Integer);
   var r: TG2Rect;
+  var mc: TG2Vec2;
 begin
-  r := _FrameMode;
-  r.x := Display.ViewPort.Left + r.x;
-  r.y := Display.ViewPort.Bottom + r.y;
-  _MdInMode := r.Contains(x, y);
+  if Button = G2MB_Left then
+  begin
+    r := _FrameMode;
+    r.x := Display.ViewPort.Left + r.x;
+    r.y := Display.ViewPort.Bottom + r.y;
+    _MdInMode := r.Contains(x, y);
+    if not _MdInMode then
+    begin
+      _MdInVertex := _MOverVertex;
+      _MdInEdge := _MOverEdge;
+      _MdInFace := _MOverFace;
+      if (EditMode = em_vertex) then
+      begin
+        if _MdInVertex <> nil then
+        begin
+          if _SelectVertex.Find(_MdInVertex) > -1 then
+          begin
+            StartDrag(Display.CoordToDisplay(G2Vec2(x, y)));
+          end
+          else
+          begin
+            if not (g2.KeyDown[G2K_CtrlL] or g2.KeyDown[G2K_CtrlR]) then _SelectVertex.Clear;
+            _SelectVertex.Add(_MdInVertex);
+          end;
+        end
+        else
+        begin
+          _SelectVertex.Clear;
+        end;
+      end;
+      if EditMode = em_edge then
+      begin
+        if _MdInEdge <> nil then
+        begin
+          if _SelectEdge.Find(_MdInEdge) > -1 then
+          begin
+            StartDrag(Display.CoordToDisplay(G2Vec2(x, y)));
+          end
+          else
+          begin
+            if not (g2.KeyDown[G2K_CtrlL] or g2.KeyDown[G2K_CtrlR]) then _SelectEdge.Clear;
+            _SelectEdge.Add(_MdInEdge);
+          end;
+        end
+        else
+        begin
+          _SelectEdge.Clear;
+        end;
+      end;
+      if EditMode = em_face then
+      begin
+        if (_MdInFace <> nil) then
+        begin
+          if _SelectFace.Find(_MdInFace) > -1 then
+          begin
+            StartDrag(Display.CoordToDisplay(G2Vec2(x, y)));
+          end
+          else
+          begin
+            if not (g2.KeyDown[G2K_CtrlL] or g2.KeyDown[G2K_CtrlR]) then _SelectFace.Clear;
+            _SelectFace.Add(_MdInFace);
+          end;
+        end
+        else
+        begin
+          _SelectFace.Clear;
+        end;
+      end;
+    end;
+  end;
 end;
 
 procedure TScene2DEditorPoly.MouseUp(const Display: TG2Display2D; const Button, x, y: Integer);
   var r: TG2Rect;
 begin
-  r := _FrameMode;
-  r.x := Display.ViewPort.Left + r.x;
-  r.y := Display.ViewPort.Bottom + r.y;
-  if _MdInMode and r.Contains(x, y) then
+  if Button = G2MB_Left then
   begin
-    SetUpPopUpModes;
-    _PopUp.Show(r.x);
+    if not _Drag then
+    begin
+      r := _FrameMode;
+      r.x := Display.ViewPort.Left + r.x;
+      r.y := Display.ViewPort.Bottom + r.y;
+      if _MdInMode and r.Contains(x, y) then
+      begin
+        SetUpPopUpModes;
+        _PopUp.Show(G2Vec2(x, y));
+      end
+      else if (_MdInVertex <> nil)
+      and (_MOverVertex = _MdInVertex) then
+      begin
+
+      end
+      else if (_MdInEdge <> nil)
+      and (_MOverEdge = _MdInEdge) then
+      begin
+
+      end
+      else if (_MdInFace <> nil)
+      and (_MOverFace = _MdInFace) then
+      begin
+
+      end;
+    end;
+    _Drag := False;
+    _MdInVertex := nil;
+    _MdInEdge := nil;
+    _MdInFace := nil;
+    _MdInMode := False;
   end;
-  _MdInMode := False;
 end;
 
 procedure TScene2DEditorPoly.Initialize;
 begin
   EditMode := em_vertex;
+  _MOverVertex := nil;
+  _MOverEdge := nil;
+  _MOverFace := nil;
+  _MdInVertex := nil;
+  _MdInEdge := nil;
+  _MdInFace := nil;
+  _SelectVertex.Clear;
+  _SelectFace.Clear;
+  _SelectFace.Clear;
+  _VDrag.Clear;
+  _Drag := False;
 end;
 //TScene2DEditorPoly END
 
