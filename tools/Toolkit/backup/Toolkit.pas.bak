@@ -3289,8 +3289,18 @@ type
   public
     type TEditMode = (em_vertex, em_edge, em_face);
   private
-    var _MdInMode: Boolean;
-    var _FrameMode: TG2Rect;
+    type TBtn = class
+    public
+      var OnClick: TG2ProcObj;
+      var Name: String;
+      var Visible: Boolean;
+      var MdInButton: Boolean;
+      var Frame: TG2Rect;
+    end;
+    var Buttons: array of TBtn;
+    var _BtnMode: TBtn;
+    var _BtnFlipEdge: TBtn;
+    var _BtnDelete: TBtn;
     var _Component: TScene2DComponentDataPoly;
     var _PopUp: TOverlayPopUp;
     var _MOverEdge: TScene2DComponentDataPolyEdge;
@@ -3310,7 +3320,14 @@ type
     procedure OnModeVertices;
     procedure OnModeEdges;
     procedure OnModeFaces;
+    procedure OnModeClick;
+    procedure OnFlipEdgeClick;
+    procedure OnDeleteClick;
+    procedure DeleteVertex(const v: TScene2DComponentDataPolyVertex);
+    procedure DeleteEdge(const e: TScene2DComponentDataPolyEdge);
+    procedure DeleteFace(const f: TScene2DComponentDataPolyFace);
     function IsSelecting: Boolean;
+    function AddButton(const Name: String): TBtn;
   protected
     function GetOwner: TG2Scene2DEntity; override;
   public
@@ -3495,7 +3512,6 @@ type
     var Faces: TScene2DComponentDataPolyFaceList;
     function FindEdge(const v0, v1: TScene2DComponentDataPolyVertex): TScene2DComponentDataPolyEdge;
     function FindFace(const v0, v1, v2: TScene2DComponentDataPolyVertex): TScene2DComponentDataPolyFace;
-    procedure CompleteData;
   public
     var Component: TG2Scene2DComponentPoly;
     class function GetName: String; override;
@@ -3504,6 +3520,7 @@ type
     procedure AddToProperties(var PropertySet: TPropertySet); override;
     procedure OnAddLayer;
     procedure OnEdit;
+    procedure CompleteData;
   end;
 //TScene2DComponentDataPoly END
 
@@ -24875,8 +24892,102 @@ end;
 
 //TScene2DEditorPoly BEGIN
 procedure TScene2DEditorPoly.StartDrag(const mc: TG2Vec2);
+  type TVertexReplica = array[0..1] of TScene2DComponentDataPolyVertex;
+  var VertexReplica: array of TVertexReplica;
+  function ReplicateVertex(const v: TScene2DComponentDataPolyVertex): TScene2DComponentDataPolyVertex;
+    var i: Integer;
+  begin
+    for i := 0 to High(VertexReplica) do
+    if VertexReplica[i][0] = v then
+    begin
+      Result := VertexReplica[i][1];
+      Exit;
+    end;
+    SetLength(VertexReplica, Length(VertexReplica) + 1);
+    i := High(VertexReplica);
+    VertexReplica[i][0] := v;
+    VertexReplica[i][1] := TScene2DComponentDataPolyVertex.Create;
+    VertexReplica[i][1].v := v.v;
+    VertexReplica[i][1].c := v.c;
+    Component.Vertices.Add(VertexReplica[i][1]);
+    Result := VertexReplica[i][1];
+  end;
+  var i, j: Integer;
+  var Edges: TScene2DComponentDataPolyEdgeList;
+  var e: TScene2DComponentDataPolyEdge;
+  var f: TScene2DComponentDataPolyFace;
+  var v: array[0..1] of TScene2DComponentDataPolyVertex;
 begin
   _Drag := True;
+  _VDrag.Clear;
+  case EditMode of
+    em_vertex:
+    begin
+      for i := 0 to _SelectVertex.Count - 1 do
+      _VDrag.Add(_SelectVertex[i]);
+    end;
+    em_edge:
+    begin
+      if g2.KeyDown[G2K_ShiftL] or g2.KeyDown[G2K_ShiftR] then
+      begin
+        Edges.Clear;
+        for i := 0 to _SelectEdge.Count - 1 do
+        if (_SelectEdge[i].f[0] = nil) or (_SelectEdge[i].f[1] = nil) then
+        begin
+          v[0] := ReplicateVertex(_SelectEdge[i].v[0]);
+          v[1] := ReplicateVertex(_SelectEdge[i].v[1]);
+          e := TScene2DComponentDataPolyEdge.Create;
+          e.v[0] := v[0];
+          e.v[1] := v[1];
+          Component.Edges.Add(e);
+          Edges.Add(e);
+          f := TScene2DComponentDataPolyFace.Create;
+          f.v[0] := _SelectEdge[i].v[0];
+          f.v[1] := v[0];
+          f.v[2] := v[1];
+          Component.Faces.Add(f);
+          f := TScene2DComponentDataPolyFace.Create;
+          f.v[0] := _SelectEdge[i].v[0];
+          f.v[1] := v[1];
+          f.v[2] := _SelectEdge[i].v[1];
+          Component.Faces.Add(f);
+          e := TScene2DComponentDataPolyEdge.Create;
+          e.v[0] := _SelectEdge[i].v[0];
+          e.v[1] := v[1];
+          Component.Edges.Add(e);
+        end;
+        for i := 0 to High(VertexReplica) do
+        begin
+          e := TScene2DComponentDataPolyEdge.Create;
+          e.v[0] := VertexReplica[i][0];
+          e.v[1] := VertexReplica[i][1];
+          Component.Edges.Add(e);
+        end;
+        _SelectEdge.Clear;
+        for i := 0 to Edges.Count - 1 do
+        _SelectEdge.Add(Edges[i]);
+        Component.CompleteData;
+      end;
+      for i := 0 to _SelectEdge.Count - 1 do
+      begin
+        for j := 0 to 1 do
+        if _VDrag.Find(_SelectEdge[i].v[j]) = -1 then
+        _VDrag.Add(_SelectEdge[i].v[j]);
+      end;
+    end;
+    em_face:
+    begin
+      for i := 0 to _SelectFace.Count - 1 do
+      begin
+        for j := 0 to 2 do
+        if _VDrag.Find(_SelectFace[i].v[j]) = -1 then
+        _VDrag.Add(_SelectFace[i].v[j]);
+      end;
+    end;
+  end;
+  SetLength(_VOffset, _VDrag.Count);
+  for i := 0 to _VDrag.Count - 1 do
+  _VOffset[i] := _VDrag[i].v - mc;
 end;
 
 procedure TScene2DEditorPoly.SetUpPopUpModes;
@@ -24902,9 +25013,119 @@ begin
   EditMode := em_face;
 end;
 
+procedure TScene2DEditorPoly.OnModeClick;
+begin
+  SetUpPopUpModes;
+  _PopUp.Show(g2.MousePos);
+end;
+
+procedure TScene2DEditorPoly.OnFlipEdgeClick;
+  var f: array[0..1] of TScene2DComponentDataPolyFace;
+  var e: TScene2DComponentDataPolyEdge;
+  var v: array[0..3] of TScene2DComponentDataPolyVertex;
+  var i, j: Integer;
+begin
+  if not (EditMode = em_face) then Exit;
+  if _SelectFace.Count <> 2 then Exit;
+  f[0] := _SelectFace[0];
+  f[1] := _SelectFace[1];
+  e := nil;
+  for i := 0 to 2 do
+  for j := 0 to 2 do
+  if f[0].e[i] = f[1].e[j] then e := f[0].e[i];
+  if e = nil then Exit;
+  v[0] := e.v[0];
+  v[2] := e.v[1];
+  for i := 0 to 2 do
+  begin
+    if (f[0].v[i] <> e.v[0]) and (f[0].v[i] <> e.v[1]) then
+    v[1] := f[0].v[i];
+    if (f[1].v[i] <> e.v[0]) and (f[1].v[i] <> e.v[1]) then
+    v[3] := f[1].v[i];
+  end;
+  f[0].v[0] := v[1]; f[0].v[1] := v[2]; f[0].v[2] := v[3];
+  f[1].v[0] := v[3]; f[1].v[1] := v[0]; f[1].v[2] := v[1];
+  e.v[0] := v[1]; e.v[1] := v[3];
+  Component.CompleteData;
+end;
+
+procedure TScene2DEditorPoly.OnDeleteClick;
+  var i: Integer;
+begin
+  if not (
+    ((EditMode = em_vertex) and (_SelectVertex.Count > 0))
+    or ((EditMode = em_edge) and (_SelectEdge.Count > 0))
+    or ((EditMode = em_face) and (_SelectFace.Count > 0))
+  ) then Exit;
+  case EditMode of
+    em_vertex:
+    begin
+      for i := 0 to _SelectVertex.Count - 1 do
+      DeleteVertex(_SelectVertex[i]);
+      _SelectVertex.Clear;
+    end;
+    em_edge:
+    begin
+      for i := 0 to _SelectEdge.Count - 1 do
+      DeleteEdge(_SelectEdge[i]);
+      _SelectEdge.Clear;
+    end;
+    em_face:
+    begin
+      for i := 0 to _SelectFace.Count - 1 do
+      DeleteFace(_SelectFace[i]);
+      _SelectFace.Clear;
+    end;
+  end;
+end;
+
+procedure TScene2DEditorPoly.DeleteVertex(const v: TScene2DComponentDataPolyVertex);
+begin
+
+end;
+
+procedure TScene2DEditorPoly.DeleteEdge(const e: TScene2DComponentDataPolyEdge);
+  var i, j: Integer;
+begin
+  Component.Edges.Remove(e);
+  for i := 0 to 1 do
+  begin
+    if e.v[i] <> nil then e.v[i].e.Remove(e);
+    if e.f[i] <> nil then
+    for j := 0 to 2 do
+    begin
+      if e.f[i].e[j] = e then
+    end;
+  end;
+end;
+
+procedure TScene2DEditorPoly.DeleteFace(const f: TScene2DComponentDataPolyFace);
+  var i, j: Integer;
+begin
+  Component.Faces.Remove(f);
+  for i := 0 to 2 do
+  begin
+    f.v[i].f.Remove(f);
+    for j := 0 to 1 do
+    if f.e[i].f[j] = f then f.e[i].f[j] := nil;
+  end;
+  f.Free;
+end;
+
 function TScene2DEditorPoly.IsSelecting: Boolean;
 begin
   Result := _Drag and (_SelectVertex.Count = 0) and (_SelectEdge.Count = 0) and (_SelectFace.Count = 0);
+end;
+
+function TScene2DEditorPoly.AddButton(const Name: String): TBtn;
+begin
+  Result := TBtn.Create;
+  Result.Name := Name;
+  Result.OnClick := nil;
+  Result.Visible := False;
+  Result.MdInButton := False;
+  SetLength(Buttons, Length(Buttons) + 1);
+  Buttons[High(Buttons)] := Result;
 end;
 
 function TScene2DEditorPoly.GetOwner: TG2Scene2DEntity;
@@ -24917,13 +25138,20 @@ begin
   inherited Create;
   _Component := nil;
   Instance := Self;
-  _FrameMode := G2Rect(8, -48, 160, 40);
   _PopUp := TOverlayPopUp.Create;
-  _MdInMode := False;
+  _BtnMode := AddButton('vertex');
+  _BtnMode.OnClick := @OnModeClick;
+  _BtnFlipEdge := AddButton('flip edge');
+  _BtnFlipEdge.OnClick := @OnFlipEdgeClick;
+  _BtnDelete := AddButton('delete');
+  _BtnDelete.OnClick := @OnDeleteClick;
 end;
 
 destructor TScene2DEditorPoly.Destroy;
+  var i: Integer;
 begin
+  for i := 0 to High(Buttons) do
+  Buttons[i].Free;
   _PopUp.Free;
   Instance := nil;
   inherited Destroy;
@@ -24936,20 +25164,51 @@ procedure TScene2DEditorPoly.Update(const Display: TG2Display2D);
   var xf: TG2Transform2;
   var b: Boolean;
   var c, c1: TG2Color;
-  var r: TG2Rect;
+  var r, ButtonFrame: TG2Rect;
 begin
+  _BtnMode.Visible := True;
+  case EditMode of
+    em_vertex: _BtnMode.Name := 'vertices';
+    em_edge: _BtnMode.Name := 'edges';
+    em_face: _BtnMode.Name := 'triangles';
+  end;
+  _BtnFlipEdge.Visible := False;
+  if (EditMode = em_face)
+  and (_SelectFace.Count = 2) then
+  begin
+    for i := 0 to 2 do
+    if _SelectFace[1].Contains(_SelectFace[0].e[i]) then
+    begin
+      _BtnFlipEdge.Visible := True;
+      Break;
+    end;
+  end;
+  _BtnDelete.Visible := (
+    ((EditMode = em_vertex) and (_SelectVertex.Count > 0))
+    or ((EditMode = em_edge) and (_SelectEdge.Count > 0))
+    or ((EditMode = em_face) and (_SelectFace.Count > 0))
+  );
+  ButtonFrame := G2Rect(8, -48, 160, 40);
+  for i := 0 to High(Buttons) do
+  if Buttons[i].Visible then
+  begin
+    Buttons[i].Frame := ButtonFrame;
+    ButtonFrame.x := ButtonFrame.x + ButtonFrame.w + 8;
+  end;
   pmc := g2.MousePos;
   if not TG2Rect(Display.ViewPort).Contains(pmc) then Exit;
+  mc := Display.CoordToDisplay(pmc);
   if not _Drag
   and g2.MouseDown[G2MB_Left]
   and TG2Rect(Display.ViewPort).Contains(g2.MouseDownPos[G2MB_Left])
   and ((G2Vec2(g2.MouseDownPos[G2MB_Left]) - G2Vec2(g2.MousePos)).Len > 2) then
   begin
-    _Drag := True;
+    StartDrag(mc);
   end;
-  mc := Display.CoordToDisplay(pmc);
   if _Drag then
   begin
+    for i := 0 to _VDrag.Count - 1 do
+    _VDrag[i].v := mc + _VOffset[i];
     //if _MOverVertex <> nil then
     //begin
     //  _MOverVertex.v := mc + _VOffset[0];
@@ -25082,7 +25341,7 @@ begin
       varr[0] := xf.Transform(_SelectFace[i].v[0].v);
       varr[1] := xf.Transform(_SelectFace[i].v[1].v);
       varr[2] := xf.Transform(_SelectFace[i].v[2].v);
-      Display.PrimTriCol(varr[0], varr[1], varr[2], $ff008800, $ff008800, $ff008800);
+      Display.PrimTriCol(varr[0], varr[1], varr[2], $88008800, $88008800, $88008800);
     end;
     if (_MOverFace <> nil) then
     begin
@@ -25103,7 +25362,7 @@ begin
     tc[2] := tc[1] + (sr.Bottom - sr.Top) * 0.05;
     tc[3] := tc[2] + (sr.Right - sr.Left) * 0.05;
     tc[4] := tc[3] + (sr.Bottom - sr.Top) * 0.05;
-    c := G2LerpColor($ffffffff, $ff80ff80, Sin(G2PiTime()) * 0.5 + 0.5);
+    c := G2LerpColor($ffffffff, $ff80ff80, Sin(G2PiTime(400)) * 0.5 + 0.5);
     bm.AlphaDst := boOne;
     bm.AlphaSrc := boOne;
     bm.ColorDst := boInvSrcAlpha;
@@ -25119,44 +25378,60 @@ begin
     g2.PolyAdd(sr.Right, sr.Top, tc[4], 0, c);
     g2.PolyEnd;
   end;
-  r := _FrameMode;
-  r.x := Display.ViewPort.Left + r.x;
-  r.y := Display.ViewPort.Bottom + r.y;
-  if r.Contains(g2.MousePos)
-  and (App.UI.Overlay = nil) then
+  for i := 0 to High(Buttons) do
+  if Buttons[i].Visible then
   begin
-    c := $ffa0a0a0;
-    c1 := $ff000000;
-  end
-  else
-  begin
-    c := $ff808080;
-    c1 := $ffe0e0e0;
+    r := Buttons[i].Frame;
+    r.x := Display.ViewPort.Left + r.x;
+    r.y := Display.ViewPort.Bottom + r.y;
+    if r.Contains(g2.MousePos)
+    and (App.UI.Overlay = nil) then
+    begin
+      if Buttons[i].MdInButton then
+      begin
+        c := $ff404040;
+        c1 := $ffffffff;
+      end
+      else
+      begin
+        c := $ffa0a0a0;
+        c1 := $ff000000;
+      end;
+    end
+    else
+    begin
+      c := $ff808080;
+      c1 := $ffe0e0e0;
+    end;
+    App.UI.DrawSpotFrame(r, 8, c);
+    str := Buttons[i].Name;
+    App.UI.Font1.Print(
+      Round(r.x + (r.w - App.UI.Font1.TextWidth(str)) * 0.5),
+      Round(r.y + (r.h - App.UI.Font1.TextHeight('A')) * 0.5),
+      1, 1, c1, str, bmNormal, tfPoint
+    );
   end;
-  App.UI.DrawSpotFrame(r, 8, c);
-  case EditMode of
-    em_vertex: str := 'vertices';
-    em_edge: str := 'edges';
-    em_face: str := 'triangles';
-  end;
-  App.UI.Font1.Print(
-    Round(r.x + (r.w - App.UI.Font1.TextWidth(str)) * 0.5),
-    Round(r.y + (r.h - App.UI.Font1.TextHeight('A')) * 0.5),
-    1, 1, c1, str, bmNormal, tfPoint
-  );
 end;
 
 procedure TScene2DEditorPoly.MouseDown(const Display: TG2Display2D; const Button, x, y: Integer);
+  var i: Integer;
   var r: TG2Rect;
   var mc: TG2Vec2;
+  var MdInButton: Boolean;
 begin
   if Button = G2MB_Left then
   begin
-    r := _FrameMode;
-    r.x := Display.ViewPort.Left + r.x;
-    r.y := Display.ViewPort.Bottom + r.y;
-    _MdInMode := r.Contains(x, y);
-    if not _MdInMode then
+    MdInButton := False;
+    for i := 0 to High(Buttons) do
+    if Buttons[i].Visible then
+    begin
+      r := Buttons[i].Frame;
+      r.x := Display.ViewPort.Left + r.x;
+      r.y := Display.ViewPort.Bottom + r.y;
+      Buttons[i].MdInButton := r.Contains(x, y);
+      MdInButton := MdInButton or Buttons[i].MdInButton;
+    end;
+    if not MdInButton then
     begin
       _MdInVertex := _MOverVertex;
       _MdInEdge := _MOverEdge;
@@ -25223,21 +25498,24 @@ begin
 end;
 
 procedure TScene2DEditorPoly.MouseUp(const Display: TG2Display2D; const Button, x, y: Integer);
+  var i: Integer;
   var r: TG2Rect;
 begin
   if Button = G2MB_Left then
   begin
     if not _Drag then
     begin
-      r := _FrameMode;
-      r.x := Display.ViewPort.Left + r.x;
-      r.y := Display.ViewPort.Bottom + r.y;
-      if _MdInMode and r.Contains(x, y) then
+      for i := 0 to High(Buttons) do
+      if Buttons[i].Visible
+      and Buttons[i].MdInButton
+      and Assigned(Buttons[i].OnClick) then
       begin
-        SetUpPopUpModes;
-        _PopUp.Show(G2Vec2(x, y));
-      end
-      else if (_MdInVertex <> nil)
+        r := Buttons[i].Frame;
+        r.x := Display.ViewPort.Left + r.x;
+        r.y := Display.ViewPort.Bottom + r.y;
+        if r.Contains(x, y) then Buttons[i].OnClick;
+      end;
+      if (_MdInVertex <> nil)
       and (_MOverVertex = _MdInVertex) then
       begin
 
@@ -25257,7 +25535,6 @@ begin
     _MdInVertex := nil;
     _MdInEdge := nil;
     _MdInFace := nil;
-    _MdInMode := False;
   end;
 end;
 
@@ -26200,34 +26477,6 @@ begin
   Result := nil;
 end;
 
-procedure TScene2DComponentDataPoly.CompleteData;
-  var i, j: Integer;
-begin
-  for i := 0 to Faces.Count - 1 do
-  begin
-    for j := 0 to 2 do
-    begin
-      Faces[i].v[j].f.Add(Faces[i]);
-      Faces[i].e[j] := FindEdge(Faces[i].v[j], Faces[i].v[(j + 1) mod 3]);
-    end;
-  end;
-  for i := 0 to Edges.Count - 1 do
-  begin
-    for j := 0 to 1 do
-    Edges[i].v[j].e.Add(Edges[i]);
-    Edges[i].f[0] := nil;
-    Edges[i].f[1] := nil;
-    for j := 0 to Faces.Count - 1 do
-    if Faces[j].Contains(Edges[i]) then
-    begin
-      if Edges[i].f[0] = nil then
-      Edges[i].f[0] := Faces[j]
-      else
-      Edges[i].f[1] := Faces[j];
-    end;
-  end;
-end;
-
 class function TScene2DComponentDataPoly.GetName: String;
 begin
   Result := 'Triangle Mesh';
@@ -26302,6 +26551,39 @@ begin
   begin
     TScene2DEditorPoly.Instance.Component := Self;
     App.Scene2DData.Editor := TScene2DEditorPoly.Instance;
+  end;
+end;
+
+procedure TScene2DComponentDataPoly.CompleteData;
+  var i, j: Integer;
+begin
+  for i := 0 to Vertices.Count - 1 do
+  begin
+    Vertices[i].e.Clear;
+    Vertices[i].f.Clear;
+  end;
+  for i := 0 to Faces.Count - 1 do
+  begin
+    for j := 0 to 2 do
+    begin
+      Faces[i].v[j].f.Add(Faces[i]);
+      Faces[i].e[j] := FindEdge(Faces[i].v[j], Faces[i].v[(j + 1) mod 3]);
+    end;
+  end;
+  for i := 0 to Edges.Count - 1 do
+  begin
+    for j := 0 to 1 do
+    Edges[i].v[j].e.Add(Edges[i]);
+    Edges[i].f[0] := nil;
+    Edges[i].f[1] := nil;
+    for j := 0 to Faces.Count - 1 do
+    if Faces[j].Contains(Edges[i]) then
+    begin
+      if Edges[i].f[0] = nil then
+      Edges[i].f[0] := Faces[j]
+      else
+      Edges[i].f[1] := Faces[j];
+    end;
   end;
 end;
 //TScene2DComponentDataPoly END
