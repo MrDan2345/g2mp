@@ -3300,6 +3300,7 @@ type
     var Buttons: array of TBtn;
     var _BtnMode: TBtn;
     var _BtnFlipEdge: TBtn;
+    var _BtnCollapse: TBtn;
     var _BtnDelete: TBtn;
     var _Component: TScene2DComponentDataPoly;
     var _PopUp: TOverlayPopUp;
@@ -3322,10 +3323,16 @@ type
     procedure OnModeFaces;
     procedure OnModeClick;
     procedure OnFlipEdgeClick;
+    procedure OnCollapseClick;
     procedure OnDeleteClick;
     procedure DeleteVertex(const v: TScene2DComponentDataPolyVertex);
     procedure DeleteEdge(const e: TScene2DComponentDataPolyEdge);
     procedure DeleteFace(const f: TScene2DComponentDataPolyFace);
+    function CheckVertices: Integer;
+    function CheckEdges: Integer;
+    function CheckFaces: Integer;
+    function CheckMesh: Integer;
+    procedure VerifyMesh;
     function IsSelecting: Boolean;
     function AddButton(const Name: String): TBtn;
   protected
@@ -3485,6 +3492,7 @@ type
     var e: TScene2DComponentDataPolyEdgeList;
     var f: TScene2DComponentDataPolyFaceList;
     constructor Create;
+    function IsEnclosed: Boolean;
   end;
 
   TScene2DComponentDataPolyEdge = class
@@ -25049,6 +25057,102 @@ begin
   Component.CompleteData;
 end;
 
+procedure TScene2DEditorPoly.OnCollapseClick;
+  var i, j, n: Integer;
+  var f: TScene2DComponentDataPolyFace;
+  var v: TScene2DComponentDataPolyVertex;
+  var e, e0, e1: TScene2DComponentDataPolyEdge;
+  var df, de: Boolean;
+  var vp: TG2Vec2;
+begin
+  for i := Component.Faces.Count - 1 downto 0 do
+  begin
+    f := Component.Faces[i];
+    for j := 0 to 2 do
+    begin
+      df := False;
+      for n := 0 to _SelectVertex.Count - 1 do
+      begin
+        v := _SelectVertex[n];
+        df := v = f.v[j];
+        if df then Break;
+      end;
+      if not df then Break;
+    end;
+    if df then
+    begin
+      for j := 0 to 2 do
+      if f.e[j] <> nil then DeleteEdge(f.e[j]);
+      DeleteFace(f);
+    end;
+  end;
+  for i := Component.Edges.Count - 1 downto 0 do
+  begin
+    e := Component.Edges[i];
+    for j := 0 to 1 do
+    begin
+      de := False;
+      for n := 0 to _SelectVertex.Count - 1 do
+      begin
+        de := e.v[j] = _SelectVertex[n];
+        if de then Break;
+      end;
+      if not de then Break;
+    end;
+    if de then
+    begin
+      DeleteEdge(e);
+    end;
+  end;
+  vp := _SelectVertex[0].v;
+  for i := 1 to _SelectVertex.Count - 1 do
+  vp := vp + _SelectVertex[i].v;
+  vp := vp * (1 / _SelectVertex.Count);
+  CheckFaces;
+  _SelectVertex[0].v := vp;
+  for i := _SelectVertex.Count - 1 downto 1 do
+  begin
+    v := _SelectVertex[i];
+    for j := 0 to v.e.Count - 1 do
+    begin
+      for n := 0 to 1 do
+      if v.e[j].v[n] = v then
+      begin
+        v.e[j].v[n] := _SelectVertex[0];
+      end;
+    end;
+    for j := 0 to v.f.Count - 1 do
+    begin
+      for n := 0 to 2 do
+      if v.f[j].v[n] = v then
+      v.f[j].v[n] := _SelectVertex[0];
+    end;
+    DeleteVertex(v);
+  end;
+  for i := Component.Edges.Count - 1 downto 1 do
+  begin
+    e0 := Component.Edges[i];
+    if (e0.v[0] = nil) or (e0.v[1] = nil) then Continue;
+    for j := 0 to i - 1 do
+    begin
+      e1 := Component.Edges[j];
+      if (e1.v[0] = nil) or (e1.v[1] = nil) then Continue;
+      if e1.Contains(e0.v[0]) and e1.Contains(e0.v[1]) then
+      begin
+        DeleteEdge(e0);
+        Break;
+      end;
+    end;
+  end;
+  v := _SelectVertex[0];
+  _SelectVertex.Clear;
+  _SelectFace.Clear;
+  _SelectEdge.Clear;
+  _SelectVertex.Add(v);
+  Component.CompleteData;
+  VerifyMesh;
+end;
+
 procedure TScene2DEditorPoly.OnDeleteClick;
   var i: Integer;
 begin
@@ -25062,26 +25166,37 @@ begin
     begin
       for i := 0 to _SelectVertex.Count - 1 do
       DeleteVertex(_SelectVertex[i]);
-      _SelectVertex.Clear;
+      VerifyMesh;
     end;
     em_edge:
     begin
       for i := 0 to _SelectEdge.Count - 1 do
       DeleteEdge(_SelectEdge[i]);
-      _SelectEdge.Clear;
+      VerifyMesh;
     end;
     em_face:
     begin
       for i := 0 to _SelectFace.Count - 1 do
       DeleteFace(_SelectFace[i]);
-      _SelectFace.Clear;
+      VerifyMesh;
     end;
   end;
+  _SelectVertex.Clear;
+  _SelectEdge.Clear;
+  _SelectFace.Clear;
 end;
 
 procedure TScene2DEditorPoly.DeleteVertex(const v: TScene2DComponentDataPolyVertex);
+  var i, j: Integer;
 begin
-
+  Component.Vertices.Remove(v);
+  for i := 0 to v.f.Count - 1 do
+  for j := 0 to 2 do
+  if v.f[i].v[j] = v then v.f[i].v[j] := nil;
+  for i := 0 to v.e.Count - 1 do
+  for j := 0 to 1 do
+  if v.e[i].v[j] = v then v.e[i].v[j] := nil;
+  v.Free;
 end;
 
 procedure TScene2DEditorPoly.DeleteEdge(const e: TScene2DComponentDataPolyEdge);
@@ -25094,9 +25209,10 @@ begin
     if e.f[i] <> nil then
     for j := 0 to 2 do
     begin
-      if e.f[i].e[j] = e then
+      if e.f[i].e[j] = e then e.f[i].e[j] := nil;
     end;
   end;
+  e.Free;
 end;
 
 procedure TScene2DEditorPoly.DeleteFace(const f: TScene2DComponentDataPolyFace);
@@ -25105,11 +25221,81 @@ begin
   Component.Faces.Remove(f);
   for i := 0 to 2 do
   begin
-    f.v[i].f.Remove(f);
-    for j := 0 to 1 do
-    if f.e[i].f[j] = f then f.e[i].f[j] := nil;
+    if f.v[i] <> nil then f.v[i].f.Remove(f);
+    if f.e[i] <> nil then
+    begin
+      for j := 0 to 1 do
+      if f.e[i].f[j] = f then f.e[i].f[j] := nil;
+    end;
   end;
   f.Free;
+end;
+
+function TScene2DEditorPoly.CheckVertices: Integer;
+  var i: Integer;
+  var v: TScene2DComponentDataPolyVertex;
+begin
+  Result := 0;
+  for i := Component.Vertices.Count - 1 downto 0 do
+  begin
+    v := Component.Vertices[i];
+    if (v.e.Count < 1) or (v.f.Count < 1) then
+    begin
+      DeleteVertex(v);
+      Inc(Result);
+    end;
+  end;
+end;
+
+function TScene2DEditorPoly.CheckEdges: Integer;
+  var i: Integer;
+  var e: TScene2DComponentDataPolyEdge;
+begin
+  Result := 0;
+  for i := Component.Edges.Count - 1 downto 0 do
+  begin
+    e := Component.Edges[i];
+    if (e.v[0] = nil)
+    or (e.v[1] = nil)
+    or ((e.f[0] = nil) and (e.f[1] = nil)) then
+    begin
+      DeleteEdge(e);
+      Inc(Result);
+    end;
+  end;
+end;
+
+function TScene2DEditorPoly.CheckFaces: Integer;
+  var i, j: Integer;
+  var f: TScene2DComponentDataPolyFace;
+begin
+  Result := 0;
+  for i := Component.Faces.Count - 1 downto 0 do
+  begin
+    f := Component.Faces[i];
+    for j := 0 to 2 do
+    if (f.v[j] = nil)
+    or (f.e[j] = nil) then
+    begin
+      DeleteFace(f);
+      Inc(Result);
+      Break;
+    end;
+  end;
+end;
+
+function TScene2DEditorPoly.CheckMesh: Integer;
+begin
+  Result := CheckFaces + CheckEdges + CheckVertices;
+end;
+
+procedure TScene2DEditorPoly.VerifyMesh;
+  var d: Integer;
+begin
+  repeat
+    d := CheckMesh;
+  until d = 0;
+  Component.CompleteData;
 end;
 
 function TScene2DEditorPoly.IsSelecting: Boolean;
@@ -25143,6 +25329,8 @@ begin
   _BtnMode.OnClick := @OnModeClick;
   _BtnFlipEdge := AddButton('flip edge');
   _BtnFlipEdge.OnClick := @OnFlipEdgeClick;
+  _BtnCollapse := AddButton('collapse');
+  _BtnCollapse.OnClick := @OnCollapseClick;
   _BtnDelete := AddButton('delete');
   _BtnDelete.OnClick := @OnDeleteClick;
 end;
@@ -25187,6 +25375,10 @@ begin
     ((EditMode = em_vertex) and (_SelectVertex.Count > 0))
     or ((EditMode = em_edge) and (_SelectEdge.Count > 0))
     or ((EditMode = em_face) and (_SelectFace.Count > 0))
+  );
+  _BtnCollapse.Visible := (
+    (EditMode = em_vertex)
+    and (_SelectVertex.Count > 1)
   );
   ButtonFrame := G2Rect(8, -48, 160, 40);
   for i := 0 to High(Buttons) do
@@ -26389,6 +26581,19 @@ begin
   f.Clear;
   o.Clear;
   c := $ffffffff;
+end;
+
+function TScene2DComponentDataPolyVertex.IsEnclosed: Boolean;
+  var i, j: Integer;
+begin
+  for i := 0 to e.Count - 1 do
+  for j := 0 to 1 do
+  if e[i].f[j] = nil then
+  begin
+    Result := False;
+    Exit;
+  end;
+  Result := True;
 end;
 
 constructor TScene2DComponentDataPolyEdge.Create;
