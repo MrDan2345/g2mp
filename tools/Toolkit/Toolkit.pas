@@ -3301,6 +3301,7 @@ type
     var _BtnMode: TBtn;
     var _BtnFlipEdge: TBtn;
     var _BtnCollapse: TBtn;
+    var _BtnSplit: TBtn;
     var _BtnDelete: TBtn;
     var _Component: TScene2DComponentDataPoly;
     var _PopUp: TOverlayPopUp;
@@ -3324,6 +3325,7 @@ type
     procedure OnModeClick;
     procedure OnFlipEdgeClick;
     procedure OnCollapseClick;
+    procedure OnSplitClick;
     procedure OnDeleteClick;
     procedure DeleteVertex(const v: TScene2DComponentDataPolyVertex);
     procedure DeleteEdge(const e: TScene2DComponentDataPolyEdge);
@@ -3510,6 +3512,8 @@ type
     constructor Create;
     function Contains(const Vertex: TScene2DComponentDataPolyVertex): Boolean;
     function Contains(const Edge: TScene2DComponentDataPolyEdge): Boolean;
+    function VertexOpposite(const Vertex0, Vertex1: TScene2DComponentDataPolyVertex): TScene2DComponentDataPolyVertex;
+    function VertexOppositeEdge(const Edge: TScene2DComponentDataPolyEdge): TScene2DComponentDataPolyVertex;
   end;
 
   TScene2DComponentDataPoly = class (TScene2DComponentData)
@@ -25151,6 +25155,44 @@ begin
   VerifyMesh;
 end;
 
+procedure TScene2DEditorPoly.OnSplitClick;
+  var e, e0, e1: TScene2DComponentDataPolyEdge;
+  var f0, f1: TScene2DComponentDataPolyFace;
+  var v, v0: TScene2DComponentDataPolyVertex;
+  var i, j: Integer;
+begin
+  if not (
+    (EditMode = em_edge)
+    and (_SelectEdge.Count = 1)
+  ) then Exit;
+  e0 := _SelectEdge[0];
+  v := TScene2DComponentDataPolyVertex.Create;
+  v.v := (e0.v[0].v + e0.v[1].v) * 0.5;
+  Component.Vertices.Add(v);
+  e1 := TScene2DComponentDataPolyEdge.Create;
+  e1.v[0] := v; e1.v[1] := e0.v[1];
+  Component.Edges.Add(e1);
+  e0.v[1] := v;
+  for i := 0 to 1 do
+  if e0.f[i] <> nil then
+  begin
+    f0 := e0.f[i];
+    v0 := f0.VertexOpposite(e0.v[0], e1.v[1]);
+    for j := 0 to 2 do
+    if f0.v[j] = e1.v[1] then f0.v[j] := v;
+    f1 := TScene2DComponentDataPolyFace.Create;
+    f1.v[0] := v;
+    f1.v[1] := v0;
+    f1.v[2] := e1.v[1];
+    Component.Faces.Add(f1);
+    e := TScene2DComponentDataPolyEdge.Create;
+    e.v[0] := v; e.v[1] := v0;
+    Component.Edges.Add(e);
+  end;
+  _SelectEdge.Add(e1);
+  Component.CompleteData;
+end;
+
 procedure TScene2DEditorPoly.OnDeleteClick;
   var i: Integer;
 begin
@@ -25329,6 +25371,8 @@ begin
   _BtnFlipEdge.OnClick := @OnFlipEdgeClick;
   _BtnCollapse := AddButton('collapse');
   _BtnCollapse.OnClick := @OnCollapseClick;
+  _BtnSplit := AddButton('split');
+  _BtnSplit.OnClick := @OnSplitClick;
   _BtnDelete := AddButton('delete');
   _BtnDelete.OnClick := @OnDeleteClick;
 end;
@@ -25377,6 +25421,10 @@ begin
   _BtnCollapse.Visible := (
     (EditMode = em_vertex)
     and (_SelectVertex.Count > 1)
+  );
+  _BtnSplit.Visible := (
+    (EditMode = em_edge)
+    and (_SelectEdge.Count = 1)
   );
   ButtonFrame := G2Rect(8, -48, 160, 40);
   for i := 0 to High(Buttons) do
@@ -26626,6 +26674,24 @@ begin
   for i := 0 to 2 do
   if e[i] = Edge then Exit(True);
   Result := False;
+end;
+
+function TScene2DComponentDataPolyFace.VertexOpposite(const Vertex0, Vertex1: TScene2DComponentDataPolyVertex): TScene2DComponentDataPolyVertex;
+  var i: Integer;
+begin
+  if not Contains(Vertex0) or not Contains(Vertex0) then Exit(nil);
+  for i := 0 to 2 do
+  if (v[i] <> nil) and (v[i] <> Vertex0) and (v[i] <> Vertex1) then
+  begin
+    Result := v[i];
+    Exit;
+  end;
+  Result := nil;
+end;
+
+function TScene2DComponentDataPolyFace.VertexOppositeEdge(const Edge: TScene2DComponentDataPolyEdge): TScene2DComponentDataPolyVertex;
+begin
+  Result := VertexOpposite(Edge.v[0], Edge.v[1]);
 end;
 
 function TScene2DComponentDataPoly.FindEdge(const v0, v1: TScene2DComponentDataPolyVertex): TScene2DComponentDataPolyEdge;

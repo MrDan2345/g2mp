@@ -46,7 +46,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="..\g2mp\source;..\g2mp\source\box2d"/>
+      <OtherUnitFiles Value="..\..\source;..\..\source\box2d"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
   </CompilerOptions>
