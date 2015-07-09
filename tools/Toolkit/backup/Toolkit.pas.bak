@@ -45,7 +45,6 @@ type
   TParticleObject = class;
   TParticleEmitter = class;
   TUIWorkspaceConstructor = class;
-  PPropertySet = ^TPropertySet;
   CAsset = class of TAsset;
 
   TCharSet = set of AnsiChar;
@@ -410,6 +409,7 @@ type
 //TCodeHighlightG2ML END
 
 //TPropertySet BEGIN
+  PPropertySet = ^TPropertySet;
   TPropertySet = class
   public
     type TProperty = class;
@@ -446,6 +446,7 @@ type
       property Children: PQuickListProperty read GetChildren;
       constructor Create; virtual;
       destructor Destroy; override;
+      procedure Clear;
     end;
     type TPropertyPath = class (TProperty)
     protected
@@ -3195,6 +3196,7 @@ type
     procedure KeyDown(const Key: Integer); virtual;
     procedure KeyUp(const Key: Integer); virtual;
     procedure Initialize; virtual;
+    procedure Finalize; virtual;
   end;
 //TScene2DEditor END
 
@@ -3283,9 +3285,11 @@ type
   TScene2DComponentDataPolyVertexList = specialize TG2QuickListG<TScene2DComponentDataPolyVertex>;
   TScene2DComponentDataPolyEdgeList = specialize TG2QuickListG<TScene2DComponentDataPolyEdge>;
   TScene2DComponentDataPolyFaceList = specialize TG2QuickListG<TScene2DComponentDataPolyFace>;
+  TScene2DComponentDataPolyLayer = class;
+  TScene2DComponentDataPolyLayerList = specialize TG2QuickListG<TScene2DComponentDataPolyLayer>;
 
 //TScene2DEditorPoly BEGIN
-  TScene2DEditorPoly = class (TScene2DEditorShape)
+  TScene2DEditorPoly = class (TScene2DEditor)
   public
     type TEditMode = (em_vertex, em_edge, em_face);
   private
@@ -3303,6 +3307,7 @@ type
     var _BtnCollapse: TBtn;
     var _BtnSplit: TBtn;
     var _BtnDelete: TBtn;
+    var _PrevDebugRender: Boolean;
     var _Component: TScene2DComponentDataPoly;
     var _PopUp: TOverlayPopUp;
     var _MOverEdge: TScene2DComponentDataPolyEdge;
@@ -3337,8 +3342,6 @@ type
     procedure VerifyMesh;
     function IsSelecting: Boolean;
     function AddButton(const Name: String): TBtn;
-  protected
-    function GetOwner: TG2Scene2DEntity; override;
   public
     var EditMode: TEditMode;
     class var Instance: TScene2DEditorPoly;
@@ -3350,6 +3353,7 @@ type
     procedure MouseDown(const Display: TG2Display2D; const Button, x, y: Integer); override;
     procedure MouseUp(const Display: TG2Display2D; const Button, x, y: Integer); override;
     procedure Initialize; override;
+    procedure Finalize; override;
   end;
 //TScene2DEditorPoly END
 
@@ -3442,7 +3446,7 @@ type
     function Pick(const x, y: TG2Float): Boolean; virtual;
     procedure DebugDraw(const Display: TG2Display2D); virtual;
     function PtInComponent(const pt: TG2Vec2): Integer; virtual;
-    procedure AddToProperties(var PropertySet: TPropertySet); virtual;
+    procedure AddToProperties(const PropertySet: TPropertySet); virtual;
   end;
   CScene2DComponentData = class of TScene2DComponentData;
 //TScene2DComponentData END
@@ -3461,7 +3465,7 @@ type
     destructor Destroy; override;
     function PickLayer: Integer; override;
     function Pick(const x, y: TG2Float): Boolean; override;
-    procedure AddToProperties(var PropertySet: TPropertySet); override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnChangeLayer(const Sender: Pointer);
     procedure OnChangeImage(const Sender: Pointer);
     procedure OnChangePosition(const Sender: Pointer);
@@ -3479,7 +3483,7 @@ type
     var Component: TG2Scene2DComponentBackground;
     class function GetName: String; override;
     destructor Destroy; override;
-    procedure AddToProperties(var PropertySet: TPropertySet); override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnChangeLayer(const Sender: Pointer);
     procedure OnChangeTexture(const Sender: Pointer);
   end;
@@ -3493,6 +3497,7 @@ type
     var o: TG2QuickListFloat;
     var e: TScene2DComponentDataPolyEdgeList;
     var f: TScene2DComponentDataPolyFaceList;
+    var ind: TG2IntU16;
     constructor Create;
     function IsEnclosed: Boolean;
   end;
@@ -3516,23 +3521,37 @@ type
     function VertexOppositeEdge(const Edge: TScene2DComponentDataPolyEdge): TScene2DComponentDataPolyVertex;
   end;
 
+  TScene2DComponentDataPolyLayer = class
+  public
+    var TexturePath: String;
+    var Texture: TAssetTexture;
+    var Scale: TG2Vec2;
+    var PathProp: TPropertySet.TPropertyPath;
+    var ScaleProp: TPropertySet.TPropertyVec2;
+    constructor Create;
+  end;
+
   TScene2DComponentDataPoly = class (TScene2DComponentData)
   private
-    var Group: TPropertySet.TProperty;
+    var Group: TPropertySet.TPropertyComponent;
     var Vertices: TScene2DComponentDataPolyVertexList;
     var Edges: TScene2DComponentDataPolyEdgeList;
     var Faces: TScene2DComponentDataPolyFaceList;
+    var Layers: TScene2DComponentDataPolyLayerList;
     function FindEdge(const v0, v1: TScene2DComponentDataPolyVertex): TScene2DComponentDataPolyEdge;
     function FindFace(const v0, v1, v2: TScene2DComponentDataPolyVertex): TScene2DComponentDataPolyFace;
+    procedure UpdateGroup;
+    procedure UpdateComponent;
   public
     var Component: TG2Scene2DComponentPoly;
     class function GetName: String; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure AddToProperties(var PropertySet: TPropertySet); override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnAddLayer;
     procedure OnEdit;
     procedure CompleteData;
+    procedure OnChangeLayerTexture(const Sender: Pointer);
   end;
 //TScene2DComponentDataPoly END
 
@@ -3551,7 +3570,7 @@ type
     var Component: TG2Scene2DComponentEffect;
     class function GetName: String; override;
     destructor Destroy; override;
-    procedure AddToProperties(var PropertySet: TPropertySet); override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnChangeLayer(const Sender: Pointer);
     procedure OnChangeScale(const Sender: Pointer);
     procedure OnChangeSpeed(const Sender: Pointer);
@@ -3575,7 +3594,7 @@ type
     var Component: TG2Scene2DComponentRigidBody;
     class function GetName: String; override;
     destructor Destroy; override;
-    procedure AddToProperties(var PropertySet: TPropertySet); override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
     function GetLocalPoint(const WorldPoint: TG2Vec2): TG2Vec2;
     function GetWorldPoint(const LocalPoint: TG2Vec2): TG2Vec2;
     procedure OnChangePosition(const Sender: Pointer);
@@ -3596,7 +3615,7 @@ type
     function PickLayer: Integer; override;
     function Pick(const x, y: TG2Float): Boolean; override;
     procedure DebugDraw(const Display: TG2Display2D); override;
-    procedure AddToProperties(var PropertySet: TPropertySet); override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnEdit;
   end;
 //TScene2DComponentDataShapePoly END
@@ -3616,7 +3635,7 @@ type
     function PickLayer: Integer; override;
     function Pick(const x, y: TG2Float): Boolean; override;
     procedure DebugDraw(const Display: TG2Display2D); override;
-    procedure AddToProperties(var PropertySet: TPropertySet); override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnChangeWidth(const Sender: Pointer);
     procedure OnChangeHeight(const Sender: Pointer);
     procedure OnChangeOffset(const Sender: Pointer);
@@ -3636,7 +3655,7 @@ type
     function PickLayer: Integer; override;
     function Pick(const x, y: TG2Float): Boolean; override;
     procedure DebugDraw(const Display: TG2Display2D); override;
-    procedure AddToProperties(var PropertySet: TPropertySet); override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnChangeOffset(const Sender: Pointer);
     procedure OnChangeRadius(const Sender: Pointer);
   end;
@@ -3650,7 +3669,7 @@ type
     constructor Create; override;
     destructor Destroy; override;
     procedure DebugDraw(const Display: TG2Display2D); override;
-    procedure AddToProperties(var PropertySet: TPropertySet); override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnEdit;
   end;
 //TScene2DComponentDataShapeEdge END
@@ -3664,7 +3683,7 @@ type
     constructor Create; override;
     destructor Destroy; override;
     procedure DebugDraw(const Display: TG2Display2D); override;
-    procedure AddToProperties(var PropertySet: TPropertySet); override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnEdit;
   end;
 //TScene2DComponentDataShapeChain END
@@ -3684,7 +3703,7 @@ type
     procedure DebugDraw(const Display: TG2Display2D); virtual;
     function IsSelected: Boolean; inline;
     function Select(const Display: TG2Display2D; const x, y: TG2Float): Boolean; virtual;
-    procedure AddToProperties(var PropertySet: TPropertySet); virtual;
+    procedure AddToProperties(const PropertySet: TPropertySet); virtual;
   end;
 //TScene2DJointData END
 
@@ -3758,7 +3777,6 @@ type
     var _PropertySet: TPropertySet;
     var _ComponentSet: TPropertySet;
     var _Editor: TScene2DEditor;
-    function GetPropertySetPtr: PPropertySet; inline;
     procedure AddComponentTypePair(const ComponentClass: CG2Scene2DComponent; const ComponentDataClass: CScene2DComponentData; const AddProc: TG2ProcObj);
     procedure SetEditor(const Value: TScene2DEditor); inline;
     function ModifySavePath(const Path: String): String;
@@ -3768,7 +3786,6 @@ type
     var Selection: TG2Scene2DEntityList;
     var SelectJoint: TScene2DJointData;
     var SelPos: TG2Vec2;
-    property PropertySetPtr: PPropertySet read GetPropertySetPtr;
     property PropertySet: TPropertySet read _PropertySet write _PropertySet;
     property Scene: TG2Scene2D read _Scene write _Scene;
     property Editor: TScene2DEditor read _Editor write SetEditor;
@@ -6036,6 +6053,21 @@ end;
 destructor TPropertySet.TProperty.Destroy;
 begin
   inherited Destroy;
+end;
+
+procedure TPropertySet.TProperty.Clear;
+  procedure FreeProperty(const Prop: TProperty);
+    var i: Integer;
+  begin
+    for i := 0 to Prop.Children^.Count - 1 do
+    FreeProperty(Prop.Children^[i]);
+    Prop.Free;
+  end;
+  var i: Integer;
+begin
+  for i := 0 to _Children.Count - 1 do
+  FreeProperty(_Children[i]);
+  _Children.Clear;
 end;
 
 constructor TPropertySet.TPropertyPath.Create;
@@ -11700,14 +11732,16 @@ procedure TUIWorkspaceProperties.RenderButton(
   const Offset: Integer;
   const Prop: TPropertySet.TPropertyButton
 );
+  var br: TG2Rect;
   var h: Integer;
   var c0, c1: TG2Color;
 begin
-  g2.PrimRect(r.x, r.y, r.w, r.h, App.UI.GetColorPrimary(0.9));
+  br := r;
+  g2.PrimRect(br.x, br.y, br.w, br.h, App.UI.GetColorPrimary(0.9));
   h := App.UI.Font1.TextHeight('A');
   App.UI.PushClipRect(r);
   c0 := App.UI.GetColorPrimary(0.6);
-  if r.Contains(g2.MousePos) then
+  if br.Contains(g2.MousePos) then
   begin
     if g2.MouseDown[G2MB_Left] and Frame.Contains(g2.MouseDownPos[G2MB_Left]) then
     c1 := App.UI.GetColorPrimary(0.7)
@@ -11716,10 +11750,10 @@ begin
   end
   else
   c1 := App.UI.GetColorPrimary(0.8);
-  g2.PrimRect(r.x, r.y, r.w, r.h, c0);
-  g2.PrimRect(r.x + 2, r.y + 2, r.w - 4, r.h - 4, c1);
+  g2.PrimRect(br.x, br.y, br.w, br.h, c0);
+  g2.PrimRect(br.x + 2, br.y + 2, br.w - 4, br.h - 4, c1);
   App.UI.Font1.Print(
-    r.x + (r.w - App.UI.Font1.TextWidth(Prop.Name)) * 0.5, r.y + (r.h - h) * 0.5, 1, 1,
+    br.x + (br.w - App.UI.Font1.TextWidth(Prop.Name)) * 0.5, br.y + (br.h - h) * 0.5, 1, 1,
     $ff000000, Prop.Name, bmNormal, tfPoint
   );
   App.UI.PopClipRect;
@@ -12406,7 +12440,7 @@ begin
   begin
     if (Prop is TPropertySet.TPropertyButton) then
     begin
-      if Assigned(TPropertySet.TPropertyButton(Prop).Proc) then
+      if not InExpand and Assigned(TPropertySet.TPropertyButton(Prop).Proc) then
       TPropertySet.TPropertyButton(Prop).Proc;
     end
     else if (Prop is TPropertySet.TPropertyPath) then
@@ -14115,7 +14149,7 @@ end;
 procedure TUIWorkspaceScene2DProperties.OnInitialize;
 begin
   inherited OnInitialize;
-  PropertySetPtr := App.Scene2DData.PropertySetPtr;
+  PropertySetPtr := @App.Scene2DData.PropertySet;
 end;
 
 class function TUIWorkspaceScene2DProperties.GetWorkspaceName: AnsiString;
@@ -24363,6 +24397,11 @@ procedure TScene2DEditor.Initialize;
 begin
 
 end;
+
+procedure TScene2DEditor.Finalize;
+begin
+
+end;
 //TScene2DEditor END
 
 //TScene2DEditorShape BEGIN
@@ -25189,7 +25228,7 @@ begin
     e.v[0] := v; e.v[1] := v0;
     Component.Edges.Add(e);
   end;
-  _SelectEdge.Clear;
+  _SelectEdge.Add(e1);
   Component.CompleteData;
 end;
 
@@ -25352,11 +25391,6 @@ begin
   Result.MdInButton := False;
   SetLength(Buttons, Length(Buttons) + 1);
   Buttons[High(Buttons)] := Result;
-end;
-
-function TScene2DEditorPoly.GetOwner: TG2Scene2DEntity;
-begin
-  Result := _Component.Component.Owner;
 end;
 
 constructor TScene2DEditorPoly.Create;
@@ -25790,6 +25824,15 @@ begin
   _SelectFace.Clear;
   _VDrag.Clear;
   _Drag := False;
+  _PrevDebugRender := Component.Component.DebugRender;
+  Component.Component.DebugRender := False;
+end;
+
+procedure TScene2DEditorPoly.Finalize;
+begin
+  Component.UpdateComponent;
+  Component.Component.DebugRender := _PrevDebugRender;
+  inherited Finalize;
 end;
 //TScene2DEditorPoly END
 
@@ -26463,7 +26506,7 @@ begin
   Result := -1;
 end;
 
-procedure TScene2DComponentData.AddToProperties(var PropertySet: TPropertySet);
+procedure TScene2DComponentData.AddToProperties(const PropertySet: TPropertySet);
 begin
 
 end;
@@ -26507,7 +26550,7 @@ begin
   Result := G2Vec2InPoly(G2Vec2(x, y), @v, 4);
 end;
 
-procedure TScene2DComponentDataSprite.AddToProperties(var PropertySet: TPropertySet);
+procedure TScene2DComponentDataSprite.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
   var Enum: TPropertySet.TPropertyEnum;
 begin
@@ -26580,7 +26623,7 @@ begin
   if Texture <> nil then Texture.RefDec;
 end;
 
-procedure TScene2DComponentDataBackground.AddToProperties(var PropertySet: TPropertySet);
+procedure TScene2DComponentDataBackground.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
   var Enum: TPropertySet.TPropertyEnum;
 begin
@@ -26627,6 +26670,7 @@ begin
   f.Clear;
   o.Clear;
   c := $ffffffff;
+  ind := 0;
 end;
 
 function TScene2DComponentDataPolyVertex.IsEnclosed: Boolean;
@@ -26694,6 +26738,13 @@ begin
   Result := VertexOpposite(Edge.v[0], Edge.v[1]);
 end;
 
+constructor TScene2DComponentDataPolyLayer.Create;
+begin
+  inherited Create;
+  Texture := nil;
+  Scale := G2Vec2(1, 1);
+end;
+
 function TScene2DComponentDataPoly.FindEdge(const v0, v1: TScene2DComponentDataPolyVertex): TScene2DComponentDataPolyEdge;
   var i: Integer;
 begin
@@ -26746,6 +26797,52 @@ begin
   Result := nil;
 end;
 
+procedure TScene2DComponentDataPoly.UpdateGroup;
+  var i: Integer;
+  var Properties: TPropertySet;
+  var LayerGroup: TPropertySet.TProperty;
+begin
+  Properties := PScene2DEntityData(Component.Owner.UserData)^.Properties;
+  Group.Clear;
+  for i := 0 to Layers.Count - 1 do
+  begin
+    LayerGroup := Properties.PropGroup('Layer ' + IntToStr(i), Group);
+    Layers[i].PathProp := Properties.PropPath('Texture', @Layers[i].TexturePath, TAssetTexture, LayerGroup, @OnChangeLayerTexture);
+    Layers[i].ScaleProp := Properties.PropVec2('Scale', @Layers[i].Scale, LayerGroup);
+  end;
+  Properties.PropButton('Add Layer', @OnAddLayer, Group);
+  Properties.PropButton('Edit', @OnEdit, Group);
+end;
+
+procedure TScene2DComponentDataPoly.UpdateComponent;
+  var i: Integer;
+  var VertexData: array of TG2Vec2;
+  var IndexData: array of TG2IntU16;
+begin
+  SetLength(VertexData, Vertices.Count);
+  for i := 0 to Vertices.Count - 1 do
+  begin
+    Vertices[i].ind := TG2IntU16(i);
+    VertexData[i] := Vertices[i].v;
+  end;
+  SetLength(IndexData, Faces.Count * 3);
+  for i := 0 to Faces.Count - 1 do
+  begin
+    IndexData[i * 3 + 0] := Faces[i].v[0].ind;
+    IndexData[i * 3 + 1] := Faces[i].v[1].ind;
+    IndexData[i * 3 + 2] := Faces[i].v[2].ind;
+  end;
+  Component.SetUp(@VertexData[0], Length(VertexData), SizeOf(TG2Vec2), @IndexData[0], Length(IndexData), SizeOf(TG2IntU16));
+  Component.LayerCount := Layers.Count;
+  for i := 0 to Layers.Count - 1 do
+  begin
+    if Layers[i].Texture <> nil then
+    Component.Layers[i].Texture := Layers[i].Texture.Texture
+    else
+    Component.Layers[i].Texture := nil;
+  end;
+end;
+
 class function TScene2DComponentDataPoly.GetName: String;
 begin
   Result := 'Triangle Mesh';
@@ -26764,6 +26861,7 @@ begin
   Vertices.Clear;
   Edges.Clear;
   Faces.Clear;
+  Layers.Clear;
   for i := 0 to 3 do
   begin
     v[i] := TScene2DComponentDataPolyVertex.Create;
@@ -26800,16 +26898,21 @@ begin
   inherited Destroy;
 end;
 
-procedure TScene2DComponentDataPoly.AddToProperties(var PropertySet: TPropertySet);
+procedure TScene2DComponentDataPoly.AddToProperties(const PropertySet: TPropertySet);
 begin
   Group := PropertySet.PropComponent(GetName, Component);
-  PropertySet.PropButton('Add Layer', @OnAddLayer, Group);
-  PropertySet.PropButton('Edit', @OnEdit, Group);
+  UpdateGroup;
 end;
 
 procedure TScene2DComponentDataPoly.OnAddLayer;
+  var Layer: TScene2DComponentDataPolyLayer;
+  var i: Integer;
 begin
-
+  Layer := TScene2DComponentDataPolyLayer.Create;
+  Layers.Add(Layer);
+  for i := 0 to Vertices.Count - 1 do
+  Vertices[i].o.Add(0);
+  UpdateGroup;
 end;
 
 procedure TScene2DComponentDataPoly.OnEdit;
@@ -26855,6 +26958,26 @@ begin
     end;
   end;
 end;
+
+procedure TScene2DComponentDataPoly.OnChangeLayerTexture(const Sender: Pointer);
+  var i: Integer;
+  var Layer: TScene2DComponentDataPolyLayer;
+begin
+  Layer := nil;
+  for i := 0 to Layers.Count - 1 do
+  if Pointer(Layers[i].PathProp) = Sender then
+  begin
+    Layer := Layers[i];
+    Break;
+  end;
+  if Layer = nil then Exit;
+  if Layer.Texture <> nil then
+  Layer.Texture.RefDec;
+  Layer.Texture := App.AssetManager.GetTexture(Layer.TexturePath);
+  if Layer.Texture <> nil then
+  Layer.Texture.RefInc;
+  UpdateComponent;
+end;
 //TScene2DComponentDataPoly END
 
 //TScene2DComponentDataEffect BEGIN
@@ -26869,7 +26992,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TScene2DComponentDataEffect.AddToProperties(var PropertySet: TPropertySet);
+procedure TScene2DComponentDataEffect.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
 begin
   Group := PropertySet.PropComponent('Effect', Component);
@@ -26966,7 +27089,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TScene2DComponentDataRigidBody.AddToProperties(var PropertySet: TPropertySet);
+procedure TScene2DComponentDataRigidBody.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
   var Enum: TPropertySet.TPropertyEnum;
 begin
@@ -27095,7 +27218,7 @@ begin
   Display.PrimEnd;
 end;
 
-procedure TScene2DComponentDataShapePoly.AddToProperties(var PropertySet: TPropertySet);
+procedure TScene2DComponentDataShapePoly.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
 begin
   Group := PropertySet.PropComponent('Collision Polygon', Component);
@@ -27186,7 +27309,7 @@ begin
   Display.PrimEnd;
 end;
 
-procedure TScene2DComponentDataShapeBox.AddToProperties(var PropertySet: TPropertySet);
+procedure TScene2DComponentDataShapeBox.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
 begin
   _Width := Component.Width;
@@ -27271,7 +27394,7 @@ begin
   );
 end;
 
-procedure TScene2DComponentDataShapeCircle.AddToProperties(var PropertySet: TPropertySet);
+procedure TScene2DComponentDataShapeCircle.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
 begin
   _Offset := Component.Center;
@@ -27325,7 +27448,7 @@ begin
   Display.PrimLine(v1, v2, $ff80ff00);
 end;
 
-procedure TScene2DComponentDataShapeEdge.AddToProperties(var PropertySet: TPropertySet);
+procedure TScene2DComponentDataShapeEdge.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
 begin
   Group := PropertySet.PropComponent('Collision Edge', Component);
@@ -27386,7 +27509,7 @@ begin
   Display.PrimEnd;
 end;
 
-procedure TScene2DComponentDataShapeChain.AddToProperties(var PropertySet: TPropertySet);
+procedure TScene2DComponentDataShapeChain.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
 begin
   Group := PropertySet.PropComponent('Collision Chain', Component);
@@ -27443,7 +27566,7 @@ begin
   Result := G2Rect(v.x - 8, v.y - 8, 16, 16).Contains(G2Vec2(x, y));
 end;
 
-procedure TScene2DJointData.AddToProperties(var PropertySet: TPropertySet);
+procedure TScene2DJointData.AddToProperties(const PropertySet: TPropertySet);
 begin
 
 end;
@@ -27820,11 +27943,6 @@ end;
 //TScene2DJointDataRevolute END
 
 //TScene2DData BEIGN
-function TScene2DData.GetPropertySetPtr: PPropertySet;
-begin
-  Result := @_PropertySet;
-end;
-
 procedure TScene2DData.AddComponentTypePair(
   const ComponentClass: CG2Scene2DComponent;
   const ComponentDataClass: CScene2DComponentData;
@@ -27841,6 +27959,9 @@ end;
 
 procedure TScene2DData.SetEditor(const Value: TScene2DEditor);
 begin
+  if _Editor = Value then Exit;
+  if _Editor <> nil then
+  _Editor.Finalize;
   _Editor := Value;
   if _Editor <> nil then
   _Editor.Initialize;

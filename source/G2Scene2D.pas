@@ -3248,23 +3248,23 @@ procedure TG2Scene2DComponentPoly.SetUp(
 begin
   pv := NewVertices;
   SetLength(_Vertices, NewVertexCount);
-  for i := 0 to NewVertexCount + 1 do
+  for i := 0 to NewVertexCount - 1 do
   begin
     _Vertices[i].x := pv^.x;
     _Vertices[i].y := pv^.y;
     _Vertices[i].c := $ffffffff;
-    pv += VertexStride;
+    pv := PG2Vec2(Pointer(pv) + VertexStride);
   end;
   pi := NewIndices;
   SetLength(_Faces, NewIndexCount div 3);
   for i := 0 to (NewIndexCount div 3) - 1 do
   begin
     _Faces[i][0] := pi^;
-    pi += IndexStride;
+    pi := PG2IntU16(Pointer(pi) + IndexStride);
     _Faces[i][1] := pi^;
-    pi += IndexStride;
+    pi := PG2IntU16(Pointer(pi) + IndexStride);
     _Faces[i][2] := pi^;
-    pi += IndexStride;
+    pi := PG2IntU16(Pointer(pi) + IndexStride);
   end;
   ClearLayers;
   CreateLayers;
