@@ -608,9 +608,10 @@ type
     var _Vertices: array of TG2Scene2DComponentPolyVertex;
     var _Faces: array of array[0..2] of TG2IntU16;
     var _Layers: array of TG2Scene2DComponentPolyLayer;
-    var _RenderHook: TG2Scene2DRenderHook;
+    var _DebugRenderHook: TG2Scene2DRenderHook;
     var _DebugLayer: TG2IntS32;
     var _DebugRender: Boolean;
+    var _Visible: Boolean;
     procedure ClearLayers;
     procedure CreateLayers;
     procedure SetDebugLayer(const Value: TG2IntS32); inline;
@@ -629,9 +630,11 @@ type
     procedure OnAttach; override;
     procedure OnDetach; override;
     procedure OnDebugRender(const Display: TG2Display2D);
+    procedure OnRender(const Display: TG2Display2D);
   public
     property DebugLayer: TG2IntS32 read _DebugLayer write SetDebugLayer;
     property DebugRender: Boolean read _DebugRender write SetDebugRender;
+    property Visible: Boolean read _Visible write _Visible;
     property LayerCount: TG2IntS32 read GetLayerCount write SetLayerCount;
     property Layers[const Index: TG2IntS32]: TG2Scene2DComponentPolyLayer read GetLayer;
     property VertexCount: TG2IntS32 read GetVertexCount;
@@ -3042,9 +3045,9 @@ procedure TG2Scene2DComponentPoly.SetDebugLayer(const Value: TG2IntS32);
 begin
   if _DebugLayer = Value then Exit;
   _DebugLayer := Value;
-  if _RenderHook <> nil then
+  if _DebugRenderHook <> nil then
   begin
-    _RenderHook.Layer := _DebugLayer;
+    _DebugRenderHook.Layer := _DebugLayer;
   end;
 end;
 
@@ -3054,11 +3057,11 @@ begin
   _DebugRender := Value;
   if _DebugRender then
   begin
-    _RenderHook := Scene.RenderHookAdd(@OnDebugRender, _DebugLayer);
+    _DebugRenderHook := Scene.RenderHookAdd(@OnDebugRender, _DebugLayer);
   end
   else
   begin
-    Scene.RenderHookRemove(_RenderHook);
+    Scene.RenderHookRemove(_DebugRenderHook);
   end;
 end;
 
@@ -3103,6 +3106,7 @@ procedure TG2Scene2DComponentPoly.RenderLayer(const Layer: TG2Scene2DComponentPo
   var v, t: TG2Vec2;
   var c: TG2Color;
 begin
+  if not _Visible then Exit;
   if (Owner = nil) or (Layer.Texture = nil) then Exit;
   Display.PolyBegin(ptTriangles, Layer.Texture, bmNormal, tfLinear);
   for i := 0 to High(_Faces) do
@@ -3145,7 +3149,8 @@ begin
   _Layers := nil;
   _DebugLayer := 100;
   _DebugRender := True;
-  _RenderHook := nil;
+  _DebugRenderHook := nil;
+  _Visible := True;
 end;
 
 procedure TG2Scene2DComponentPoly.OnFinalize;
@@ -3155,15 +3160,12 @@ end;
 
 procedure TG2Scene2DComponentPoly.OnAttach;
 begin
-  if _DebugRender then
-  begin
-    _RenderHook := Scene.RenderHookAdd(@OnDebugRender, _DebugLayer);
-  end;
+  if _DebugRender then _DebugRenderHook := Scene.RenderHookAdd(@OnDebugRender, _DebugLayer);
 end;
 
 procedure TG2Scene2DComponentPoly.OnDetach;
 begin
-  if _RenderHook <> nil then Scene.RenderHookRemove(_RenderHook);
+  if _DebugRenderHook <> nil then Scene.RenderHookRemove(_DebugRenderHook);
 end;
 
 procedure TG2Scene2DComponentPoly.OnDebugRender(const Display: TG2Display2D);
@@ -3183,6 +3185,11 @@ begin
     end;
   end;
   Display.PrimEnd;
+end;
+
+procedure TG2Scene2DComponentPoly.OnRender(const Display: TG2Display2D);
+begin
+
 end;
 
 class constructor TG2Scene2DComponentPoly.CreateClass;

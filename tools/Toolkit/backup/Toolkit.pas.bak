@@ -3291,8 +3291,22 @@ type
 //TScene2DEditorPoly BEGIN
   TScene2DEditorPoly = class (TScene2DEditor)
   public
-    type TEditMode = (em_vertex, em_edge, em_face);
+    type TEditMode = (em_vertex, em_edge, em_face, em_layer);
   private
+    type TSelectList = class (TOverlayObject)
+    public
+      var List: TG2QuickListAnsiString;
+      var f: TG2Rect;
+      var bs, ItemSize: TG2Float;
+      var OnSelect: TG2ProcIntObj;
+      constructor Create; override;
+      procedure Clear;
+      procedure AddItem(const ItemName: AnsiString);
+      procedure Initialize(const Frame: TG2Rect; const BorderSize: TG2Float);
+      procedure Render; override;
+      procedure MouseDown(const Button, x, y: Integer); override;
+      procedure MouseUp(const Button, x, y: Integer); override;
+    end;
     type TBtn = class
     public
       var OnClick: TG2ProcObj;
@@ -3309,7 +3323,7 @@ type
     var _BtnDelete: TBtn;
     var _PrevDebugRender: Boolean;
     var _Component: TScene2DComponentDataPoly;
-    var _PopUp: TOverlayPopUp;
+    var _PopUp: TSelectList;
     var _MOverEdge: TScene2DComponentDataPolyEdge;
     var _MOverVertex: TScene2DComponentDataPolyVertex;
     var _MOverFace: TScene2DComponentDataPolyFace;
@@ -3324,6 +3338,8 @@ type
     var _VOffset: array of TG2Vec2;
     procedure StartDrag(const mc: TG2Vec2);
     procedure SetUpPopUpModes;
+    procedure OnSelectMode(const Index: Integer);
+    procedure OnModeLayer(const Index: Integer);
     procedure OnModeVertices;
     procedure OnModeEdges;
     procedure OnModeFaces;
@@ -3344,6 +3360,7 @@ type
     function AddButton(const Name: String): TBtn;
   public
     var EditMode: TEditMode;
+    var EditLayer: Integer;
     class var Instance: TScene2DEditorPoly;
     property Component: TScene2DComponentDataPoly read _Component write _Component;
     constructor Create;
@@ -3526,8 +3543,10 @@ type
     var TexturePath: String;
     var Texture: TAssetTexture;
     var Scale: TG2Vec2;
+    var Layer: TG2IntS32;
     var PathProp: TPropertySet.TPropertyPath;
     var ScaleProp: TPropertySet.TPropertyVec2;
+    var Index: TG2IntS32;
     constructor Create;
   end;
 
@@ -24942,6 +24961,94 @@ end;
 //TScene2DEditorShapePoly END
 
 //TScene2DEditorPoly BEGIN
+constructor TScene2DEditorPoly.TSelectList.Create;
+begin
+  inherited Create;
+  List.Clear;
+end;
+
+procedure TScene2DEditorPoly.TSelectList.Clear;
+begin
+  List.Clear;
+end;
+
+procedure TScene2DEditorPoly.TSelectList.AddItem(const ItemName: AnsiString);
+begin
+  List.Add(ItemName);
+end;
+
+procedure TScene2DEditorPoly.TSelectList.Initialize(const Frame: TG2Rect; const BorderSize: TG2Float);
+  var i: Integer;
+begin
+  bs := BorderSize;
+  f := Frame;
+  ItemSize := Frame.h - bs * 2;
+  f.t := f.t - ItemSize * List.Count;
+  App.UI.Overlay := Self;
+end;
+
+procedure TScene2DEditorPoly.TSelectList.Render;
+  var i: Integer;
+  var r: TG2Rect;
+  var c, c1: TG2Color;
+  var mc: TPoint;
+begin
+  mc := g2.MousePos;
+  App.UI.DrawSpotFrame(f, bs, $ff808080);
+  r := f;
+  r.t := r.t + bs;
+  r.h := ItemSize;
+  for i := 0 to List.Count - 1 do
+  begin
+    if r.Contains(mc) then
+    begin
+      if g2.MouseDown[G2MB_Left]
+      and r.Contains(g2.MouseDownPos[G2MB_Left]) then
+      begin
+        c := $ff404040;
+        c1 := $ffffffff;
+      end
+      else
+      begin
+        c := $ffa0a0a0;
+        c1 := $ff000000;
+      end;
+      g2.PicRect(
+        r.l, r.t, bs, ItemSize, 0, 0.5, 0.5, 0.5,
+        c, App.UI.TexSpot, bmNormal, tfLinear
+      );
+      g2.PicRect(
+        r.l + bs, r.t, r.w - bs * 2, ItemSize, 0.5, 0.5, 0.5, 0.5,
+        c, App.UI.TexSpot, bmNormal, tfLinear
+      );
+      g2.PicRect(
+        r.r - bs, r.t, bs, ItemSize, 0.5, 0.5, 1, 0.5,
+        c, App.UI.TexSpot, bmNormal, tfLinear
+      );
+    end
+    else
+    begin
+      c1 := $ffe0e0e0;
+    end;
+    App.UI.Font1.Print(
+      Round(r.l + (r.w - App.UI.Font1.TextWidth(List[i])) * 0.5),
+      Round(r.t + (r.h - App.UI.Font1.TextHeight('A')) * 0.5),
+      1, 1, c1, List[i], bmNormal, tfPoint
+    );
+    r.y := r.y + ItemSize;
+  end;
+end;
+
+procedure TScene2DEditorPoly.TSelectList.MouseDown(const Button, x, y: Integer);
+begin
+  inherited MouseDown(Button, x, y);
+end;
+
+procedure TScene2DEditorPoly.TSelectList.MouseUp(const Button, x, y: Integer);
+begin
+  inherited MouseUp(Button, x, y);
+end;
+
 procedure TScene2DEditorPoly.StartDrag(const mc: TG2Vec2);
   type TVertexReplica = array[0..1] of TScene2DComponentDataPolyVertex;
   var VertexReplica: array of TVertexReplica;
@@ -25042,11 +25149,38 @@ begin
 end;
 
 procedure TScene2DEditorPoly.SetUpPopUpModes;
+  var i: Integer;
 begin
   _PopUp.Clear;
-  _PopUp.AddButton('Vertices', @OnModeVertices);
-  _PopUp.AddButton('Edges', @OnModeEdges);
-  _PopUp.AddButton('Triangles', @OnModeFaces);
+  for i := 0 to Component.Layers.Count - 1 do
+  _PopUp.AddItem('Layer ' + IntToStr(i));
+  _PopUp.AddItem('Vertices');
+  _PopUp.AddItem('Edges');
+  _PopUp.AddItem('Triangles');
+end;
+
+procedure TScene2DEditorPoly.OnSelectMode(const Index: Integer);
+  var n: Integer;
+begin
+  if Index < Component.Layers.Count then
+  begin
+    OnModeLayer(Index);
+  end
+  else
+  begin
+    n := Index - Component.Layers.Count;
+    case n of
+      0: OnModeVertices;
+      1: OnModeEdges;
+      2: OnModeFaces;
+    end;
+  end;
+end;
+
+procedure TScene2DEditorPoly.OnModeLayer(const Index: Integer);
+begin
+  EditMode := em_layer;
+  EditLayer := Index;
 end;
 
 procedure TScene2DEditorPoly.OnModeVertices;
@@ -25065,9 +25199,13 @@ begin
 end;
 
 procedure TScene2DEditorPoly.OnModeClick;
+  var r: TG2Rect;
 begin
   SetUpPopUpModes;
-  _PopUp.Show(g2.MousePos);
+  r := Buttons[i].Frame;
+    r.x := Display.ViewPort.Left + r.x;
+    r.y := Display.ViewPort.Bottom + r.y;
+  _PopUp.Initialize(_BtnMode.Frame, 8);
 end;
 
 procedure TScene2DEditorPoly.OnFlipEdgeClick;
@@ -25398,7 +25536,8 @@ begin
   inherited Create;
   _Component := nil;
   Instance := Self;
-  _PopUp := TOverlayPopUp.Create;
+  _PopUp := TSelectList.Create;
+  _PopUp.OnSelect := @OnSelectMode;
   _BtnMode := AddButton('vertex');
   _BtnMode.OnClick := @OnModeClick;
   _BtnFlipEdge := AddButton('flip edge');
@@ -25538,9 +25677,9 @@ begin
 end;
 
 procedure TScene2DEditorPoly.Render(const Display: TG2Display2D);
-  var i: Integer;
+  var i, j, l: Integer;
   var varr: array[0..2] of TG2Vec2;
-  var v, v0, v1, pv0, pv1, mc, pmc, pn, n: TG2Vec2;
+  var v, v0, v1, pv0, pv1, mc, pmc, pn, n, t: TG2Vec2;
   var xf: TG2Transform2;
   var b: Boolean;
   var c, c1: TG2Color;
@@ -25549,10 +25688,34 @@ procedure TScene2DEditorPoly.Render(const Display: TG2Display2D);
   var tc: array[0..4] of TG2Float;
   var str: AnsiString;
   var bm: TG2BlendMode;
+  var LayersSorted: TG2QuickSortList;
+  var Layer: TScene2DComponentDataPolyLayer;
 begin
+  xf := _Component.Component.Owner.Transform;
+  LayersSorted.Clear;
+  for i := 0 to _Component.Layers.Count - 1 do
+  if _Component.Layers[i].Texture <> nil then
+  LayersSorted.Add(_Component.Layers[i], _Component.Layers[i].Layer + i * 0.00001);
+  for l := 0 to LayersSorted.Count - 1 do
+  begin
+    Layer := TScene2DComponentDataPolyLayer(LayersSorted[l]);
+    Display.PolyBegin(ptTriangles, Layer.Texture.Texture, bmNormal, tfLinear);
+    for i := 0 to Component.Faces.Count - 1 do
+    begin
+      for j := 0 to 2 do
+      begin
+        v := Component.Faces[i].v[j].v;
+        c := Component.Faces[i].v[j].c;
+        c.a := Round(c.a * Component.Faces[i].v[j].o[Layer.Index]);
+        t := v * Layer.Scale;
+        v := xf.Transform(v);
+        Display.PolyAdd(v, t, c);
+      end;
+    end;
+    Display.PolyEnd;
+  end;
   pmc := g2.MousePos;
   mc := Display.CoordToDisplay(pmc);
-  xf := _Component.Component.Owner.Transform;
   for i := 0 to _Component.Edges.Count - 1 do
   begin
     v0 := xf.Transform(_Component.Edges[i].v[0].v);
@@ -25813,6 +25976,7 @@ end;
 procedure TScene2DEditorPoly.Initialize;
 begin
   EditMode := em_vertex;
+  EditLayer := -1;
   _MOverVertex := nil;
   _MOverEdge := nil;
   _MOverFace := nil;
@@ -25826,12 +25990,14 @@ begin
   _Drag := False;
   _PrevDebugRender := Component.Component.DebugRender;
   Component.Component.DebugRender := False;
+  Component.Component.Visible := False;
 end;
 
 procedure TScene2DEditorPoly.Finalize;
 begin
   Component.UpdateComponent;
   Component.Component.DebugRender := _PrevDebugRender;
+  Component.Component.Visible := True;
   inherited Finalize;
 end;
 //TScene2DEditorPoly END
@@ -26743,6 +26909,7 @@ begin
   inherited Create;
   Texture := nil;
   Scale := G2Vec2(1, 1);
+  Layer := 0;
 end;
 
 function TScene2DComponentDataPoly.FindEdge(const v0, v1: TScene2DComponentDataPolyVertex): TScene2DComponentDataPolyEdge;
@@ -26815,7 +26982,7 @@ begin
 end;
 
 procedure TScene2DComponentDataPoly.UpdateComponent;
-  var i: Integer;
+  var i, j: Integer;
   var VertexData: array of TG2Vec2;
   var IndexData: array of TG2IntU16;
 begin
@@ -26840,6 +27007,8 @@ begin
     Component.Layers[i].Texture := Layers[i].Texture.Texture
     else
     Component.Layers[i].Texture := nil;
+    for j := 0 to Vertices.Count - 1 do
+    Component.Layers[i].Opacity[j] := Vertices[j].o[i];
   end;
 end;
 
@@ -26912,7 +27081,10 @@ begin
   Layers.Add(Layer);
   for i := 0 to Vertices.Count - 1 do
   Vertices[i].o.Add(0);
+  for i := 0 to Layers.Count - 1 do
+  Layers[i].Index := i;
   UpdateGroup;
+  UpdateComponent;
 end;
 
 procedure TScene2DComponentDataPoly.OnEdit;
