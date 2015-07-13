@@ -3155,6 +3155,7 @@ end;
 
 procedure TG2Scene2DComponentPoly.OnFinalize;
 begin
+  if _DebugRenderHook <> nil then ;
   ClearLayers;
 end;
 
@@ -3166,7 +3167,6 @@ end;
 procedure TG2Scene2DComponentPoly.OnDetach;
 begin
   if _DebugRenderHook <> nil then Scene.RenderHookRemove(_DebugRenderHook);
-  if _RenderHook <> nil then Scene.RenderHookRemove(_RenderHook);
 end;
 
 procedure TG2Scene2DComponentPoly.OnDebugRender(const Display: TG2Display2D);

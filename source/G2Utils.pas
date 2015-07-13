@@ -66,6 +66,8 @@ type
     procedure Delete(const Index: TG2IntS32; const ItemCount: TG2IntS32 = 1);
     procedure Remove(const Item: T);
     procedure Clear;
+    procedure Allocate(const Amount: TG2IntS32);
+    procedure Allocate(const Amount: TG2IntS32; const DefaultValue: T);
     function Search(const CmpFunc: TCmpFunc; const Item: T): TG2IntS32; overload;
     function Search(const CmpFunc: TCmpFuncObj; const Item: T): TG2IntS32; overload;
     procedure Sort(const CmpFunc: TCmpFunc; RangeStart, RangeEnd: TG2IntS32); overload;
@@ -497,6 +499,21 @@ end;
 procedure TG2QuickListG.Clear;
 begin
   _ItemCount := 0;
+end;
+
+procedure TG2QuickListG.Allocate(const Amount: TG2IntS32);
+begin
+  SetCapacity(_ItemCount + Amount);
+  _ItemCount += Amount;
+end;
+
+procedure TG2QuickListG.Allocate(const Amount: TG2IntS32; const DefaultValue: T);
+  var i, j: Integer;
+begin
+  j := _ItemCount;
+  Allocate(Amount);
+  for i := j to _ItemCount - 1 do
+  _Items[i] := DefaultValue;
 end;
 
 function TG2QuickListG.Search(const CmpFunc: TCmpFunc; const Item: T): TG2IntS32;
