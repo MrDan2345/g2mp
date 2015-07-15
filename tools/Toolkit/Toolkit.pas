@@ -204,8 +204,11 @@ type
     var _TypeIndex: Integer;
     var _FileIndex: Integer;
     var _Callback: TG2ProcStringObj;
+    var _ScrollV: TScrollBox;
+    var _ItemSize: Integer;
     procedure AddAssetType(const AssetClass: CAsset);
     function GetFileFrame(const Index: Integer): TG2Rect;
+    function GetFileContentSize: TG2Float;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -214,6 +217,7 @@ type
     procedure Update; override;
     procedure MouseDown(const Button, x, y: Integer); override;
     procedure MouseUp(const Button, x, y: Integer); override;
+    procedure Scroll(const y: Integer); override;
   end;
 //TOverlayAssetSelect END
 
@@ -4903,21 +4907,27 @@ begin
 end;
 
 function TOverlayAssetSelect.GetFileFrame(const Index: Integer): TG2Rect;
-  var h: Integer;
 begin
-  h := App.UI.Font1.TextHeight('A');
   Result.l := _ListFrame.l;
-  Result.t := _ListFrame.t + 4 + h * Index;
-  Result.r := _ListFrame.r;
-  Result.h := h;
+  Result.t := _ListFrame.t + 4 + _ItemSize * Index;
+  Result.r := _ScrollV.Frame.l;
+  Result.h := _ItemSize;
+  Result.y := Result.y - _ScrollV.PosAbsolute;
+end;
+
+function TOverlayAssetSelect.GetFileContentSize: TG2Float;
+begin
+  Result := _AssetTypes[_TypeIndex]^.Files.Count * _ItemSize + 4;
 end;
 
 constructor TOverlayAssetSelect.Create;
 begin
+  _ScrollV.Initialize;
   _AssetTypes.Clear;
   AddAssetType(TAssetAny);
   AddAssetType(TAssetImage);
   AddAssetType(TAssetTexture);
+  _ItemSize := App.UI.Font1.TextHeight('A') + 4;
 end;
 
 destructor TOverlayAssetSelect.Destroy;
@@ -4936,6 +4946,7 @@ procedure TOverlayAssetSelect.Open(
   var AssetPath, ext: String;
   var sr: TSearchRec;
   var fl: TFileList;
+  var r: TG2Rect;
 begin
   if not App.Project.Open then Exit;
   _Callback := Callback;
@@ -4972,6 +4983,11 @@ begin
   end;
   _FileIndex := -1;
   App.UI.Overlay := Self;
+  r := _ListFrame;
+  r.l := r.r - 16;
+  _ScrollV.Frame := r;
+  _ScrollV.ContentSize := GetFileContentSize;
+  _ScrollV.ParentSize := _ListFrame.h;
 end;
 
 procedure TOverlayAssetSelect.Render;
@@ -5038,17 +5054,18 @@ begin
       App.UI.GetColorSecondary(0.4)
     );
     App.UI.Font1.Print(
-      Round(r.l + 8), Round(r.t),
+      Round(r.l + 8), Round(r.t + (r.h - App.UI.Font1.TextHeight('A')) * 0.5),
       1, 1, $ffffffff,
       _AssetTypes[_TypeIndex]^.Files[i], bmNormal, tfPoint
     );
   end;
   App.UI.PopClipRect;
+  _ScrollV.Render;
 end;
 
 procedure TOverlayAssetSelect.Update;
 begin
-
+  _ScrollV.Update;
 end;
 
 procedure TOverlayAssetSelect.MouseDown(const Button, x, y: Integer);
@@ -5074,6 +5091,7 @@ begin
       end;
     end;
   end;
+  _ScrollV.MouseDown(Button, x, y);
 end;
 
 procedure TOverlayAssetSelect.MouseUp(const Button, x, y: Integer);
@@ -5095,6 +5113,15 @@ begin
         App.UI.Overlay := nil;
       end;
     end;
+  end;
+  _ScrollV.MouseUp(Button, x, y);
+end;
+
+procedure TOverlayAssetSelect.Scroll(const y: Integer);
+begin
+  if _ListFrame.Contains(g2.MousePos) then
+  begin
+    _ScrollV.Scroll(y);
   end;
 end;
 //TOverlayAssetSelect END
@@ -14925,11 +14952,14 @@ begin
     end;
     G2MB_Right:
     begin
-      if Frame.Contains(g2.MouseDownPos[Button])
-      and Frame.Contains(x, y) then
+      if App.Scene2DData.Editor = nil then
       begin
-        UpdatePopUp;
-        _PopUp.Show(G2Vec2(x, y));
+        if Frame.Contains(g2.MouseDownPos[Button])
+        and Frame.Contains(x, y) then
+        begin
+          UpdatePopUp;
+          _PopUp.Show(G2Vec2(x, y));
+        end;
       end;
     end;
     G2MB_Middle:
@@ -25641,14 +25671,18 @@ begin
   xf := _Component.Component.Owner.Transform;
   if EditMode = em_layer then
   begin
-    if g2.MouseDown[G2MB_Left] then
+    if g2.MouseDown[G2MB_Left]
+    or g2.MouseDown[G2MB_Right] then
     for i := 0 to Component.Vertices.Count - 1 do
     begin
       v := xf.Transform(Component.Vertices[i].v);
       d := (v - mc).Len;
       if d < 1 then
       begin
-        Component.Vertices[i].o[EditLayer] := G2Min(Component.Vertices[i].o[EditLayer] + (1 - d) * g2.DeltaTimeSec * 5, 1);
+        if g2.MouseDown[G2MB_Left] then
+        Component.Vertices[i].o[EditLayer] := G2Min(Component.Vertices[i].o[EditLayer] + (1 - d) * g2.DeltaTimeSec * 5, 1)
+        else
+        Component.Vertices[i].o[EditLayer] := G2Max(Component.Vertices[i].o[EditLayer] - (1 - d) * g2.DeltaTimeSec * 5, 0);
       end;
     end;
   end
