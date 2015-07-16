@@ -576,6 +576,17 @@ type
     procedure Load(const Stream: TStream); override;
   end;
 
+  TG2Scnee2DComponentCharacter = class (TG2Scene2DComponentRigidBody)
+  protected
+    procedure OnInitialize; override;
+    procedure OnFinalize; override;
+  public
+    class constructor CreateClass;
+    class function GetName: String; override;
+    procedure Save(const Stream: TStream); override;
+    procedure Load(const Stream: TStream); override;
+  end;
+
   TG2Scene2DComponentPoly = class (TG2Scene2DComponent)
   public
     type TG2Scene2DComponentPolyVertex = record
@@ -2967,6 +2978,39 @@ begin
   Reattach;
 end;
 //TG2Scene2DComponentCollisionShapeChain END
+
+//TG2Scnee2DComponentCharacter BEGIN
+procedure TG2Scnee2DComponentCharacter.OnInitialize;
+begin
+  inherited OnInitialize;
+end;
+
+procedure TG2Scnee2DComponentCharacter.OnFinalize;
+begin
+  inherited OnFinalize;
+end;
+
+class constructor TG2Scnee2DComponentCharacter.CreateClass;
+begin
+  SetLength(ComponentList, Length(ComponentList) + 1);
+  ComponentList[High(ComponentList)] := CG2Scene2DComponent(ClassType);
+end;
+
+class function TG2Scnee2DComponentCharacter.GetName: String;
+begin
+  Result := inherited 'Character';
+end;
+
+procedure TG2Scnee2DComponentCharacter.Save(const Stream: TStream);
+begin
+  inherited Save(Stream);
+end;
+
+procedure TG2Scnee2DComponentCharacter.Load(const Stream: TStream);
+begin
+  inherited Load(Stream);
+end;
+//TG2Scnee2DComponentCharacter END
 
 //TG2Scene2DComponentPoly BEGIN
 function TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.GetVisible: Boolean;

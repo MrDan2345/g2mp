@@ -3570,6 +3570,8 @@ type
     class function GetName: String; override;
     constructor Create; override;
     destructor Destroy; override;
+    function PickLayer: Integer; override;
+    function Pick(const x, y: TG2Float): Boolean; override;
     procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnAddLayer;
     procedure OnEdit;
@@ -27134,6 +27136,30 @@ begin
   TScene2DEditorPoly.Instance.RefDec;
   Clear;
   inherited Destroy;
+end;
+
+function TScene2DComponentDataPoly.PickLayer: Integer;
+  var i: Integer;
+begin
+  Result := -1;
+  for i := 0 to Layers.Count - 1 do
+  if Layers[i].Layer > Result then Result := Layers[i].Layer;
+end;
+
+function TScene2DComponentDataPoly.Pick(const x, y: TG2Float): Boolean;
+  var i, j: Integer;
+  var v: TG2Vec2;
+  var t: array[0..2] of TG2Vec2;
+begin
+  v := G2Vec2(x, y);
+  for i := 0 to Faces.Count - 1 do
+  begin
+    for j := 0 to 2 do
+    t[j] := Faces[i].v[j].v;
+    Result := G2Vec2InPoly(v, @t, 3);
+    if Result then Exit;
+  end;
+  Result := False;
 end;
 
 procedure TScene2DComponentDataPoly.AddToProperties(const PropertySet: TPropertySet);

@@ -395,6 +395,7 @@ function G2Vec2: TG2Vec2; inline;
 function G2Vec2(const x, y: TG2Float): TG2Vec2; inline;
 function G2Vec2(const pt: TPoint): TG2Vec2; inline;
 function G2Vec2InRect(const v: TG2Vec2; const r: TG2Rect): Boolean; inline;
+function G2Vec2InTriangle(const v0: TG2Vec2; const t0, t1, t2: TG2Vec2): Boolean;
 function G2Vec2InPoly(const v: TG2Vec2; const VArr: PG2Vec2; const VCount: TG2IntS32): Boolean;
 function G2Vec3: TG2Vec3; inline;
 function G2Vec3(const x, y, z: TG2Float): TG2Vec3; inline; overload;
@@ -1762,6 +1763,7 @@ begin
   vr.x := v0.x * v1.x;
   vr.y := v0.y * v1.y;
   vr.z := v0.z * v1.z;
+  vr.w := v0.w * v1.w;
 end;
 
 operator * (v: TG2Vec2; m: TG2Mat) vr: TG2Vec2;
