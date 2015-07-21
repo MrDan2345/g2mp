@@ -21,6 +21,7 @@ type
     Scene: TG2Scene2D;
     Display: TG2Display2D;
     PlayerEntity: TG2Scene2DEntity;
+    Wheel0: TG2Scene2DEntity;
     constructor Create;
     destructor Destroy; override;
     procedure Initialize;
@@ -84,11 +85,12 @@ begin
   Display.Height := 10;
   Display.Position := G2Vec2(0, 0);
   Scene := TG2Scene2D.Create;
-  Scene.Load('../assets/scene2.g2s2d');
+  Scene.Load('../assets/scene1.g2s2d');
   Scene.Gravity := G2Vec2(0, 9.8);
   Scene.Simulate := True;
   Scene.EnablePhysics;
-  PlayerEntity := Scene.FindEntityByName('Player');
+  PlayerEntity := Scene.FindEntityByName('Car');
+  Wheel0 := Scene.FindEntityByName('Wheel0');
 end;
 
 procedure TGame.Finalize;
@@ -99,9 +101,20 @@ begin
 end;
 
 procedure TGame.Update;
+  var rb: TG2Scene2DComponentRigidBody;
 begin
   if PlayerEntity <> nil then
   Display.Position := PlayerEntity.Transform.p;
+  if g2.KeyDown[G2K_Right] then
+  begin
+    rb := TG2Scene2DComponentRigidBody(Wheel0.ComponentOfType[TG2Scene2DComponentRigidBody]);
+    rb.PhysBody^.apply_torque(2, true);
+  end
+  else if g2.KeyDown[G2K_Left] then
+  begin
+    rb := TG2Scene2DComponentRigidBody(Wheel0.ComponentOfType[TG2Scene2DComponentRigidBody]);
+    rb.PhysBody^.apply_torque(-2, true);
+  end;
 end;
 
 procedure TGame.Render;

@@ -3633,6 +3633,17 @@ type
   end;
 //TScene2DComponentDataRigidBody END
 
+//TScene2DComponentDataCharacter BEGIN
+  TScene2DComponentDataCharacter = class (TScene2DComponentData)
+  public
+    var Component: TG2Scene2DComponentCharacter;
+    class function GetName: String; override;
+    destructor Destroy; override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
+    procedure DebugDraw(const Display: TG2Display2D); override;
+  end;
+//TScene2DComponentDataCharacter END
+
 //TScene2DComponentDataShapePoly BEGIN
   TScene2DComponentDataShapePoly = class (TScene2DComponentData)
   private
@@ -3832,6 +3843,7 @@ type
     function CreateComponentBackground: TG2Scene2DComponentBackground;
     function CreateComponentEffect: TG2Scene2DComponentEffect;
     function CreateComponentRigidBody: TG2Scene2DComponentRigidBody;
+    function CreateComponentCharacter: TG2Scene2DComponentCharacter;
     function CreateComponentShapePoly: TG2Scene2DComponentCollisionShapePoly;
     function CreateComponentShapeBox: TG2Scene2DComponentCollisionShapeBox;
     function CreateComponentShapeCircle: TG2Scene2DComponentCollisionShapeCircle;
@@ -3848,6 +3860,7 @@ type
     procedure BtnComponentBackground;
     procedure BtnComponentEffect;
     procedure BtnComponentRigidBody;
+    procedure BtnComponentCharacter;
     procedure BtnComponentShapePoly;
     procedure BtnComponentShapeBox;
     procedure BtnComponentShapeCircle;
@@ -27504,6 +27517,55 @@ begin
 end;
 //TScene2DComponentDataRigidBody END
 
+//TScene2DComponentDataCharacter BEGIN
+class function TScene2DComponentDataCharacter.GetName: String;
+begin
+  Result := 'Character';
+end;
+
+destructor TScene2DComponentDataCharacter.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TScene2DComponentDataCharacter.AddToProperties(const PropertySet: TPropertySet);
+  var Group: TPropertySet.TPropertyComponent;
+begin
+  Group := PropertySet.PropComponent('Character', Component);
+end;
+
+procedure TScene2DComponentDataCharacter.DebugDraw(const Display: TG2Display2D);
+  var v: array[0..15] of TG2Vec2;
+  var r: TG2Rotation2;
+  var d: TG2Vec2;
+  var i: Integer;
+  var xf: TG2Transform2;
+  var hw, hh, qw: TG2Float;
+begin
+  hw := Component.Width * 0.5;
+  hh := Component.Height * 0.5;
+  qw := hw * 0.5;
+  v[0] := b2_vec2(hw, hh - hw);
+  v[1] := b2_vec2(hw, -hh + qw);
+  v[2] := b2_vec2(hw - qw, -hh);
+  v[3] := b2_vec2(-hw + qw, -hh);
+  v[4] := b2_vec2(-hw, -hh + qw);
+  v[5] := b2_vec2(-hw, hh - hw);
+  r.Angle := -0.1 * Pi;
+  d := G2Vec2(-hw, 0);
+  for i := 6 to 15 do
+  begin
+    d := r.Transform(d);
+    v[i] := G2Vec2(d.x, d.y + v[0].y);
+  end;
+  xf := Component.Owner.Transform;
+  for i := 0 to High(v) do
+  v[i] := xf.Transform(v[i]);
+  for i := 0 to High(v) do
+  Display.PrimLine(v[i], v[(i + 1) mod Length(v)], $ff0000ff);
+end;
+//TScene2DComponentDataCharacter END
+
 //TScene2DComponentDataShapePoly BEGIN
 class function TScene2DComponentDataShapePoly.GetName: String;
 begin
@@ -28543,6 +28605,12 @@ begin
       Component.UserData := ComponentData;
       TScene2DComponentDataRigidBody(ComponentData).Component := TG2Scene2DComponentRigidBody(Component);
     end
+    else if Component is TG2Scene2DComponentCharacter then
+    begin
+      ComponentData := TScene2DComponentDataCharacter.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataCharacter(ComponentData).Component := TG2Scene2DComponentCharacter(Component);
+    end
     else if Component is TG2Scene2DComponentCollisionShapeBox then
     begin
       ComponentData := TScene2DComponentDataShapeBox.Create;
@@ -28673,6 +28741,13 @@ begin
   Result := TG2Scene2DComponentRigidBody.Create(_Scene);
   Result.UserData := TScene2DComponentDataRigidBody.Create;
   TScene2DComponentDataRigidBody(Result.UserData).Component := Result;
+end;
+
+function TScene2DData.CreateComponentCharacter: TG2Scene2DComponentCharacter;
+begin
+  Result := TG2Scene2DComponentCharacter.Create(_Scene);
+  Result.UserData := TScene2DComponentDataCharacter.Create;
+  TScene2DComponentDataCharacter(Result.UserData).Component := Result;
 end;
 
 function TScene2DData.CreateComponentShapePoly: TG2Scene2DComponentCollisionShapePoly;
@@ -28845,6 +28920,18 @@ begin
   if Selection.Count = 1 then
   begin
     Component := CreateComponentRigidBody;
+    Component.Attach(Selection[0]);
+    SelectionUpdateStart;
+    SelectionUpdateEnd;
+  end;
+end;
+
+procedure TScene2DData.BtnComponentCharacter;
+  var Component: TG2Scene2DComponentCharacter;
+begin
+  if Selection.Count = 1 then
+  begin
+    Component := CreateComponentCharacter;
     Component.Attach(Selection[0]);
     SelectionUpdateStart;
     SelectionUpdateEnd;
@@ -29037,6 +29124,7 @@ begin
   AddComponentTypePair(TG2Scene2DComponentBackground, TScene2DComponentDataBackground, @BtnComponentBackground);
   AddComponentTypePair(TG2Scene2DComponentEffect, TScene2DComponentDataEffect, @BtnComponentEffect);
   AddComponentTypePair(TG2Scene2DComponentRigidBody, TScene2DComponentDataRigidBody, @BtnComponentRigidBody);
+  AddComponentTypePair(TG2Scene2DComponentCharacter, TScene2DComponentDataCharacter, @BtnComponentCharacter);
   AddComponentTypePair(TG2Scene2DComponentCollisionShapePoly, TScene2DComponentDataShapePoly, @BtnComponentShapePoly);
   AddComponentTypePair(TG2Scene2DComponentCollisionShapePoly, TScene2DComponentDataShapeBox, @BtnComponentShapeBox);
   AddComponentTypePair(TG2Scene2DComponentCollisionShapeCircle, TScene2DComponentDataShapeCircle, @BtnComponentShapeCircle);
@@ -29123,11 +29211,11 @@ procedure TScene2DData.Render(const Display: TG2Display2D);
   var i, j: Integer;
 begin
   if Scene.Simulate then Exit;
-  //for i := 0 to Scene.EntityCount - 1 do
-  //for j := 0 to Scene.Entities[i].ComponentCount - 1 do
-  //TScene2DComponentData(Scene.Entities[i].Components[j].UserData).DebugDraw(Display);
-  //for i := 0 to Scene.JointCount - 1 do
-  //TScene2DJointData(Scene.Joints[i].UserData).DebugDraw(Display);
+  for i := 0 to Scene.EntityCount - 1 do
+  for j := 0 to Scene.Entities[i].ComponentCount - 1 do
+  TScene2DComponentData(Scene.Entities[i].Components[j].UserData).DebugDraw(Display);
+  for i := 0 to Scene.JointCount - 1 do
+  TScene2DJointData(Scene.Joints[i].UserData).DebugDraw(Display);
   if _Editor <> nil then _Editor.Render(Display);
 end;
 //TScene2DData END

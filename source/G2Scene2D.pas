@@ -400,7 +400,7 @@ type
     var _Enabled: Boolean;
     var _BodyDef: tb2_body_def;
     var _Body: pb2_body;
-    procedure SetEnabled(const Value: Boolean);
+    procedure SetEnabled(const Value: Boolean); virtual;
     procedure SetBodyType(const Value: TG2Scene2DComponentRigidBodyType); inline;
     function GetBodyType: TG2Scene2DComponentRigidBodyType; inline;
     procedure SetPosition(const Value: TG2Vec2); inline;
@@ -416,7 +416,7 @@ type
     procedure OnFinalize; override;
     procedure OnAttach; override;
     procedure OnDetach; override;
-    procedure OnUpdate;
+    procedure OnUpdate; virtual;
     procedure AddShape(const Shape: TG2Scene2DComponentCollisionShape);
     procedure RemoveShape(const Shape: TG2Scene2DComponentCollisionShape);
   public
@@ -579,13 +579,31 @@ type
     procedure Load(const Stream: TStream); override;
   end;
 
-  TG2Scnee2DComponentCharacter = class (TG2Scene2DComponentRigidBody)
+  TG2Scene2DComponentCharacter = class (TG2Scene2DComponentRigidBody)
   protected
+    var _FixtureFeetDef: tb2_fixture_def;
+    var _FixtureFeet: pb2_fixture;
+    var _ShapeFeet: tb2_circle_shape;
+    var _FixtureBodyDef: tb2_fixture_def;
+    var _FixtureBody: pb2_fixture;
+    var _ShapeBody: tb2_polygon_shape;
+    var _BodyFeetDef: tb2_body_def;
+    var _BodyFeet: pb2_body;
+    var _Joint: pb2_joint;
+    var _BodyVerts: array[0..5] of tb2_vec2;
+    var _Width: TG2Float;
+    var _Height: TG2Float;
+    procedure SetupShapes;
     procedure OnInitialize; override;
     procedure OnFinalize; override;
+    procedure SetEnabled(const Value: Boolean); override;
+    procedure SetWidth(const Value: TG2Float); inline;
+    procedure SetHeight(const Value: TG2Float); inline;
   public
     class constructor CreateClass;
     class function GetName: String; override;
+    property Width: TG2Float read _Width write SetWidth;
+    property Height: TG2Float read _Height write SetHeight;
     procedure Save(const Stream: TStream); override;
     procedure Load(const Stream: TStream); override;
   end;
@@ -720,10 +738,12 @@ end;
 
 procedure TG2Scene2DComponent.SaveClassType(const Stream: TStream);
   var n: TG2IntS32;
+  var str: String;
 begin
+  str := ClassName;
   n := Length(ClassName);
   Stream.Write(n, SizeOf(n));
-  Stream.Write(ClassName[1], n);
+  Stream.Write(str[1], n);
 end;
 
 class constructor TG2Scene2DComponent.CreateClass;
@@ -3005,38 +3025,137 @@ begin
 end;
 //TG2Scene2DComponentCollisionShapeChain END
 
-//TG2Scnee2DComponentCharacter BEGIN
-procedure TG2Scnee2DComponentCharacter.OnInitialize;
+//TG2Scene2DComponentCharacter BEGIN
+procedure TG2Scene2DComponentCharacter.SetupShapes;
+  var qw, hw, hh: TG2Float;
 begin
-  inherited OnInitialize;
+  hw := _Width * 0.5;
+  hh := _Height * 0.5;
+  qw := hw * 0.5;
+  _BodyVerts[0] := b2_vec2(hw, hh - hw);
+  _BodyVerts[1] := b2_vec2(hw, -hh + qw);
+  _BodyVerts[2] := b2_vec2(hw - qw, -hh);
+  _BodyVerts[3] := b2_vec2(-hw + qw, -hh);
+  _BodyVerts[4] := b2_vec2(-hw, -hh + qw);
+  _BodyVerts[5] := b2_vec2(-hw, hh - hw);
+  _ShapeBody.set_polygon(@_BodyVerts, 6);
+  _ShapeFeet.center := b2_vec2(0, 0);
+  _ShapeFeet.radius := hw;
 end;
 
-procedure TG2Scnee2DComponentCharacter.OnFinalize;
+procedure TG2Scene2DComponentCharacter.OnInitialize;
 begin
+  inherited OnInitialize;
+  _BodyDef.fixed_rotation := True;
+  _BodyDef.body_type := b2_dynamic_body;
+  _BodyFeetDef := b2_body_def;
+  _BodyFeetDef.body_type := b2_dynamic_body;
+  _FixtureBodyDef := b2_fixture_def;
+  _FixtureFeetDef := b2_fixture_def;
+  _ShapeBody.create;
+  _FixtureBodyDef.shape := @_ShapeBody;
+  _ShapeFeet.create;
+  _FixtureFeetDef.shape := @_ShapeFeet;
+  _Width := 0.5;
+  _Height := 1;
+  SetupShapes;
+end;
+
+procedure TG2Scene2DComponentCharacter.OnFinalize;
+begin
+  _ShapeFeet.destroy;
+  _ShapeBody.destroy;
   inherited OnFinalize;
 end;
 
-class constructor TG2Scnee2DComponentCharacter.CreateClass;
+procedure TG2Scene2DComponentCharacter.SetEnabled(const Value: Boolean);
+  var bd: tb2_body_def;
+  var jd: tb2_revolute_joint_def;
+begin
+  if Value = _Enabled then Exit;
+  if not Value then
+  begin
+    _Scene.PhysWorld.destroy_joint(_Joint);
+    _BodyFeet^.destroy_fixture(_FixtureFeet);
+    _Body^.destroy_fixture(_FixtureBody);
+    Scene.PhysWorld.destroy_body(_BodyFeet);
+    _Joint := nil;
+    _FixtureFeet := nil;
+    _FixtureBody := nil;
+    _BodyFeet := nil;
+  end;
+  inherited SetEnabled(Value);
+  if _Enabled then
+  begin
+    _FixtureBodyDef.shape := @_ShapeBody;
+    _FixtureFeetDef.shape := @_ShapeFeet;
+    bd := _BodyFeetDef;
+    bd.angle := bd.angle + Owner.Transform.r.Angle;
+    bd.position := Owner.Transform.Transform(G2Vec2(0, _Height * 0.5 - _Width * 0.5));
+    _BodyFeet := Scene.PhysWorld.create_body(bd);
+    _FixtureBody := _Body^.create_fixture(_FixtureBodyDef);
+    _FixtureFeet := _BodyFeet^.create_fixture(_FixtureFeetDef);
+    jd := b2_revolute_joint_def;
+    jd.initialize(_Body, _BodyFeet, bd.position);
+    _Joint := _Scene.PhysWorld.create_joint(jd);
+  end;
+end;
+
+procedure TG2Scene2DComponentCharacter.SetWidth(const Value: TG2Float);
+begin
+  _Width := Value;
+  SetupShapes;
+end;
+
+procedure TG2Scene2DComponentCharacter.SetHeight(const Value: TG2Float);
+begin
+  _Height := Value;
+  SetupShapes;
+end;
+
+class constructor TG2Scene2DComponentCharacter.CreateClass;
 begin
   SetLength(ComponentList, Length(ComponentList) + 1);
   ComponentList[High(ComponentList)] := CG2Scene2DComponent(ClassType);
 end;
 
-class function TG2Scnee2DComponentCharacter.GetName: String;
+class function TG2Scene2DComponentCharacter.GetName: String;
 begin
   Result := 'Character';
 end;
 
-procedure TG2Scnee2DComponentCharacter.Save(const Stream: TStream);
+procedure TG2Scene2DComponentCharacter.Save(const Stream: TStream);
+  var xf: TG2Transform2;
 begin
-  inherited Save(Stream);
+  SaveClassType(Stream);
+  xf := Transform;
+  Stream.Write(xf, SizeOf(xf));
+  Stream.Write(_Width, SizeOf(_Width));
+  Stream.Write(_Height, SizeOf(_Height));
+  Stream.Write(_BodyDef, SizeOf(_BodyDef));
+  Stream.Write(_BodyFeetDef, SizeOf(_BodyFeetDef));
+  Stream.Write(_FixtureBodyDef, SizeOf(_FixtureBodyDef));
+  Stream.Write(_FixtureFeetDef, SizeOf(_FixtureFeetDef));
+  Stream.Write(_Enabled, SizeOf(_Enabled));
 end;
 
-procedure TG2Scnee2DComponentCharacter.Load(const Stream: TStream);
+procedure TG2Scene2DComponentCharacter.Load(const Stream: TStream);
+  var b: Boolean;
+  var xf: TG2Transform2;
 begin
-  inherited Load(Stream);
+  Stream.Read(xf, SizeOf(xf));
+  Stream.Read(_Width, SizeOf(_Width));
+  Stream.Read(_Height, SizeOf(_Height));
+  Stream.Read(_BodyDef, SizeOf(_BodyDef));
+  Stream.Read(_BodyFeetDef, SizeOf(_BodyFeetDef));
+  Stream.Read(_FixtureBodyDef, SizeOf(_FixtureBodyDef));
+  Stream.Read(_FixtureFeetDef, SizeOf(_FixtureFeetDef));
+  Stream.Read(b, SizeOf(b));
+  SetupShapes;
+  Enabled := b;
+  Transform := xf;
 end;
-//TG2Scnee2DComponentCharacter END
+//TG2Scene2DComponentCharacter END
 
 //TG2Scene2DComponentPoly BEGIN
 function TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.GetVisible: Boolean;
