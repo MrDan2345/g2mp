@@ -9,6 +9,7 @@ uses
   G2Types,
   G2Utils,
   Gen2MP,
+  G2DataManager,
   G2Math,
   box2d;
 
@@ -245,8 +246,10 @@ type
     function RenderHookAdd(const HookProc: TG2Scene2DRenderHookProc; const Layer: TG2IntS32): TG2Scene2DRenderHook;
     procedure RenderHookRemove(var Hook: TG2Scene2DRenderHook);
     function FindEntity(const GUID: String): TG2Scene2DEntity;
+    function FindEntityByName(const EntityName: String): TG2Scene2DEntity;
     procedure Save(const Stream: TStream);
     procedure Load(const Stream: TStream);
+    procedure Load(const FileName: String);
   end;
 
   TG2Scene2DComponentSprite = class (TG2Scene2DComponent)
@@ -1545,6 +1548,8 @@ begin
     if rb <> nil then
     rb.Enabled := True;
   end;
+  for i := 0 to _Joints.Count - 1 do
+  _Joints[i].Enabled := True;
 end;
 
 function TG2Scene2D.RenderHookAdd(
@@ -1568,6 +1573,15 @@ function TG2Scene2D.FindEntity(const GUID: String): TG2Scene2DEntity;
 begin
   for i := 0 to _Entities.Count - 1 do
   if _Entities[i].GUID = GUID then
+  Exit(_Entities[i]);
+  Result := nil;
+end;
+
+function TG2Scene2D.FindEntityByName(const EntityName: String): TG2Scene2DEntity;
+  var i: Integer;
+begin
+  for i := 0 to _Entities.Count - 1 do
+  if _Entities[i].Name = GUID then
   Exit(_Entities[i]);
   Result := nil;
 end;
@@ -1616,6 +1630,18 @@ begin
     end;
   end;
 end;
+
+procedure TG2Scene2D.Load(const FileName: String);
+  var fs: TFileStream;
+begin
+  fs := TFileStream.Create(FileName, fmOpenRead);
+  try
+    Load(fs);
+  finally
+    fs.Free;
+  end;
+end;
+
 //TG2Scene2D END
 
 //TG2Scene2DComponentSprite BEGIN
@@ -2998,7 +3024,7 @@ end;
 
 class function TG2Scnee2DComponentCharacter.GetName: String;
 begin
-  Result:=inherited GetName;
+  Result := 'Character';
 end;
 
 procedure TG2Scnee2DComponentCharacter.Save(const Stream: TStream);
@@ -3192,7 +3218,7 @@ procedure TG2Scene2DComponentPoly.OnInitialize;
 begin
   _Layers := nil;
   _DebugLayer := 100;
-  _DebugRender := True;
+  _DebugRender := False;
   _DebugRenderHook := nil;
   _Visible := True;
 end;

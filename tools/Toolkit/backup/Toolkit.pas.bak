@@ -3550,6 +3550,7 @@ type
     var Layer: TG2IntS32;
     var PathProp: TPropertySet.TPropertyPath;
     var ScaleProp: TPropertySet.TPropertyVec2;
+    var LayerProp: TPropertySet.TPropertyInt;
     var Index: TG2IntS32;
     constructor Create;
   end;
@@ -3579,6 +3580,7 @@ type
     procedure CompleteData;
     procedure Clear;
     procedure OnChangeLayerTexture(const Sender: Pointer);
+    procedure OnChangeParam(const Sender: Pointer);
   end;
 //TScene2DComponentDataPoly END
 
@@ -27042,7 +27044,8 @@ begin
   begin
     LayerGroup := Properties.PropGroup('Layer ' + IntToStr(i), Group);
     Layers[i].PathProp := Properties.PropPath('Texture', @Layers[i].TexturePath, TAssetTexture, LayerGroup, @OnChangeLayerTexture);
-    Layers[i].ScaleProp := Properties.PropVec2('Scale', @Layers[i].Scale, LayerGroup);
+    Layers[i].ScaleProp := Properties.PropVec2('Scale', @Layers[i].Scale, LayerGroup, @OnChangeParam);
+    Layers[i].LayerProp := Properties.PropInt('Layer', @Layers[i].Layer, LayerGroup, @OnChangeParam);
   end;
   Properties.PropButton('Add Layer', @OnAddLayer, Group);
   Properties.PropButton('Edit', @OnEdit, Group);
@@ -27150,8 +27153,11 @@ function TScene2DComponentDataPoly.Pick(const x, y: TG2Float): Boolean;
   var i, j: Integer;
   var v: TG2Vec2;
   var t: array[0..2] of TG2Vec2;
+  var xf: TG2Transform2;
 begin
   v := G2Vec2(x, y);
+  xf := Component.Owner.Transform;
+  v := xf.TransformInv(v);
   for i := 0 to Faces.Count - 1 do
   begin
     for j := 0 to 2 do
@@ -27159,7 +27165,7 @@ begin
     Result := G2Vec2InPoly(v, @t, 3);
     if Result then Exit;
   end;
-  Result := False
+  Result := False;
 end;
 
 procedure TScene2DComponentDataPoly.AddToProperties(const PropertySet: TPropertySet);
@@ -27322,6 +27328,11 @@ begin
   Layer.Texture := App.AssetManager.GetTexture(Layer.TexturePath);
   if Layer.Texture <> nil then
   Layer.Texture.RefInc;
+  UpdateComponent;
+end;
+
+procedure TScene2DComponentDataPoly.OnChangeParam(const Sender: Pointer);
+begin
   UpdateComponent;
 end;
 //TScene2DComponentDataPoly END
@@ -28705,6 +28716,7 @@ begin
   Result := TG2Scene2DComponentPoly.Create(_Scene);
   Result.UserData := TScene2DComponentDataPoly.Create;
   TScene2DComponentDataPoly(Result.UserData).Component := Result;
+  TScene2DComponentDataPoly(Result.UserData).UpdateComponent;
 end;
 
 function TScene2DData.Pick(const ScenePos: TG2Vec2): TG2Scene2DEntity;
@@ -29111,11 +29123,11 @@ procedure TScene2DData.Render(const Display: TG2Display2D);
   var i, j: Integer;
 begin
   if Scene.Simulate then Exit;
-  for i := 0 to Scene.EntityCount - 1 do
-  for j := 0 to Scene.Entities[i].ComponentCount - 1 do
-  TScene2DComponentData(Scene.Entities[i].Components[j].UserData).DebugDraw(Display);
-  for i := 0 to Scene.JointCount - 1 do
-  TScene2DJointData(Scene.Joints[i].UserData).DebugDraw(Display);
+  //for i := 0 to Scene.EntityCount - 1 do
+  //for j := 0 to Scene.Entities[i].ComponentCount - 1 do
+  //TScene2DComponentData(Scene.Entities[i].Components[j].UserData).DebugDraw(Display);
+  //for i := 0 to Scene.JointCount - 1 do
+  //TScene2DJointData(Scene.Joints[i].UserData).DebugDraw(Display);
   if _Editor <> nil then _Editor.Render(Display);
 end;
 //TScene2DData END
