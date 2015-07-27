@@ -51,25 +51,25 @@
         <Filename Value="..\..\Gen2MP.pas"/>
         <TopLine Value="4375"/>
         <CursorPos Y="4396"/>
-        <UsageCount Value="23"/>
+        <UsageCount Value="19"/>
       </Unit1>
       <Unit2>
         <Filename Value="..\..\G2Math.pas"/>
         <TopLine Value="279"/>
         <CursorPos X="11" Y="286"/>
-        <UsageCount Value="40"/>
+        <UsageCount Value="36"/>
       </Unit2>
       <Unit3>
         <Filename Value="..\..\G2DataManager.pas"/>
         <TopLine Value="1081"/>
         <CursorPos Y="1115"/>
-        <UsageCount Value="20"/>
+        <UsageCount Value="16"/>
       </Unit3>
       <Unit4>
         <Filename Value="res.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="res"/>
-        <EditorIndex Value="19"/>
+        <EditorIndex Value="21"/>
         <TopLine Value="4809"/>
         <CursorPos Y="4932"/>
         <UsageCount Value="226"/>
@@ -79,55 +79,49 @@
         <Filename Value="..\..\G2Utils.pas"/>
         <TopLine Value="202"/>
         <CursorPos X="14" Y="222"/>
-        <UsageCount Value="11"/>
+        <UsageCount Value="7"/>
       </Unit5>
       <Unit6>
         <Filename Value="..\..\G2Image.pas"/>
         <TopLine Value="489"/>
         <CursorPos X="19" Y="509"/>
-        <UsageCount Value="33"/>
+        <UsageCount Value="29"/>
       </Unit6>
       <Unit7>
         <Filename Value="..\..\G2ImagePNG.pas"/>
         <TopLine Value="671"/>
         <CursorPos X="42" Y="681"/>
-        <UsageCount Value="30"/>
+        <UsageCount Value="26"/>
       </Unit7>
       <Unit8>
         <Filename Value="..\..\G2Types.pas"/>
         <TopLine Value="323"/>
         <CursorPos Y="346"/>
-        <UsageCount Value="20"/>
+        <UsageCount Value="16"/>
       </Unit8>
       <Unit9>
         <Filename Value="C:\lazarus\fpc\2.6.2\source\rtl\inc\systemh.inc"/>
         <TopLine Value="507"/>
         <CursorPos X="11" Y="526"/>
-        <UsageCount Value="21"/>
+        <UsageCount Value="17"/>
       </Unit9>
       <Unit10>
-        <Filename Value="C:\lazarus\fpc\2.6.2\source\rtl\win\wininc\messages.inc"/>
-        <TopLine Value="1036"/>
-        <CursorPos X="6" Y="1055"/>
-        <UsageCount Value="3"/>
-      </Unit10>
-      <Unit11>
         <Filename Value="Toolkit.pas"/>
         <UnitName Value="Toolkit"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="28596"/>
-        <CursorPos X="50" Y="28605"/>
+        <TopLine Value="3724"/>
+        <CursorPos X="24" Y="3737"/>
         <UsageCount Value="114"/>
         <Loaded Value="True"/>
-      </Unit11>
-      <Unit12>
+      </Unit10>
+      <Unit11>
         <Filename Value="C:\lazarus\components\lazutils\fileutil.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="212"/>
         <CursorPos X="10" Y="229"/>
-        <UsageCount Value="81"/>
-      </Unit12>
-      <Unit13>
+        <UsageCount Value="77"/>
+      </Unit11>
+      <Unit12>
         <Filename Value="C:\lazarus\lcl\clipbrd.pp"/>
         <UnitName Value="Clipbrd"/>
         <EditorIndex Value="5"/>
@@ -135,363 +129,370 @@
         <CursorPos X="14" Y="185"/>
         <UsageCount Value="106"/>
         <Loaded Value="True"/>
-      </Unit13>
-      <Unit14>
+      </Unit12>
+      <Unit13>
         <Filename Value="C:\lazarus\lcl\include\clipbrd.inc"/>
         <EditorIndex Value="6"/>
         <TopLine Value="94"/>
         <CursorPos X="3" Y="104"/>
         <UsageCount Value="106"/>
         <Loaded Value="True"/>
-      </Unit14>
-      <Unit15>
+      </Unit13>
+      <Unit14>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\objpas\sysutils\filutilh.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="39"/>
         <CursorPos X="3" Y="56"/>
-        <UsageCount Value="81"/>
-      </Unit15>
-      <Unit16>
+        <UsageCount Value="77"/>
+      </Unit14>
+      <Unit15>
         <Filename Value="C:\lazarus\lcl\dialogs.pp"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="132"/>
         <CursorPos X="5" Y="155"/>
-        <UsageCount Value="82"/>
-      </Unit16>
-      <Unit17>
+        <UsageCount Value="78"/>
+      </Unit15>
+      <Unit16>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\objpas\math.pp"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="682"/>
         <CursorPos X="44" Y="750"/>
-        <UsageCount Value="81"/>
-      </Unit17>
-      <Unit18>
+        <UsageCount Value="77"/>
+      </Unit16>
+      <Unit17>
         <Filename Value="..\..\source\Gen2MP.pas"/>
         <UnitName Value="Gen2MP"/>
-        <EditorIndex Value="14"/>
+        <EditorIndex Value="16"/>
         <TopLine Value="181"/>
         <CursorPos X="3" Y="199"/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
-      </Unit18>
-      <Unit19>
+      </Unit17>
+      <Unit18>
         <Filename Value="..\..\source\G2Utils.pas"/>
         <UnitName Value="G2Utils"/>
-        <EditorIndex Value="13"/>
+        <EditorIndex Value="15"/>
         <TopLine Value="497"/>
         <CursorPos X="28" Y="516"/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
-      </Unit19>
-      <Unit20>
+      </Unit18>
+      <Unit19>
         <Filename Value="..\..\source\G2Types.pas"/>
         <UnitName Value="G2Types"/>
-        <EditorIndex Value="12"/>
+        <EditorIndex Value="14"/>
         <TopLine Value="206"/>
         <CursorPos X="5" Y="209"/>
         <UsageCount Value="103"/>
         <Loaded Value="True"/>
-      </Unit20>
-      <Unit21>
+      </Unit19>
+      <Unit20>
         <Filename Value="..\..\source\G2Math.pas"/>
         <UnitName Value="G2Math"/>
-        <EditorIndex Value="11"/>
+        <EditorIndex Value="13"/>
         <TopLine Value="381"/>
         <CursorPos X="89" Y="397"/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
-      </Unit21>
-      <Unit22>
+      </Unit20>
+      <Unit21>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\inc\objpas.inc"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="81"/>
-      </Unit22>
-      <Unit23>
+        <UsageCount Value="77"/>
+      </Unit21>
+      <Unit22>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\objpas\sysutils\diskh.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="2"/>
         <CursorPos X="10" Y="20"/>
-        <UsageCount Value="81"/>
-      </Unit23>
-      <Unit24>
+        <UsageCount Value="77"/>
+      </Unit22>
+      <Unit23>
         <Filename Value="..\..\source\Gen2MP.inc"/>
-        <EditorIndex Value="18"/>
+        <EditorIndex Value="20"/>
         <TopLine Value="22"/>
         <CursorPos X="6" Y="39"/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
-      </Unit24>
-      <Unit25>
+      </Unit23>
+      <Unit24>
         <Filename Value="..\..\source\G2Scene2D.pas"/>
         <UnitName Value="G2Scene2D"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="9"/>
-        <TopLine Value="2501"/>
-        <CursorPos X="37" Y="2521"/>
+        <TopLine Value="568"/>
+        <CursorPos X="15" Y="582"/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
-      </Unit25>
-      <Unit26>
+      </Unit24>
+      <Unit25>
         <Filename Value="..\..\source\box2d\box2d.pas"/>
         <UnitName Value="box2d"/>
-        <EditorIndex Value="10"/>
+        <EditorIndex Value="12"/>
         <TopLine Value="754"/>
         <CursorPos X="3" Y="771"/>
         <UsageCount Value="101"/>
         <Loaded Value="True"/>
-      </Unit26>
-      <Unit27>
+      </Unit25>
+      <Unit26>
         <Filename Value="..\..\source\G2DataManager.pas"/>
         <UnitName Value="G2DataManager"/>
-        <EditorIndex Value="16"/>
+        <EditorIndex Value="18"/>
         <TopLine Value="79"/>
         <CursorPos X="15" Y="93"/>
         <UsageCount Value="101"/>
         <Loaded Value="True"/>
-      </Unit27>
-      <Unit28>
+      </Unit26>
+      <Unit27>
         <Filename Value="..\..\source\G2ImagePNG.pas"/>
         <UnitName Value="G2ImagePNG"/>
-        <EditorIndex Value="17"/>
+        <EditorIndex Value="19"/>
         <TopLine Value="6"/>
         <CursorPos X="15" Y="25"/>
         <UsageCount Value="101"/>
         <Loaded Value="True"/>
+      </Unit27>
+      <Unit28>
+        <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\inc\system.inc"/>
+        <EditorIndex Value="11"/>
+        <UsageCount Value="110"/>
+        <Loaded Value="True"/>
       </Unit28>
       <Unit29>
-        <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\inc\system.inc"/>
-        <EditorIndex Value="-1"/>
-        <CursorPos X="43" Y="15"/>
-        <UsageCount Value="90"/>
-      </Unit29>
-      <Unit30>
         <Filename Value="C:\lazarus\components\lazutils\fileutil.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="601"/>
         <CursorPos X="32" Y="619"/>
-        <UsageCount Value="81"/>
-      </Unit30>
-      <Unit31>
+        <UsageCount Value="77"/>
+      </Unit29>
+      <Unit30>
         <Filename Value="..\..\source\G2MeshData.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="240"/>
         <CursorPos X="35" Y="256"/>
-        <UsageCount Value="80"/>
-      </Unit31>
-      <Unit32>
+        <UsageCount Value="76"/>
+      </Unit30>
+      <Unit31>
         <Filename Value="..\..\source\G2MeshG2M.pas"/>
         <UnitName Value="G2MeshG2M"/>
         <EditorIndex Value="8"/>
         <CursorPos X="76" Y="24"/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
-      </Unit32>
-      <Unit33>
+      </Unit31>
+      <Unit32>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\objpas\sysutils\finah.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="8"/>
         <CursorPos X="10" Y="27"/>
-        <UsageCount Value="71"/>
-      </Unit33>
-      <Unit34>
+        <UsageCount Value="67"/>
+      </Unit32>
+      <Unit33>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\inc\objpash.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="193"/>
         <CursorPos X="43" Y="206"/>
-        <UsageCount Value="9"/>
-      </Unit34>
-      <Unit35>
+        <UsageCount Value="5"/>
+      </Unit33>
+      <Unit34>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\packages\winunits-base\src\activex.pp"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="1326"/>
         <CursorPos X="4" Y="1345"/>
-        <UsageCount Value="16"/>
-      </Unit35>
-      <Unit36>
+        <UsageCount Value="12"/>
+      </Unit34>
+      <Unit35>
         <Filename Value="..\..\source\G2Image.pas"/>
         <UnitName Value="G2Image"/>
-        <EditorIndex Value="15"/>
+        <EditorIndex Value="17"/>
         <TopLine Value="52"/>
         <CursorPos X="15" Y="47"/>
         <UsageCount Value="102"/>
         <Loaded Value="True"/>
-      </Unit36>
-      <Unit37>
+      </Unit35>
+      <Unit36>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\objpas\sysutils\syspchh.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="7"/>
         <CursorPos X="10" Y="38"/>
-        <UsageCount Value="8"/>
-      </Unit37>
-      <Unit38>
+        <UsageCount Value="4"/>
+      </Unit36>
+      <Unit37>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\objpas\sysutils\syspch.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="19"/>
         <CursorPos X="3" Y="35"/>
-        <UsageCount Value="8"/>
-      </Unit38>
-      <Unit39>
+        <UsageCount Value="4"/>
+      </Unit37>
+      <Unit38>
         <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\win\wininc\base.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="257"/>
         <CursorPos X="6" Y="201"/>
-        <UsageCount Value="7"/>
-      </Unit39>
-      <Unit40>
+        <UsageCount Value="3"/>
+      </Unit38>
+      <Unit39>
         <Filename Value="C:\lazarus\lcl\lcltype.pp"/>
         <UnitName Value="LCLType"/>
         <EditorIndex Value="7"/>
         <TopLine Value="2662"/>
         <CursorPos X="3" Y="2676"/>
-        <UsageCount Value="87"/>
+        <UsageCount Value="107"/>
         <Loaded Value="True"/>
-      </Unit40>
-      <Unit41>
+      </Unit39>
+      <Unit40>
         <Filename Value="C:\lazarus\lcl\include\filedialog.inc"/>
         <EditorIndex Value="2"/>
         <TopLine Value="37"/>
         <CursorPos Y="53"/>
-        <UsageCount Value="45"/>
+        <UsageCount Value="65"/>
         <Loaded Value="True"/>
-      </Unit41>
-      <Unit42>
+      </Unit40>
+      <Unit41>
         <Filename Value="C:\lazarus\lcl\include\commondialog.inc"/>
         <EditorIndex Value="3"/>
         <TopLine Value="15"/>
         <CursorPos Y="30"/>
-        <UsageCount Value="45"/>
+        <UsageCount Value="65"/>
         <Loaded Value="True"/>
-      </Unit42>
-      <Unit43>
+      </Unit41>
+      <Unit42>
         <Filename Value="C:\lazarus\lcl\interfaces\win32\win32wsdialogs.pp"/>
         <UnitName Value="Win32WSDialogs"/>
         <EditorIndex Value="4"/>
         <TopLine Value="59"/>
         <CursorPos X="21" Y="75"/>
-        <UsageCount Value="45"/>
+        <UsageCount Value="65"/>
+        <Loaded Value="True"/>
+      </Unit42>
+      <Unit43>
+        <Filename Value="C:\lazarus\components\lazutils\winlazfileutils.inc"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="10"/>
+        <TopLine Value="572"/>
+        <CursorPos X="44" Y="584"/>
+        <UsageCount Value="30"/>
         <Loaded Value="True"/>
       </Unit43>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="3845" Column="68" TopLine="3830"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="744" Column="22" TopLine="725"/>
       </Position1>
       <Position2>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="28711" Column="64" TopLine="28692"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="746" Column="19" TopLine="725"/>
       </Position2>
       <Position3>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="3643" Column="15" TopLine="3623"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="3126" TopLine="3120"/>
       </Position3>
       <Position4>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="27551" Column="35" TopLine="27528"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="742" TopLine="725"/>
       </Position4>
       <Position5>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="27543" Column="28" TopLine="27527"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="743" TopLine="725"/>
       </Position5>
       <Position6>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="3643" Column="15" TopLine="3626"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="60" Column="15" TopLine="44"/>
       </Position6>
       <Position7>
         <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="3124" Column="17" TopLine="3120"/>
+        <Caret Line="3143" Column="24" TopLine="3116"/>
       </Position7>
       <Position8>
         <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="742" Column="3" TopLine="739"/>
+        <Caret Line="2518" Column="3" TopLine="2513"/>
       </Position8>
       <Position9>
         <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="3124" TopLine="3118"/>
+        <Caret Line="3142" TopLine="3125"/>
       </Position9>
       <Position10>
         <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="742" TopLine="725"/>
+        <Caret Line="1021" TopLine="1005"/>
       </Position10>
       <Position11>
         <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="743" TopLine="725"/>
+        <Caret Line="3142" Column="35" TopLine="3125"/>
       </Position11>
       <Position12>
         <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="744" Column="22" TopLine="725"/>
+        <Caret Line="3143" TopLine="3125"/>
       </Position12>
       <Position13>
         <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="746" Column="19" TopLine="725"/>
+        <Caret Line="3144" TopLine="3125"/>
       </Position13>
       <Position14>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="3126" TopLine="3120"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="28605" Column="50" TopLine="28596"/>
       </Position14>
       <Position15>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="742" TopLine="725"/>
+        <Filename Value="..\..\source\box2d\box2d.pas"/>
+        <Caret Line="6078" TopLine="6061"/>
       </Position15>
       <Position16>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="743" TopLine="725"/>
+        <Filename Value="..\..\source\box2d\box2d.pas"/>
+        <Caret Line="5470" TopLine="5453"/>
       </Position16>
       <Position17>
         <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="60" Column="15" TopLine="44"/>
+        <Caret Line="3050" Column="28" TopLine="3039"/>
       </Position17>
       <Position18>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="3143" Column="24" TopLine="3116"/>
+        <Filename Value="..\..\source\box2d\box2d.pas"/>
+        <Caret Line="778" Column="5" TopLine="761"/>
       </Position18>
       <Position19>
         <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="2518" Column="3" TopLine="2513"/>
+        <Caret Line="3060" Column="15" TopLine="3039"/>
       </Position19>
       <Position20>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="3142" TopLine="3125"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="28607" Column="46" TopLine="28556"/>
       </Position20>
       <Position21>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="1021" TopLine="1005"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="3660" Column="15" TopLine="3644"/>
       </Position21>
       <Position22>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="3142" Column="35" TopLine="3125"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="3686" Column="26" TopLine="3666"/>
       </Position22>
       <Position23>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="3143" TopLine="3125"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="3706" Column="15" TopLine="3683"/>
       </Position23>
       <Position24>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="3144" TopLine="3125"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="3722" Column="15" TopLine="3703"/>
       </Position24>
       <Position25>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="28605" Column="50" TopLine="28596"/>
+        <Caret Line="3738" Column="32" TopLine="3716"/>
       </Position25>
       <Position26>
-        <Filename Value="..\..\source\box2d\box2d.pas"/>
-        <Caret Line="6078" TopLine="6061"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="3737" Column="24" TopLine="3724"/>
       </Position26>
       <Position27>
-        <Filename Value="..\..\source\box2d\box2d.pas"/>
-        <Caret Line="5470" TopLine="5453"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="582" Column="15" TopLine="568"/>
       </Position27>
       <Position28>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="3050" Column="28" TopLine="3039"/>
+        <Filename Value="C:\lazarus\components\lazutils\winlazfileutils.inc"/>
+        <Caret Line="587" TopLine="572"/>
       </Position28>
       <Position29>
-        <Filename Value="..\..\source\box2d\box2d.pas"/>
-        <Caret Line="778" Column="5" TopLine="761"/>
+        <Filename Value="C:\lazarus\components\lazutils\winlazfileutils.inc"/>
+        <Caret Line="637" TopLine="622"/>
       </Position29>
       <Position30>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="3060" Column="15" TopLine="3039"/>
+        <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\inc\system.inc"/>
       </Position30>
     </JumpHistory>
   </ProjectOptions>

@@ -447,10 +447,13 @@ type
     procedure OnAttach; override;
     procedure OnDetach; override;
     procedure Reattach;
+    function GetFriction: TG2Float; inline;
+    procedure SetFriction(const Value: TG2Float); inline;
   public
     class constructor CreateClass;
     class function GetName: String; override;
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
+    property Fricton: TG2Float read GetFriction write SetFriction;
   end;
 
   TG2Scene2DComponentCollisionShapeEdge = class (TG2Scene2DComponentCollisionShape)
@@ -2554,6 +2557,17 @@ begin
   Attach(OldOwner);
 end;
 
+function TG2Scene2DComponentCollisionShape.GetFriction: TG2Float;
+begin
+  Result := _FixtureDef.friction;
+end;
+
+procedure TG2Scene2DComponentCollisionShape.SetFriction(const Value: TG2Float);
+begin
+  _FixtureDef.friction := Value;
+  if _Fixture <> nil then _Fixture^.set_friction(Value);
+end;
+
 class constructor TG2Scene2DComponentCollisionShape.CreateClass;
 begin
   SetLength(ComponentList, Length(ComponentList) + 1);
@@ -2666,6 +2680,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapeEdge.Save(const Stream: TStream);
 begin
   SaveClassType(Stream);
+  Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
   Stream.Write(_EdgeShape.vertex0, SizeOf(_EdgeShape.vertex0));
   Stream.Write(_EdgeShape.vertex1, SizeOf(_EdgeShape.vertex1));
   Stream.Write(_EdgeShape.vertex2, SizeOf(_EdgeShape.vertex2));
@@ -2676,6 +2691,8 @@ end;
 
 procedure TG2Scene2DComponentCollisionShapeEdge.Load(const Stream: TStream);
 begin
+  Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
+  _FixtureDef.shape := @_EdgeShape;
   Stream.Read(_EdgeShape.vertex0, SizeOf(_EdgeShape.vertex0));
   Stream.Read(_EdgeShape.vertex1, SizeOf(_EdgeShape.vertex1));
   Stream.Read(_EdgeShape.vertex2, SizeOf(_EdgeShape.vertex2));
@@ -2747,6 +2764,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapePoly.Save(const Stream: TStream);
 begin
   SaveClassType(Stream);
+  Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
   Stream.Write(_PolyShape.count, SizeOf(_PolyShape.count));
   Stream.Write(_PolyShape.vertices, SizeOf(_PolyShape.vertices));
   Stream.Write(_PolyShape.normals, SizeOf(_PolyShape.normals));
@@ -2755,6 +2773,8 @@ end;
 
 procedure TG2Scene2DComponentCollisionShapePoly.Load(const Stream: TStream);
 begin
+  Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
+  _FixtureDef.shape := @_PolyShape;
   Stream.Read(_PolyShape.count, SizeOf(_PolyShape.count));
   Stream.Read(_PolyShape.vertices, SizeOf(_PolyShape.vertices));
   Stream.Read(_PolyShape.normals, SizeOf(_PolyShape.normals));
@@ -2842,6 +2862,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapeBox.Save(const Stream: TStream);
 begin
   SaveClassType(Stream);
+  Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
   Stream.Write(_Width, SizeOf(_Width));
   Stream.Write(_Height, SizeOf(_Height));
   Stream.Write(_Offset, SizeOf(_Offset));
@@ -2850,6 +2871,8 @@ end;
 
 procedure TG2Scene2DComponentCollisionShapeBox.Load(const Stream: TStream);
 begin
+  Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
+  _FixtureDef.shape := @_PolyShape;
   Stream.Read(_Width, SizeOf(_Width));
   Stream.Read(_Height, SizeOf(_Height));
   Stream.Read(_Offset, SizeOf(_Offset));
@@ -2918,12 +2941,15 @@ end;
 procedure TG2Scene2DComponentCollisionShapeCircle.Save(const Stream: TStream);
 begin
   SaveClassType(Stream);
+  Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
   Stream.Write(_CircleShape.center, SizeOf(_CircleShape.center));
   Stream.Write(_CircleShape.radius, SizeOf(_CircleShape.radius));
 end;
 
 procedure TG2Scene2DComponentCollisionShapeCircle.Load(const Stream: TStream);
 begin
+  Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
+  _FixtureDef.shape := @_CircleShape;
   Stream.Read(_CircleShape.center, SizeOf(_CircleShape.center));
   Stream.Read(_CircleShape.radius, SizeOf(_CircleShape.radius));
   Reattach;
@@ -2995,6 +3021,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapeChain.Save(const Stream: TStream);
 begin
   SaveClassType(Stream);
+  Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
   Stream.Write(_ChainShape.count, SizeOf(_ChainShape.count));
   Stream.Write(_ChainShape.vertices^, SizeOf(_ChainShape.vertices^[0]) * _ChainShape.count);
   Stream.Write(_ChainShape.has_next_vertex, SizeOf(_ChainShape.has_next_vertex));
@@ -3007,6 +3034,8 @@ end;
 
 procedure TG2Scene2DComponentCollisionShapeChain.Load(const Stream: TStream);
 begin
+  Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
+  _FixtureDef.shape := @_ChainShape;
   _ChainShape.clear;
   Stream.Read(_ChainShape.count, SizeOf(_ChainShape.count));
   _ChainShape.vertices := pb2_vec2_arr(b2_alloc(_ChainShape.count * SizeOf(tb2_vec2)));

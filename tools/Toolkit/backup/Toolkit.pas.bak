@@ -3647,6 +3647,7 @@ type
 //TScene2DComponentDataShapePoly BEGIN
   TScene2DComponentDataShapePoly = class (TScene2DComponentData)
   private
+    var _Friction: TG2Float;
   public
     var Component: TG2Scene2DComponentCollisionShapePoly;
     class function GetName: String; override;
@@ -3656,6 +3657,7 @@ type
     function Pick(const x, y: TG2Float): Boolean; override;
     procedure DebugDraw(const Display: TG2Display2D); override;
     procedure AddToProperties(const PropertySet: TPropertySet); override;
+    procedure OnChangeFriction(const Sender: Pointer);
     procedure OnEdit;
   end;
 //TScene2DComponentDataShapePoly END
@@ -3667,6 +3669,7 @@ type
     var _Angle: TG2Float;
     var _Width: TG2Float;
     var _Height: TG2Float;
+    var _Friction: TG2Float;
   public
     var Component: TG2Scene2DComponentCollisionShapeBox;
     class function GetName: String; override;
@@ -3680,6 +3683,7 @@ type
     procedure OnChangeHeight(const Sender: Pointer);
     procedure OnChangeOffset(const Sender: Pointer);
     procedure OnChangeAngle(const Sender: Pointer);
+    procedure OnChangeFriction(const Sender: Pointer);
   end;
 //TScene2DComponentDataShapeBox END
 
@@ -3688,6 +3692,7 @@ type
   private
     var _Offset: TG2Vec2;
     var _Radius: TG2Float;
+    var _Friction: TG2Float;
   public
     var Component: TG2Scene2DComponentCollisionShapeCircle;
     class function GetName: String; override;
@@ -3698,11 +3703,14 @@ type
     procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnChangeOffset(const Sender: Pointer);
     procedure OnChangeRadius(const Sender: Pointer);
+    procedure OnChangeFriction(const Sender: Pointer);
   end;
 //TScene2DComponentDataShapeCircle END
 
 //TScene2DComponentDataShapeEdge BEGIN
   TScene2DComponentDataShapeEdge = class (TScene2DComponentData)
+  private
+    var _Friction: TG2Float;
   public
     var Component: TG2Scene2DComponentCollisionShapeEdge;
     class function GetName: String; override;
@@ -3711,12 +3719,14 @@ type
     procedure DebugDraw(const Display: TG2Display2D); override;
     procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnEdit;
+    procedure OnChangeFriction(const Sender: Pointer);
   end;
 //TScene2DComponentDataShapeEdge END
 
 //TScene2DComponentDataShapeChain BEGIN
   TScene2DComponentDataShapeChain = class (TScene2DComponentData)
   private
+    var _Friction: TG2Float;
   public
     var Component: TG2Scene2DComponentCollisionShapeChain;
     class function GetName: String; override;
@@ -3725,6 +3735,7 @@ type
     procedure DebugDraw(const Display: TG2Display2D); override;
     procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnEdit;
+    procedure OnChangeFriction(const Sender: Pointer);
   end;
 //TScene2DComponentDataShapeChain END
 
@@ -27641,8 +27652,15 @@ procedure TScene2DComponentDataShapePoly.AddToProperties(const PropertySet: TPro
   var Group: TPropertySet.TProperty;
 begin
   Group := PropertySet.PropComponent('Collision Polygon', Component);
+  _Friction := Component.Fricton;
+  PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropButton('Edit', @OnEdit, Group);
   //PropertySet.PropVec2('Position', @_Position, Group, @OnChangeWidth);
+end;
+
+procedure TScene2DComponentDataShapePoly.OnChangeFriction(const Sender: Pointer);
+begin
+  Component.Fricton := _Friction;
 end;
 
 procedure TScene2DComponentDataShapePoly.OnEdit;
@@ -27735,11 +27753,13 @@ begin
   _Height := Component.Height;
   _Offset := Component.Offset;
   _Angle := Component.Angle * G2RadToDeg;
+  _Friction := Component.Fricton;
   Group := PropertySet.PropComponent('Collision Box', Component);
   PropertySet.PropFloat('Width', @_Width, Group, @OnChangeWidth);
   PropertySet.PropFloat('Height', @_Height, Group, @OnChangeHeight);
   PropertySet.PropVec2('Offset', @_Offset, Group, @OnChangeOffset);
   PropertySet.PropFloat('Rotation', @_Angle, Group, @OnChangeAngle);
+  PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
 end;
 
 procedure TScene2DComponentDataShapeBox.OnChangeWidth(const Sender: Pointer);
@@ -27760,6 +27780,11 @@ end;
 procedure TScene2DComponentDataShapeBox.OnChangeAngle(const Sender: Pointer);
 begin
   Component.Angle := _Angle * G2DegToRad;
+end;
+
+procedure TScene2DComponentDataShapeBox.OnChangeFriction(const Sender: Pointer);
+begin
+  Component.Fricton := _Friction;
 end;
 //TScene2DComponentDataShapeBox END
 
@@ -27818,9 +27843,11 @@ procedure TScene2DComponentDataShapeCircle.AddToProperties(const PropertySet: TP
 begin
   _Offset := Component.Center;
   _Radius := Component.Radius;
+  _Friction := Component.Fricton;
   Group := PropertySet.PropComponent('Collision Circle', Component);
   PropertySet.PropVec2('Offset', @_Offset, Group, @OnChangeOffset);
   PropertySet.PropFloat('Radius', @_Radius, Group, @OnChangeRadius);
+  PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
 end;
 
 procedure TScene2DComponentDataShapeCircle.OnChangeOffset(const Sender: Pointer);
@@ -27831,6 +27858,11 @@ end;
 procedure TScene2DComponentDataShapeCircle.OnChangeRadius(const Sender: Pointer);
 begin
   component.Radius := _Radius;
+end;
+
+procedure TScene2DComponentDataShapeCircle.OnChangeFriction(const Sender: Pointer);
+begin
+  Component.Fricton := _Friction;
 end;
 //TScene2DComponentDataShapeCircle END
 
@@ -27870,7 +27902,9 @@ end;
 procedure TScene2DComponentDataShapeEdge.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
 begin
+  _Friction := Component.Fricton;
   Group := PropertySet.PropComponent('Collision Edge', Component);
+  PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropButton('Edit', @OnEdit, Group);
 end;
 
@@ -27883,6 +27917,11 @@ begin
     TScene2DEditorEdge.Instance.Component := Self;
     App.Scene2DData.Editor := TScene2DEditorEdge.Instance;
   end;
+end;
+
+procedure TScene2DComponentDataShapeEdge.OnChangeFriction(const Sender: Pointer);
+begin
+  Component.Fricton := _Friction;
 end;
 //TScene2DComponentDataShapeEdge END
 
@@ -27932,6 +27971,8 @@ procedure TScene2DComponentDataShapeChain.AddToProperties(const PropertySet: TPr
   var Group: TPropertySet.TProperty;
 begin
   Group := PropertySet.PropComponent('Collision Chain', Component);
+  _Friction := Component.Fricton;
+  PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropButton('Edit', @OnEdit, Group);
 end;
 
@@ -27944,6 +27985,11 @@ begin
     TScene2DEditorChain.Instance.Component := Self;
     App.Scene2DData.Editor := TScene2DEditorChain.Instance;
   end;
+end;
+
+procedure TScene2DComponentDataShapeChain.OnChangeFriction(const Sender: Pointer);
+begin
+  Component.Fricton := _Friction;
 end;
 //TScene2DComponentDataShapeChain END
 
@@ -28599,17 +28645,17 @@ begin
       if TG2Scene2DComponentEffect(Component).EffectInst <> nil then
       TG2Scene2DComponentEffect(Component).EffectInst.Play;
     end
-    else if Component is TG2Scene2DComponentRigidBody then
-    begin
-      ComponentData := TScene2DComponentDataRigidBody.Create;
-      Component.UserData := ComponentData;
-      TScene2DComponentDataRigidBody(ComponentData).Component := TG2Scene2DComponentRigidBody(Component);
-    end
     else if Component is TG2Scene2DComponentCharacter then
     begin
       ComponentData := TScene2DComponentDataCharacter.Create;
       Component.UserData := ComponentData;
       TScene2DComponentDataCharacter(ComponentData).Component := TG2Scene2DComponentCharacter(Component);
+    end
+    else if Component is TG2Scene2DComponentRigidBody then
+    begin
+      ComponentData := TScene2DComponentDataRigidBody.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataRigidBody(ComponentData).Component := TG2Scene2DComponentRigidBody(Component);
     end
     else if Component is TG2Scene2DComponentCollisionShapeBox then
     begin

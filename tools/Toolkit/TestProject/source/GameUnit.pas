@@ -22,6 +22,7 @@ type
     Display: TG2Display2D;
     PlayerEntity: TG2Scene2DEntity;
     Wheel0: TG2Scene2DEntity;
+    Wheel1: TG2Scene2DEntity;
     constructor Create;
     destructor Destroy; override;
     procedure Initialize;
@@ -91,6 +92,7 @@ begin
   Scene.EnablePhysics;
   PlayerEntity := Scene.FindEntityByName('Car');
   Wheel0 := Scene.FindEntityByName('Wheel0');
+  Wheel1 := Scene.FindEntityByName('Wheel1');
 end;
 
 procedure TGame.Finalize;
@@ -109,10 +111,14 @@ begin
   begin
     rb := TG2Scene2DComponentRigidBody(Wheel0.ComponentOfType[TG2Scene2DComponentRigidBody]);
     rb.PhysBody^.apply_torque(2, true);
+    rb := TG2Scene2DComponentRigidBody(Wheel1.ComponentOfType[TG2Scene2DComponentRigidBody]);
+    rb.PhysBody^.apply_torque(2, true);
   end
   else if g2.KeyDown[G2K_Left] then
   begin
     rb := TG2Scene2DComponentRigidBody(Wheel0.ComponentOfType[TG2Scene2DComponentRigidBody]);
+    rb.PhysBody^.apply_torque(-2, true);
+    rb := TG2Scene2DComponentRigidBody(Wheel1.ComponentOfType[TG2Scene2DComponentRigidBody]);
     rb.PhysBody^.apply_torque(-2, true);
   end;
 end;
