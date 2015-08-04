@@ -2569,6 +2569,7 @@ begin
     bd := b2_body_def;
     bd.position.set_value(-7.0, 6.0);
     bd.body_type := b2_dynamic_body;
+    bd.fixed_rotation := true;
     bd.allow_sleep := false;
     _character := _world^.create_body(bd);
     circle_shape.create;

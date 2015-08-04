@@ -40,6 +40,8 @@ type
 var
   Game: TGame;
 
+ const EnginePower = 5;
+
 implementation
 
 //TGame BEGIN
@@ -110,16 +112,16 @@ begin
   if g2.KeyDown[G2K_Right] then
   begin
     rb := TG2Scene2DComponentRigidBody(Wheel0.ComponentOfType[TG2Scene2DComponentRigidBody]);
-    rb.PhysBody^.apply_torque(2, true);
+    rb.PhysBody^.apply_torque(EnginePower, true);
     rb := TG2Scene2DComponentRigidBody(Wheel1.ComponentOfType[TG2Scene2DComponentRigidBody]);
-    rb.PhysBody^.apply_torque(2, true);
+    rb.PhysBody^.apply_torque(EnginePower, true);
   end
   else if g2.KeyDown[G2K_Left] then
   begin
     rb := TG2Scene2DComponentRigidBody(Wheel0.ComponentOfType[TG2Scene2DComponentRigidBody]);
-    rb.PhysBody^.apply_torque(-2, true);
+    rb.PhysBody^.apply_torque(-EnginePower, true);
     rb := TG2Scene2DComponentRigidBody(Wheel1.ComponentOfType[TG2Scene2DComponentRigidBody]);
-    rb.PhysBody^.apply_torque(-2, true);
+    rb.PhysBody^.apply_torque(-EnginePower, true);
   end;
 end;
 

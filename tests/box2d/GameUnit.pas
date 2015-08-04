@@ -2828,10 +2828,10 @@ procedure TCollisionProcessingTest.Step(var Settings: TSettings);
   var cp: PContactPoint;
   var body1: pb2_body;
   var mass1, mass2: tb2_float32;
-    body2: pb2_body;
-    b: pb2_body;
-    i: Integer;
-    j: Integer;
+  var body2: pb2_body;
+  var b: pb2_body;
+  var i: Integer;
+  var j: Integer;
 begin
   inherited Step(Settings);
   // We are going to destroy some bodies according to contact

@@ -449,11 +449,14 @@ type
     procedure Reattach;
     function GetFriction: TG2Float; inline;
     procedure SetFriction(const Value: TG2Float); inline;
+    function GetDensity: TG2Float; inline;
+    procedure SetDensity(const Value: TG2Float); inline;
   public
     class constructor CreateClass;
     class function GetName: String; override;
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
     property Fricton: TG2Float read GetFriction write SetFriction;
+    property Density: TG2Float read GetDensity write SetDensity;
   end;
 
   TG2Scene2DComponentCollisionShapeEdge = class (TG2Scene2DComponentCollisionShape)
@@ -1824,6 +1827,7 @@ begin
   Stream.Write(_FlipY, SizeOf(_FlipY));
   Stream.Write(_Transform, SizeOf(_Transform));
   Stream.Write(_Filter, SizeOf(_Filter));
+  Stream.Write(_BlendMode, SizeOf(_BlendMode));
   n := Layer;
   Stream.Write(n, SizeOf(n));
 end;
@@ -2366,8 +2370,9 @@ end;
 procedure TG2Scene2DComponentRigidBody.SetPosition(const Value: TG2Vec2);
 begin
   if _Enabled then
-  _Body^.set_transform(Value, _Body^.get_angle)
-  else
+  begin
+    _Body^.set_transform(Value, _Body^.get_angle);
+  end;
   _BodyDef.position := Value;
 end;
 
@@ -2382,8 +2387,9 @@ end;
 procedure TG2Scene2DComponentRigidBody.SetRotation(const Value: TG2Float);
 begin
   if _Enabled then
-  _Body^.set_transform(_Body^.get_position, Value)
-  else
+  begin
+    _Body^.set_transform(_Body^.get_position, Value);
+  end;
   _BodyDef.angle := Value;
 end;
 
@@ -2398,8 +2404,9 @@ end;
 procedure TG2Scene2DComponentRigidBody.SetFixedRotation(const Value: Boolean);
 begin
   if _Enabled then
-  _Body^.set_fixed_rotation(Value)
-  else
+  begin
+    _Body^.set_fixed_rotation(Value);
+  end;
   _BodyDef.fixed_rotation := Value;
 end;
 
@@ -2566,6 +2573,17 @@ procedure TG2Scene2DComponentCollisionShape.SetFriction(const Value: TG2Float);
 begin
   _FixtureDef.friction := Value;
   if _Fixture <> nil then _Fixture^.set_friction(Value);
+end;
+
+function TG2Scene2DComponentCollisionShape.GetDensity: TG2Float;
+begin
+  Result := _FixtureDef.density;
+end;
+
+procedure TG2Scene2DComponentCollisionShape.SetDensity(const Value: TG2Float);
+begin
+  _FixtureDef.density := Value;
+  if _Fixture <> nil then _Fixture^.set_density(Value);
 end;
 
 class constructor TG2Scene2DComponentCollisionShape.CreateClass;
@@ -3035,7 +3053,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapeChain.Load(const Stream: TStream);
 begin
   Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
-  _FixtureDef.shape := @_EdgeShape;
+  _FixtureDef.shape := @_ChainShape;
   _ChainShape.clear;
   Stream.Read(_ChainShape.count, SizeOf(_ChainShape.count));
   _ChainShape.vertices := pb2_vec2_arr(b2_alloc(_ChainShape.count * SizeOf(tb2_vec2)));
