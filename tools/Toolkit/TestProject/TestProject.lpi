@@ -29,11 +29,11 @@
         <FormatVersion Value="1"/>
       </local>
     </RunParams>
-    <Units Count="4">
+    <Units Count="3">
       <Unit0>
         <Filename Value="TestProject.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="27"/>
+        <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
@@ -41,38 +41,37 @@
         <UnitName Value="GameUnit"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="118"/>
-        <CursorPos X="5" Y="138"/>
-        <UsageCount Value="14"/>
+        <TopLine Value="120"/>
+        <CursorPos X="6" Y="137"/>
+        <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="..\..\..\source\Gen2MP.pas"/>
         <UnitName Value="Gen2MP"/>
         <EditorIndex Value="2"/>
-        <UsageCount Value="13"/>
+        <TopLine Value="365"/>
+        <CursorPos X="15" Y="379"/>
+        <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit2>
-      <Unit3>
-        <Filename Value="..\..\..\source\Gen2MP.inc"/>
-        <EditorIndex Value="3"/>
-        <TopLine Value="16"/>
-        <CursorPos X="57" Y="30"/>
-        <UsageCount Value="13"/>
-        <Loaded Value="True"/>
-      </Unit3>
     </Units>
-    <JumpHistory Count="3" HistoryIndex="2">
+    <JumpHistory Count="4" HistoryIndex="3">
       <Position1>
         <Filename Value="TestProject.lpr"/>
       </Position1>
       <Position2>
         <Filename Value="source\GameUnit.pas"/>
-        <Caret Line="87" Column="55"/>
+        <Caret Line="138" Column="3" TopLine="120"/>
       </Position2>
       <Position3>
         <Filename Value="..\..\..\source\Gen2MP.pas"/>
+        <Caret Line="3478" Column="5" TopLine="3462"/>
       </Position3>
+      <Position4>
+        <Filename Value="..\..\..\source\Gen2MP.pas"/>
+        <Caret Line="378" Column="15" TopLine="357"/>
+      </Position4>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
@@ -83,7 +82,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="D:\other\g2mp\source\;D:\other\g2mp\source\box2d\;source\"/>
+      <OtherUnitFiles Value="G:\[SDK]\g2mp\source\;G:\[SDK]\g2mp\source\box2d\;source\"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>

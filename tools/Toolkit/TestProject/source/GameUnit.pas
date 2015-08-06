@@ -131,11 +131,11 @@ end;
 
 procedure TGame.Render;
 begin
-  //g2.Gfx.StateChange.StateRenderTarget := rt;
-  //Display.ViewPort := Rect(0, 0, 64, 64);
+  g2.RenderTarget := rt;
+  Display.ViewPort := Rect(0, 0, 64, 64);
   Scene.Render(Display);
-  //g2.Gfx.StateChange.StateRenderTarget := nil;
-  //g2.PicRect(0, 0, 768, 768, $ffffffff, rt, bmNormal, tfPoint);
+  g2.RenderTarget := nil;
+  g2.PicRect(0, 0, 768, 768, $ffffffff, rt, bmNormal, tfPoint);
 end;
 
 procedure TGame.KeyDown(const Key: Integer);

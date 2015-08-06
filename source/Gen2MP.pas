@@ -375,6 +375,8 @@ type
     procedure SetPause(const Value: Boolean);
     function GetDeltaTime: TG2Float; inline;
     function GetDeltaTimeSec: TG2Float; inline;
+    function GetRenderTarget: TG2Texture2DRT; inline;
+    procedure SetRenderTarget(const Value: TG2Texture2DRT); inline;
   public
     property Window: TG2Window read _Window;
     property Params: TG2Params read _Params;
@@ -393,6 +395,7 @@ type
     property Pause: Boolean read _Pause write SetPause;
     property DeltaTimeMs: TG2Float read GetDeltaTime;
     property DeltaTimeSec: TG2Float read GetDeltaTimeSec;
+    property RenderTarget: TG2Texture2DRT read GetRenderTarget write SetRenderTarget;
     {$if defined(G2Target_iOS)}
     property Delegate: TG2AppDelegate read _Delegate write _Delegate;
     {$endif}
@@ -4384,6 +4387,16 @@ end;
 function TG2Core.GetDeltaTimeSec: TG2Float;
 begin
   Result := 1 / _TargetUPS;
+end;
+
+function TG2Core.GetRenderTarget: TG2Texture2DRT;
+begin
+  Result := _Gfx.StateChange.StateRenderTarget;
+end;
+
+procedure TG2Core.SetRenderTarget(const Value: TG2Texture2DRT);
+begin
+  _Gfx.StateChange.StateRenderTarget := Value;
 end;
 
 procedure TG2Core.Start;
