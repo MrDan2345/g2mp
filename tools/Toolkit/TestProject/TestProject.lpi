@@ -29,49 +29,50 @@
         <FormatVersion Value="1"/>
       </local>
     </RunParams>
-    <Units Count="3">
+    <Units Count="4">
       <Unit0>
         <Filename Value="TestProject.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="21"/>
+        <UsageCount Value="27"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="source\GameUnit.pas"/>
         <UnitName Value="GameUnit"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="91"/>
-        <CursorPos X="32" Y="111"/>
-        <UsageCount Value="10"/>
+        <TopLine Value="118"/>
+        <CursorPos X="5" Y="138"/>
+        <UsageCount Value="14"/>
         <Loaded Value="True"/>
       </Unit1>
       <Unit2>
-        <Filename Value="..\..\..\source\G2Scene2D.pas"/>
-        <UnitName Value="G2Scene2D"/>
-        <IsVisibleTab Value="True"/>
+        <Filename Value="..\..\..\source\Gen2MP.pas"/>
+        <UnitName Value="Gen2MP"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="2526"/>
-        <CursorPos X="32" Y="2531"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="13"/>
         <Loaded Value="True"/>
       </Unit2>
+      <Unit3>
+        <Filename Value="..\..\..\source\Gen2MP.inc"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="16"/>
+        <CursorPos X="57" Y="30"/>
+        <UsageCount Value="13"/>
+        <Loaded Value="True"/>
+      </Unit3>
     </Units>
-    <JumpHistory Count="4" HistoryIndex="3">
+    <JumpHistory Count="3" HistoryIndex="2">
       <Position1>
         <Filename Value="TestProject.lpr"/>
       </Position1>
       <Position2>
         <Filename Value="source\GameUnit.pas"/>
-        <Caret Line="111" Column="48" TopLine="82"/>
+        <Caret Line="87" Column="55"/>
       </Position2>
       <Position3>
-        <Filename Value="source\GameUnit.pas"/>
-        <Caret Line="116" Column="33" TopLine="91"/>
+        <Filename Value="..\..\..\source\Gen2MP.pas"/>
       </Position3>
-      <Position4>
-        <Filename Value="..\..\..\source\G2Scene2D.pas"/>
-        <Caret Line="398" Column="3" TopLine="334"/>
-      </Position4>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
@@ -82,7 +83,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="G:\[SDK]\g2mp\source\;G:\[SDK]\g2mp\source\box2d\;source\"/>
+      <OtherUnitFiles Value="D:\other\g2mp\source\;D:\other\g2mp\source\box2d\;source\"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>

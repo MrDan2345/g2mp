@@ -35,8 +35,8 @@
 
 {$if not defined(G2Custom_Gfx)}
   {$if defined(G2Target_Windows)}
-    {.$define G2Gfx_D3D9}
-    {$define G2Gfx_OGL}
+    {$define G2Gfx_D3D9}
+    {.$define G2Gfx_OGL}
   {$elseif defined(G2Target_Android)}
     {$define G2Gfx_GLES}
   {$elseif defined(G2Target_iOS)}

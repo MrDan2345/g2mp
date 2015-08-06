@@ -23,6 +23,7 @@ type
     PlayerEntity: TG2Scene2DEntity;
     Wheel0: TG2Scene2DEntity;
     Wheel1: TG2Scene2DEntity;
+    rt: TG2Texture2DRT;
     constructor Create;
     destructor Destroy; override;
     procedure Initialize;
@@ -58,9 +59,9 @@ begin
   g2.CallbackScrollAdd(@Scroll);
   g2.CallbackPrintAdd(@Print);
   g2.Params.MaxFPS := 100;
-  g2.Params.Width := 1024;
+  g2.Params.Width := 768;
   g2.Params.Height := 768;
-  g2.Params.ScreenMode := smMaximized;
+  g2.Params.ScreenMode := smWindow;
 end;
 
 destructor TGame.Destroy;
@@ -95,10 +96,13 @@ begin
   PlayerEntity := Scene.FindEntityByName('Car');
   Wheel0 := Scene.FindEntityByName('Wheel0');
   Wheel1 := Scene.FindEntityByName('Wheel1');
+  rt := TG2Texture2DRT.Create;
+  rt.Make(64, 64);
 end;
 
 procedure TGame.Finalize;
 begin
+  rt.Free;
   Scene.Free;
   Display.Free;
   Font.Free;
@@ -127,7 +131,11 @@ end;
 
 procedure TGame.Render;
 begin
+  //g2.Gfx.StateChange.StateRenderTarget := rt;
+  //Display.ViewPort := Rect(0, 0, 64, 64);
   Scene.Render(Display);
+  //g2.Gfx.StateChange.StateRenderTarget := nil;
+  //g2.PicRect(0, 0, 768, 768, $ffffffff, rt, bmNormal, tfPoint);
 end;
 
 procedure TGame.KeyDown(const Key: Integer);
