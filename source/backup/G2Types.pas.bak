@@ -127,6 +127,7 @@ const
   G2RcpPi = 1 / Pi;
   G2Rcp255 = 1 / $ff;
   G2EPS = 1E-6;
+  G2EPS1 = 1E-5;
   G2DegToRad = Pi / 180;
   G2RadToDeg = 180 / Pi;
 
@@ -193,9 +194,6 @@ type
 
   TG2StrArrA = array of AnsiString;
   TG2StrArrW = array of WideString;
-
-  TG2PointArr = array of TPoint;
-  TG2RectArr = array of TRect;
 
   TG2Color = packed record
     {$if defined(G2Gfx_D3D9)}

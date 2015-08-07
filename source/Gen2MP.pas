@@ -4205,7 +4205,7 @@ begin
     _Updater.Free;
     _Updater := nil;
     {$endif}
-    for i := 0 to _LinkFinalize.Count - 1 do
+    for i := _LinkFinalize.Count - 1 downto 0 do
     if _LinkFinalize[i]^.Obj then
     _LinkFinalize[i]^.ProcObj
     else
@@ -10203,7 +10203,7 @@ end;
 procedure TG2Effect2DInst.Play;
   var i: Integer;
 begin
-  if _Playing then Stop;
+  if _Playing then Exit;
   _EmittersAlive := 0;
   _ParticlesAlive := 0;
   _EmittersAlive := 0;

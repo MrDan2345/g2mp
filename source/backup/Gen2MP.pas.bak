@@ -1571,6 +1571,7 @@ type
     procedure Clear;
     function FindLayer(const Layer: TG2IntS32): TG2Effect2DLayer; inline;
     function CreateEmitter(const Data: TG2Effect2DEmitterData; const Parent: TG2Effect2DParticle = nil): TG2Effect2DEmitter;
+    procedure SetRepeating(const Value: Boolean); inline;
   public
     property Effect: TG2Effect2D read _Effect;
     property Playing: Boolean read _Playing;
@@ -4205,7 +4206,7 @@ begin
     _Updater.Free;
     _Updater := nil;
     {$endif}
-    for i := 0 to _LinkFinalize.Count - 1 do
+    for i := _LinkFinalize.Count - 1 downto 0 do
     if _LinkFinalize[i]^.Obj then
     _LinkFinalize[i]^.ProcObj
     else
@@ -4391,12 +4392,12 @@ end;
 
 function TG2Core.GetRenderTarget: TG2Texture2DRT;
 begin
-
+  Result := _Gfx.StateChange.StateRenderTarget;
 end;
 
 procedure TG2Core.SetRenderTarget(const Value: TG2Texture2DRT);
 begin
-
+  _Gfx.StateChange.StateRenderTarget := Value;
 end;
 
 procedure TG2Core.Start;
@@ -10203,7 +10204,7 @@ end;
 procedure TG2Effect2DInst.Play;
   var i: Integer;
 begin
-  if _Playing then Stop;
+  if _Playing then Exit;
   _EmittersAlive := 0;
   _ParticlesAlive := 0;
   _EmittersAlive := 0;

@@ -11791,7 +11791,7 @@ begin
   spx := r.x + r.w * _Splitter + 1;
   spw := r.w * (1 - _Splitter) - 1;
   g2.PrimRect(r.x, r.y, r.w * _Splitter, r.h, App.UI.GetColorPrimary(0.9));
-  if G2Rect(spx, r.y, spw, r.h).Contains(g2.MousePos) then
+  if (App.UI.Overlay = nil) and G2Rect(spx, r.y, spw, r.h).Contains(g2.MousePos) then
   c := App.UI.GetColorPrimary(1)
   else
   c := App.UI.GetColorPrimary(0.95);
@@ -11828,7 +11828,7 @@ begin
   h := App.UI.Font1.TextHeight('A');
   App.UI.PushClipRect(r);
   c0 := App.UI.GetColorPrimary(0.6);
-  if br.Contains(g2.MousePos) then
+  if (App.UI.Overlay = nil) and br.Contains(g2.MousePos) then
   begin
     if g2.MouseDown[G2MB_Left] and Frame.Contains(g2.MouseDownPos[G2MB_Left]) then
     c1 := App.UI.GetColorPrimary(0.7)
@@ -11877,7 +11877,7 @@ begin
   spx := r.x + r.w * _Splitter + 1;
   spw := r.w * (1 - _Splitter) - 1;
   g2.PrimRect(r.x, r.y, r.w * _Splitter, r.h, App.UI.GetColorPrimary(0.9));
-  if G2Rect(spx, r.y, spw, r.h).Contains(g2.MousePos) then
+  if (App.UI.Overlay = nil) and G2Rect(spx, r.y, spw, r.h).Contains(g2.MousePos) then
   c := App.UI.GetColorPrimary(1)
   else
   c := App.UI.GetColorPrimary(0.95);
@@ -12122,7 +12122,7 @@ begin
   spx := r.x + r.w * _Splitter + 1;
   spw := r.w * (1 - _Splitter) - 1;
   g2.PrimRect(r.x, r.y, r.w * _Splitter, r.h, App.UI.GetColorPrimary(0.9));
-  if G2Rect(spx, r.y, spw, r.h).Contains(g2.MousePos) then
+  if (App.UI.Overlay = nil) and G2Rect(spx, r.y, spw, r.h).Contains(g2.MousePos) then
   c := App.UI.GetColorPrimary(1)
   else
   c := App.UI.GetColorPrimary(0.95);
@@ -12212,7 +12212,7 @@ begin
   r1 := r; r1.l := spx;
   g2.PrimRect(r.x, r.y, r.w * _Splitter, r.h, App.UI.GetColorPrimary(0.9));
   c0 := App.UI.GetColorPrimary(0.6);
-  if r1.Contains(g2.MousePos) then
+  if (App.UI.Overlay = nil) and r1.Contains(g2.MousePos) then
   begin
     if g2.MouseDown[G2MB_Left] and r1.Contains(g2.MouseDownPos[G2MB_Left]) then
     c1 := App.UI.GetColorPrimary(0.7)
@@ -12366,7 +12366,7 @@ begin
     r.r := r.r - _ScrollV.Frame.w;
     r.l := r.l + r.w * _Splitter - 3;
     r.r := r.l + 6;
-    if r.Contains(mc.x, mc.y) then
+    if (App.UI.Overlay = nil) and r.Contains(mc.x, mc.y) then
     begin
       Prop := PtInProperty(mc.x, mc.y, InExpand, InEdit, pr);
       if Prop <> nil then
@@ -15601,7 +15601,7 @@ procedure TUIWorkspaceParticles2DEditor.OnEmitterTimeStartChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _EmitterTimelineStart.Number > Emitter.TimeEnd + G2EPS - 0.02 then
+  if _EmitterTimelineStart.Number - G2EPS2 > Emitter.TimeEnd - 0.02 then
   _EmitterTimelineStart.Number := Emitter.TimeEnd - 0.02
   else
   begin
@@ -15615,7 +15615,7 @@ procedure TUIWorkspaceParticles2DEditor.OnEmitterTimeEndChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _EmitterTimelineEnd.Number < Emitter.TimeStart - G2EPS + 0.02 then
+  if _EmitterTimelineEnd.Number + G2EPS2 < Emitter.TimeStart + 0.02 then
   _EmitterTimelineEnd.Number := Emitter.TimeStart + 0.02
   else
   begin
@@ -15629,7 +15629,7 @@ procedure TUIWorkspaceParticles2DEditor.OnEmitterOrientationChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  Emitter.Orientation := _EmitterOrientation.Number;
+  Emitter.Orientation := _EmitterOrientation.Number * G2DegToRad;
   App.ParticleData.EffectChanged;
 end;
 
@@ -15658,7 +15658,7 @@ procedure TUIWorkspaceParticles2DEditor.OnEmitterShapeRadius0Change;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _EmitterShapeRadius0.Number > Emitter.ShapeRadius1 then
+  if _EmitterShapeRadius0.Number - G2EPS2 > Emitter.ShapeRadius1 then
   _EmitterShapeRadius0.Number := Emitter.ShapeRadius1
   else
   begin
@@ -15672,7 +15672,7 @@ procedure TUIWorkspaceParticles2DEditor.OnEmitterShapeRadius1Change;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _EmitterShapeRadius1.Number < Emitter.ShapeRadius0 then
+  if _EmitterShapeRadius1.Number + G2EPS2 < Emitter.ShapeRadius0 then
   _EmitterShapeRadius1.Number := Emitter.ShapeRadius0
   else
   begin
@@ -15686,7 +15686,7 @@ procedure TUIWorkspaceParticles2DEditor.OnEmitterShapeAngleChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  Emitter.ShapeAngle := _EmitterShapeAngle.Number;
+  Emitter.ShapeAngle := _EmitterShapeAngle.Number * G2DegToRad;
   App.ParticleData.EffectChanged;
 end;
 
@@ -15695,7 +15695,7 @@ procedure TUIWorkspaceParticles2DEditor.OnEmitterShapeWidth0Change;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _EmitterShapeWidth0.Number > Emitter.ShapeWidth1 then
+  if _EmitterShapeWidth0.Number - G2EPS2 > Emitter.ShapeWidth1 then
   _EmitterShapeWidth0.Number := Emitter.ShapeWidth1
   else
   begin
@@ -15709,7 +15709,7 @@ procedure TUIWorkspaceParticles2DEditor.OnEmitterShapeWidth1Change;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _EmitterShapeWidth1.Number < Emitter.ShapeWidth0 then
+  if _EmitterShapeWidth1.Number + G2EPS2 < Emitter.ShapeWidth0 then
   _EmitterShapeWidth1.Number := Emitter.ShapeWidth0
   else
   begin
@@ -15723,7 +15723,7 @@ procedure TUIWorkspaceParticles2DEditor.OnEmitterShapeHeight0Change;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _EmitterShapeHeight0.Number > Emitter.ShapeHeight1 then
+  if _EmitterShapeHeight0.Number - G2EPS2 > Emitter.ShapeHeight1 then
   _EmitterShapeHeight0.Number := Emitter.ShapeHeight1
   else
   begin
@@ -15737,7 +15737,7 @@ procedure TUIWorkspaceParticles2DEditor.OnEmitterShapeHeight1Change;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _EmitterShapeHeight1.Number < Emitter.ShapeHeight0 then
+  if _EmitterShapeHeight1.Number + G2EPS2 < Emitter.ShapeHeight0 then
   _EmitterShapeHeight1.Number := Emitter.ShapeHeight0
   else
   begin
@@ -15792,7 +15792,7 @@ procedure TUIWorkspaceParticles2DEditor.OnParticleWidthMinChanage;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _ParticleWidthMin.Number > Emitter.ParticleWidthMax then
+  if _ParticleWidthMin.Number - G2EPS2 > Emitter.ParticleWidthMax then
   _ParticleWidthMin.Number := Emitter.ParticleWidthMax
   else
   begin
@@ -15806,7 +15806,7 @@ procedure TUIWorkspaceParticles2DEditor.OnParticleWidthMaxChanage;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _ParticleWidthMax.Number < Emitter.ParticleWidthMin then
+  if _ParticleWidthMax.Number + G2EPS2 < Emitter.ParticleWidthMin then
   _ParticleWidthMax.Number := Emitter.ParticleWidthMin
   else
   begin
@@ -15838,7 +15838,7 @@ procedure TUIWorkspaceParticles2DEditor.OnParticleHeightMinChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _ParticleHeightMin.Number > Emitter.ParticleHeightMax then
+  if _ParticleHeightMin.Number - G2EPS2 > Emitter.ParticleHeightMax then
   _ParticleHeightMin.Number := Emitter.ParticleHeightMax
   else
   begin
@@ -15852,7 +15852,7 @@ procedure TUIWorkspaceParticles2DEditor.OnParticleHeightMaxChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _ParticleHeightMax.Number < Emitter.ParticleHeightMin then
+  if _ParticleHeightMax.Number + G2EPS2 < Emitter.ParticleHeightMin then
   _ParticleHeightMax.Number := Emitter.ParticleHeightMin
   else
   begin
@@ -15866,7 +15866,7 @@ procedure TUIWorkspaceParticles2DEditor.OnParticleScaleMinChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _ParticleScaleMin.Number > Emitter.ParticleScaleMax then
+  if _ParticleScaleMin.Number - G2EPS2 > Emitter.ParticleScaleMax then
   _ParticleScaleMin.Number := Emitter.ParticleScaleMax
   else
   begin
@@ -15880,7 +15880,7 @@ procedure TUIWorkspaceParticles2DEditor.OnParticleScaleMaxChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _ParticleScaleMax.Number < Emitter.ParticleScaleMin then
+  if _ParticleScaleMax.Number + G2EPS2 < Emitter.ParticleScaleMin then
   _ParticleScaleMax.Number := Emitter.ParticleScaleMin
   else
   begin
@@ -15894,7 +15894,7 @@ procedure TUIWorkspaceParticles2DEditor.OnParticleDurationMinChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _ParticleDurationMin.Number > Emitter.ParticleDurationMax then
+  if _ParticleDurationMin.Number - G2EPS2 > Emitter.ParticleDurationMax then
   _ParticleDurationMin.Number := Emitter.ParticleDurationMax
   else
   begin
@@ -15908,7 +15908,7 @@ procedure TUIWorkspaceParticles2DEditor.OnParticleDurationMaxChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _ParticleDurationMax.Number < Emitter.ParticleDurationMin then
+  if _ParticleDurationMax.Number + G2EPS2 < Emitter.ParticleDurationMin then
   _ParticleDurationMax.Number := Emitter.ParticleDurationMin
   else
   begin
@@ -15922,11 +15922,11 @@ procedure TUIWorkspaceParticles2DEditor.OnParticleRotationMinChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _ParticleRotationMin.Number > Emitter.ParticleRotationMax then
-  _ParticleRotationMin.Number := Emitter.ParticleRotationMax
+  if _ParticleRotationMin.Number - G2EPS2 > Emitter.ParticleRotationMax * G2RadToDeg then
+  _ParticleRotationMin.Number := Emitter.ParticleRotationMax * G2RadToDeg
   else
   begin
-    Emitter.ParticleRotationMin := _ParticleRotationMin.Number;
+    Emitter.ParticleRotationMin := _ParticleRotationMin.Number * G2DegToRad;
     App.ParticleData.EffectChanged;
   end;
 end;
@@ -15936,11 +15936,11 @@ procedure TUIWorkspaceParticles2DEditor.OnParticleRotationMaxChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _ParticleRotationMax.Number < Emitter.ParticleRotationMin then
-  _ParticleRotationMax.Number := Emitter.ParticleRotationMin
+  if _ParticleRotationMax.Number + G2EPS2 < Emitter.ParticleRotationMin * G2RadToDeg then
+  _ParticleRotationMax.Number := Emitter.ParticleRotationMin * G2RadToDeg
   else
   begin
-    Emitter.ParticleRotationMax := _ParticleRotationMax.Number;
+    Emitter.ParticleRotationMax := _ParticleRotationMax.Number * G2DegToRad;
     App.ParticleData.EffectChanged;
   end;
 end;
@@ -15959,7 +15959,7 @@ procedure TUIWorkspaceParticles2DEditor.OnParticleOrientationMinChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _ParticleOrientationMin.Number > Emitter.ParticleOrientationMax then
+  if _ParticleOrientationMin.Number - G2EPS2 > Emitter.ParticleOrientationMax then
   _ParticleOrientationMin.Number := Emitter.ParticleOrientationMax
   else
   begin
@@ -15973,7 +15973,7 @@ procedure TUIWorkspaceParticles2DEditor.OnParticleOrientationMaxChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _ParticleOrientationMax.Number < Emitter.ParticleOrientationMin then
+  if _ParticleOrientationMax.Number + G2EPS2 < Emitter.ParticleOrientationMin then
   _ParticleOrientationMax.Number := Emitter.ParticleOrientationMin
   else
   begin
@@ -15987,7 +15987,7 @@ procedure TUIWorkspaceParticles2DEditor.OnParticleVelocityMinChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _ParticleVelocityMin.Number > Emitter.ParticleVelocityMax then
+  if _ParticleVelocityMin.Number - G2EPS2 > Emitter.ParticleVelocityMax then
   _ParticleVelocityMin.Number := Emitter.ParticleVelocityMax
   else
   begin
@@ -16001,7 +16001,7 @@ procedure TUIWorkspaceParticles2DEditor.OnParticleVelocityMaxChange;
 begin
   Emitter := TParticleEmitter(App.ParticleData.Selection);
   if Emitter = nil then Exit;
-  if _ParticleVelocityMax.Number < Emitter.ParticleVelocityMin then
+  if _ParticleVelocityMax.Number + G2EPS2 < Emitter.ParticleVelocityMin then
   _ParticleVelocityMax.Number := Emitter.ParticleVelocityMin
   else
   begin
@@ -16249,9 +16249,9 @@ begin
     Align := [caRight, caMiddle];
   end;
   _EmitterOrientation := sh.Right.NumberFloat;
-  _EmitterOrientation.NumberMin := -G2TwoPi;
-  _EmitterOrientation.NumberMax := G2TwoPi;
-  _EmitterOrientation.Increment := G2TwoPi / 50;
+  _EmitterOrientation.NumberMin := -360;
+  _EmitterOrientation.NumberMax := 360;
+  _EmitterOrientation.Increment := 360 / 50;
   _EmitterOrientation.OnChange := @OnEmitterOrientationChange;
 
   sh := g.Client.SplitterH(0.3);
@@ -16297,8 +16297,8 @@ begin
   end;
   _EmitterShapeAngle := sh.Right.NumberFloat;
   _EmitterShapeAngle.NumberMin := 0;
-  _EmitterShapeAngle.NumberMax := G2TwoPi;
-  _EmitterShapeAngle.Increment := G2TwoPi / 50;
+  _EmitterShapeAngle.NumberMax := 360;
+  _EmitterShapeAngle.Increment := 360 / 50;
   _EmitterShapeAngle.OnChange := @OnEmitterShapeAngleChange;
   w := _EmitterShapePropertyPages.AddPage;
   sh := w.SplitterH(0.3);
@@ -16491,14 +16491,14 @@ begin
   _ParticleOrientationMin := sh.Left.NumberFloat;
   _ParticleOrientationMax := sh.Right.NumberFloat;
   _ParticleOrientationMin.PaddingRight := 2;
-  _ParticleOrientationMin.NumberMin := -G2TwoPi;
-  _ParticleOrientationMin.NumberMax := G2TwoPi;
-  _ParticleOrientationMin.Increment := G2TwoPi / 50;
+  _ParticleOrientationMin.NumberMin := -360;
+  _ParticleOrientationMin.NumberMax := 360;
+  _ParticleOrientationMin.Increment := 360 / 50;
   _ParticleOrientationMin.OnChange := @OnParticleOrientationMinChange;
   _ParticleOrientationMax.PaddingLeft := 2;
-  _ParticleOrientationMax.NumberMin := -G2TwoPi;
-  _ParticleOrientationMax.NumberMax := G2TwoPi;
-  _ParticleOrientationMax.Increment := G2TwoPi / 50;
+  _ParticleOrientationMax.NumberMin := -360;
+  _ParticleOrientationMax.NumberMax := 360;
+  _ParticleOrientationMax.Increment := 360 / 50;
   _ParticleOrientationMax.OnChange := @OnParticleOrientationMaxChange;
 
   sh := g.Client.SplitterH(0.3);
@@ -16514,14 +16514,14 @@ begin
   _ParticleRotationMin := sm.Subset[1].NumberFloat;
   _ParticleRotationMax := sm.Subset[2].NumberFloat;
   _ParticleRotationMin.PaddingRight := 2;
-  _ParticleRotationMin.NumberMin := -G2TwoPi;
-  _ParticleRotationMin.NumberMax := G2TwoPi;
-  _ParticleRotationMin.Increment := G2TwoPi / 50;
+  _ParticleRotationMin.NumberMin := -360;
+  _ParticleRotationMin.NumberMax := 360;
+  _ParticleRotationMin.Increment := 360 / 50;
   _ParticleRotationMin.OnChange := @OnParticleRotationMinChange;
   _ParticleRotationMax.PaddingLeft := 2;
-  _ParticleRotationMax.NumberMin := -G2TwoPi;
-  _ParticleRotationMax.NumberMax := G2TwoPi;
-  _ParticleRotationMax.Increment := G2TwoPi / 50;
+  _ParticleRotationMax.NumberMin := -360;
+  _ParticleRotationMax.NumberMax := 360;
+  _ParticleRotationMax.Increment := 360 / 50;
   _ParticleRotationMax.OnChange := @OnParticleRotationMaxChange;
 
   sh := g.Client.SplitterH(0.3);
@@ -16732,14 +16732,14 @@ begin
     end;
     _EmitterTimelineStart.Number := Emitter.TimeStart;
     _EmitterTimelineEnd.Number := Emitter.TimeEnd;
-    _EmitterOrientation.Number := Emitter.Orientation;
+    _EmitterOrientation.Number := Emitter.Orientation * G2RadToDeg;
     case Emitter.Shape of
       es_radial: _EmitterShapeCombo.ItemIndex := 0;
       es_rectangle: _EmitterShapeCombo.ItemIndex := 1;
     end;
     _EmitterShapeRadius0.Number := Emitter.ShapeRadius0;
     _EmitterShapeRadius1.Number := Emitter.ShapeRadius1;
-    _EmitterShapeAngle.Number := Emitter.ShapeAngle;
+    _EmitterShapeAngle.Number := Emitter.ShapeAngle * G2RadToDeg;
     _EmitterShapeWidth0.Number := Emitter.ShapeWidth0;
     _EmitterShapeWidth1.Number := Emitter.ShapeWidth1;
     _EmitterShapeHeight0.Number := Emitter.ShapeHeight0;
@@ -16757,11 +16757,11 @@ begin
     _ParticleScaleMax.Number := Emitter.ParticleScaleMax;
     _ParticleDurationMin.Number := Emitter.ParticleDurationMin;
     _ParticleDurationMax.Number := Emitter.ParticleDurationMax;
-    _ParticleOrientationMin.Number := Emitter.ParticleOrientationMin;
-    _ParticleOrientationMax.Number := Emitter.ParticleOrientationMax;
+    _ParticleOrientationMin.Number := Emitter.ParticleOrientationMin * G2RadToDeg;
+    _ParticleOrientationMax.Number := Emitter.ParticleOrientationMax * G2RadToDeg;
     _ParticleRotationLocal.Checked := Emitter.ParticleRotationLocal;
-    _ParticleRotationMin.Number := Emitter.ParticleRotationMin;
-    _ParticleRotationMax.Number := Emitter.ParticleRotationMax;
+    _ParticleRotationMin.Number := Emitter.ParticleRotationMin * G2RadToDeg;
+    _ParticleRotationMax.Number := Emitter.ParticleRotationMax * G2RadToDeg;
     _ParticleVelocityMin.Number := Emitter.ParticleVelocityMin;
     _ParticleVelocityMax.Number := Emitter.ParticleVelocityMax;
     _ParticleColor0.Color := G2Color(Emitter.ParticleColor0.r, Emitter.ParticleColor0.g, Emitter.ParticleColor0.b, $ff);
@@ -29925,7 +29925,7 @@ begin
   _Parser.AddKeyWord('far');
   _Parser.AddKeyWord('far16');
   _Parser.AddKeyWord('forward');
-  _Parser.AddKeyWord('index');
+  //_Parser.AddKeyWord('index');
   _Parser.AddKeyWord('local');
   _Parser.AddKeyWord('near');
   _Parser.AddKeyWord('nostackframe');
@@ -30338,6 +30338,7 @@ begin
             end
             else if (Token = 'assembler')
             or (Token = 'overload')
+            or (Token = 'default')
             or (Token = 'message')
             or (Token = 'cdecl')
             or (Token = 'stdcall') then
@@ -30436,6 +30437,7 @@ begin
           end
           else if (Token = 'inline')
           or (Token = 'virtual')
+          or (Token = 'default')
           or (Token = 'assembler')
           or (Token = 'abstract')
           or (Token = 'overload')
@@ -30714,6 +30716,7 @@ begin
               end
               else if (Token = 'inline')
               or (Token = 'virtual')
+              or (Token = 'default')
               or (Token = 'assembler')
               or (Token = 'abstract')
               or (Token = 'overload')
