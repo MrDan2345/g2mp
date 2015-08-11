@@ -7188,6 +7188,8 @@ procedure TG2GfxOGL.Initialize;
 begin
   {$if defined(G2Threading)}
   _ThreadLock.Initialize;
+  _ThreadID := 0;
+  _ThreadRef := 0;
   {$endif}
   {$if defined(G2Target_Windows)}
   {$Hints off}

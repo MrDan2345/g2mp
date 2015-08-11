@@ -707,8 +707,6 @@ type
   TG2Cursor = HCursor;
   {$endif}
 
-  { TG2Window }
-
   TG2Window = class
   private
     {$if defined(G2Target_Windows)}

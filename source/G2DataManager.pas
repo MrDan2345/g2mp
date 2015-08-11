@@ -279,8 +279,21 @@ type
     function FileExists(const Path: AnsiString): Boolean;
   end;
 
+  TG2AssetSource = class
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
+  TG2AssetSourceManager = class
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
 var G2DataManagerChachedRead: Boolean = False;
 var G2PackLinker: TG2PackLinker = nil;
+var G2AssetSourceManager: TG2AssetSourceManager = nil;
 
 function G2FileExists(const FileName: String): Boolean;
 function G2GetAppPath: String;
@@ -1362,6 +1375,30 @@ begin
   end;
 end;
 //TG2PackLinker END
+
+//TG2AssetSource BEGIN
+constructor TG2AssetSource.Create;
+begin
+  inherited Create;
+end;
+
+destructor TG2AssetSource.Destroy;
+begin
+  inherited Destroy;
+end;
+//TG2AssetSource END
+
+//TG2AssetSourceManager BEGIN
+constructor TG2AssetSourceManager.Create;
+begin
+  inherited Create;
+end;
+
+destructor TG2AssetSourceManager.Destroy;
+begin
+  inherited Destroy;
+end;
+//TG2AssetSourceManager END
 
 function G2FileExists(const FileName: String): Boolean;
   var fs: String;
