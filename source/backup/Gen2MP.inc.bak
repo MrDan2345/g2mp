@@ -1,5 +1,5 @@
 {$mode objfpc}
-{.$define G2Threading}
+{$define G2Threading}
 {.$define G2Output}
 
 {$if not defined(G2Custom_RenderMode)}
@@ -35,8 +35,8 @@
 
 {$if not defined(G2Custom_Gfx)}
   {$if defined(G2Target_Windows)}
-    {$define G2Gfx_D3D9}
-    {.$define G2Gfx_OGL}
+    {.$define G2Gfx_D3D9}
+    {$define G2Gfx_OGL}
   {$elseif defined(G2Target_Android)}
     {$define G2Gfx_GLES}
   {$elseif defined(G2Target_iOS)}
@@ -61,7 +61,7 @@
 
 //no threaded opengl renderer
 {$ifdef G2Gfx_OGL}
-  {$undef G2Threading}
+  //{$undef G2Threading}
 {$endif}
 
 {$inline on}

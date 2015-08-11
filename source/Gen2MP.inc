@@ -1,5 +1,5 @@
 {$mode objfpc}
-{.$define G2Threading}
+{$define G2Threading}
 {.$define G2Output}
 
 {$if not defined(G2Custom_RenderMode)}
@@ -57,11 +57,6 @@
   {$else}
     {$define G2Snd_OAL}
   {$endif}
-{$endif}
-
-//no threaded opengl renderer
-{$ifdef G2Gfx_OGL}
-  {$undef G2Threading}
 {$endif}
 
 {$inline on}

@@ -358,7 +358,7 @@ type
     procedure UpdateRender;
     procedure OnRender;
     procedure OnUpdate;
-    procedure OnStart;
+    procedure OnLoop;
     procedure OnStop;
     procedure OnPrint(const Char: AnsiChar);
     procedure OnKeyDown(const Key: TG2IntS32);
@@ -966,6 +966,11 @@ type
     _Context: GLXContext;
     {$elseif defined(G2Target_OSX)}
     _Context: TAGLContext;
+    {$endif}
+    {$if defined(G2Threading)}
+    _ThreadLock: TG2CriticalSection;
+    _ThreadID: TThreadID;
+    _ThreadRef: TG2IntS32;
     {$endif}
   protected
     procedure SetRenderTarget(const Value: TG2Texture2DRT); override;
@@ -1716,7 +1721,7 @@ type
     procedure UnLock;
     procedure Bind;
     procedure Unbind;
-    constructor Create(const Decl: TG2VBDecl; const Count: TG2IntU32);
+    constructor Create(const Decl: TG2VBDecl; const Count: TG2IntU32); reintroduce;
   end;
   {$elseif defined(G2Gfx_OGL)}
   TG2VertexBuffer = class (TG2Buffer)
@@ -1746,7 +1751,7 @@ type
     procedure UnLock;
     procedure Bind;
     procedure Unbind;
-    constructor Create(const Decl: TG2VBDecl; const Count: TG2IntU32);
+    constructor Create(const Decl: TG2VBDecl; const Count: TG2IntU32); reintroduce;
   end;
   {$elseif defined(G2Gfx_GLES)}
   TG2VertexBuffer = class (TG2Buffer)
@@ -1773,7 +1778,7 @@ type
     procedure UnLock;
     procedure Bind;
     procedure Unbind;
-    constructor Create(const Decl: TG2VBDecl; const Count: TG2IntU32);
+    constructor Create(const Decl: TG2VBDecl; const Count: TG2IntU32); reintroduce;
   end;
   {$endif}
 
@@ -4152,7 +4157,7 @@ begin
   end;
 end;
 
-procedure TG2Core.OnStart;
+procedure TG2Core.OnLoop;
   var i: TG2IntS32;
 begin
   try
@@ -4426,7 +4431,7 @@ begin
   _FPSUpdateTime := CurTime;
   FillChar(_KeyDown, SizeOf(_KeyDown), 0);
   FillChar(_MBDown, SizeOf(_MBDown), 0);
-  OnStart;
+  OnLoop;
   _UpdatePrevTime := CurTime;
 end;
 
@@ -7181,6 +7186,11 @@ procedure TG2GfxOGL.Initialize;
   var PixelFormat: TAGLPixelFormat;
   {$endif}
 begin
+  {$if defined(G2Threading)}
+  _ThreadLock.Initialize;
+  _ThreadID := 0;
+  _ThreadRef := 0;
+  {$endif}
   {$if defined(G2Target_Windows)}
   {$Hints off}
   FillChar(pfd, SizeOf(pfd), 0);
@@ -7213,6 +7223,7 @@ begin
   ThreadAttach;
   InitOpenGL;
   SetDefaults;
+  ThreadDetach;
   SizeRT.x := g2.Params.Width;
   SizeRT.y := g2.Params.Height;
   inherited Initialize;
@@ -7220,7 +7231,6 @@ end;
 
 procedure TG2GfxOGL.Finalize;
 begin
-  ThreadDetach;
   UnInitOpenGL;
   {$if defined(G2Target_Windows)}
   wglDeleteContext(_Context);
@@ -7230,10 +7240,14 @@ begin
   {$elseif defined(G2Target_OSX)}
   aglDestroyContext(_Context);
   {$endif}
+  {$if defined(G2Threading)}
+  _ThreadLock.Finalize;
+  {$endif}
 end;
 
 procedure TG2GfxOGL.Render;
 begin
+  ThreadAttach;
   ProcessRenderQueue;
   {$if defined(G2Target_Windows)}
   SwapBuffers(_DC);
@@ -7242,6 +7256,7 @@ begin
   {$elseif defined(G2Target_OSX)}
   aglSwapBuffers(_Context);
   {$endif}
+  ThreadDetach;
 end;
 
 procedure TG2GfxOGL.Clear(
@@ -7313,6 +7328,14 @@ end;
 
 procedure TG2GfxOGL.ThreadAttach;
 begin
+  {$if defined(G2Threading)}
+  if _ThreadID = GetCurrentThreadID then
+  begin
+    Inc(_ThreadRef);
+    Exit;
+  end;
+  _ThreadLock.Enter;
+  _ThreadID := GetCurrentThreadID;
   {$if defined(G2Target_Windows)}
   wglMakeCurrent(_DC, _Context);
   {$elseif defined(G2Target_Linux)}
@@ -7320,16 +7343,29 @@ begin
   {$elseif defined(G2Target_OSX)}
   aglSetCurrentContext(_Context);
   {$endif}
+  _ThreadRef := 1;
+  {$endif}
 end;
 
 procedure TG2GfxOGL.ThreadDetach;
 begin
-  {$if defined(G2Target_Windows)}
-  wglMakeCurrent(0, 0);
-  {$elseif defined(G2Target_Linux)}
-  glXMakeCurrent(g2.Window.Display, 0, 0);
-  {$elseif defined(G2Target_OSX)}
-  aglSetCurrentContext(0);
+  {$if defined(G2Threading)}
+  if _ThreadID = GetCurrentThreadID then
+  begin
+    Dec(_ThreadRef);
+    if _ThreadRef = 0 then
+    begin
+      {$if defined(G2Target_Windows)}
+      wglMakeCurrent(0, 0);
+      {$elseif defined(G2Target_Linux)}
+      glXMakeCurrent(g2.Window.Display, 0, 0);
+      {$elseif defined(G2Target_OSX)}
+      aglSetCurrentContext(0);
+      {$endif}
+      _ThreadID := 0;
+      _ThreadLock.leave;
+    end;
+  end;
   {$endif}
 end;
 
@@ -7846,7 +7882,9 @@ begin
   {$else}
   if _Texture <> 0 then
   begin
+    _Gfx.ThreadAttach;
     glDeleteTextures(1, @_Texture);
+    _Gfx.ThreadDetach;
     _Texture := 0;
   end;
   {$endif}
@@ -7947,6 +7985,7 @@ end;
   var i, j: TG2IntS32;
   var c: TG2ColorR8G8B8A8;
 begin
+  _Gfx.ThreadAttach;
   TexData := G2MemAlloc(_RealWidth * _RealHeight * 4);
   glBindTexture(GL_TEXTURE_2D, _Texture);
   glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, TexData);
@@ -7965,6 +8004,7 @@ begin
   end;
   G2MemFree(TexData, _RealWidth * _RealHeight * 4);
   Result := Image;
+  _Gfx.ThreadDetach;
 end;
 {$else}
 begin
@@ -8119,6 +8159,7 @@ function TG2Texture2D.Load(const Image: TG2Image; const TextureUsage: TG2Texture
   var Levels: TG2IntU32;
 begin
   Release;
+  _Gfx.ThreadAttach;
   _FileName := '';
   Result := False;
   _Usage := TextureUsage;
@@ -8373,6 +8414,7 @@ begin
       {$endif}
     end;
   end;
+  _Gfx.ThreadDetach;
   Result := True;
 end;
 //TG2Texture2D END
@@ -8384,6 +8426,7 @@ begin
   {$if defined(G2Gfx_D3D9)}
   SafeRelease(_Surface);
   {$elseif defined(G2Gfx_OGL)}
+  _Gfx.ThreadAttach;
   case _Mode of
     rtmFBO:
     begin
@@ -8433,10 +8476,13 @@ begin
       {$endif}
     end;
   end;
+  _Gfx.ThreadDetach;
   _Mode := rtmNone;
   {$elseif defined(G2Gfx_GLES)}
+  _Gfx.ThreadAttach;
   glDeleteRenderbuffers(1, @_RenderBuffer);
   glDeleteFramebuffers(1, @_FrameBuffer);
+  _Gfx.ThreadDetach;
   {$endif}
 end;
 
@@ -8474,6 +8520,7 @@ begin
   );
   IDirect3DTexture9(_Texture).GetSurfaceLevel(0, _Surface);
   {$elseif defined(G2Gfx_OGL)}
+  _Gfx.ThreadAttach;
   if gl_FBO_Cap then _Mode := rtmFBO
   else if gl_PBuffer_Cap then _Mode := rtmPBuffer
   else _Mode := rtmNone;
@@ -8510,8 +8557,7 @@ begin
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   end
-  else
-  if (_Mode = rtmPBuffer) then
+  else if (_Mode = rtmPBuffer) then
   begin
     {$if defined(G2Target_Windows)}
     {$Hints off}
@@ -8591,7 +8637,9 @@ begin
     aglCreatePBuffer(_RealWidth, _RealHeight, GL_TEXTURE_2D, GL_RGBA, 0, @_PBuffer);
     {$endif}
   end;
+  _Gfx.ThreadDetach;
   {$elseif defined(G2Gfx_GLES)}
+  _Gfx.ThreadAttach;
   glGenTextures(1, @_Texture);
   if _Texture = 0 then Exit;
   glBindTexture(GL_TEXTURE_2D, _Texture);
@@ -8619,6 +8667,7 @@ begin
   glFramebufferRenderbuffer(GL_FRAMEBUFFER_OES, GL_DEPTH_ATTACHMENT_OES, GL_RENDERBUFFER_OES, _RenderBuffer);
   glFramebufferTexture2D(GL_FRAMEBUFFER_OES, GL_COLOR_ATTACHMENT0_OES, GL_TEXTURE_2D, 0, 0);
   glBindFramebuffer(GL_FRAMEBUFFER_OES, 0);
+  _Gfx.ThreadDetach;
   {$endif}
   _SizeTU := _Width / _RealWidth;
   _SizeTV := _Height / _RealHeight;
@@ -11192,14 +11241,17 @@ end;
 
 procedure TG2VertexBuffer.WriteBufferData;
 begin
+  _Gfx.ThreadAttach;
   glBindBuffer(GL_ARRAY_BUFFER, _VB);
   glBufferSubData(GL_ARRAY_BUFFER, 0, _VertexCount * _VertexSize, Data);
+  _Gfx.ThreadDetach;
 end;
 
 procedure TG2VertexBuffer.Initialize;
   var i, ti: TG2IntS32;
 begin
   inherited Initialize;
+  _Gfx.ThreadAttach;
   _VertexSize := 0;
   ti := 0;
   for i := 0 to High(_Decl) do
@@ -11223,6 +11275,7 @@ begin
   {$if defined(G2RM_SM2)}
   _BoundAttribs.Clear;
   {$endif}
+  _Gfx.ThreadDetach;
   _Locked := False;
 end;
 
@@ -11255,6 +11308,7 @@ procedure TG2VertexBuffer.Bind;
   var BufferPos: TG2IntU32;
   var CurTexture: TG2IntU32;
 begin
+  _Gfx.ThreadAttach;
   glBindBuffer(GL_ARRAY_BUFFER, _VB);
   BufferPos := 0;
   CurTexture := GL_TEXTURE0;
@@ -11294,6 +11348,7 @@ begin
     end;
   end;
   glClientActiveTexture(GL_TEXTURE0);
+  _Gfx.ThreadDetach;
 end;
 {$elseif defined(G2RM_SM2)}
   function GetAttribIndex(const Attrib: AnsiString): GLInt;
@@ -11310,6 +11365,7 @@ end;
   var IndPosition, IndColor, IndTexCoord, IndNormal, IndBinormal, IndTangent, IndBlendWeight, IndBlendIndex: TG2IntS32;
   var ai: GLInt;
 begin
+  _Gfx.ThreadAttach;
   glBindBuffer(GL_ARRAY_BUFFER, _VB);
   VBPos := 0;
   IndPosition := 0;
@@ -11423,6 +11479,7 @@ begin
       Inc(VBPos, _Decl[i].Count * 4);
     end;
   end;
+  _Gfx.ThreadDetach;
 end;
 {$endif}
 
@@ -11431,6 +11488,7 @@ procedure TG2VertexBuffer.Unbind;
   var i: TG2IntS32;
   var CurTexture: TG2IntU32;
 begin
+  _Gfx.ThreadAttach;
   CurTexture := GL_TEXTURE0;
   for i := 0 to High(_Decl) do
   begin
@@ -11456,13 +11514,16 @@ begin
     end;
   end;
   glClientActiveTexture(GL_TEXTURE0);
+  _Gfx.ThreadDetach;
 end;
 {$elseif defined(G2RM_SM2)}
   var i: TG2IntS32;
 begin
+  _Gfx.ThreadAttach;
   for i := 0 to _BoundAttribs.Count - 1 do
   glDisableVertexAttribArray(_BoundAttribs[i]);
   _BoundAttribs.Clear;
+  _Gfx.ThreadDetach;
 end;
 {$endif}
 
@@ -11481,9 +11542,11 @@ end;
 
 procedure TG2VertexBuffer.WriteBufferData;
 begin
+  _Gfx.ThreadAttach;
   glBindBuffer(GL_ARRAY_BUFFER, _VB);
   glBufferSubData(GL_ARRAY_BUFFER, PGLInt(0), _VertexCount * _VertexSize, Data);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
+  _Gfx.ThreadDetach;
 end;
 
 procedure TG2VertexBuffer.Initialize;
@@ -11507,15 +11570,19 @@ begin
   for i := ti to High(_TexCoordIndex) do
   _TexCoordIndex[i] := nil;
   Allocate(_VertexCount * _VertexSize);
+  _Gfx.ThreadAttach;
   glGenBuffers(1, @_VB);
   glBindBuffer(GL_ARRAY_BUFFER, _VB);
   glBufferData(GL_ARRAY_BUFFER, _VertexCount * _VertexSize, nil, GL_STATIC_DRAW);
+  _Gfx.ThreadDetach;
   _Locked := False;
 end;
 
 procedure TG2VertexBuffer.Finalize;
 begin
+  _Gfx.ThreadAttach;
   glDeleteBuffers(1, @_VB);
+  _Gfx.ThreadDetach;
   Release;
   inherited Finalize;
 end;
@@ -11687,8 +11754,10 @@ end;
 {$elseif defined(G2Gfx_OGL)}
 procedure TG2IndexBuffer.WriteBufferData;
 begin
+  _Gfx.ThreadAttach;
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _IB);
   glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, _IndexCount * 2, Data);
+  _Gfx.ThreadDetach;
 end;
 
 procedure TG2IndexBuffer.Initialize;
@@ -11697,14 +11766,18 @@ begin
   _Locked := False;
   _LockMode := lmNone;
   Allocate(_IndexCount * 2);
+  _Gfx.ThreadAttach;
   glGenBuffers(1, @_IB);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _IB);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, _IndexCount * 2, nil, GL_STATIC_DRAW);
+  _Gfx.ThreadDetach;
 end;
 
 procedure TG2IndexBuffer.Finalize;
 begin
+  _Gfx.ThreadAttach;
   glDeleteBuffers(1, @_IB);
+  _Gfx.ThreadDetach;
   Release;
   inherited Finalize;
 end;
@@ -11744,9 +11817,11 @@ end;
 {$elseif defined(G2Gfx_GLES)}
 procedure TG2IndexBuffer.WriteBufferData;
 begin
+  _Gfx.ThreadAttach;
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _IB);
   glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, PGLInt(0), _IndexCount * 2, Data);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+  _Gfx.ThreadDetach;
 end;
 
 procedure TG2IndexBuffer.Initialize;
@@ -11755,14 +11830,18 @@ begin
   _Locked := False;
   _LockMode := lmNone;
   Allocate(_IndexCount * 2);
+  _Gfx.ThreadAttach;
   glGenBuffers(1, @_IB);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _IB);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, _IndexCount * 2, nil, GL_STATIC_DRAW);
+  _Gfx.ThreadDetach;
 end;
 
 procedure TG2IndexBuffer.Finalize;
 begin
+  _Gfx.ThreadAttach;
   glDeleteBuffers(1, @_IB);
+  _Gfx.ThreadDetach;
   Release;
   inherited Finalize;
 end;
@@ -11975,6 +12054,7 @@ begin
     PARGBArr(TextureData)^[i].g := $ff;
     PARGBArr(TextureData)^[i].b := $ff;
   end;
+  TG2GfxOGL(g2.Gfx).ThreadAttach;
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glGenTextures(1, @_Texture._Texture);
   glBindTexture(GL_TEXTURE_2D, _Texture._Texture);
@@ -11993,6 +12073,7 @@ begin
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  TG2GfxOGL(g2.Gfx).ThreadDetach;
   FreeMem(TextureData, TexWidth * TexHeight * 4);
   {$endif}
   DeleteObject(Font);
@@ -12080,6 +12161,7 @@ begin
     PARGBArr(TextureData)^[i].b := $ff;
   end;
   gdk_image_destroy(Image);
+  _Gfx.ThreadAttach;
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glGenTextures(1, @_Texture._Texture);
   glBindTexture(GL_TEXTURE_2D, _Texture._Texture);
@@ -12098,6 +12180,7 @@ begin
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  _Gfx.ThreadDetach;
   FreeMem(TextureData, TexWidth * TexHeight * 4);
 {$elseif defined(G2Target_OSX)}
   type TARGB = packed record
@@ -12166,6 +12249,7 @@ begin
       PAnsiChar(@i), 1
     );
   end;
+  _Gfx.ThreadAttach;
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glGenTextures(1, @_Texture._Texture);
   glBindTexture(GL_TEXTURE_2D, _Texture._Texture);
@@ -12184,6 +12268,7 @@ begin
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  _Gfx.ThreadDetach;
   CGContextRelease(Context);
   CGColorSpaceRelease(ColorSpace);
   Freemem(ContextData, ContextDataSize);
@@ -12219,6 +12304,7 @@ begin
     _Props[i].OffsetX := (_CharSpaceX - _Props[i].Width) div 2;
     _Props[i].OffsetY := (_CharSpaceY - _Props[i].Height) div 2;
   end;
+  _Gfx.ThreadAttach;
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glGenTextures(1, @_Texture._Texture);
   glBindTexture(GL_TEXTURE_2D, _Texture._Texture);
@@ -12237,6 +12323,7 @@ begin
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  _Gfx.ThreadDetach;
   FreeMem(Data, TexWidth * TexHeight * 4);
 {$Hints on}
 {$elseif defined(G2Target_iOS)}
@@ -12630,6 +12717,7 @@ procedure TG2ShaderGroup.Load(const DataManager: TG2DataManager);
   {$endif}
 begin
   Clear;
+  _Gfx.ThreadAttach;
   DataManager.ReadBuffer(@Header, SizeOf(Header));
   if (Header.Definition <> 'G2SG') or (Header.Version > $0100) then Exit;
   DataManager.Codec := cdZLib;
@@ -12712,6 +12800,7 @@ begin
     _Methods.Add(MTD);
   end;
   DataManager.Codec := cdNone;
+  _Gfx.ThreadDetach;
 end;
 
 {$if defined(G2Gfx_D3D9)}
@@ -15255,10 +15344,22 @@ begin
   end;
   _ConvertCoord.x += _ViewPort.Left;
   _ConvertCoord.y += _ViewPort.Top;
-  _WidthScr := Round(w / _ConvertCoord.z);
-  _HeightScr := Round(h / _ConvertCoord.w);
-  _ScreenScaleX := _WidthScr / w;
-  _ScreenScaleY := _HeightScr / h;
+  if _ConvertCoord.z > 0 then
+  _WidthScr := Round(w / _ConvertCoord.z)
+  else
+  _WidthScr := 0;
+  if _ConvertCoord.w > 0 then
+  _HeightScr := Round(h / _ConvertCoord.w)
+  else
+  _HeightScr := 0;
+  if w > 0 then
+  _ScreenScaleX := _WidthScr / w
+  else
+  _ScreenScaleX := 0;
+  if h > 0 then
+  _ScreenScaleY := _HeightScr / h
+  else
+  _ScreenScaleY := 0;
   if _ScreenScaleX < _ScreenScaleY then
   begin
     _ScreenScaleMin := _ScreenScaleX;
