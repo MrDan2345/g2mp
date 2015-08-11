@@ -1,0 +1,11 @@
+{#g2ap
+ max_page_width = 1024
+ max_page_height = 1024
+ border_size = 0
+ transparent_borders = 0
+ force_pot = 0
+ export_format = "gen2.g2af"
+ {#folder
+  path = "G:\[SDK]\Gen2MP\tools\Toolkit\TestProject\assets\atlas"
+ #}
+#}
