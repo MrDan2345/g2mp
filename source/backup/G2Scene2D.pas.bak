@@ -26,6 +26,30 @@ type
 
   TG2Scene2DComponentCallbackObj = procedure (const Component: TG2Scene2DComponent) of Object;
 
+  TG2Scene2DEventData = class
+  protected
+    var _EventType: TG2IntU16;
+  public
+    property EventType: TG2IntU16 read _EventType;
+    constructor Create; virtual;
+    destructor Destroy; override;
+  end;
+
+  TG2Scene2DEvent = procedure (const EventData: TG2Scene2DEventData) of object;
+
+  TG2Scene2DEventDispatcher = class
+  private
+    var _Events: specialize TG2QuickListG<TG2Scene2DEvent>;
+    var _Name: String;
+  public
+    property Name: String read _Name write _Name;
+    constructor Create(const NewName: String);
+    destructor Destroy; override;
+    procedure AddEvent(const Event: TG2Scene2DEvent);
+    procedure RemoveEvent(const Event: TG2Scene2DEvent);
+    procedure DispatchEvent(const EventData: TG2Scene2DEventData);
+  end;
+
   TG2Scene2DComponent = class
   private
     class var ComponentList: array of CG2Scene2DComponent;
@@ -37,6 +61,7 @@ type
     var _ProcOnFinalize: TG2Scene2DComponentCallbackObj;
     procedure SetOwner(const Value: TG2Scene2DEntity); inline;
   protected
+    var _EventDispatchers: specialize TG2QuickListG<TG2Scene2DEventDispatcher>;
     procedure OnInitialize; virtual;
     procedure OnFinalize; virtual;
     procedure OnAttach; virtual;
@@ -56,6 +81,8 @@ type
     destructor Destroy; override;
     procedure Attach(const Entity: TG2Scene2DEntity);
     procedure Detach;
+    procedure AddEvent(const EventName: String; const Event: TG2Scene2DEvent);
+    procedure RemoveEvent(const EventName: String; const Event: TG2Scene2DEvent);
     procedure Save(const Stream: TStream); virtual;
     procedure Load(const Stream: TStream); virtual;
   end;
@@ -67,6 +94,7 @@ type
   private
     var _UserData: Pointer;
     var _GUID: String;
+    var _EventDispatchers: specialize TG2QuickListG<TG2Scene2DEventDispatcher>;
     function GetChild(const Index: TG2IntS32): TG2Scene2DEntity; inline;
     function GetChildCount: TG2IntS32; inline;
     function GetComponent(const Index: TG2IntS32): TG2Scene2DComponent; inline;
@@ -105,6 +133,8 @@ type
     procedure NewGUID;
     procedure DebugDraw(const Display: TG2Display2D);
     procedure Render(const Display: TG2Display2D);
+    procedure AddEvent(const EventName: String; const Event: TG2Scene2DEvent);
+    procedure RemoveEvent(const EventName: String; const Event: TG2Scene2DEvent);
     procedure Save(const Stream: TStream); virtual;
     procedure Load(const Stream: TStream); virtual;
   end;
@@ -204,13 +234,20 @@ type
       procedure draw_segment(const p0, p1: tb2_vec2; const color: tb2_color); override;
       procedure draw_transform(const xf: tb2_transform); override;
     end;
+    type TPhysContactListener = class (tb2_contact_listener)
+    public
+      procedure begin_contact(const contact: pb2_contact); override;
+      procedure end_contact(const contact: pb2_contact); override;
+      procedure pre_solve(const contact: pb2_contact; const old_manifold: pb2_manifold); override;
+      procedure post_solve(const contact: pb2_contact; const impulse: pb2_contact_impulse); override;
+    end;
     var _Entities: TG2Scene2DEntityList;
-    var _EntitiesToKill: TG2Scene2DEntityList;
     var _Joints: TG2Scene2DJointList;
     var _RenderHooks: TRenderHookList;
     var _SortRenderHooks: Boolean;
     var _Gravity: TG2Vec2;
     var _PhysWorld: tb2_world;
+    var _ContactListener: TPhysContactListener;
     var _PhysDraw: TPhysDraw;
     var _Simulate: Boolean;
     var _ModifySavePathProc: TG2Scene2DModifyFilePathProc;
@@ -437,13 +474,47 @@ type
     procedure Load(const Stream: TStream); override;
   end;
 
+  TG2Scene2DEventBeginContactData = class (TG2Scene2DEventData)
+  public
+    var PhysContact: pb2_contact;
+    var Shapes: array[0..1] of TG2Scene2DComponentCollisionShape;
+    constructor Create; override;
+  end;
+
+  TG2Scene2DEventEndContactData = class (TG2Scene2DEventData)
+  public
+    var PhysContact: pb2_contact;
+    var Shapes: array[0..1] of TG2Scene2DComponentCollisionShape;
+    constructor Create; override;
+  end;
+
+  TG2Scene2DEventBeforeContactSolveData = class (TG2Scene2DEventData)
+  public
+    var PhysContact: pb2_contact;
+    var Shapes: array[0..1] of TG2Scene2DComponentCollisionShape;
+    constructor Create; override;
+  end;
+
+  TG2Scene2DEventEndContactData = class (TG2Scene2DEventData)
+  public
+    var PhysContact: pb2_contact;
+    var Shapes: array[0..1] of TG2Scene2DComponentCollisionShape;
+    constructor Create; override;
+  end;
+
   TG2Scene2DComponentCollisionShape = class (TG2Scene2DComponent)
+  private
+    var _EventBeginContactData: TG2Scene2DEventBeginContactData;
+    var _EventEndContactData: TG2Scene2DEventEndContactData;
   protected
     var _FixtureDef: tb2_fixture_def;
     var _Fixture: pb2_fixture;
+    var _EventBeginContact: TG2Scene2DEventDispatcher;
+    var _EventEndContact: TG2Scene2DEventDispatcher;
     property Fixture: pb2_fixture read _Fixture write _Fixture;
     property FixtureDef: tb2_fixture_def read _FixtureDef;
     procedure OnInitialize; override;
+    procedure OnFinalize; override;
     procedure OnAttach; override;
     procedure OnDetach; override;
     procedure Reattach;
@@ -451,12 +522,22 @@ type
     procedure SetFriction(const Value: TG2Float); inline;
     function GetDensity: TG2Float; inline;
     procedure SetDensity(const Value: TG2Float); inline;
+    procedure OnBeginContact(
+      const Other: TG2Scene2DComponentCollisionShape;
+      const Contact: pb2_contact
+    ); inline;
+    procedure OnEndContact(
+      const Other: TG2Scene2DComponentCollisionShape;
+      const Contact: pb2_contact
+    ); inline;
   public
     class constructor CreateClass;
     class function GetName: String; override;
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
     property Fricton: TG2Float read GetFriction write SetFriction;
     property Density: TG2Float read GetDensity write SetDensity;
+    property EventBeginContact: TG2Scene2DEventDispatcher read _EventBeginContact;
+    property EventEndContact: TG2Scene2DEventDispatcher read _EventEndContact;
   end;
 
   TG2Scene2DComponentCollisionShapeEdge = class (TG2Scene2DComponentCollisionShape)
@@ -700,7 +781,62 @@ type
   operator := (varr: pb2_vec2_arr): PG2Vec2Arr; inline;
   operator := (varr: PG2Vec2Arr): pb2_vec2_arr; inline;
 
+const g2_s2d_et_begin_contact = 0;
+const g2_s2d_et_end_contact = 1;
+
 implementation
+
+//TG2Scene2DEventData BEGIN
+constructor TG2Scene2DEventData.Create;
+begin
+  inherited Create;
+end;
+
+destructor TG2Scene2DEventData.Destroy;
+begin
+  inherited Destroy;
+end;
+//TG2Scene2DEventData END
+
+//TG2Scene2DEventDispatcher BEGIN
+constructor TG2Scene2DEventDispatcher.Create(const NewName: String);
+begin
+  inherited Create;
+  _Name := NewName;
+  _Events.Clear;
+end;
+
+destructor TG2Scene2DEventDispatcher.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TG2Scene2DEventDispatcher.AddEvent(const Event: TG2Scene2DEvent);
+  var i: TG2IntS32;
+begin
+  for i := 0 to _Events.Count - 1 do
+  if G2CmpObjFuncPtr(@_Events, @Event) then Exit;
+  _Events.Add(Event);
+end;
+
+procedure TG2Scene2DEventDispatcher.RemoveEvent(const Event: TG2Scene2DEvent);
+  var i: TG2IntS32;
+begin
+  for i := 0 to _Events.Count - 1 do
+  if G2CmpObjFuncPtr(@_Events, @Event) then
+  begin
+    _Events.Delete(i);
+    Exit;
+  end;
+end;
+
+procedure TG2Scene2DEventDispatcher.DispatchEvent(const EventData: TG2Scene2DEventData);
+  var i: TG2IntS32;
+begin
+  for i := 0 to _Events.Count - 1 do
+  _Events[i](EventData);
+end;
+//TG2Scene2DEventDispatcher END
 
 //TG2Scene2DComponent BEGIN
 procedure TG2Scene2DComponent.SetOwner(const Value: TG2Scene2DEntity);
@@ -775,6 +911,7 @@ begin
   _ProcOnAttach := nil;
   _ProcOnDetach := nil;
   _ProcOnFinalize := nil;
+  _EventDispatchers.Clear;
   OnInitialize;
 end;
 
@@ -793,6 +930,28 @@ end;
 procedure TG2Scene2DComponent.Detach;
 begin
   Owner := nil;
+end;
+
+procedure TG2Scene2DComponent.AddEvent(const EventName: String; const Event: TG2Scene2DEvent);
+  var i: TG2IntS32;
+begin
+  for i := 0 to _EventDispatchers.Count - 1 do
+  if _EventDispatchers[i].Name = EventName then
+  begin
+    _EventDispatchers[i].AddEvent(Event);
+    Exit;
+  end;
+end;
+
+procedure TG2Scene2DComponent.RemoveEvent(const EventName: String; const Event: TG2Scene2DEvent);
+  var i: TG2IntS32;
+begin
+  for i := 0 to _EventDispatchers.Count - 1 do
+  if _EventDispatchers[i].Name = EventName then
+  begin
+    _EventDispatchers[i].RemoveEvent(Event);
+    Exit;
+  end;
 end;
 
 procedure TG2Scene2DComponent.Save(const Stream: TStream);
@@ -925,6 +1084,7 @@ begin
   _Transform.SetIdentity;
   _Name := 'Entity';
   _Scene := OwnerScene;
+  _EventDispatchers.Clear;
   NewGUID;
   _Scene.EntityAdd(Self);
 end;
@@ -971,6 +1131,32 @@ begin
   for i := 0 to _Children.Count - 1 do
   _Children[i].Render(Display);
   OnRender(Display);
+end;
+
+procedure TG2Scene2DEntity.AddEvent(const EventName: String; const Event: TG2Scene2DEvent);
+  var i: TG2IntS32;
+begin
+  for i := 0 to _EventDispatchers.Count - 1 do
+  if _EventDispatchers[i].Name = EventName then
+  begin
+    _EventDispatchers[i].AddEvent(Event);
+    Break;
+  end;
+  for i := 0 to _Components.Count - 1 do
+  _Components[i].AddEvent(EventName, Event);
+end;
+
+procedure TG2Scene2DEntity.RemoveEvent(const EventName: String; const Event: TG2Scene2DEvent);
+  var i: TG2IntS32;
+begin
+  for i := 0 to _EventDispatchers.Count - 1 do
+  if _EventDispatchers[i].Name = EventName then
+  begin
+    _EventDispatchers[i].RemoveEvent(Event);
+    Break;
+  end;
+  for i := 0 to _Components.Count - 1 do
+  _Components[i].RemoveEvent(EventName, Event);
 end;
 
 procedure TG2Scene2DEntity.Save(const Stream: TStream);
@@ -1425,10 +1611,44 @@ procedure TG2Scene2D.TPhysDraw.draw_transform(const xf: tb2_transform);
   var v0, v1: TG2Vec2;
 begin
   v0.SetValue(xf.p.x, xf.p.y);
-  v1.SetValue(xf.p.x + xf.q.get_x_axis.x, xf.p.y +  + xf.q.get_x_axis.y);
+  v1.SetValue(xf.p.x + xf.q.get_x_axis.x, xf.p.y + xf.q.get_x_axis.y);
   Disp.PrimLine(v0, v1, $ffff0000);
-  v1.SetValue(xf.p.x + xf.q.get_y_axis.x, xf.p.y +  + xf.q.get_y_axis.y);
+  v1.SetValue(xf.p.x + xf.q.get_y_axis.x, xf.p.y + xf.q.get_y_axis.y);
   Disp.PrimLine(v0, v1, $ff00ff00);
+end;
+
+procedure TG2Scene2D.TPhysContactListener.begin_contact(const contact: pb2_contact);
+  var Shape0, Shape1: TG2Scene2DComponentCollisionShape;
+begin
+  Shape0 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_a^.get_user_data);
+  Shape1 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_b^.get_user_data);
+  if Assigned(Shape0) and Assigned(Shape1) then
+  begin
+    Shape0.OnBeginContact(Shape1, contact);
+    Shape1.OnBeginContact(Shape0, contact);
+  end;
+end;
+
+procedure TG2Scene2D.TPhysContactListener.end_contact(const contact: pb2_contact);
+  var Shape0, Shape1: TG2Scene2DComponentCollisionShape;
+begin
+  Shape0 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_a^.get_user_data);
+  Shape1 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_b^.get_user_data);
+  if Assigned(Shape0) and Assigned(Shape1) then
+  begin
+    Shape0.OnEndContact(Shape1, contact);
+    Shape1.OnEndContact(Shape0, contact);
+  end;
+end;
+
+procedure TG2Scene2D.TPhysContactListener.pre_solve(const contact: pb2_contact; const old_manifold: pb2_manifold);
+begin
+  inherited pre_solve(contact, old_manifold);
+end;
+
+procedure TG2Scene2D.TPhysContactListener.post_solve(const contact: pb2_contact; const impulse: pb2_contact_impulse);
+begin
+  inherited post_solve(contact, impulse);
 end;
 
 procedure TG2Scene2D.Update;
@@ -1504,11 +1724,13 @@ begin
   _PhysDraw := TPhysDraw.create;
   _PhysDraw.Disp := nil;
   _PhysDraw.draw_flags := [b2_df_center_of_mass, b2_df_joint, b2_df_shape];
+  _ContactListener := TPhysContactListener.Create;
   _PhysWorld.create(_Gravity);
   _PhysWorld.set_debug_draw(_PhysDraw);
   _PhysWorld.set_allow_sleeping(true);
   _PhysWorld.set_continuous_physics(true);
   _PhysWorld.set_warm_starting(true);
+  _PhysWorld.set_contact_listener(_ContactListener);
   _Simulate := False;
   _ModifySavePathProc := nil;
   _ModifyLoadPathProc := nil;
@@ -1525,6 +1747,7 @@ begin
     n := _Entities.Pop;
     n.Free;
   end;
+  _ContactListener.Free;
   _PhysDraw.Free;
   _PhysWorld.destroy;
   inherited Destroy;
@@ -1866,6 +2089,7 @@ begin
   Stream.Read(_FlipY, SizeOf(_FlipY));
   Stream.Read(_Transform, SizeOf(_Transform));
   Stream.Read(_Filter, SizeOf(_Filter));
+  Stream.Read(_BlendMode, SizeOf(_BlendMode));
   Stream.Read(n, SizeOf(n));
   Layer := n;
 end;
@@ -2468,6 +2692,7 @@ end;
 procedure TG2Scene2DComponentRigidBody.AddShape(const Shape: TG2Scene2DComponentCollisionShape);
 begin
   Shape.Fixture := _Body^.create_fixture(Shape.FixtureDef);
+  Shape.Fixture^.set_user_data(Shape);
 end;
 
 procedure TG2Scene2DComponentRigidBody.RemoveShape(const Shape: TG2Scene2DComponentCollisionShape);
@@ -2533,12 +2758,42 @@ begin
 end;
 //TG2Scene2DComponentRigidBody END
 
+//TG2Scene2DEventBeginContactData BEGIN
+constructor TG2Scene2DEventBeginContactData.Create;
+begin
+  inherited Create;
+  _EventType := g2_s2d_et_begin_contact;
+end;
+//TG2Scene2DEventBeginContactData END
+
+//TG2Scene2DEventEndContactData BEGIN
+constructor TG2Scene2DEventEndContactData.Create;
+begin
+  inherited Create;
+  _EventType := g2_s2d_et_end_contact;
+end;
+//TG2Scene2DEventEndContactData END
+
 //TG2Scene2DComponentCollisionShape BEGIN
 procedure TG2Scene2DComponentCollisionShape.OnInitialize;
 begin
+  inherited OnInitialize;
+  _EventBeginContact := TG2Scene2DEventDispatcher.Create('OnBeginContact');
+  _EventEndContact := TG2Scene2DEventDispatcher.Create('OnEndContact');
+  _EventBeginContactData := TG2Scene2DEventBeginContactData.Create;
+  _EventEndContactData := TG2Scene2DEventEndContactData.Create;
   _Fixture := nil;
   _FixtureDef := b2_fixture_def;
   _FixtureDef.density := 1;
+end;
+
+procedure TG2Scene2DComponentCollisionShape.OnFinalize;
+begin
+  _EventBeginContactData.Free;
+  _EventEndContactData.Free;
+  _EventBeginContact.Free;
+  _EventEndContact.Free;
+  inherited OnFinalize;
 end;
 
 procedure TG2Scene2DComponentCollisionShape.OnAttach;
@@ -2584,6 +2839,28 @@ procedure TG2Scene2DComponentCollisionShape.SetDensity(const Value: TG2Float);
 begin
   _FixtureDef.density := Value;
   if _Fixture <> nil then _Fixture^.set_density(Value);
+end;
+
+procedure TG2Scene2DComponentCollisionShape.OnBeginContact(
+  const Other: TG2Scene2DComponentCollisionShape;
+  const Contact: pb2_contact
+);
+begin
+  _EventBeginContactData.Shapes[0] := Self;
+  _EventBeginContactData.Shapes[1] := Other;
+  _EventBeginContactData.PhysContact := Contact;
+  _EventBeginContact.DispatchEvent(_EventBeginContactData);
+end;
+
+procedure TG2Scene2DComponentCollisionShape.OnEndContact(
+  const Other: TG2Scene2DComponentCollisionShape;
+  const Contact: pb2_contact
+);
+begin
+  _EventEndContactData.Shapes[0] := Self;
+  _EventEndContactData.Shapes[1] := Other;
+  _EventEndContactData.PhysContact := Contact;
+  _EventEndContact.DispatchEvent(_EventEndContactData);
 end;
 
 class constructor TG2Scene2DComponentCollisionShape.CreateClass;

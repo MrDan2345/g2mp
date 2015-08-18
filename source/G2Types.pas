@@ -232,6 +232,40 @@ type
   end;
   PG2BlendMode = ^TG2BlendMode;
 
+  TG2Ref = class
+  private
+    var _Ref: TG2IntS32;
+  public
+    procedure RefInc; inline;
+    procedure RefDec; inline;
+    property RefCount: TG2IntS32 read _Ref;
+    constructor Create; virtual;
+    destructor Destroy; override;
+  end;
+
+  TG2Res = class (TG2Ref)
+  public
+    class var List: TG2Res;
+    var Next: TG2Res;
+    var Prev: TG2Res;
+  protected
+    procedure Initialize; virtual;
+    procedure Finalize; virtual;
+  public
+    class constructor CreateClass;
+    class procedure CleanUp;
+    constructor Create; override;
+    destructor Destroy; override;
+  end;
+
+  TG2Asset = class (TG2Res)
+  private
+    var _AssetName: String;
+  protected
+    property AssetName: String read _AssetName write _AssetName;
+    constructor Create; override;
+  end;
+
   operator := (c: TG2Color) cr: TG2IntU32;
   operator := (c: TG2IntU32) cr: TG2Color;
   operator + (c0, c1: TG2Color) cr: TG2Color;
@@ -291,6 +325,85 @@ begin
   AlphaDst := TmpDstColor;
 end;
 //TG2BlendMode END
+
+//TG2Ref BEGIN
+procedure TG2Ref.RefInc;
+begin
+  Inc(_Ref);
+end;
+
+procedure TG2Ref.RefDec;
+begin
+  Dec(_Ref);
+  if _Ref <= 0 then Free;
+end;
+
+constructor TG2Ref.Create;
+begin
+  inherited Create;
+  _Ref := 0;
+end;
+
+destructor TG2Ref.Destroy;
+begin
+  inherited Destroy;
+end;
+//TG2Ref END
+
+//TG2Res BEGIN
+procedure TG2Res.Initialize;
+begin
+
+end;
+
+procedure TG2Res.Finalize;
+begin
+
+end;
+
+class constructor TG2Res.CreateClass;
+begin
+  List := nil;
+end;
+
+class procedure TG2Res.CleanUp;
+  var Res: TG2Res;
+begin
+  while List <> nil do
+  begin
+    Res := List;
+    while Res.Next <> nil do Res := Res.Next;
+    Res.Free;
+  end;
+end;
+
+constructor TG2Res.Create;
+begin
+  inherited Create;
+  Prev := nil;
+  Next := List;
+  if List <> nil then List.Prev := Self;
+  List := Self;
+  Initialize;
+end;
+
+destructor TG2Res.Destroy;
+begin
+  Finalize;
+  if Prev <> nil then Prev.Next := Next;
+  if Next <> nil then Next.Prev := Prev;
+  if List = Self then List := Next;
+  inherited Destroy;
+end;
+//TG2Res END
+
+//TG2Asset BEGIN
+constructor TG2Asset.Create;
+begin
+  inherited Create;
+  _AssetName := '';
+end;
+//TG2Asset END
 
 operator := (c: TG2Color) cr: TG2IntU32;
 begin

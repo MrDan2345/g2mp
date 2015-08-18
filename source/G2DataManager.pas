@@ -281,14 +281,52 @@ type
 
   TG2AssetSource = class
   public
-    constructor Create;
+    constructor Create; virtual;
     destructor Destroy; override;
+    function FindAsset(const AssetName: String): TG2DataControl; virtual; abstract;
+  end;
+
+  TG2AssetSourceFile = class (TG2AssetSource)
+  private
+    var _Paths: TG2QuickListString;
+  public
+    constructor Create; override;
+    procedure ClearPaths;
+    procedure AddPath(const Path: String);
+    procedure RemovePath(const Path: String);
+    function FindAsset(const AssetName: String): TG2DataControl; override;
+  end;
+
+  TG2AssetSourceBuffer = class (TG2AssetSource)
+  private
+    type TBuffer = class
+    public
+      var Name: String;
+      var Data: Pointer;
+      var Size: TG2IntS32;
+    end;
+    type TBufferAllocated = class (TBuffer)
+    public
+      destructor Destroy; override;
+    end;
+    var _Buffers: specialize TG2QuickListG<TBuffer>;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+    procedure AddBuffer(const Name: String; const Data: Pointer; const Size: TG2IntS32; const Cache: Boolean = False);
+    function FindAsset(const AssetName: String): TG2DataControl; override;
   end;
 
   TG2AssetSourceManager = class
+  private
+    var _SourceFile: TG2AssetSourceFile;
+    var _SourceBuffer: TG2AssetSourceBuffer;
   public
+    property SourceFile: TG2AssetSourceFile read _SourceFile;
+    property SourceBuffer: TG2AssetSourceBuffer read _SourceBuffer;
     constructor Create;
     destructor Destroy; override;
+    function FindAsset(const AssetName: String): TG2DataControl;
   end;
 
 var G2DataManagerChachedRead: Boolean = False;
@@ -1131,7 +1169,15 @@ begin
     else
     _Control := TG2DataControlAndroidFile.Create(fs, Mode);
     {$else}
-    _Control := TG2DataControlFile.Create(fs, Mode);
+    if (Mode = dmAsset) and Assigned(G2AssetSourceManager) then
+    begin
+      _Control := G2AssetSourceManager.FindAsset(FileName);
+      if _Control = nil then _Control := TG2DataControlFile.Create(fs, Mode);
+    end
+    else
+    begin
+      _Control := TG2DataControlFile.Create(fs, Mode);
+    end;
     {$endif}
   end;
   Init;
@@ -1388,15 +1434,125 @@ begin
 end;
 //TG2AssetSource END
 
+//TG2AssetSourceFile BEGIN
+constructor TG2AssetSourceFile.Create;
+begin
+  inherited Create;
+  _Paths.Clear;
+  AddPath(G2GetAppPath);
+end;
+
+procedure TG2AssetSourceFile.ClearPaths;
+begin
+  _Paths.Clear;
+end;
+
+procedure TG2AssetSourceFile.AddPath(const Path: String);
+  var NewPath: String;
+begin
+  if Length(Path) = 0 then Exit;
+  NewPath := G2StrReplace(Path, G2PathSepRev, G2PathSep);
+  if NewPath[Length(Path)] <> G2PathSep then NewPath += G2PathSep;
+  _Paths.Add(NewPath);
+end;
+
+procedure TG2AssetSourceFile.RemovePath(const Path: String);
+  var NewPath: String;
+begin
+  if Length(Path) = 0 then Exit;
+  NewPath := G2StrReplace(Path, G2PathSepRev, G2PathSep);
+  if NewPath[Length(Path)] <> G2PathSep then NewPath += G2PathSep;
+  _Paths.Remove(NewPath);
+end;
+
+function TG2AssetSourceFile.FindAsset(const AssetName: String): TG2DataControl;
+  var i: TG2IntS32;
+  var Path: String;
+begin
+  for i := 0 to _Paths.Count - 1 do
+  begin
+    Path := _Paths[i] + AssetName;
+    if G2FileExists(Path) then
+    begin
+      Result := TG2DataControlFile.Create(Path, dmAsset);
+      Exit;
+    end;
+  end;
+  Result := nil;
+end;
+//TG2AssetSourceFile END
+
+//TG2AssetSourceBuffer BEGIN
+destructor TG2AssetSourceBuffer.TBufferAllocated.Destroy;
+begin
+  G2MemFree(Data, Size);
+  inherited Destroy;
+end;
+
+constructor TG2AssetSourceBuffer.Create;
+begin
+  inherited Create;
+  _Buffers.Clear;
+end;
+
+destructor TG2AssetSourceBuffer.Destroy;
+  var i: TG2IntS32;
+begin
+  for i := 0 to _Buffers.Count - 1 do _Buffers[i].Free;
+  _Buffers.Clear;
+  inherited Destroy;
+end;
+
+procedure TG2AssetSourceBuffer.AddBuffer(const Name: String; const Data: Pointer; const Size: TG2IntS32; const Cache: Boolean);
+  var Buffer: TBuffer;
+begin
+  if Cache then
+  begin
+    Buffer := TBufferAllocated.Create;
+    Buffer.Data := G2MemAlloc(Size);
+    Move(Data^, Buffer.Data^, Size);
+  end
+  else
+  begin
+    Buffer := TBuffer.Create;
+    Buffer.Data := Data;
+  end;
+  Buffer.Name := Name;
+  Buffer.Size := Size;
+end;
+
+function TG2AssetSourceBuffer.FindAsset(const AssetName: String): TG2DataControl;
+  var i: TG2IntS32;
+begin
+  for i := 0 to _Buffers.Count - 1 do
+  if _Buffers[i].Name = AssetName then
+  begin
+    Result := TG2DataControlBuffer.Create(_Buffers[i].Data, _Buffers[i].Size, dmAsset);
+    Exit;
+  end;
+  Result := nil;
+end;
+//TG2AssetSourceBuffer END
+
 //TG2AssetSourceManager BEGIN
 constructor TG2AssetSourceManager.Create;
 begin
   inherited Create;
+  _SourceFile := TG2AssetSourceFile.Create;
+  _SourceBuffer := TG2AssetSourceBuffer.Create;
 end;
 
 destructor TG2AssetSourceManager.Destroy;
 begin
+  _SourceBuffer.Free;
+  _SourceFile.Free;
   inherited Destroy;
+end;
+
+function TG2AssetSourceManager.FindAsset(const AssetName: String): TG2DataControl;
+begin
+  Result := _SourceBuffer.FindAsset(AssetName);
+  if Result = nil then _SourceFile.FindAsset(AssetName);
 end;
 //TG2AssetSourceManager END
 

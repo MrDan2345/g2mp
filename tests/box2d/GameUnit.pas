@@ -2614,18 +2614,18 @@ var
   fd: tb2_fixture_def;
   bd: tb2_body_def;
   ground: pb2_body;
-  var vertices: array[0..2] of tb2_vec2;
-    poly_shape: tb2_polygon_shape;
-    body1: pb2_body;
-    body2: pb2_body;
-    body: pb2_body;
-    p: tb2_polygon_shape;
-    pjd: tb2_prismatic_joint_def;
-    body3: pb2_body;
-    body4: pb2_body;
-    circle_shape: tb2_circle_shape;
-    body5: pb2_body;
-    body6: pb2_body;
+  vertices: array[0..2] of tb2_vec2;
+  poly_shape: tb2_polygon_shape;
+  body1: pb2_body;
+  body2: pb2_body;
+  body: pb2_body;
+  p: tb2_polygon_shape;
+  pjd: tb2_prismatic_joint_def;
+  body3: pb2_body;
+  body4: pb2_body;
+  circle_shape: tb2_circle_shape;
+  body5: pb2_body;
+  body6: pb2_body;
 begin
   inherited Create;
   // Ground body
@@ -2739,16 +2739,16 @@ var
   fd: tb2_fixture_def;
   bd: tb2_body_def;
   ground: pb2_body;
-  var x_lo, x_hi, y_lo, y_hi: tb2_float32;
-  var vertices: array[0..2] of tb2_vec2;
-    poly_shape: tb2_polygon_shape;
-    body1: pb2_body;
-    body2: pb2_body;
-    body3: pb2_body;
-    body4: pb2_body;
-    circle_shape: tb2_circle_shape;
-    body5: pb2_body;
-    body6: pb2_body;
+  x_lo, x_hi, y_lo, y_hi: tb2_float32;
+  vertices: array[0..2] of tb2_vec2;
+  poly_shape: tb2_polygon_shape;
+  body1: pb2_body;
+  body2: pb2_body;
+  body3: pb2_body;
+  body4: pb2_body;
+  circle_shape: tb2_circle_shape;
+  body5: pb2_body;
+  body6: pb2_body;
 begin
   inherited Create;
   // Ground body

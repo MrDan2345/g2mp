@@ -134,7 +134,6 @@ type
   TG2Updater = class;
   TG2Renderer = class;
   {$endif}
-  TG2Res = class;
   TG2Mgr = class;
   TG2TextureBase = class;
   TG2Texture2DBase = class;
@@ -315,6 +314,7 @@ type
     _Gfx: TG2Gfx;
     _Snd: TG2Snd;
     _PackLinker: TG2PackLinker;
+    _AssetSourceManager: TG2AssetSourceManager;
     {$ifdef G2Threading}
     _Updater: TG2Updater;
     _Renderer: TG2Renderer;
@@ -1108,32 +1108,6 @@ type
   end;
   {$endif}
 
-  TG2Ref = class
-  private
-    var _Ref: TG2IntS32;
-  public
-    procedure RefInc; inline;
-    procedure RefDec; inline;
-    constructor Create; virtual;
-    destructor Destroy; override;
-  end;
-
-  TG2Res = class (TG2Ref)
-  public
-    class var List: TG2Res;
-    var Next: TG2Res;
-    var Prev: TG2Res;
-  protected
-    procedure Initialize; virtual;
-    procedure Finalize; virtual;
-  public
-    class constructor CreateClass;
-    class procedure CleanUp;
-    property RefCount: TG2IntS32 read _Ref;
-    constructor Create; override;
-    destructor Destroy; override;
-  end;
-
   TG2Mgr = class
   private
     _Items: TG2QuickList;
@@ -1145,7 +1119,7 @@ type
     destructor Destroy; override;
   end;
 
-  TG2TextureBase = class (TG2Res)
+  TG2TextureBase = class (TG2Asset)
   protected
     _Gfx: {$if defined(G2Gfx_D3D9)}TG2GfxD3D9{$elseif defined(G2Gfx_OGL)}TG2GfxOGL{$elseif defined(G2Gfx_GLES)}TG2GfxGLES{$endif};
     _Texture: {$ifdef G2Gfx_D3D9}IDirect3DBaseTexture9{$else}GLUInt{$endif};
@@ -1187,6 +1161,7 @@ type
     var _FileName: String;
   public
     class function FindTexture(const FileName: String): TG2Texture2D;
+    class function SharedAsset(const Name: String; const TextureUsage: TG2TextureUsage = tuDefault): TG2Texture2D;
     property TextureFileName: String read _FileName write _FileName;
     function Load(const FileName: String; const TextureUsage: TG2TextureUsage = tuDefault): Boolean;
     function Load(const Stream: TStream; const TextureUsage: TG2TextureUsage = tuDefault): Boolean;
@@ -5861,6 +5836,8 @@ begin
   {$endif}
   _PackLinker := TG2PackLinker.Create;
   G2PackLinker := _PackLinker;
+  _AssetSourceManager := TG2AssetSourceManager.Create;
+  G2AssetSourceManager := _AssetSourceManager;
   _FPS := 0;
   _LinkInitialize.Clear;
   _LinkFinalize.Clear;
@@ -6709,7 +6686,6 @@ procedure TG2Gfx.ThreadDetach;
 begin
 
 end;
-
 {$endif}
 
 constructor TG2Gfx.Create;
@@ -7802,77 +7778,6 @@ end;
 //TG2Renderer END
 {$endif}
 
-//TG2Ref BEGIN
-procedure TG2Ref.RefInc;
-begin
-  Inc(_Ref);
-end;
-
-procedure TG2Ref.RefDec;
-begin
-  Dec(_Ref);
-  if _Ref <= 0 then Free;
-end;
-
-constructor TG2Ref.Create;
-begin
-  inherited Create;
-  _Ref := 0;
-end;
-
-destructor TG2Ref.Destroy;
-begin
-  inherited Destroy;
-end;
-//TG2Ref END
-
-//TG2Res BEGIN
-procedure TG2Res.Initialize;
-begin
-
-end;
-
-procedure TG2Res.Finalize;
-begin
-
-end;
-
-class constructor TG2Res.CreateClass;
-begin
-  List := nil;
-end;
-
-class procedure TG2Res.CleanUp;
-  var Res: TG2Res;
-begin
-  while List <> nil do
-  begin
-    Res := List;
-    while Res.Next <> nil do Res := Res.Next;
-    Res.Free;
-  end;
-end;
-
-constructor TG2Res.Create;
-begin
-  inherited Create;
-  Prev := nil;
-  Next := List;
-  if List <> nil then List.Prev := Self;
-  List := Self;
-  Initialize;
-end;
-
-destructor TG2Res.Destroy;
-begin
-  Finalize;
-  if Prev <> nil then Prev.Next := Next;
-  if Next <> nil then Next.Prev := Prev;
-  if List = Self then List := Next;
-  inherited Destroy;
-end;
-//TG2Res END
-
 //TG2Mgr BEGIN
 procedure TG2Mgr.FreeItems;
 begin
@@ -8074,6 +7979,25 @@ begin
     Res := Res.Next;
   end;
   Result := nil;
+end;
+
+class function TG2Texture2D.SharedAsset(const Name: String; const TextureUsage: TG2TextureUsage): TG2Texture2D;
+  var Res: TG2Res;
+  var dm: TG2DataManager;
+begin
+  Res := TG2Res.List;
+  while Res <> nil do
+  begin
+    if (Res is TG2Texture2D)
+    and (TG2Texture2D(Res).AssetName = Name)
+    and (TG2Texture2D(Res).Usage = TextureUsage)
+    and (Res.RefCount > 0) then Exit(TG2Texture2D(Res));
+    Res := Res.Next;
+  end;
+  dm := TG2DataManager.Create(Name, dmAsset);
+  Result := TG2Texture2D.Create;
+  Result.Load(dm);
+  Result.AssetName := Name;
 end;
 
 function TG2Texture2D.Load(const FileName: String; const TextureUsage: TG2TextureUsage = tuDefault): Boolean;
