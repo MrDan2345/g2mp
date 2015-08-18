@@ -1,0 +1,166 @@
+{#g2fx
+ name = "Warp"
+ scale = 1
+ {#atlas
+  {#page
+   texture = "Warp_fx_atlas_0.png"
+   width = 68
+   height = 68
+   {#frame
+    name = "Flare0.png"
+    pos_l = 2
+    pos_t = 2
+    width = 64
+    height = 64
+   #}
+  #}
+ #}
+ {#emitter
+  name = "Emitter"
+  frame = "Flare0.png"
+  time_start = 0
+  time_end = 1
+  orientation = 0
+  shape = 0
+  shape_radius_0 = 0
+  shape_radius_1 = 0.2999999237
+  shape_angle = 6.283185482
+  shape_width_0 = 0
+  shape_width_1 = 1
+  shape_height_0 = 0
+  shape_height_1 = 1
+  emission = 56
+  layer = 0
+  infinite = 0
+  particle_center_x = 0.5
+  particle_center_y = 0.5
+  particle_width_min = 1
+  particle_width_max = 1
+  particle_height_min = 0.2
+  particle_height_max = 0.2
+  particle_scale_min = 1
+  particle_scale_max = 1
+  particle_duration_min = 1
+  particle_duration_max = 1
+  particle_rotation_min = 0
+  particle_rotation_max = 0
+  particle_rotation_local = 1
+  particle_orientation_min = 0
+  particle_orientation_max = 0
+  particle_velocity_min = 1
+  particle_velocity_max = 1
+  particle_color_0 = "99DBCC"
+  particle_color_1 = "BCBFEB"
+  particle_opacity = 1
+  {#blend_mode
+   ColorSrc = "SrcAlpha"
+   ColorDst = "DstAlpha"
+   AlphaSrc = "One"
+   AlphaDst = "One"
+  #}
+  {#mod
+   name = "Velocity Graph"
+   guid = "d75e2d11-68ab-494d-8d05-151fd4f0d69f"
+   graph_scale = 1
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = -1
+    y_max = 1
+    {#point
+     x = 0
+     y = 0
+    #}
+    {#point
+     x = 0.04469273567
+     y = 0.8409090995
+    #}
+    {#point
+     x = 0.265363121
+     y = 1
+    #}
+    {#point
+     x = 0.7039105892
+     y = 0.9772727966
+    #}
+    {#point
+     x = 0.8770949363
+     y = 0.625
+    #}
+    {#point
+     x = 1
+     y = -0.01136362552
+    #}
+   #}
+  #}
+  {#mod
+   name = "Height Graph"
+   guid = "563235a5-0dc2-4dcb-9710-6127b7138123"
+   graph_scale = 5
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 5
+    {#point
+     x = 0
+     y = 1
+    #}
+    {#point
+     x = 0.391061449
+     y = 0.9943181991
+    #}
+    {#point
+     x = 0.6396647453
+     y = 1.704545497
+    #}
+    {#point
+     x = 0.7849161624
+     y = 3.75
+    #}
+    {#point
+     x = 0.9916200637
+     y = 5
+    #}
+   #}
+  #}
+  {#mod
+   name = "Opacity Graph"
+   guid = "df171382-9708-47aa-84e6-728073083b92"
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 0
+    #}
+    {#point
+     x = 0.1173184275
+     y = 0.3011363744
+    #}
+    {#point
+     x = 0.203910613
+     y = 1
+    #}
+    {#point
+     x = 0.5335195541
+     y = 0.9772727966
+    #}
+    {#point
+     x = 0.7569832324
+     y = 0.8693181991
+    #}
+    {#point
+     x = 0.8631284713
+     y = 0.2613636493
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+ #}
+#}

@@ -906,6 +906,8 @@ type
     {$if defined(G2RM_SM2)}
     function RequestShader(const Name: AnsiString): TG2ShaderGroup;
     {$endif}
+    procedure ThreadAttach; virtual;
+    procedure ThreadDetach; virtual;
     constructor Create; virtual;
     destructor Destroy; override;
   end;
@@ -1002,8 +1004,8 @@ type
     procedure SetProj2D;
     procedure EnableMipMaps(const Value: Boolean);
     procedure SetDefaults;
-    procedure ThreadAttach;
-    procedure ThreadDetach;
+    procedure ThreadAttach; override;
+    procedure ThreadDetach; override;
     constructor Create; override;
     destructor Destroy; override;
   end;
@@ -6697,6 +6699,16 @@ begin
   end;
   Result := nil;
 end;
+
+procedure TG2Gfx.ThreadAttach;
+begin
+
+end;
+
+procedure TG2Gfx.ThreadDetach;
+begin
+
+end;
 {$endif}
 
 constructor TG2Gfx.Create;
@@ -7218,6 +7230,15 @@ begin
   aglDestroyPixelFormat(PixelFormat);
   aglSetWindowRef(_Context, g2.Window.Handle);
   {$endif}
+  {$if not defined(G2Threading)}
+  {$if defined(G2Target_Windows)}
+  wglMakeCurrent(_DC, _Context);
+  {$elseif defined(G2Target_Linux)}
+  glXMakeCurrent(g2.Window.Display, g2.Window.Handle, _Context);
+  {$elseif defined(G2Target_OSX)}
+  aglSetCurrentContext(_Context);
+  {$endif}
+  {$endif}
   ThreadAttach;
   InitOpenGL;
   SetDefaults;
@@ -7229,6 +7250,15 @@ end;
 
 procedure TG2GfxOGL.Finalize;
 begin
+  {$if not defined(G2Threading)}
+  {$if defined(G2Target_Windows)}
+  wglMakeCurrent(0, 0);
+  {$elseif defined(G2Target_Linux)}
+  glXMakeCurrent(g2.Window.Display, 0, 0);
+  {$elseif defined(G2Target_OSX)}
+  aglSetCurrentContext(0);
+  {$endif}
+  {$endif}
   UnInitOpenGL;
   {$if defined(G2Target_Windows)}
   wglDeleteContext(_Context);
