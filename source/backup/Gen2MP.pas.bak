@@ -185,8 +185,8 @@ type
 
   TG2TextureUsage = (
     tuDefault,
-    tuUsage2D,
-    tuUsage3D
+    tu2D,
+    tu3D
   );
 
   TG2Filter = (
@@ -1161,7 +1161,7 @@ type
     var _FileName: String;
   public
     class function FindTexture(const FileName: String): TG2Texture2D;
-    class function SharedAsset(const Name: String; const TextureUsage: TG2TextureUsage = tuDefault): TG2Texture2D;
+    class function SharedAsset(const SharedAssetName: String; const TextureUsage: TG2TextureUsage = tuDefault): TG2Texture2D;
     property TextureFileName: String read _FileName write _FileName;
     function Load(const FileName: String; const TextureUsage: TG2TextureUsage = tuDefault): Boolean;
     function Load(const Stream: TStream; const TextureUsage: TG2TextureUsage = tuDefault): Boolean;
@@ -1520,21 +1520,18 @@ type
   end;
 
   TG2Effect2D = class (TG2Asset)
-  private
-    var _EffectFile: String;
   public
     var Pages: TG2AtlasPageList;
     var Frames: TG2AtlasFrameList;
     var EmitterData: TG2Effect2DEmitterDataList;
     var Name: String;
     var Scale: TG2Float;
-    property EffectFile: String read _EffectFile write _EffectFile;
-    class function FindEffect(const FileName: String): TG2Effect2D;
-    class function SharedAsset(const Name: String): TG2Effect2D;
+    class function SharedAsset(const SharedAssetName: String): TG2Effect2D;
     constructor Create;
     destructor Destroy; override;
     function FindFrame(const FrameName: String): TG2AtlasFrame;
     procedure Load(const FileName: String);
+    procedure Load(const DataManager: TG2DataManager);
     procedure Clear;
     function CreateInstance: TG2Effect2DInst; inline;
   end;
@@ -7998,7 +7995,7 @@ begin
   Result := nil;
 end;
 
-class function TG2Texture2D.SharedAsset(const Name: String; const TextureUsage: TG2TextureUsage): TG2Texture2D;
+class function TG2Texture2D.SharedAsset(const SharedAssetName: String; const TextureUsage: TG2TextureUsage): TG2Texture2D;
   var Res: TG2Res;
   var dm: TG2DataManager;
 begin
@@ -8006,14 +8003,14 @@ begin
   while Res <> nil do
   begin
     if (Res is TG2Texture2D)
-    and (TG2Texture2D(Res).AssetName = Name)
+    and (TG2Texture2D(Res).AssetName = SharedAssetName)
     and (TG2Texture2D(Res).Usage = TextureUsage)
     and (Res.RefCount > 0) then Exit(TG2Texture2D(Res));
     Res := Res.Next;
   end;
-  dm := TG2DataManager.Create(Name, dmAsset);
+  dm := TG2DataManager.Create(SharedAssetName, dmAsset);
   Result := TG2Texture2D.Create;
-  Result.AssetName := Name;
+  Result.AssetName := SharedAssetName;
   Result.Load(dm);
 end;
 
@@ -8139,7 +8136,7 @@ begin
   _RealWidth := 1; while _RealWidth < _Width do _RealWidth := _RealWidth shl 1;
   _RealHeight := 1; while _RealHeight < _Height do _RealHeight := _RealHeight shl 1;
   {$if defined(G2Gfx_D3D9)}
-  if _Usage = tuUsage3D then
+  if _Usage = tu3D then
   Levels := MaxMipLevel(_RealWidth, _RealHeight)
   else
   Levels := 1;
@@ -8150,7 +8147,7 @@ begin
   );
   GetTexture.LockRect(0, SurfLock, nil, D3DLOCK_DISCARD);
   case _Usage of
-    tuDefault, tuUsage3D:
+    tuDefault, tu3D:
     begin
       for j := 0 to _RealHeight - 1 do
       for i := 0 to _RealWidth - 1 do
@@ -8163,7 +8160,7 @@ begin
         PG2IntU8(SurfLock.pBits + j * SurfLock.Pitch + i * 4 + 3)^ := Image.Pixels[x, y].a;
       end;
     end;
-    tuUsage2D:
+    tu2D:
     begin
       for j := 0 to _Height - 1 do
       for i := 0 to _Width - 1 do
@@ -8176,7 +8173,7 @@ begin
     end;
   end;
   GetTexture.UnlockRect(0);
-  if _Usage = tuUsage3D then
+  if _Usage = tu3D then
   begin
     x := _RealWidth div 2; if x < 1 then x := 1;
     y := _RealHeight div 2; if y < 1 then y := 1;
@@ -8367,7 +8364,7 @@ begin
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
       {$endif}
     end;
-    tuUsage3D:
+    tu3D:
     begin
       _SizeTU := 1;
       _SizeTV := 1;
@@ -8375,7 +8372,7 @@ begin
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, Levels - 1);
       {$endif}
     end;
-    tuUsage2D:
+    tu2D:
     begin
       _SizeTU := _Width / _RealWidth;
       _SizeTV := _Height / _RealHeight;
@@ -8696,7 +8693,7 @@ begin
             if n2^.Name = 'image' then
             begin
               Page.Texture := TG2Texture2D.Create;
-              TG2Texture2D(Page.Texture).Load('../assets/' + n2^.AsString, tuUsage2D);
+              TG2Texture2D(Page.Texture).Load('../assets/' + n2^.AsString, tu2D);
             end
             else if n2^.Name = 'width' then
             begin
@@ -9798,21 +9795,7 @@ end;
 //TG2Effect2DEmitterData END
 
 //TG2Effect2D BEGIN
-class function TG2Effect2D.FindEffect(const FileName: String): TG2Effect2D;
-  var Res: TG2Res;
-begin
-  Res := TG2Res.List;
-  while Res <> nil do
-  begin
-    if (Res is TG2Effect2D)
-    and (TG2Effect2D(Res).EffectFile = FileName)
-    and (Res.RefCount > 0) then Exit(TG2Effect2D(Res));
-    Res := Res.Next;
-  end;
-  Result := nil;
-end;
-
-class function TG2Effect2D.SharedAsset(const Name: String): TG2Effect2D;
+class function TG2Effect2D.SharedAsset(const SharedAssetName: String): TG2Effect2D;
   var Res: TG2Res;
   var dm: TG2DataManager;
 begin
@@ -9820,17 +9803,17 @@ begin
   while Res <> nil do
   begin
     if (Res is TG2Effect2D)
-    and (TG2Effect2D(Res).AssetName = Name) then
+    and (TG2Effect2D(Res).AssetName = SharedAssetName) then
     begin
       Result := TG2Effect2D(Res);
       Exit;
     end;
     Res := Res.Next;
   end;
-  dm := TG2DataManager.Create(Name, dmAsset);
+  dm := TG2DataManager.Create(SharedAssetName, dmAsset);
   Result := TG2Effect2D.Create;
+  Result.AssetName := SharedAssetName;
   Result.Load(dm);
-  Result.AssetName := Name;
 end;
 
 constructor TG2Effect2D.Create;
@@ -9845,6 +9828,7 @@ end;
 
 destructor TG2Effect2D.Destroy;
 begin
+  Clear;
   inherited Destroy;
 end;
 
@@ -9857,10 +9841,20 @@ begin
 end;
 
 procedure TG2Effect2D.Load(const FileName: String);
+  var dm: TG2DataManager;
+begin
+  dm := TG2DataManager.Create(FileName);
+  try
+    Load(dm);
+  finally
+    dm.Free;
+  end;
+end;
+
+procedure TG2Effect2D.Load(const DataManager: TG2DataManager);
   var g2ml: TG2ML;
-  var fs: TG2DataManager;
+  var dm: TG2DataManager;
   var FileData, mod_guid: AnsiString;
-  var Path: String;
   var Root, n0, n1, n2, n3, n4: PG2MLObject;
   var i, i0, i1, i2, i3, i4: TG2IntS32;
   var Page: TG2AtlasPage;
@@ -9868,12 +9862,8 @@ procedure TG2Effect2D.Load(const FileName: String);
   var Emitter: TG2Effect2DEmitterData;
   var sx, sy: TG2Float;
 begin
-  _EffectFile := FileName;
-  Path := ExtractFilePath(FileName);
-  fs := TG2DataManager.Create(FileName);
-  SetLength(FileData, fs.Size);
-  fs.ReadBuffer(@FileData[1], fs.Size);
-  fs.Free;
+  SetLength(FileData, DataManager.Size);
+  DataManager.ReadBuffer(@FileData[1], DataManager.Size);
   g2ml := TG2ML.Create;
   Page := nil;
   Frame := nil;
@@ -9896,14 +9886,18 @@ begin
           if n2^.Name = 'page' then
           begin
             Page := TG2AtlasPage.Create;
-            Page.Texture := TG2Texture2D.Create;
+            Page.Texture := nil;
             Page.Width := 0;
             Page.Height := 0;
             Pages.Add(Page);
             for i3 := 0 to n2^.Children.Count - 1 do
             begin
               n3 := n2^.Children[i3];
-              if n3^.Name = 'texture' then TG2Texture2D(Page.Texture).Load(Path + G2PathSep + n3^.AsString)
+              if n3^.Name = 'texture' then
+              begin
+                Page.Texture := TG2Texture2D.SharedAsset(DataManager.Path + n3^.AsString, tu2D);
+                Page.Texture.RefInc;
+              end
               else if n3^.Name = 'width' then Page.Width := n3^.AsInt
               else if n3^.Name = 'height' then Page.Height := n3^.AsInt
               else if n3^.Name = 'frame' then
@@ -9958,7 +9952,11 @@ begin
   for i := 0 to Frames.Count - 1 do
   Frames[i].Free;
   for i := 0 to Pages.Count - 1 do
-  Pages[i].Free;
+  begin
+    if Assigned(Pages[i].Texture) then
+    Pages[i].Texture.RefDec;
+    Pages[i].Free;
+  end;
   for i := 0 to EmitterData.Count - 1 do
   EmitterData[i].Free;
   Frames.Clear;

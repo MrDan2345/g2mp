@@ -167,6 +167,7 @@ type
     _Codec: TG2DataCodec;
     _ProcReadBuffer: TG2DataReadProc;
     _ProcWriteBuffer: TG2DataWriteProc;
+    _Path: String;
     function ReadBufferDirect(const Buffer: Pointer; const Count: TG2IntS64): TG2IntS64;
     function WriteBufferDirect(const Buffer: Pointer; const Count: TG2IntS64): TG2IntS64;
     function ReadBufferCodec(const Buffer: Pointer; const Count: TG2IntS64): TG2IntS64;
@@ -178,6 +179,7 @@ type
     procedure SetCodec(const Value: TG2Codec);
     procedure Init;
   public
+    property Path: String read _Path;
     property Position: TG2IntS64 read GetPosition write SetPosition;
     property Size: TG2IntS64 read GetSize;
     property Codec: TG2Codec read GetCodec write SetCodec;
@@ -334,6 +336,7 @@ var G2PackLinker: TG2PackLinker = nil;
 var G2AssetSourceManager: TG2AssetSourceManager = nil;
 
 function G2FileExists(const FileName: String): Boolean;
+function G2CorrectPathSep(const Path: String): String; inline;
 function G2GetAppPath: String;
 procedure G2ZLibDecompress(const Data: Pointer; const Size: TG2IntS64; const Output: TStream); overload;
 procedure G2ZLibDecompress(const Data: Pointer; const Size: TG2IntS64; const Output: Pointer); overload;
@@ -1144,10 +1147,8 @@ constructor TG2DataManager.Create(const FileName: String; const Mode: TG2DataMod
 begin
   inherited Create;
   _Mode := Mode;
-  fs := FileName;
-  for i := 1 to Length(fs) do
-  if fs[i] = G2PathSepRev then
-  fs[i] := G2PathSep;
+  _Path := G2CorrectPathSep(ExtractFilePath(FileName));
+  fs := G2CorrectPathSep(FileName);
   {$if defined(G2Target_OSX) or defined(G2Target_iOS)}
   if not G2FileExists(fs) then
   fs := G2GetAppPath + G2PathSep + fs;
@@ -1188,6 +1189,7 @@ constructor TG2DataManager.Create(const Stream: TStream; const Mode: TG2DataMode
 begin
   inherited Create;
   _Mode := Mode;
+  _Path := '';
   _Control := TG2DataControlStream.Create(Stream, Mode);
   Init;
 end;
@@ -1196,6 +1198,7 @@ constructor TG2DataManager.Create(const Buffer: Pointer; const BufferSize: TG2In
 begin
   inherited Create;
   _Mode := Mode;
+  _Path := '';
   _Control := TG2DataControlBuffer.Create(Buffer, BufferSize, Mode);
   Init;
 end;
@@ -1576,6 +1579,14 @@ begin
   {$else}
   Result := FileExists(AnsiString(fs));
   {$endif}
+end;
+
+function G2CorrectPathSep(const Path: String): String;
+  var i: TG2IntS32;
+begin
+  Result := Path;
+  for i := 1 to Length(Path) do
+  if Path[i] = G2PathSepRev then Result[i] := G2PathSep;
 end;
 
 function G2GetAppPath: String;

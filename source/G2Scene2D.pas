@@ -343,7 +343,8 @@ type
     var _LocalSpace: Boolean;
     var _FixedOrientation: Boolean;
     procedure OnEffectFinish(const Inst: Pointer);
-    procedure SetEffectInst(const Value: TG2Effect2DInst); inline;
+    function GetEffect: TG2Effect2D; inline;
+    procedure SetEffect(const Value: TG2Effect2D); inline;
     procedure SetLayer(const Value: TG2IntS32); inline;
     procedure SetScale(const Value: TG2Float); inline;
     function GetScale: TG2Float; inline;
@@ -363,7 +364,8 @@ type
     procedure OnDetach; override;
     procedure OnRender(const Display: TG2Display2D);
   public
-    property EffectInst: TG2Effect2DInst read _EffectInst write SetEffectInst;
+    property EffectInst: TG2Effect2DInst read _EffectInst;
+    property Effect: TG2Effect2D read GetEffect write SetEffect;
     property Layer: TG2IntS32 read _Layer write SetLayer;
     property Scale: TG2Float read GetScale write SetScale;
     property Speed: TG2Float read GetSpeed write SetSpeed;
@@ -714,7 +716,6 @@ type
       var _Owner: TG2Scene2DComponentPoly;
       var _Hook: TG2Scene2DRenderHook;
       var _Layer: TG2IntS32;
-      var _RefTexture: Boolean;
       var _Texture: TG2Texture2DBase;
       function GetVisible: Boolean; inline;
       procedure SetVisible(const Value: Boolean); inline;
@@ -2102,20 +2103,26 @@ begin
   if _AutoDestruct and (Owner <> nil) then Owner.Free;
 end;
 
-procedure TG2Scene2DComponentEffect.SetEffectInst(const Value: TG2Effect2DInst);
+function TG2Scene2DComponentEffect.GetEffect: TG2Effect2D;
 begin
-  if Value = _EffectInst then Exit;
-  if (_EffectInst <> nil) then
+  if Assigned(_EffectInst) then Result := _EffectInst.Effect
+  else Result := nil;
+end;
+
+procedure TG2Scene2DComponentEffect.SetEffect(const Value: TG2Effect2D);
+begin
+  if Assigned(_EffectInst) and (_EffectInst.Effect = Value) then Exit;
+  if Assigned(_EffectInst) then
   begin
-    _EffectInst.OnFinish := nil;
-    if _EffectInst.Effect.IsShared then _EffectInst.Effect.RefDec;
+    _EffectInst.Stop;
+    _EffectInst.Effect.RefDec;
     _EffectInst.RefDec;
   end;
-  _EffectInst := Value;
-  if (_EffectInst <> nil) then
+  if Assigned(Value) then
   begin
+    _EffectInst := Value.CreateInstance;
     _EffectInst.RefInc;
-    if _EffectInst.Effect.IsShared then _EffectInst.Effect.RefInc;
+    _EffectInst.Effect.RefInc;
     _Scale := _EffectInst.Scale;
     _Speed := _EffectInst.Speed;
     _Repeating := _EffectInst.Repeating;
@@ -2123,6 +2130,10 @@ begin
     _FixedOrientation := _EffectInst.FixedOrientation;
     _EffectInst.Transform := @Owner.Transform;
     _EffectInst.OnFinish := @OnEffectFinish;
+  end
+  else
+  begin
+    _EffectInst := nil;
   end;
 end;
 
@@ -2135,51 +2146,51 @@ end;
 procedure TG2Scene2DComponentEffect.SetScale(const Value: TG2Float);
 begin
   _Scale := Value;
-  if _EffectInst <> nil then _EffectInst.Scale := Value;
+  if Assigned(_EffectInst) then _EffectInst.Scale := Value;
 end;
 
 function TG2Scene2DComponentEffect.GetScale: TG2Float;
 begin
-  if _EffectInst <> nil then Result := _EffectInst.Scale else Result := _Scale;
+  if Assigned(_EffectInst) then Result := _EffectInst.Scale else Result := _Scale;
 end;
 
 procedure TG2Scene2DComponentEffect.SetSpeed(const Value: TG2Float);
 begin
   _Speed := Value;
-  if _EffectInst <> nil then _EffectInst.Speed := Value;
+  if Assigned(_EffectInst) then _EffectInst.Speed := Value;
 end;
 
 function TG2Scene2DComponentEffect.GetSpeed: TG2Float;
 begin
-  if _EffectInst <> nil then Result := _EffectInst.Speed else Result := _Speed;
+  if Assigned(_EffectInst) then Result := _EffectInst.Speed else Result := _Speed;
 end;
 
 procedure TG2Scene2DComponentEffect.SetRepeating(const Value: Boolean);
 begin
   _Repeating := Value;
-  if _EffectInst <> nil then _EffectInst.Repeating := Value;
+  if Assigned(_EffectInst) then _EffectInst.Repeating := Value;
 end;
 
 function TG2Scene2DComponentEffect.GetRepeating: Boolean;
 begin
-  if _EffectInst <> nil then Result := _EffectInst.Repeating else Result := _Repeating;
+  if Assigned(_EffectInst) then Result := _EffectInst.Repeating else Result := _Repeating;
 end;
 
 function TG2Scene2DComponentEffect.GetPlaying: Boolean;
 begin
-  if _EffectInst <> nil then Result := _EffectInst.Playing else Result := False;
+  if Assigned(_EffectInst) then Result := _EffectInst.Playing else Result := False;
 end;
 
 function TG2Scene2DComponentEffect.GetLocalSpace: Boolean;
 begin
-  if _EffectInst <> nil then Result := _EffectInst.LocalSpace else Result := _LocalSpace;
+  if Assigned(_EffectInst) then Result := _EffectInst.LocalSpace else Result := _LocalSpace;
 end;
 
 procedure TG2Scene2DComponentEffect.SetLocalSpace(const Value: Boolean);
 begin
   if Value = _LocalSpace then Exit;
   _LocalSpace := Value;
-  if _EffectInst <> nil then _EffectInst.LocalSpace := Value;
+  if Assigned(_EffectInst) then _EffectInst.LocalSpace := Value;
   if Playing then
   begin
     Stop;
@@ -2189,13 +2200,13 @@ end;
 
 function TG2Scene2DComponentEffect.GetFixedOrientation: Boolean;
 begin
-  if _EffectInst <> nil then Result := _EffectInst.FixedOrientation else Result := _FixedOrientation;
+  if Assigned(_EffectInst) then Result := _EffectInst.FixedOrientation else Result := _FixedOrientation;
 end;
 
 procedure TG2Scene2DComponentEffect.SetFixedOrientation(const Value: Boolean);
 begin
   _FixedOrientation := Value;
-  if _EffectInst <> nil then _EffectInst.FixedOrientation := Value;
+  if Assigned(_EffectInst) then _EffectInst.FixedOrientation := Value;
 end;
 
 procedure TG2Scene2DComponentEffect.OnInitialize;
@@ -2213,7 +2224,7 @@ end;
 
 procedure TG2Scene2DComponentEffect.OnFinalize;
 begin
-  EffectInst := nil;
+  Effect := nil;
   inherited OnFinalize;
 end;
 
@@ -2230,7 +2241,7 @@ end;
 
 procedure TG2Scene2DComponentEffect.OnRender(const Display: TG2Display2D);
 begin
-  if _EffectInst <> nil then
+  if Assigned(_EffectInst) then
   _EffectInst.Render(Display);
 end;
 
@@ -2252,12 +2263,12 @@ end;
 
 procedure TG2Scene2DComponentEffect.Play;
 begin
-  if _EffectInst <> nil then _EffectInst.Play;
+  if Assigned(_EffectInst) then _EffectInst.Play;
 end;
 
 procedure TG2Scene2DComponentEffect.Stop;
 begin
-  if _EffectInst <> nil then _EffectInst.Stop;
+  if Assigned(_EffectInst) then _EffectInst.Stop;
 end;
 
 procedure TG2Scene2DComponentEffect.Save(const Stream: TStream);
@@ -2267,33 +2278,30 @@ procedure TG2Scene2DComponentEffect.Save(const Stream: TStream);
   var EffectFile: String;
 begin
   SaveClassType(Stream);
-  if (_EffectInst = nil)
-  or (_EffectInst.Effect.EffectFile = '') then
+  if Assigned(_EffectInst)
+  and _EffectInst.Effect.IsShared then
   begin
-  n := 0;
+    EffectFile := _EffectInst.Effect.AssetName;
+    n := Length(EffectFile);
   end
   else
   begin
-    if Assigned(Scene.ModifySavePath) then
-    EffectFile := Scene.ModifySavePath(_EffectInst.Effect.EffectFile)
-    else
-    EffectFile := _EffectInst.Effect.EffectFile;
-    n := Length(EffectFile);
+    n := 0;
   end;
   Stream.Write(n, SizeOf(n));
   if n > 0 then
   Stream.Write(EffectFile[1], n);
   n := Layer;
   Stream.Write(n, SizeOf(n));
-  if _EffectInst <> nil then s := _EffectInst.Scale else s := 1;
+  if Assigned(_EffectInst) then s := _EffectInst.Scale else s := 1;
   Stream.Write(s, SizeOf(s));
-  if _EffectInst <> nil then s := _EffectInst.Speed else s := 1;
+  if Assigned(_EffectInst) then s := _EffectInst.Speed else s := 1;
   Stream.Write(s, SizeOf(s));
-  if _EffectInst <> nil then b := _EffectInst.Repeating else b := False;
+  if Assigned(_EffectInst) then b := _EffectInst.Repeating else b := False;
   Stream.Write(b, SizeOf(b));
-  if _EffectInst <> nil then b := _EffectInst.LocalSpace else b := True;
+  if Assigned(_EffectInst) then b := _EffectInst.LocalSpace else b := True;
   Stream.Write(b, SizeOf(b));
-  if _EffectInst <> nil then b := _EffectInst.FixedOrientation else b := False;
+  if Assigned(_EffectInst) then b := _EffectInst.FixedOrientation else b := False;
   Stream.Write(b, SizeOf(b));
 end;
 
@@ -2301,7 +2309,6 @@ procedure TG2Scene2DComponentEffect.Load(const Stream: TStream);
   var n: TG2IntS32;
   var s: TG2Float;
   var b: Boolean;
-  var Effect: TG2Effect2D;
   var EffectFile: String;
 begin
   Stream.Read(n, SizeOf(n));
@@ -2309,38 +2316,20 @@ begin
   begin
     SetLength(EffectFile, n);
     Stream.Read(EffectFile[1], n);
-    if Assigned(Scene.ModifyLoadPath) then
-    EffectFile := Scene.ModifyLoadPath(EffectFile);
-    Effect := TG2Effect2D.FindEffect(EffectFile);
-    if Effect = nil then
-    begin
-      if FileExists(EffectFile) then
-      begin
-        Effect := TG2Effect2D.Create;
-        Effect.Load(EffectFile);
-      end;
-    end;
-    if Effect <> nil then
-    begin
-      _EffectInst := Effect.CreateInstance;
-      _RefEffect := True;
-      Effect.RefInc;
-      _EffectInst.RefInc;
-      _EffectInst.Transform := @Owner.Transform;
-    end;
+    Effect := TG2Effect2D.SharedAsset(EffectFile);
   end;
   Stream.Read(n, SizeOf(n));
   Layer := n;
   Stream.Read(s, SizeOf(s));
-  if _EffectInst <> nil then _EffectInst.Scale := s;
+  if Assigned(_EffectInst) then _EffectInst.Scale := s;
   Stream.Read(s, SizeOf(s));
-  if _EffectInst <> nil then _EffectInst.Speed := s;
+  if Assigned(_EffectInst) then _EffectInst.Speed := s;
   Stream.Read(b, SizeOf(b));
-  if _EffectInst <> nil then _EffectInst.Repeating := b;
+  if Assigned(_EffectInst) then _EffectInst.Repeating := b;
   Stream.Read(_LocalSpace, SizeOf(_LocalSpace));
-  if _EffectInst <> nil then _EffectInst.LocalSpace := _LocalSpace;
+  if Assigned(_EffectInst) then _EffectInst.LocalSpace := _LocalSpace;
   Stream.Read(_FixedOrientation, SizeOf(_FixedOrientation));
-  if _EffectInst <> nil then _EffectInst.FixedOrientation := _FixedOrientation;
+  if Assigned(_EffectInst) then _EffectInst.FixedOrientation := _FixedOrientation;
 end;
 //TG2Scene2DComponentEffect END
 
@@ -3557,9 +3546,9 @@ end;
 procedure TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.SetTexture(const Value: TG2Texture2DBase);
 begin
   if Value = _Texture then Exit;
-  if (_Texture <> nil) and (_RefTexture) then _Texture.RefDec;
-  _RefTexture := False;
+  if Assigned(_Texture) then _Texture.RefDec;
   _Texture := Value;
+  if Assigned(_Texture) then _Texture.RefInc;
 end;
 
 constructor TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.Create(const Component: TG2Scene2DComponentPoly);
@@ -3569,15 +3558,14 @@ begin
   SetLength(Opacity, Length(_Owner._Vertices));
   FillChar(Opacity[0], SizeOf(TG2Float) * Length(Opacity), 0);
   Scale := G2Vec2(1, 1);
-  Texture := nil;
+  _Texture := nil;
   _Hook := nil;
   _Layer := 0;
-  _RefTexture := False;
 end;
 
 destructor TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.Destroy;
 begin
-  if _RefTexture then Texture.RefDec;
+  Texture := nil;
   if _Hook <> nil then _Owner.Scene.RenderHookRemove(_Hook);
   inherited Destroy;
 end;
@@ -3853,19 +3841,15 @@ begin
   begin
     Stream.Write(_Layers[i].Opacity[0], SizeOf(TG2Float) * Length(_Vertices));
     Stream.Write(_Layers[i].Scale, SizeOf(TG2Vec2));
-    if (_Layers[i].Texture = nil)
-    or not (_Layers[i].Texture is TG2Texture2D)
-    or (TG2Texture2D(_Layers[i].Texture).TextureFileName = '') then
+    if Assigned(_Layers[i].Texture)
+    and _Layers[i].Texture.IsShared then
     begin
-      n := 0;
+      TexFile := _Layers[i].Texture.AssetName;
+      n := Length(TexFile);
     end
     else
     begin
-      if Assigned(Scene.ModifySavePath) then
-      TexFile := Scene.ModifySavePath(TG2Texture2D(_Layers[i].Texture).TextureFileName)
-      else
-      TexFile := TG2Texture2D(_Layers[i].Texture).TextureFileName;
-      n := Length(TexFile);
+      n := 0;
     end;
     Stream.Write(n, SizeOf(n));
     if n > 0 then Stream.Write(TexFile[1], n);
@@ -3899,22 +3883,7 @@ begin
     begin
       SetLength(TexFile, n);
       Stream.Read(TexFile[1], n);
-      if Assigned(Scene.ModifyLoadPath) then
-      TexFile := Scene.ModifyLoadPath(TexFile);
-      _Layers[i]._Texture := TG2Texture2D.FindTexture(TexFile);
-      if _Layers[i]._Texture = nil then
-      begin
-        if FileExists(TexFile) then
-        begin
-          _Layers[i]._Texture := TG2Texture2D.Create;
-          TG2Texture2D(_Layers[i]._Texture).Load(TexFile);
-        end;
-      end;
-      if _Layers[i]._Texture <> nil then
-      begin
-        _Layers[i]._RefTexture := True;
-        _Layers[i]._Texture.RefInc;
-      end;
+      _Layers[i].Texture := TG2Texture2D.SharedAsset(TexFile);
     end;
     Stream.Read(n, SizeOf(n));
     _Layers[i].Layer := n;

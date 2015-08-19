@@ -3592,7 +3592,6 @@ type
     var LocalSpace: Boolean;
     var FixedOrientation: Boolean;
     var EffectPath: String;
-    var Effect: TAssetEffect2D;
   public
     var Component: TG2Scene2DComponentEffect;
     class function GetName: String; override;
@@ -3957,15 +3956,10 @@ type
 
 //TAssetEffect2D BEGIN
   TAssetEffect2D = class (TAsset)
-  private
-    var _Effect: TG2Effect2D;
   protected
-    property Effect: TG2Effect2D read _Effect;
     class function GetAssetName: String; override;
     class function CheckExtension(const Ext: String): Boolean; override;
     class function ProcessFile(const FilePath: String): TG2QuickListString; override;
-    procedure OnInitialize; override;
-    procedure OnFinalize; override;
   end;
 //TAssetEffect2D END
 
@@ -3989,7 +3983,7 @@ type
   public
     function GetTexture(const Path: String): TG2Texture2D;
     function GetImage(const Path: String): TG2Picture;
-    function GetEffect(const Path: String): TAssetEffect2D;
+    function GetEffect(const Path: String): TG2Effect2D;
     procedure Initialize;
     procedure Finalize;
     procedure Update;
@@ -13156,7 +13150,7 @@ begin
         if Image <> img then img.AliasImage := Image else img.AliasImage := Image;
         img.Name := ExtractFileName(img.FileName);
         img.Texture := TG2Texture2D.Create;
-        img.Texture.Load(img.FileName, tuUsage2D);
+        img.Texture.Load(img.FileName, tu2D);
         _Folders[i].Images.Add(img);
         Images.Add(img);
       until FindNext(sr) <> 0;
@@ -13843,7 +13837,7 @@ begin
     img.FileName := od.Files[i];
     img.Name := ExtractFileName(img.FileName);
     img.Texture := TG2Texture2D.Create;
-    img.Texture.Load(img.FileName, tuUsage2D);
+    img.Texture.Load(img.FileName, tu2D);
     _Images.Add(img);
   end;
   g2.Pause := False;
@@ -14005,7 +13999,7 @@ begin
               img.FileName := r3^.AsString;
               img.Name := ExtractFileName(img.FileName);
               img.Texture := TG2Texture2D.Create;
-              img.Texture.Load(img.FileName, tuUsage2D);
+              img.Texture.Load(img.FileName, tu2D);
               _Images.Add(img);
             end;
           end;
@@ -20198,45 +20192,45 @@ begin
   TextEdit.Initialize;
   Overlay := nil;
   TexCarbon := TG2Texture2D.Create;
-  TexCarbon.Load(@Bin_Carbon, SizeOf(Bin_Carbon), tuUsage2D);
+  TexCarbon.Load(@Bin_Carbon, SizeOf(Bin_Carbon), tu2D);
   TexDocEmpty := TG2Texture2D.Create;
-  TexDocEmpty.Load(@Bin_doc_empty_16, SizeOf(Bin_doc_empty_16), tuUsage2D);
+  TexDocEmpty.Load(@Bin_doc_empty_16, SizeOf(Bin_doc_empty_16), tu2D);
   TexFileOpen := TG2Texture2D.Create;
-  TexFileOpen.Load(@Bin_file_open_16, SizeOf(Bin_file_open_16), tuUsage2D);
+  TexFileOpen.Load(@Bin_file_open_16, SizeOf(Bin_file_open_16), tu2D);
   TexFileSave := TG2Texture2D.Create;
-  TexFileSave.Load(@Bin_file_save_16, SizeOf(Bin_file_save_16), tuUsage2D);
+  TexFileSave.Load(@Bin_file_save_16, SizeOf(Bin_file_save_16), tu2D);
   TexPlus := TG2Texture2D.Create;
-  TexPlus.Load(@Bin_plus_icon_16, SizeOf(Bin_plus_icon_16), tuUsage2D);
+  TexPlus.Load(@Bin_plus_icon_16, SizeOf(Bin_plus_icon_16), tu2D);
   TexGear := TG2Texture2D.Create;
-  TexGear.Load(@Bin_cog_icon_16, SizeOf(Bin_cog_icon_16), tuUsage2D);
+  TexGear.Load(@Bin_cog_icon_16, SizeOf(Bin_cog_icon_16), tu2D);
   TexDelete := TG2Texture2D.Create;
-  TexDelete.Load(@Bin_delete_icon_16, SizeOf(Bin_delete_icon_16), tuUsage2D);
+  TexDelete.Load(@Bin_delete_icon_16, SizeOf(Bin_delete_icon_16), tu2D);
   TexDocExport := TG2Texture2D.Create;
-  TexDocExport.Load(@Bin_doc_export_icon_16, SizeOf(Bin_doc_export_icon_16), tuUsage2D);
+  TexDocExport.Load(@Bin_doc_export_icon_16, SizeOf(Bin_doc_export_icon_16), tu2D);
   TexDocPlus := TG2Texture2D.Create;
-  TexDocPlus.Load(@Bin_doc_plus_icon_16, SizeOf(Bin_doc_plus_icon_16), tuUsage2D);
+  TexDocPlus.Load(@Bin_doc_plus_icon_16, SizeOf(Bin_doc_plus_icon_16), tu2D);
   TexFolderPlus := TG2Texture2D.Create;
-  TexFolderPlus.Load(@Bin_folder_plus_icon_16, SizeOf(Bin_folder_plus_icon_16), tuUsage2D);
+  TexFolderPlus.Load(@Bin_folder_plus_icon_16, SizeOf(Bin_folder_plus_icon_16), tu2D);
   TexFolder := TG2Texture2D.Create;
-  TexFolder.Load(@Bin_folder_icon_32, SizeOf(Bin_folder_icon_32), tuUsage2D);
+  TexFolder.Load(@Bin_folder_icon_32, SizeOf(Bin_folder_icon_32), tu2D);
   TexChecker := TG2Texture2D.Create;
-  TexChecker.Load(@Bin_Checker, SizeOf(Bin_Checker), tuUsage2D);
+  TexChecker.Load(@Bin_Checker, SizeOf(Bin_Checker), tu2D);
   TexPlay := TG2Texture2D.Create;
-  TexPlay.Load(@Bin_play_icon_16, SizeOf(Bin_play_icon_16), tuUsage2D);
+  TexPlay.Load(@Bin_play_icon_16, SizeOf(Bin_play_icon_16), tu2D);
   TexStop := TG2Texture2D.Create;
-  TexStop.Load(@Bin_stop_icon_16, SizeOf(Bin_stop_icon_16), tuUsage2D);
+  TexStop.Load(@Bin_stop_icon_16, SizeOf(Bin_stop_icon_16), tu2D);
   TexDots := TG2Texture2D.Create;
-  TexDots.Load(@Bin_Dots, SizeOf(Bin_Dots), tuUsage2D);
+  TexDots.Load(@Bin_Dots, SizeOf(Bin_Dots), tu2D);
   TexLink := TG2Texture2D.Create;
-  TexLink.Load(@Bin_link_icon_16, SizeOf(Bin_link_icon_16), tuUsage2D);
+  TexLink.Load(@Bin_link_icon_16, SizeOf(Bin_link_icon_16), tu2D);
   TexPin := TG2Texture2D.Create;
-  TexPin.Load(@Bin_pin_icon_16, SizeOf(Bin_pin_icon_16), tuUsage2D);
+  TexPin.Load(@Bin_pin_icon_16, SizeOf(Bin_pin_icon_16), tu2D);
   TexRoundMinus := TG2Texture2D.Create;
-  TexRoundMinus.Load(@Bin_round_minus_16, SizeOf(Bin_round_minus_16), tuUsage2D);
+  TexRoundMinus.Load(@Bin_round_minus_16, SizeOf(Bin_round_minus_16), tu2D);
   TexRoundPlus := TG2Texture2D.Create;
-  TexRoundPlus.Load(@Bin_round_plus_16, SizeOf(Bin_round_plus_16), tuUsage2D);
+  TexRoundPlus.Load(@Bin_round_plus_16, SizeOf(Bin_round_plus_16), tu2D);
   TexSpot := TG2Texture2D.Create;
-  TexSpot.Load(@Bin_spot, SizeOf(Bin_spot), tuUsage2D);
+  TexSpot.Load(@Bin_spot, SizeOf(Bin_spot), tu2D);
   Views.Initialize;
   WorkspaceClasses.Clear;
   WorkspaceFrame.l := 0;
@@ -27366,7 +27360,6 @@ end;
 
 destructor TScene2DComponentDataEffect.Destroy;
 begin
-  if Effect <> nil then Effect.RefDec;
   inherited Destroy;
 end;
 
@@ -27374,8 +27367,8 @@ procedure TScene2DComponentDataEffect.AddToProperties(const PropertySet: TProper
   var Group: TPropertySet.TProperty;
 begin
   Group := PropertySet.PropComponent('Effect', Component);
-  if Effect <> nil then
-  EffectPath := Effect.Path
+  if Component.Effect <> nil then
+  EffectPath := Component.Effect.AssetName
   else
   EffectPath := '';
   PropertySet.PropPath('Effect', @EffectPath, TAssetEffect2D, Group, @OnChangeEffect);
@@ -27430,13 +27423,9 @@ end;
 
 procedure TScene2DComponentDataEffect.OnChangeEffect(const Sender: Pointer);
 begin
-  if Effect <> nil then Effect.RefDec;
-  Component.EffectInst := nil;
-  Effect := App.AssetManager.GetEffect(EffectPath);
-  if Effect <> nil then
+  Component.Effect := App.AssetManager.GetEffect(EffectPath);
+  if Component.Effect <> nil then
   begin
-    Effect.RefInc;
-    Component.EffectInst := Effect.Effect.CreateInstance;
     Component.Repeating := True;
     Component.Play;
     Speed := Component.Speed;
@@ -28811,7 +28800,6 @@ function TScene2DData.CreateComponentEffect: TG2Scene2DComponentEffect;
 begin
   Result := TG2Scene2DComponentEffect.Create(_Scene);
   Result.UserData := TScene2DComponentDataEffect.Create;
-  TScene2DComponentDataEffect(Result.UserData).Effect := nil;
   TScene2DComponentDataEffect(Result.UserData).Component := Result;
 end;
 
@@ -29583,21 +29571,6 @@ begin
     Result.Add(FilePath);
   end
 end;
-
-procedure TAssetEffect2D.OnInitialize;
-begin
-  _Effect := TG2Effect2D.Create;
-  _Effect.Load(Path);
-end;
-
-procedure TAssetEffect2D.OnFinalize;
-begin
-  if _Effect <> nil then
-  begin
-    _Effect.RefDec;
-    _Effect := nil;
-  end;
-end;
 //TAssetEffect2D END
 
 //TAssetManager BEIGN
@@ -29616,9 +29589,6 @@ end;
 
 function TAssetManager.GetImage(const Path: String): TG2Picture;
   var PathArr: TG2StrArrA;
-  //var AssetPath: String;
-  //var md5: TG2MD5;
-  //var Asset: TAsset;
 begin
   PathArr := G2StrExplode(Path, '#');
   if Length(PathArr) = 1 then
@@ -29631,40 +29601,11 @@ begin
     Result := G2Picture;
     //AssetPath := VerifyPath(PathArr[0]) + '#' + PathArr[1];
   end;
-  //md5.SetValue(LowerCase(AssetPath));
-  //Asset := TAsset.List;
-  //while Asset <> nil do
-  //begin
-  //  if (Asset is TAssetImage)
-  //  and (Asset.md5 = md5) then
-  //  begin
-  //    Result := TAssetImage(Asset);
-  //    Exit;
-  //  end;
-  //  Asset := Asset.Prev;
-  //end;
-  //Result := TAssetImage.Create(AssetPath);
 end;
 
-function TAssetManager.GetEffect(const Path: String): TAssetEffect2D;
-  var AssetPath: String;
-  var Asset: TAsset;
-  var md5: TG2MD5;
+function TAssetManager.GetEffect(const Path: String): TG2Effect2D;
 begin
-  AssetPath := LowerCase(VerifyPath(Path));
-  md5.SetValue(AssetPath);
-  Asset := TAsset.List;
-  while Asset <> nil do
-  begin
-    if (Asset is TAssetTexture)
-    and (Asset.md5 = md5) then
-    begin
-      Result := TAssetEffect2D(Asset);
-      Exit;
-    end;
-    Asset := Asset.Prev;
-  end;
-  Result := TAssetEffect2D.Create(AssetPath);
+  Result := TG2Effect2D.SharedAsset(Path);
 end;
 
 procedure TAssetManager.Initialize;
