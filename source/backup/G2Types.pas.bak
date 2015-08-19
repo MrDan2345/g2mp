@@ -241,6 +241,7 @@ type
     property RefCount: TG2IntS32 read _Ref;
     constructor Create; virtual;
     destructor Destroy; override;
+    function IsReferenced: Boolean; inline;
   end;
 
   TG2Res = class (TG2Ref)
@@ -261,9 +262,10 @@ type
   TG2Asset = class (TG2Res)
   private
     var _AssetName: String;
-  protected
+  public
     property AssetName: String read _AssetName write _AssetName;
     constructor Create; override;
+    function IsShared: Boolean; inline;
   end;
 
   operator := (c: TG2Color) cr: TG2IntU32;
@@ -348,6 +350,11 @@ destructor TG2Ref.Destroy;
 begin
   inherited Destroy;
 end;
+
+function TG2Ref.IsReferenced: Boolean;
+begin
+  Result := _Ref > 0;
+end;
 //TG2Ref END
 
 //TG2Res BEGIN
@@ -401,8 +408,14 @@ end;
 constructor TG2Asset.Create;
 begin
   inherited Create;
-  _AssetName := ';;
+  _AssetName := '';
 end;
+
+function TG2Asset.IsShared: Boolean;
+begin
+
+end;
+
 //TG2Asset END
 
 operator := (c: TG2Color) cr: TG2IntU32;

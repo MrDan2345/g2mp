@@ -1172,7 +1172,8 @@ begin
     if (Mode = dmAsset) and Assigned(G2AssetSourceManager) then
     begin
       _Control := G2AssetSourceManager.FindAsset(FileName);
-      if _Control = nil then _Control := TG2DataControlFile.Create(fs, Mode);
+      if _Control = nil then
+      _Control := TG2DataControlFile.Create(fs, Mode);
     end
     else
     begin
@@ -1552,7 +1553,8 @@ end;
 function TG2AssetSourceManager.FindAsset(const AssetName: String): TG2DataControl;
 begin
   Result := _SourceBuffer.FindAsset(AssetName);
-  if Result = nil then _SourceFile.FindAsset(AssetName);
+  if Result = nil then
+  Result := _SourceFile.FindAsset(AssetName);
 end;
 //TG2AssetSourceManager END
 

@@ -1250,6 +1250,16 @@ type
     function FindFrame(const Name: String): TG2AtlasFrame;
   end;
 
+  TG2Picture = object
+  public
+    var Texture: TG2Texture2DBase;
+    var TexCoords: TG2Rect;
+    function IsAssigned: Boolean; inline;
+    procedure Clear; inline;
+    procedure Assign(const NewTexture: TG2Texture2DBase); inline;
+    procedure Assign(const NewAtlasFrame: TG2AtlasFrame); inline;
+  end;
+
   TG2Effect2D = class;
   TG2Effect2DInst = class;
   TG2Effect2DEmitterData = class;
@@ -1509,7 +1519,7 @@ type
     procedure LoadG2ML(const g2ml: PG2MLObject);
   end;
 
-  TG2Effect2D = class (TG2Res)
+  TG2Effect2D = class (TG2Asset)
   private
     var _EffectFile: String;
   public
@@ -1520,6 +1530,7 @@ type
     var Scale: TG2Float;
     property EffectFile: String read _EffectFile write _EffectFile;
     class function FindEffect(const FileName: String): TG2Effect2D;
+    class function SharedAsset(const Name: String): TG2Effect2D;
     constructor Create;
     destructor Destroy; override;
     function FindFrame(const FrameName: String): TG2AtlasFrame;
@@ -3472,6 +3483,10 @@ function G2RandomSpherePoint: TG2Vec3;
 function G2RectInRect(const R0, R1: TRect): Boolean; overload;
 function G2RectInRect(const R0, R1: TG2Rect): Boolean; overload;
 function G2KeyName(const Key: TG2IntS32): AnsiString;
+function G2Picture: TG2Picture; inline;
+function G2Picture(const Texture: TG2Texture2DBase): TG2Picture; inline;
+function G2Picture(const Texture: TG2Texture2DBase; const TexCoords: TG2Rect): TG2Picture; inline;
+function G2Picture(const Frame: TG2AtlasFrame): TG2Picture; inline;
 procedure G2TraceBegin;
 function G2TraceEnd: TG2IntU32;
 {$if defined(G2Cpu386)}
@@ -7998,8 +8013,8 @@ begin
   end;
   dm := TG2DataManager.Create(Name, dmAsset);
   Result := TG2Texture2D.Create;
-  Result.Load(dm);
   Result.AssetName := Name;
+  Result.Load(dm);
 end;
 
 function TG2Texture2D.Load(const FileName: String; const TextureUsage: TG2TextureUsage = tuDefault): Boolean;
@@ -9061,6 +9076,31 @@ begin
 end;
 //TG2Atlas END
 
+//TG2Picture BEGIN
+function TG2Picture.IsAssigned: Boolean;
+begin
+  Result := Assigned(Texture);
+end;
+
+procedure TG2Picture.Clear;
+begin
+  Texture := nil;
+  TexCoords := G2Rect(0, 0, 0, 0);
+end;
+
+procedure TG2Picture.Assign(const NewTexture: TG2Texture2DBase);
+begin
+  Texture := NewTexture;
+  TexCoords := Texture.TexCoords;
+end;
+
+procedure TG2Picture.Assign(const NewAtlasFrame: TG2AtlasFrame);
+begin
+  Texture := NewAtlasFrame.Texture;
+  TexCoords := NewAtlasFrame.TexCoords;
+end;
+//TG2Picture END
+
 //TG2Effect2DMod BEGIN
 {$Hints off}
 class function TG2Effect2DMod.GetGUID: AnsiString;
@@ -9770,6 +9810,27 @@ begin
     Res := Res.Next;
   end;
   Result := nil;
+end;
+
+class function TG2Effect2D.SharedAsset(const Name: String): TG2Effect2D;
+  var Res: TG2Res;
+  var dm: TG2DataManager;
+begin
+  Res := TG2Res.List;
+  while Res <> nil do
+  begin
+    if (Res is TG2Effect2D)
+    and (TG2Effect2D(Res).AssetName = Name) then
+    begin
+      Result := TG2Effect2D(Res);
+      Exit;
+    end;
+    Res := Res.Next;
+  end;
+  dm := TG2DataManager.Create(Name, dmAsset);
+  Result := TG2Effect2D.Create;
+  Result.AssetName := Name;
+  Result.Load(dm);
 end;
 
 constructor TG2Effect2D.Create;
@@ -19573,6 +19634,33 @@ function G2KeyName(const Key: TG2IntS32): AnsiString;
   );
 begin
   if (Key >= 0) and (Key <= High(NameMap)) then Result := NameMap[Key] else Result := 'Undefined';
+end;
+
+function G2Picture: TG2Picture;
+begin
+  {$Warnings off}
+  Result.Clear;
+  {$Warnings on}
+end;
+
+function G2Picture(const Texture: TG2Texture2DBase): TG2Picture;
+begin
+  {$Warnings off}
+  Result.Assign(Texture);
+  {$Warnings on}
+end;
+
+function G2Picture(const Texture: TG2Texture2DBase; const TexCoords: TG2Rect): TG2Picture;
+begin
+  Result.Texture := Texture;
+  Result.TexCoords := TexCoords;
+end;
+
+function G2Picture(const Frame: TG2AtlasFrame): TG2Picture;
+begin
+  {$Warnings off}
+  Result.Assign(Frame);
+  {$Warnings on}
 end;
 
 procedure G2TraceBegin;

@@ -1172,7 +1172,8 @@ begin
     if (Mode = dmAsset) and Assigned(G2AssetSourceManager) then
     begin
       _Control := G2AssetSourceManager.FindAsset(FileName);
-      if _Control = nil then _Control := TG2DataControlFile.Create(fs, Mode);
+      if _Control = nil then
+      _Control := TG2DataControlFile.Create(fs, Mode);
     end
     else
     begin
@@ -1462,6 +1463,7 @@ begin
   if Length(Path) = 0 then Exit;
   NewPath := G2StrReplace(Path, G2PathSepRev, G2PathSep);
   if NewPath[Length(Path)] <> G2PathSep then NewPath += G2PathSep;
+  _Paths.Remove(NewPath);
 end;
 
 function TG2AssetSourceFile.FindAsset(const AssetName: String): TG2DataControl;
@@ -1551,7 +1553,7 @@ end;
 function TG2AssetSourceManager.FindAsset(const AssetName: String): TG2DataControl;
 begin
   Result := _SourceBuffer.FindAsset(AssetName);
-  if Result = nil then _SourceFile.FindAsset(AssetName);
+  if Result = nil then Result := _SourceFile.FindAsset(AssetName);
 end;
 //TG2AssetSourceManager END
 

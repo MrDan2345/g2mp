@@ -27,10 +27,7 @@ type
   TG2Scene2DComponentCallbackObj = procedure (const Component: TG2Scene2DComponent) of Object;
 
   TG2Scene2DEventData = class
-  protected
-    var _EventType: TG2IntU16;
   public
-    property EventType: TG2IntU16 read _EventType;
     constructor Create; virtual;
     destructor Destroy; override;
   end;
@@ -291,8 +288,7 @@ type
 
   TG2Scene2DComponentSprite = class (TG2Scene2DComponent)
   private
-    var _Texture: TG2Texture2DBase;
-    var _TexCoords: TG2Rect;
+    var _Picture: TG2Picture;
     var _RenderHook: TG2Scene2DRenderHook;
     var _Width: TG2Float;
     var _Height: TG2Float;
@@ -301,14 +297,13 @@ type
     var _FlipY: Boolean;
     var _Transform: TG2Transform2;
     var _Filter: TG2Filter;
-    var _RefTexture: Boolean;
     var _Layer: TG2IntS32;
     var _Color: TG2Color;
     var _BlendMode: TG2BlendMode;
     var _Visible: Boolean;
     function GetLayer: TG2IntS32; inline;
     procedure SetLayer(const Value: TG2IntS32); inline;
-    procedure SetTexture(const Value: TG2Texture2DBase); inline;
+    procedure SetPicture(const Value: TG2Picture); inline;
   protected
     procedure OnInitialize; override;
     procedure OnFinalize; override;
@@ -320,8 +315,7 @@ type
     class function GetName: String; override;
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
     property Layer: TG2IntS32 read GetLayer write SetLayer;
-    property Texture: TG2Texture2DBase read _Texture write SetTexture;
-    property TexCoords: TG2Rect read _TexCoords write _TexCoords;
+    property Picture: TG2Picture read _Picture write SetPicture;
     property Width: TG2Float read _Width write _Width;
     property Height: TG2Float read _Height write _Height;
     property Scale: TG2Float read _Scale write _Scale;
@@ -345,7 +339,6 @@ type
     var _Scale: TG2Float;
     var _Speed: TG2Float;
     var _Repeating: Boolean;
-    var _RefEffect: Boolean;
     var _AutoDestruct: Boolean;
     var _LocalSpace: Boolean;
     var _FixedOrientation: Boolean;
@@ -495,7 +488,7 @@ type
     constructor Create; override;
   end;
 
-  TG2Scene2DEventEndContactData = class (TG2Scene2DEventData)
+  TG2Scene2DEventAfterContactSolveData = class (TG2Scene2DEventData)
   public
     var PhysContact: pb2_contact;
     var Shapes: array[0..1] of TG2Scene2DComponentCollisionShape;
@@ -506,11 +499,15 @@ type
   private
     var _EventBeginContactData: TG2Scene2DEventBeginContactData;
     var _EventEndContactData: TG2Scene2DEventEndContactData;
+    var _EventBeforeContactSolveData: TG2Scene2DEventBeforeContactSolveData;
+    var _EventAfterContactSolveData: TG2Scene2DEventAfterContactSolveData;
   protected
     var _FixtureDef: tb2_fixture_def;
     var _Fixture: pb2_fixture;
     var _EventBeginContact: TG2Scene2DEventDispatcher;
     var _EventEndContact: TG2Scene2DEventDispatcher;
+    var _EventBeforeContactSolve: TG2Scene2DEventDispatcher;
+    var _EventAfterContactSolve: TG2Scene2DEventDispatcher;
     property Fixture: pb2_fixture read _Fixture write _Fixture;
     property FixtureDef: tb2_fixture_def read _FixtureDef;
     procedure OnInitialize; override;
@@ -530,6 +527,14 @@ type
       const Other: TG2Scene2DComponentCollisionShape;
       const Contact: pb2_contact
     ); inline;
+    procedure OnBeforeContactSolve(
+      const Other: TG2Scene2DComponentCollisionShape;
+      const Contact: pb2_contact
+    ); inline;
+    procedure OnAfterContactSolve(
+      const Other: TG2Scene2DComponentCollisionShape;
+      const Contact: pb2_contact
+    ); inline;
   public
     class constructor CreateClass;
     class function GetName: String; override;
@@ -538,6 +543,8 @@ type
     property Density: TG2Float read GetDensity write SetDensity;
     property EventBeginContact: TG2Scene2DEventDispatcher read _EventBeginContact;
     property EventEndContact: TG2Scene2DEventDispatcher read _EventEndContact;
+    property EventBeforeContactSolve: TG2Scene2DEventDispatcher read _EventBeforeContactSolve;
+    property EventAfterContactSolve: TG2Scene2DEventDispatcher read _EventAfterContactSolve;
   end;
 
   TG2Scene2DComponentCollisionShapeEdge = class (TG2Scene2DComponentCollisionShape)
@@ -780,9 +787,6 @@ type
   operator := (t: TG2Transform2): tb2_transform; inline;
   operator := (varr: pb2_vec2_arr): PG2Vec2Arr; inline;
   operator := (varr: PG2Vec2Arr): pb2_vec2_arr; inline;
-
-const g2_s2d_et_begin_contact = 0;
-const g2_s2d_et_end_contact = 1;
 
 implementation
 
@@ -1642,13 +1646,27 @@ begin
 end;
 
 procedure TG2Scene2D.TPhysContactListener.pre_solve(const contact: pb2_contact; const old_manifold: pb2_manifold);
+  var Shape0, Shape1: TG2Scene2DComponentCollisionShape;
 begin
-  inherited pre_solve(contact, old_manifold);
+  Shape0 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_a^.get_user_data);
+  Shape1 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_b^.get_user_data);
+  if Assigned(Shape0) and Assigned(Shape1) then
+  begin
+    Shape0.OnBeforeContactSolve(Shape1, contact);
+    Shape1.OnBeforeContactSolve(Shape0, contact);
+  end;
 end;
 
 procedure TG2Scene2D.TPhysContactListener.post_solve(const contact: pb2_contact; const impulse: pb2_contact_impulse);
+  var Shape0, Shape1: TG2Scene2DComponentCollisionShape;
 begin
-  inherited post_solve(contact, impulse);
+  Shape0 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_a^.get_user_data);
+  Shape1 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_b^.get_user_data);
+  if Assigned(Shape0) and Assigned(Shape1) then
+  begin
+    Shape0.OnAfterContactSolve(Shape1, contact);
+    Shape1.OnAfterContactSolve(Shape0, contact);
+  end;
 end;
 
 procedure TG2Scene2D.Update;
@@ -1905,22 +1923,21 @@ begin
   if _RenderHook <> nil then _RenderHook.Layer := _Layer;
 end;
 
-procedure TG2Scene2DComponentSprite.SetTexture(const Value: TG2Texture2DBase);
+procedure TG2Scene2DComponentSprite.SetPicture(const Value: TG2Picture);
 begin
-  if Value = _Texture then Exit;
-  if (_Texture <> nil)
-  and (_RefTexture) then
-  _Texture.RefDec;
-  _RefTexture := False;
-  _Texture := Value;
+  if Value.Texture <> _Picture.Texture then
+  begin
+    if _Picture.Texture <> nil then _Picture.Texture.RefDec;
+    _Picture.Texture := Value.Texture;
+    if _Picture.Texture <> nil then _Picture.Texture.RefInc;
+  end;
+  _Picture.TexCoords := Value.TexCoords;
 end;
 
 procedure TG2Scene2DComponentSprite.OnInitialize;
 begin
-  _RefTexture := False;
   _RenderHook := nil;
-  _Texture := nil;
-  _TexCoords := G2Rect(0, 0, 1, 1);
+  _Picture := G2Picture;
   _Width := 1;
   _Height := 1;
   _Scale := 1;
@@ -1936,7 +1953,7 @@ end;
 
 procedure TG2Scene2DComponentSprite.OnFinalize;
 begin
-  Texture := nil;
+  Picture := G2Picture;
 end;
 
 procedure TG2Scene2DComponentSprite.OnAttach;
@@ -1958,7 +1975,7 @@ procedure TG2Scene2DComponentSprite.OnRender(const Display: TG2Display2D);
   var hw, hh: TG2Float;
 begin
   if not _Visible
-  or (_Texture = nil)
+  or (_Picture.Texture = nil)
   or (_Owner = nil) then
   Exit;
   hw := _Width * _Scale * 0.5;
@@ -1967,10 +1984,10 @@ begin
   v[1].SetValue(hw, -hh);
   v[2].SetValue(-hw, hh);
   v[3].SetValue(hw, hh);
-  if not _FlipX then begin tx0 := _TexCoords.l; tx1 := _TexCoords.r; end
-  else begin tx0 := _TexCoords.r; tx1 := _TexCoords.l; end;
-  if not _FlipY then begin ty0 := _TexCoords.t; ty1 := _TexCoords.b; end
-  else begin ty0 := _TexCoords.b; ty1 := _TexCoords.t; end;
+  if not _FlipX then begin tx0 := _Picture.TexCoords.l; tx1 := _Picture.TexCoords.r; end
+  else begin tx0 := _Picture.TexCoords.r; tx1 := _Picture.TexCoords.l; end;
+  if not _FlipY then begin ty0 := _Picture.TexCoords.t; ty1 := _Picture.TexCoords.b; end
+  else begin ty0 := _Picture.TexCoords.b; ty1 := _Picture.TexCoords.t; end;
   t[0].SetValue(tx0, ty0);
   t[1].SetValue(tx1, ty0);
   t[2].SetValue(tx0, ty1);
@@ -1982,7 +1999,7 @@ begin
   Display.PicQuad(
     v[0], v[1], v[2], v[3],
     t[0], t[1], t[2], t[3],
-    _Color, _Texture, _BlendMode, _Filter
+    _Color, _Picture.Texture, _BlendMode, _Filter
   );
 end;
 
@@ -2006,8 +2023,7 @@ end;
 
 procedure TG2Scene2DComponentSprite.SetAtlasFrame(const Frame: TG2AtlasFrame);
 begin
-  Texture := Frame.Texture;
-  TexCoords := Frame.TexCoords;
+  Picture := G2Picture(Frame);
   if Frame.Width > Frame.Height then
   begin
     Width := 1;
@@ -2025,24 +2041,22 @@ procedure TG2Scene2DComponentSprite.Save(const Stream: TStream);
   var TexFile: String;
 begin
   SaveClassType(Stream);
-  if (_Texture = nil)
-  or not (_Texture is TG2Texture2D)
-  or (TG2Texture2D(_Texture).TextureFileName = '') then
+  if (_Picture.Texture = nil) then
   begin
-  n := 0;
+    n := 0;
   end
   else
   begin
-    if Assigned(Scene.ModifySavePath) then
-    TexFile := Scene.ModifySavePath(TG2Texture2D(_Texture).TextureFileName)
-    else
-    TexFile := TG2Texture2D(_Texture).TextureFileName;
+    TexFile := _Picture.Texture.AssetName;
     n := Length(TexFile);
   end;
   Stream.Write(n, SizeOf(n));
   if n > 0 then
-  Stream.Write(TexFile[1], n);
-  Stream.Write(_TexCoords, SizeOf(_TexCoords));
+  begin
+    Stream.Write(TexFile[1], n);
+    Stream.Write(_Picture.Texture.Usage, SizeOf(_Picture.Texture.Usage));
+    Stream.Write(_Picture.TexCoords, SizeOf(_Picture.TexCoords));
+  end;
   Stream.Write(_Width, SizeOf(_Width));
   Stream.Write(_Height, SizeOf(_Height));
   Stream.Write(_Scale, SizeOf(_Scale));
@@ -2057,6 +2071,7 @@ end;
 
 procedure TG2Scene2DComponentSprite.Load(const Stream: TStream);
   var n: TG2IntS32;
+  var Usage: TG2TextureUsage;
   var TexFile: String;
 begin
   Stream.Read(n, SizeOf(n));
@@ -2064,24 +2079,10 @@ begin
   begin
     SetLength(TexFile, n);
     Stream.Read(TexFile[1], n);
-    if Assigned(Scene.ModifyLoadPath) then
-    TexFile := Scene.ModifyLoadPath(TexFile);
-    _Texture := TG2Texture2D.FindTexture(TexFile);
-    if _Texture = nil then
-    begin
-      if FileExists(TexFile) then
-      begin
-        _Texture := TG2Texture2D.Create;
-        TG2Texture2D(_Texture).Load(TexFile);
-      end;
-    end;
-    if _Texture <> nil then
-    begin
-      _RefTexture := True;
-      _Texture.RefInc;
-    end;
+    Stream.Read(Usage, SizeOf(Usage));
+    Picture := G2Picture(TG2Texture2D.SharedAsset(TexFile, Usage));
+    Stream.Read(_Picture.TexCoords, SizeOf(_Picture.TexCoords));
   end;
-  Stream.Read(_TexCoords, SizeOf(_TexCoords));
   Stream.Read(_Width, SizeOf(_Width));
   Stream.Read(_Height, SizeOf(_Height));
   Stream.Read(_Scale, SizeOf(_Scale));
@@ -2107,14 +2108,14 @@ begin
   if (_EffectInst <> nil) then
   begin
     _EffectInst.OnFinish := nil;
-    if (_RefEffect) then _EffectInst.Effect.RefDec;
+    if _EffectInst.Effect.IsShared then _EffectInst.Effect.RefDec;
     _EffectInst.RefDec;
   end;
-  _RefEffect := False;
   _EffectInst := Value;
   if (_EffectInst <> nil) then
   begin
     _EffectInst.RefInc;
+    if _EffectInst.Effect.IsShared then _EffectInst.Effect.RefInc;
     _Scale := _EffectInst.Scale;
     _Speed := _EffectInst.Speed;
     _Repeating := _EffectInst.Repeating;
@@ -2359,11 +2360,9 @@ end;
 procedure TG2Scene2DComponentBackground.SetTexture(const Value: TG2Texture2DBase);
 begin
   if Value = _Texture then Exit;
-  if (_Texture <> nil)
-  and (_RefTexture) then
-  _Texture.RefDec;
-  _RefTexture := False;
+  if _Texture <> nil then _Texture.RefDec;
   _Texture := Value;
+  if _Texture <> nil then _Texture.RefInc;
 end;
 
 procedure TG2Scene2DComponentBackground.OnInitialize;
@@ -2762,7 +2761,6 @@ end;
 constructor TG2Scene2DEventBeginContactData.Create;
 begin
   inherited Create;
-  _EventType := g2_s2d_et_begin_contact;
 end;
 //TG2Scene2DEventBeginContactData END
 
@@ -2770,9 +2768,22 @@ end;
 constructor TG2Scene2DEventEndContactData.Create;
 begin
   inherited Create;
-  _EventType := g2_s2d_et_end_contact;
 end;
 //TG2Scene2DEventEndContactData END
+
+//TG2Scene2DEventBeforeContactSolveData BEGIN
+constructor TG2Scene2DEventBeforeContactSolveData.Create;
+begin
+  inherited Create;
+end;
+//TG2Scene2DEventBeforeContactSolveData END
+
+//TG2Scene2DEventAfterContactSolveData BEGIN
+constructor TG2Scene2DEventAfterContactSolveData.Create;
+begin
+  inherited Create;
+end;
+//TG2Scene2DEventAfterContactSolveData END
 
 //TG2Scene2DComponentCollisionShape BEGIN
 procedure TG2Scene2DComponentCollisionShape.OnInitialize;
@@ -2780,8 +2791,16 @@ begin
   inherited OnInitialize;
   _EventBeginContact := TG2Scene2DEventDispatcher.Create('OnBeginContact');
   _EventEndContact := TG2Scene2DEventDispatcher.Create('OnEndContact');
+  _EventBeforeContactSolve := TG2Scene2DEventDispatcher.Create('OnBeforeContactSolve');
+  _EventAfterContactSolve := TG2Scene2DEventDispatcher.Create('OnAfterContactSolve');
   _EventBeginContactData := TG2Scene2DEventBeginContactData.Create;
   _EventEndContactData := TG2Scene2DEventEndContactData.Create;
+  _EventBeforeContactSolveData := TG2Scene2DEventBeforeContactSolveData.Create;
+  _EventAfterContactSolveData := TG2Scene2DEventAfterContactSolveData.Create;
+  _EventDispatchers.Add(_EventBeginContact);
+  _EventDispatchers.Add(_EventEndContact);
+  _EventDispatchers.Add(_EventBeforeContactSolve);
+  _EventDispatchers.Add(_EventAfterContactSolve);
   _Fixture := nil;
   _FixtureDef := b2_fixture_def;
   _FixtureDef.density := 1;
@@ -2791,8 +2810,12 @@ procedure TG2Scene2DComponentCollisionShape.OnFinalize;
 begin
   _EventBeginContactData.Free;
   _EventEndContactData.Free;
+  _EventBeforeContactSolveData.Free;
+  _EventAfterContactSolveData.Free;
   _EventBeginContact.Free;
   _EventEndContact.Free;
+  _EventBeforeContactSolve.Free;
+  _EventAfterContactSolve.Free;
   inherited OnFinalize;
 end;
 
@@ -2861,6 +2884,28 @@ begin
   _EventEndContactData.Shapes[1] := Other;
   _EventEndContactData.PhysContact := Contact;
   _EventEndContact.DispatchEvent(_EventEndContactData);
+end;
+
+procedure TG2Scene2DComponentCollisionShape.OnBeforeContactSolve(
+  const Other: TG2Scene2DComponentCollisionShape;
+  const Contact: pb2_contact
+);
+begin
+  _EventBeforeContactSolveData.Shapes[0] := Self;
+  _EventBeforeContactSolveData.Shapes[1] := Other;
+  _EventBeforeContactSolveData.PhysContact := Contact;
+  _EventBeforeContactSolve.DispatchEvent(_EventBeforeContactSolveData);
+end;
+
+procedure TG2Scene2DComponentCollisionShape.OnAfterContactSolve(
+  const Other: TG2Scene2DComponentCollisionShape;
+  const Contact: pb2_contact
+);
+begin
+  _EventAfterContactSolveData.Shapes[0] := Self;
+  _EventAfterContactSolveData.Shapes[1] := Other;
+  _EventAfterContactSolveData.PhysContact := Contact;
+  _EventAfterContactSolve.DispatchEvent(_EventAfterContactSolveData);
 end;
 
 class constructor TG2Scene2DComponentCollisionShape.CreateClass;

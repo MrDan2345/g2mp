@@ -3477,7 +3477,6 @@ type
   private
     var Layer: TG2IntS32;
     var ImagePath: String;
-    var Image: TAssetImage;
     var Position: TG2Vec2;
     var Rotation: TG2Float;
   public
@@ -3499,7 +3498,6 @@ type
   private
     var Layer: TG2IntS32;
     var TexturePath: String;
-    var Texture: TAssetTexture;
   public
     var Component: TG2Scene2DComponentBackground;
     class function GetName: String; override;
@@ -3545,7 +3543,7 @@ type
   TScene2DComponentDataPolyLayer = class
   public
     var TexturePath: String;
-    var Texture: TAssetTexture;
+    var Texture: TG2Texture2DBase;
     var Scale: TG2Vec2;
     var Layer: TG2IntS32;
     var PathProp: TPropertySet.TPropertyPath;
@@ -3941,31 +3939,19 @@ type
 
 //TAssetTexture BEGIN
   TAssetTexture = class (TAsset)
-  private
-    var _Texture: TG2Texture2D;
   protected
-    property Texture: TG2Texture2D read _Texture;
     class function GetAssetName: String; override;
     class function CheckExtension(const Ext: String): Boolean; override;
     class function ProcessFile(const FilePath: String): TG2QuickListString; override;
-    procedure OnInitialize; override;
-    procedure OnFinalize; override;
   end;
 //TAssetTexture END
 
 //TAssetImage BEGIN
   TAssetImage = class (TAsset)
-  private
-    var _Texture: TAssetTexture;
-    var _TexCoords: TG2Rect;
   public
-    property Texture: TAssetTexture read _Texture;
-    property TexCoords: TG2Rect read _TexCoords;
     class function GetAssetName: String; override;
     class function CheckExtension(const Ext: String): Boolean; override;
     class function ProcessFile(const FilePath: String): TG2QuickListString; override;
-    procedure OnInitialize; override;
-    procedure OnFinalize; override;
   end;
 //TAssetImage END
 
@@ -4001,8 +3987,8 @@ type
     var _AssetPaths: TAssetPathList;
     function VerifyPath(const Path: String): String;
   public
-    function GetTexture(const Path: String): TAssetTexture;
-    function GetImage(const Path: String): TAssetImage;
+    function GetTexture(const Path: String): TG2Texture2D;
+    function GetImage(const Path: String): TG2Picture;
     function GetEffect(const Path: String): TAssetEffect2D;
     procedure Initialize;
     procedure Finalize;
@@ -4966,6 +4952,7 @@ begin
   AddAssetType(TAssetAny);
   AddAssetType(TAssetImage);
   AddAssetType(TAssetTexture);
+  AddAssetType(TAssetEffect2D);
   _ItemSize := App.UI.Font1.TextHeight('A') + 4;
 end;
 
@@ -5013,7 +5000,7 @@ begin
       begin
         fl.Clear;
         if _AssetTypes[i]^.AssetClass.CheckExtension(ext) then
-        fl := _AssetTypes[i]^.AssetClass.ProcessFile(AssetPath + sr.Name);
+        fl := _AssetTypes[i]^.AssetClass.ProcessFile({AssetPath + }sr.Name);
         for j := 0 to fl.Count - 1 do
         _AssetTypes[i]^.Files.Add(fl[j]);
       end;
@@ -21700,8 +21687,10 @@ end;
 
 procedure TProject.Load(const f: String);
 begin
+  Close;
   _FileName := ExtractFileName(f);
   _FilePath := ExtractFilePath(f);
+  G2AssetSourceManager.SourceFile.AddPath(_FilePath + 'assets');
   _Open := True;
   ReLoad;
 end;
@@ -21710,6 +21699,7 @@ procedure TProject.Close;
 begin
   if _Open then
   begin
+    G2AssetSourceManager.SourceFile.RemovePath(_FilePath + 'assets');
     App.CodeInsight.Clear;
     _FileName := '';
     _FilePath := '';
@@ -21990,14 +21980,17 @@ begin
   sl.Add('    <PathDelim Value="\"/>');
   sl.Add('    <General>');
   sl.Add('      <Flags>');
+  sl.Add('        <SaveClosedFiles Value="False"/>');
+  sl.Add('        <SaveOnlyProjectUnits Value="True"/>');
   sl.Add('        <MainUnitHasCreateFormStatements Value="False"/>');
   sl.Add('        <MainUnitHasTitleStatement Value="False"/>');
+  sl.Add('        <SaveJumpHistory Value="False"/>');
+  sl.Add('        <SaveFoldState Value="False"/>');
   sl.Add('      </Flags>');
   sl.Add('      <MainUnit Value="0"/>');
   sl.Add('      <Title Value="' + ProjectName + '"/>');
   sl.Add('      <ResourceType Value="res"/>');
   sl.Add('      <UseXPManifest Value="True"/>');
-  sl.Add('      <ActiveWindowIndexAtStart Value="0"/>');
   sl.Add('    </General>');
   sl.Add('    <i18n>');
   sl.Add('      <EnableI18N LFM="False"/>');
@@ -22019,11 +22012,6 @@ begin
   sl.Add('      <Unit0>');
   sl.Add('        <Filename Value="' + ProjectName + '.lpr"/>');
   sl.Add('        <IsPartOfProject Value="True"/>');
-  sl.Add('        <UnitName Value="' + ProjectName + '"/>');
-  sl.Add('        <EditorIndex Value="0"/>');
-  sl.Add('        <WindowIndex Value="0"/>');
-  sl.Add('        <TopLine Value="1"/>');
-  sl.Add('        <CursorPos X="0" Y="0"/>');
   sl.Add('        <Loaded Value="True"/>');
   sl.Add('      </Unit0>');
   sl.Add('    </Units>');
@@ -22046,12 +22034,6 @@ begin
   sl.Add('        </Win32>');
   sl.Add('      </Options>');
   sl.Add('    </Linking>');
-  sl.Add('    <Other>');
-  sl.Add('      <CompilerMessages>');
-  sl.Add('        <UseMsgFile Value="True"/>');
-  sl.Add('      </CompilerMessages>');
-  sl.Add('      <CompilerPath Value="$(CompPath)"/>');
-  sl.Add('    </Other>');
   sl.Add('  </CompilerOptions>');
   sl.Add('  <Debugging>');
   sl.Add('    <Exceptions Count="3">');
@@ -25799,7 +25781,7 @@ begin
   for l := 0 to LayersSorted.Count - 1 do
   begin
     Layer := TScene2DComponentDataPolyLayer(LayersSorted[l]);
-    Display.PolyBegin(ptTriangles, Layer.Texture.Texture, bmNormal, tfLinear);
+    Display.PolyBegin(ptTriangles, Layer.Texture, bmNormal, tfLinear);
     for i := 0 to Component.Faces.Count - 1 do
     begin
       for j := 0 to 2 do
@@ -26790,8 +26772,7 @@ end;
 
 destructor TScene2DComponentDataSprite.Destroy;
 begin
-  if Image <> nil then
-  Image.RefDec;
+  inherited Destroy;
 end;
 
 function TScene2DComponentDataSprite.PickLayer: Integer;
@@ -26806,7 +26787,7 @@ function TScene2DComponentDataSprite.Pick(const x, y: TG2Float): Boolean;
   var i: Integer;
   var hw, hh: TG2Float;
 begin
-  if (Component.Texture = nil) then Exit(False);
+  if (not Component.Picture.IsAssigned) then Exit(False);
   hw := Component.Width * Component.Scale * 0.5;
   hh := Component.Height * Component.Scale * 0.5;
   v[0].SetValue(-hw, -hh);
@@ -26827,8 +26808,8 @@ begin
   Group := PropertySet.PropComponent('Sprite', Component);
   Layer := Component.Layer;
   PropertySet.PropInt('Layer', @Layer, Group, @OnChangeLayer);
-  if Image <> nil then
-  ImagePath := Image.Path
+  if Component.Picture.IsAssigned then
+  ImagePath := Component.Picture.Texture.AssetName
   else
   ImagePath := '';
   PropertySet.PropPath('Texture', @ImagePath, TAssetImage, Group, @OnChangeImage);
@@ -26855,21 +26836,30 @@ begin
 end;
 
 procedure TScene2DComponentDataSprite.OnChangeImage(const Sender: Pointer);
-  var ss: Single;
+  var sw, sh, ss: Single;
 begin
-  if Image <> nil then
-  Image.RefDec;
-  Image := App.AssetManager.GetImage(ImagePath);
-  if Image <> nil then
-  Image.RefInc;
-  Component.Texture := Image.Texture.Texture;
-  Component.TexCoords := Image.TexCoords;
-  if Component.TexCoords.w > Component.TexCoords.h then
-  ss := 1 / Component.TexCoords.w
-  else
-  ss := 1 / Component.TexCoords.h;
-  Component.Width := ss * Component.TexCoords.w;
-  Component.Height := ss * Component.TexCoords.h;
+  Component.Picture := App.AssetManager.GetImage(ImagePath);
+  if Component.Picture.IsAssigned then
+  begin
+    if Component.Picture.Texture.Width > Component.Picture.Texture.Height then
+    begin
+      sw := 1;
+      sh := Component.Picture.Texture.Height / Component.Picture.Texture.Width;
+    end
+    else
+    begin
+      sh := 1;
+      sw := Component.Picture.Texture.Width / Component.Picture.Texture.Height;
+    end;
+    sw := Component.Picture.TexCoords.w * sw;
+    sh := Component.Picture.TexCoords.h * sh;
+    if sw > sh then
+    ss := 1 / sw
+    else
+    ss := 1 / sh;
+    Component.Width := ss * sw;
+    Component.Height := ss * sh;
+  end;
 end;
 
 procedure TScene2DComponentDataSprite.OnChangePosition(const Sender: Pointer);
@@ -26891,7 +26881,7 @@ end;
 
 destructor TScene2DComponentDataBackground.Destroy;
 begin
-  if Texture <> nil then Texture.RefDec;
+
 end;
 
 procedure TScene2DComponentDataBackground.AddToProperties(const PropertySet: TPropertySet);
@@ -26901,8 +26891,8 @@ begin
   Group := PropertySet.PropComponent('Background', Component);
   Layer := Component.Layer;
   PropertySet.PropInt('Layer', @Layer, Group, @OnChangeLayer);
-  if Texture <> nil then
-  TexturePath := Texture.Path
+  if Component.Texture <> nil then
+  TexturePath := Component.Texture.AssetName
   else
   TexturePath := '';
   PropertySet.PropPath('Texture', @TexturePath, TAssetTexture, Group, @OnChangeTexture);
@@ -26924,12 +26914,7 @@ end;
 
 procedure TScene2DComponentDataBackground.OnChangeTexture(const Sender: Pointer);
 begin
-  if Texture <> nil then
-  Texture.RefDec;
-  Texture := App.AssetManager.GetTexture(TexturePath);
-  if Texture <> nil then
-  Texture.RefInc;
-  Component.Texture := Texture.Texture;
+  Component.Texture := App.AssetManager.GetTexture(TexturePath);
 end;
 //TScene2DComponentDataBackground END
 
@@ -27110,7 +27095,7 @@ begin
   for i := 0 to Layers.Count - 1 do
   begin
     if Layers[i].Texture <> nil then
-    Component.Layers[i].Texture := Layers[i].Texture.Texture
+    Component.Layers[i].Texture := Layers[i].Texture
     else
     Component.Layers[i].Texture := nil;
     for j := 0 to Vertices.Count - 1 do
@@ -27781,6 +27766,10 @@ begin
   PropertySet.PropFloat('Rotation', @_Angle, Group, @OnChangeAngle);
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
+  PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, Group);
+  PropertySet.PropString('Event Contact End', @Component.EventEndContact.Name, Group);
+  PropertySet.PropString('Event Before Contact Solve', @Component.EventBeforeContactSolve.Name, Group);
+  PropertySet.PropString('Event After Contact Solve', @Component.EventAfterContactSolve.Name, Group);
 end;
 
 procedure TScene2DComponentDataShapeBox.OnChangeWidth(const Sender: Pointer);
@@ -28808,7 +28797,6 @@ function TScene2DData.CreateComponentSprite: TG2Scene2DComponentSprite;
 begin
   Result := TG2Scene2DComponentSprite.Create(_Scene);
   Result.UserData := TScene2DComponentDataSprite.Create;
-  TScene2DComponentDataSprite(Result.UserData).Image := nil;
   TScene2DComponentDataSprite(Result.UserData).Component := Result;
 end;
 
@@ -28816,7 +28804,6 @@ function TScene2DData.CreateComponentBackground: TG2Scene2DComponentBackground;
 begin
   Result := TG2Scene2DComponentBackground.Create(_Scene);
   Result.UserData := TScene2DComponentDataBackground.Create;
-  TScene2DComponentDataBackground(Result.UserData).Texture := nil;
   TScene2DComponentDataBackground(Result.UserData).Component := Result;
 end;
 
@@ -29423,17 +29410,6 @@ begin
   Result.Create;
   Result.Add(FilePath);
 end;
-
-procedure TAssetTexture.OnInitialize;
-begin
-  _Texture := TG2Texture2D.Create;
-  _Texture.Load(Path);
-end;
-
-procedure TAssetTexture.OnFinalize;
-begin
-  _Texture.Free;
-end;
 //TAssetTexture END
 
 //TAssetImage BIGIN
@@ -29444,8 +29420,8 @@ end;
 
 class function TAssetImage.CheckExtension(const Ext: String): Boolean;
 begin
-  Result := (LowerCase(Ext) = 'png')
-  or (LowerCase(Ext) = 'g2atlas');
+  Result := (LowerCase(Ext) = 'png');
+  //or (LowerCase(Ext) = 'g2atlas');
 end;
 
 class function TAssetImage.ProcessFile(
@@ -29508,81 +29484,81 @@ begin
   end;
 end;
 
-procedure TAssetImage.OnInitialize;
-  var PathArr: TG2StrArrA;
-  var g2ml: TG2ML;
-  var Root, n0, n1, n2, n3: PG2MLObject;
-  var i0, i1, i2, i3: Integer;
-  var fs: TFileStream;
-  var AtlasFile, ImageName: String;
-  var ImageWidth, ImageHeight: Integer;
-begin
-  PathArr := G2StrExplode(Path, '#');
-  if Length(PathArr) = 1 then
-  begin
-    _Texture := App.AssetManager.GetTexture(Path);
-    _Texture.RefInc;
-    _TexCoords := G2Rect(0, 0, _Texture.Texture.SizeTU, _Texture.Texture.SizeTV);
-  end
-  else
-  begin
-    g2ml := TG2ML.Create;
-    fs := TFileStream.Create(PathArr[0], fmOpenRead);
-    try
-      SetLength(AtlasFile, fs.Size);
-      fs.Read(AtlasFile[1], fs.Size);
-      Root := g2ml.Read(AtlasFile);
-      for i0 := 0 to Root^.Children.Count - 1 do
-      begin
-        n0 := Root^.Children[i0];
-        if n0^.Name = 'g2af' then
-        begin
-          for i1 := 0 to n0^.Children.Count - 1 do
-          begin
-            n1 := n0^.Children[i1];
-            if n1^.Name = 'page' then
-            begin
-              n2 := n1^.FindNode('image'); if n2 <> nil then ImageName := n2^.AsString else ImageName := '';
-              n2 := n1^.FindNode('width'); if n2 <> nil then ImageWidth := n2^.AsInt else ImageWidth := 1;
-              n2 := n1^.FindNode('height'); if n2 <> nil then ImageHeight := n2^.AsInt else ImageHeight := 1;
-              for i2 := 0 to n1^.Children.Count - 1 do
-              begin
-                n2 := n1^.Children[i2];
-                if n2^.Name = 'frame' then
-                begin
-                  n3 := n2^.FindNode('name');
-                  if (n3 <> nil) and (n3^.AsString = PathArr[1]) then
-                  begin
-                    _Texture := App.AssetManager.GetTexture(ExtractFileDir(PathArr[0]) + G2PathSep + ImageName);
-                    _Texture.RefInc;
-                    _TexCoords := G2Rect(0, 0, 1, 1);
-                    n3 := n2^.FindNode('pos_l'); if n3 <> nil then _TexCoords.x := n3^.AsInt / ImageWidth;
-                    n3 := n2^.FindNode('pos_t'); if n3 <> nil then _TexCoords.y := n3^.AsInt / ImageHeight;
-                    n3 := n2^.FindNode('width'); if n3 <> nil then _TexCoords.w := n3^.AsInt / ImageWidth;
-                    n3 := n2^.FindNode('height'); if n3 <> nil then _TexCoords.h := n3^.AsInt / ImageHeight;
-                    Break;
-                  end;
-                end;
-              end;
-            end;
-          end;
-        end;
-      end;
-      g2ml.FreeObject(Root);
-    finally
-      fs.Free;
-    end;
-  end;
-end;
+//procedure TAssetImage.OnInitialize;
+//  var PathArr: TG2StrArrA;
+//  var g2ml: TG2ML;
+//  var Root, n0, n1, n2, n3: PG2MLObject;
+//  var i0, i1, i2, i3: Integer;
+//  var fs: TFileStream;
+//  var AtlasFile, ImageName: String;
+//  var ImageWidth, ImageHeight: Integer;
+//begin
+//  PathArr := G2StrExplode(Path, '#');
+//  if Length(PathArr) = 1 then
+//  begin
+//    _Texture := App.AssetManager.GetTexture(Path);
+//    _Texture.RefInc;
+//    _TexCoords := G2Rect(0, 0, _Texture.Texture.SizeTU, _Texture.Texture.SizeTV);
+//  end
+//  else
+//  begin
+//    g2ml := TG2ML.Create;
+//    fs := TFileStream.Create(PathArr[0], fmOpenRead);
+//    try
+//      SetLength(AtlasFile, fs.Size);
+//      fs.Read(AtlasFile[1], fs.Size);
+//      Root := g2ml.Read(AtlasFile);
+//      for i0 := 0 to Root^.Children.Count - 1 do
+//      begin
+//        n0 := Root^.Children[i0];
+//        if n0^.Name = 'g2af' then
+//        begin
+//          for i1 := 0 to n0^.Children.Count - 1 do
+//          begin
+//            n1 := n0^.Children[i1];
+//            if n1^.Name = 'page' then
+//            begin
+//              n2 := n1^.FindNode('image'); if n2 <> nil then ImageName := n2^.AsString else ImageName := '';
+//              n2 := n1^.FindNode('width'); if n2 <> nil then ImageWidth := n2^.AsInt else ImageWidth := 1;
+//              n2 := n1^.FindNode('height'); if n2 <> nil then ImageHeight := n2^.AsInt else ImageHeight := 1;
+//              for i2 := 0 to n1^.Children.Count - 1 do
+//              begin
+//                n2 := n1^.Children[i2];
+//                if n2^.Name = 'frame' then
+//                begin
+//                  n3 := n2^.FindNode('name');
+//                  if (n3 <> nil) and (n3^.AsString = PathArr[1]) then
+//                  begin
+//                    _Texture := App.AssetManager.GetTexture(ExtractFileDir(PathArr[0]) + G2PathSep + ImageName);
+//                    _Texture.RefInc;
+//                    _TexCoords := G2Rect(0, 0, 1, 1);
+//                    n3 := n2^.FindNode('pos_l'); if n3 <> nil then _TexCoords.x := n3^.AsInt / ImageWidth;
+//                    n3 := n2^.FindNode('pos_t'); if n3 <> nil then _TexCoords.y := n3^.AsInt / ImageHeight;
+//                    n3 := n2^.FindNode('width'); if n3 <> nil then _TexCoords.w := n3^.AsInt / ImageWidth;
+//                    n3 := n2^.FindNode('height'); if n3 <> nil then _TexCoords.h := n3^.AsInt / ImageHeight;
+//                    Break;
+//                  end;
+//                end;
+//              end;
+//            end;
+//          end;
+//        end;
+//      end;
+//      g2ml.FreeObject(Root);
+//    finally
+//      fs.Free;
+//    end;
+//  end;
+//end;
 
-procedure TAssetImage.OnFinalize;
-begin
-  if _Texture <> nil then
-  begin
-    _Texture.RefDec;
-    _Texture := nil;
-  end;
-end;
+//procedure TAssetImage.OnFinalize;
+//begin
+//  if _Texture <> nil then
+//  begin
+//    _Texture.RefDec;
+//    _Texture := nil;
+//  end;
+//end;
 //TAssetImage END
 
 //TAssetEffect2D BEGIN
@@ -29633,55 +29609,41 @@ begin
   Result := ExpandFileName(Path);
 end;
 
-function TAssetManager.GetTexture(const Path: String): TAssetTexture;
-  var AssetPath: String;
-  var Asset: TAsset;
-  var md5: TG2MD5;
+function TAssetManager.GetTexture(const Path: String): TG2Texture2D;
 begin
-  AssetPath := LowerCase(VerifyPath(Path));
-  md5.SetValue(AssetPath);
-  Asset := TAsset.List;
-  while Asset <> nil do
-  begin
-    if (Asset is TAssetTexture)
-    and (Asset.md5 = md5) then
-    begin
-      Result := TAssetTexture(Asset);
-      Exit;
-    end;
-    Asset := Asset.Prev;
-  end;
-  Result := TAssetTexture.Create(AssetPath);
+  Result := TG2Texture2D.SharedAsset(Path);
 end;
 
-function TAssetManager.GetImage(const Path: String): TAssetImage;
+function TAssetManager.GetImage(const Path: String): TG2Picture;
   var PathArr: TG2StrArrA;
-  var AssetPath: String;
-  var md5: TG2MD5;
-  var Asset: TAsset;
+  //var AssetPath: String;
+  //var md5: TG2MD5;
+  //var Asset: TAsset;
 begin
   PathArr := G2StrExplode(Path, '#');
   if Length(PathArr) = 1 then
   begin
-    AssetPath := VerifyPath(Path);
+    Result := G2Picture(TG2Texture2D.SharedAsset(Path));
+    //AssetPath := VerifyPath(Path);
   end
   else
   begin
-    AssetPath := VerifyPath(PathArr[0]) + '#' + PathArr[1];
+    Result := G2Picture;
+    //AssetPath := VerifyPath(PathArr[0]) + '#' + PathArr[1];
   end;
-  md5.SetValue(LowerCase(AssetPath));
-  Asset := TAsset.List;
-  while Asset <> nil do
-  begin
-    if (Asset is TAssetImage)
-    and (Asset.md5 = md5) then
-    begin
-      Result := TAssetImage(Asset);
-      Exit;
-    end;
-    Asset := Asset.Prev;
-  end;
-  Result := TAssetImage.Create(AssetPath);
+  //md5.SetValue(LowerCase(AssetPath));
+  //Asset := TAsset.List;
+  //while Asset <> nil do
+  //begin
+  //  if (Asset is TAssetImage)
+  //  and (Asset.md5 = md5) then
+  //  begin
+  //    Result := TAssetImage(Asset);
+  //    Exit;
+  //  end;
+  //  Asset := Asset.Prev;
+  //end;
+  //Result := TAssetImage.Create(AssetPath);
 end;
 
 function TAssetManager.GetEffect(const Path: String): TAssetEffect2D;
@@ -30249,7 +30211,6 @@ procedure TCodeInsight.ScanFile(const f: TCodeInsightSymbolFile);
   var s: TCodeInsightSymbol;
   var sf: TCodeInsightSymbolFile;
   var sfl: TCodeInsightSymbolFileLink;
-  var i: Integer;
 begin
   f.ParsedTime := G2Time;
   f.Clear;
