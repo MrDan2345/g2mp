@@ -17263,6 +17263,7 @@ end;
 procedure TG2Toolkit.Initialize;
 begin
   g2.Window.Caption := 'g2mp toolkit v0.2';
+  g2.AssetSourceManager.SourceFile.ClearPaths;
   cbf_scene2d_object := RegisterClipboardFormat('g2mp toolkit scene2d object');
   AssetManager.Initialize;
   UI.Initialize;
@@ -20230,7 +20231,7 @@ begin
   TexRoundPlus := TG2Texture2D.Create;
   TexRoundPlus.Load(@Bin_round_plus_16, SizeOf(Bin_round_plus_16), tu2D);
   TexSpot := TG2Texture2D.Create;
-  TexSpot.Load(@Bin_spot, SizeOf(Bin_spot), tuUsage2D);
+  TexSpot.Load(@Bin_spot, SizeOf(Bin_spot), tu2D);
   Views.Initialize;
   WorkspaceClasses.Clear;
   WorkspaceFrame.l := 0;
@@ -20272,9 +20273,30 @@ begin
   while WorkspaceClasses.Count > 0 do
   WorkspaceClasses.Pop.Free;
   Views.Finalize;
-  TexDocEmpty.Free;
-  TexCarbon.Free;
   Font1.Free;
+  FontCode.Free;
+  FontCodeB.Free;
+  FontCodeI.Free;
+  TexCarbon.Free; := TG2Texture2D.Create;
+  TexDocEmpty := TG2Texture2D.Create;
+  TexFileOpen := TG2Texture2D.Create;
+  TexFileSave := TG2Texture2D.Create;
+  TexPlus := TG2Texture2D.Create;
+  TexGear := TG2Texture2D.Create;
+  TexDelete := TG2Texture2D.Create;
+  TexDocExport := TG2Texture2D.Create;
+  TexDocPlus := TG2Texture2D.Create;
+  TexFolderPlus := TG2Texture2D.Create;
+  TexFolder := TG2Texture2D.Create;
+  TexChecker := TG2Texture2D.Create;
+  TexPlay := TG2Texture2D.Create;
+  TexStop := TG2Texture2D.Create;
+  TexDots := TG2Texture2D.Create;
+  TexLink := TG2Texture2D.Create;
+  TexPin := TG2Texture2D.Create;
+  TexRoundMinus := TG2Texture2D.Create;
+  TexRoundPlus := TG2Texture2D.Create;
+  TexSpot := TG2Texture2D.Create;
 end;
 
 procedure TUI.Render;
@@ -26781,7 +26803,7 @@ function TScene2DComponentDataSprite.Pick(const x, y: TG2Float): Boolean;
   var i: Integer;
   var hw, hh: TG2Float;
 begin
-  if (not Component.Picture.IsAssigned) then Exit(False);
+  if not Assigned(Component.Picture) then Exit(False);
   hw := Component.Width * Component.Scale * 0.5;
   hh := Component.Height * Component.Scale * 0.5;
   v[0].SetValue(-hw, -hh);
@@ -26802,11 +26824,11 @@ begin
   Group := PropertySet.PropComponent('Sprite', Component);
   Layer := Component.Layer;
   PropertySet.PropInt('Layer', @Layer, Group, @OnChangeLayer);
-  if Component.Picture.IsAssigned then
+  if Assigned(Component.Picture) then
   ImagePath := Component.Picture.Texture.AssetName
   else
   ImagePath := '';
-  PropertySet.PropPath('Texture', @ImagePath, TAssetImage, Group, @OnChangeImage);
+  PropertySet.PropPath('Image', @ImagePath, TAssetImage, Group, @OnChangeImage);
   PropertySet.PropFloat('Width', @Component.Width, Group);
   PropertySet.PropFloat('Height', @Component.Height, Group);
   PropertySet.PropFloat('Scale', @Component.Scale, Group);
@@ -26833,7 +26855,7 @@ procedure TScene2DComponentDataSprite.OnChangeImage(const Sender: Pointer);
   var sw, sh, ss: Single;
 begin
   Component.Picture := App.AssetManager.GetImage(ImagePath);
-  if Component.Picture.IsAssigned then
+  if Assigned(Component.Picture) then
   begin
     if Component.Picture.Texture.Width > Component.Picture.Texture.Height then
     begin
@@ -29408,8 +29430,8 @@ end;
 
 class function TAssetImage.CheckExtension(const Ext: String): Boolean;
 begin
-  Result := (LowerCase(Ext) = 'png');
-  //or (LowerCase(Ext) = 'g2atlas');
+  Result := (LowerCase(Ext) = 'png')
+  or (LowerCase(Ext) = 'g2atlas');
 end;
 
 class function TAssetImage.ProcessFile(
@@ -29417,7 +29439,7 @@ class function TAssetImage.ProcessFile(
 ): TG2QuickListString;
   var Ext: String;
   var AtlasFile: AnsiString;
-  var fs: TFileStream;
+  var dm: TG2DataManager;
   var g2ml: TG2ML;
   var Root, n0, n1, n2, n3: PG2MLObject;
   var i0, i1, i2: Integer;
@@ -29433,10 +29455,10 @@ begin
   begin
     Result.Create;
     g2ml := TG2ML.Create;
-    fs := TFileStream.Create(FilePath, fmOpenRead);
+    dm := TG2DataManager.Create(FilePath, dmAsset);
     try
-      SetLength(AtlasFile, fs.Size);
-      fs.Read(AtlasFile[1], fs.Size);
+      SetLength(AtlasFile, dm.Size);
+      dm.ReadBuffer(@AtlasFile[1], dm.Size);
       Root := g2ml.Read(AtlasFile);
       for i0 := 0 to Root^.Children.Count - 1 do
       begin
@@ -29466,7 +29488,7 @@ begin
       end;
       g2ml.FreeObject(Root);
     finally
-      fs.Free;
+      dm.Free;
     end;
     g2ml.Free;
   end;
@@ -29588,19 +29610,8 @@ begin
 end;
 
 function TAssetManager.GetImage(const Path: String): TG2Picture;
-  var PathArr: TG2StrArrA;
 begin
-  PathArr := G2StrExplode(Path, '#');
-  if Length(PathArr) = 1 then
-  begin
-    Result := G2Picture(TG2Texture2D.SharedAsset(Path));
-    //AssetPath := VerifyPath(Path);
-  end
-  else
-  begin
-    Result := G2Picture;
-    //AssetPath := VerifyPath(PathArr[0]) + '#' + PathArr[1];
-  end;
+  Result := TG2Picture.SharedAsset(Path);
 end;
 
 function TAssetManager.GetEffect(const Path: String): TG2Effect2D;

@@ -1,6 +1,7 @@
 {$mode objfpc}
 {.$define G2Threading}
 {.$define G2Output}
+{$define G2Log}
 
 {$if not defined(G2Custom_RenderMode)}
   {.$define G2RM_FF}

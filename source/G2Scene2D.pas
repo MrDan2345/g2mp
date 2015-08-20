@@ -326,7 +326,6 @@ type
     property BlendMode: TG2BlendMode read _BlendMode write _BlendMode;
     property Visible: Boolean read _Visible write _Visible;
     property Transform: TG2Transform2 read _Transform write _Transform;
-    procedure SetAtlasFrame(const Frame: TG2AtlasFrame);
     procedure Save(const Stream: TStream); override;
     procedure Load(const Stream: TStream); override;
   end;
@@ -1926,19 +1925,18 @@ end;
 
 procedure TG2Scene2DComponentSprite.SetPicture(const Value: TG2Picture);
 begin
-  if Value.Texture <> _Picture.Texture then
+  if _Picture <> Value then
   begin
-    if _Picture.Texture <> nil then _Picture.Texture.RefDec;
-    _Picture.Texture := Value.Texture;
-    if _Picture.Texture <> nil then _Picture.Texture.RefInc;
+    if Assigned(_Picture) then _Picture.RefDec;
+    _Picture := Value;
+    if Assigned(_Picture) then _Picture.RefInc;
   end;
-  _Picture.TexCoords := Value.TexCoords;
 end;
 
 procedure TG2Scene2DComponentSprite.OnInitialize;
 begin
   _RenderHook := nil;
-  _Picture := G2Picture;
+  _Picture := nil;
   _Width := 1;
   _Height := 1;
   _Scale := 1;
@@ -1954,7 +1952,7 @@ end;
 
 procedure TG2Scene2DComponentSprite.OnFinalize;
 begin
-  Picture := G2Picture;
+  Picture := nil;
 end;
 
 procedure TG2Scene2DComponentSprite.OnAttach;
@@ -1976,7 +1974,7 @@ procedure TG2Scene2DComponentSprite.OnRender(const Display: TG2Display2D);
   var hw, hh: TG2Float;
 begin
   if not _Visible
-  or (_Picture.Texture = nil)
+  or (_Picture = nil)
   or (_Owner = nil) then
   Exit;
   hw := _Width * _Scale * 0.5;
@@ -2022,21 +2020,6 @@ begin
   Result := True;
 end;
 
-procedure TG2Scene2DComponentSprite.SetAtlasFrame(const Frame: TG2AtlasFrame);
-begin
-  Picture := G2Picture(Frame);
-  if Frame.Width > Frame.Height then
-  begin
-    Width := 1;
-    Height := Frame.Height / Frame.Width;
-  end
-  else
-  begin
-    Height := 1;
-    Width := Frame.Width / Frame.Height;
-  end;
-end;
-
 procedure TG2Scene2DComponentSprite.Save(const Stream: TStream);
   var n: TG2IntS32;
   var TexFile: String;
@@ -2056,7 +2039,6 @@ begin
   begin
     Stream.Write(TexFile[1], n);
     Stream.Write(_Picture.Texture.Usage, SizeOf(_Picture.Texture.Usage));
-    Stream.Write(_Picture.TexCoords, SizeOf(_Picture.TexCoords));
   end;
   Stream.Write(_Width, SizeOf(_Width));
   Stream.Write(_Height, SizeOf(_Height));
@@ -2081,8 +2063,7 @@ begin
     SetLength(TexFile, n);
     Stream.Read(TexFile[1], n);
     Stream.Read(Usage, SizeOf(Usage));
-    Picture := G2Picture(TG2Texture2D.SharedAsset(TexFile, Usage));
-    Stream.Read(_Picture.TexCoords, SizeOf(_Picture.TexCoords));
+    Picture := TG2Picture.SharedAsset(TexFile, Usage);
   end;
   Stream.Read(_Width, SizeOf(_Width));
   Stream.Read(_Height, SizeOf(_Height));

@@ -303,6 +303,18 @@ type
   PG2LinkScroll = ^TG2LinkScroll;
   TG2LinkScrollList = specialize TG2QuickListG<PG2LinkScroll>;
 
+  TG2Log = class
+  private
+    {$if defined(G2Log)}
+    var _LogFile: TextFile;
+    {$endif}
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Write(const LogMessage: String); inline;
+    procedure WriteLn(const LogMessage: String); inline;
+  end;
+
   TG2TargetPlatform = (tpUndefined, tpWindows, tpLinux, tpMacOSX, tpAndroid, tpiOS);
 
   TG2Core = class
@@ -313,6 +325,7 @@ type
     _Sys: TG2Sys;
     _Gfx: TG2Gfx;
     _Snd: TG2Snd;
+    _Log: TG2Log;
     _PackLinker: TG2PackLinker;
     _AssetSourceManager: TG2AssetSourceManager;
     {$ifdef G2Threading}
@@ -383,7 +396,9 @@ type
     property Sys: TG2Sys read _Sys;
     property Gfx: TG2Gfx read _Gfx;
     property Snd: TG2Snd read _Snd;
+    property Log: TG2Log read _Log;
     property PackLinker: TG2PackLinker read _PackLinker;
+    property AssetSourceManager: TG2AssetSourceManager read _AssetSourceManager;
     property FPS: TG2IntS32 read _FPS;
     property AppPath: String read _AppPath;
     property TargetPlatform: TG2TargetPlatform read _Platform;
@@ -1229,13 +1244,15 @@ type
   end;
   TG2AtlasFrameList = specialize TG2QuickListG<TG2AtlasFrame>;
 
-  TG2Atlas = class
+  TG2Atlas = class (TG2Asset)
   public
     var Pages: TG2AtlasPageList;
     var Frames: TG2AtlasFrameList;
     constructor Create;
     destructor Destroy; override;
+    class function SharedAsset(const SharedAssetName: String): TG2Atlas;
     procedure Load(const FileName: String);
+    procedure Load(const DataManager: TG2DataManager);
     procedure RenderAtlas(
       const TextureArr: PG2Texture2DBase;
       const TextureNames: PPAnsiChar;
@@ -1247,17 +1264,45 @@ type
       const ForcePOT: Boolean;
       const OutTexturesBaked: PG2IntS32
     );
+    procedure Clear;
     function FindFrame(const Name: String): TG2AtlasFrame;
   end;
 
-  TG2Picture = object
+  TG2Picture = class (TG2Asset)
+  protected
+    function GetTexture: TG2Texture2DBase; virtual; abstract;
+    function GetTexCoords: TG2Rect; virtual; abstract;
+    function GetIsValid: Boolean; virtual; abstract;
   public
-    var Texture: TG2Texture2DBase;
-    var TexCoords: TG2Rect;
-    function IsAssigned: Boolean; inline;
-    procedure Clear; inline;
-    procedure Assign(const NewTexture: TG2Texture2DBase); inline;
-    procedure Assign(const NewAtlasFrame: TG2AtlasFrame); inline;
+    property Texture: TG2Texture2DBase read GetTexture;
+    property TexCoords: TG2Rect read GetTexCoords;
+    property IsValid: Boolean read GetIsValid;
+    class function SharedAsset(const SharedAssetName: String; const Usage: TG2TextureUsage = tuDefault): TG2Picture;
+  end;
+
+  TG2PictureTexture = class (TG2Picture)
+  private
+    var _Texture: TG2Texture2DBase;
+  protected
+    function GetTexture: TG2Texture2DBase; override;
+    function GetTexCoords: TG2Rect; override;
+    function GetIsValid: Boolean; override;
+  public
+    constructor Create(const SharedTexture: TG2Texture2DBase); reintroduce;
+    destructor Destroy; override;
+  end;
+
+  TG2PictureAtlasFrame = class (TG2Picture)
+  private
+    var _Atlas: TG2Atlas;
+    var _Frame: TG2AtlasFrame;
+  protected
+    function GetTexture: TG2Texture2DBase; override;
+    function GetTexCoords: TG2Rect; override;
+    function GetIsValid: Boolean; override;
+  public
+    constructor Create(const SharedAtlas: TG2Atlas; const SharedFrame: TG2AtlasFrame); reintroduce;
+    destructor Destroy; override;
   end;
 
   TG2Effect2D = class;
@@ -3480,10 +3525,6 @@ function G2RandomSpherePoint: TG2Vec3;
 function G2RectInRect(const R0, R1: TRect): Boolean; overload;
 function G2RectInRect(const R0, R1: TG2Rect): Boolean; overload;
 function G2KeyName(const Key: TG2IntS32): AnsiString;
-function G2Picture: TG2Picture; inline;
-function G2Picture(const Texture: TG2Texture2DBase): TG2Picture; inline;
-function G2Picture(const Texture: TG2Texture2DBase; const TexCoords: TG2Rect): TG2Picture; inline;
-function G2Picture(const Frame: TG2AtlasFrame): TG2Picture; inline;
 procedure G2TraceBegin;
 function G2TraceEnd: TG2IntU32;
 {$if defined(G2Cpu386)}
@@ -4044,6 +4085,39 @@ begin
   Result := toInterfaceOrientation = UIInterfaceOrientationPortrait;
 end;
 {$endif}
+
+//TG2Log BEGIN
+constructor TG2Log.Create;
+begin
+  inherited Create;
+  {$if defined(G2Log)}
+  System.Assign(_LogFile, G2GetAppPath.AppPath + 'G2Log.txt');
+  System.Rewrite(_LogFile);
+  {$endif}
+end;
+
+destructor TG2Log.Destroy;
+begin
+  {$if defined(G2Log)}
+  System.Close(_LogFile);
+  {$endif}
+  inherited Destroy;
+end;
+
+procedure TG2Log.Write(const LogMessage: String);
+begin
+  {$if defined(G2Log)}
+  System.Write(_LogFile, LogMessage);
+  {$endif}
+end;
+
+procedure TG2Log.WriteLn(const LogMessage: String);
+begin
+  {$if defined(G2Log)}
+  System.WriteLn(_LogFile, LogMessage);
+  {$endif}
+end;
+//TG2Log END
 
 //TG2Core BEGIN
 procedure TG2Core.Render;
@@ -5830,6 +5904,7 @@ begin
   _AppPath := GetAppPath;
   _Started := False;
   _Window := nil;
+  _Log := TG2Log.Create;
   _Params := TG2Params.Create;
   _Sys := TG2Sys.Create;
   {$if defined(G2Gfx_D3D9)}
@@ -5869,6 +5944,7 @@ end;
 
 destructor TG2Core.Destroy;
   var i: TG2IntS32;
+  var Res: TG2Res;
 begin
   for i := 0 to _LinkInitialize.Count - 1 do Dispose(_LinkInitialize[i]);
   for i := 0 to _LinkFinalize.Count - 1 do Dispose(_LinkFinalize[i]);
@@ -5881,6 +5957,28 @@ begin
   for i := 0 to _LinkMouseUp.Count - 1 do Dispose(_LinkMouseUp[i]);
   for i := 0 to _LinkScroll.Count - 1 do Dispose(_LinkScroll[i]);
   if _Started then Stop;
+  {$if defined(G2Log)}
+  Res := TG2Res.List;
+  while Res <> nil do
+  begin
+    if Res is TG2Asset then
+    begin
+      if TG2Asset(Res).IsShared then
+      begin
+        _Log.WriteLn('Warning: Shared Asset leak ' + Res.ClassName + '; Name: ' + TG2Asset(Res).AssetName + '; RefCount: ' + IntToStr(Res.RefCount));
+      end
+      else
+      begin
+        _Log.WriteLn('Warning: Asset leak ' + Res.ClassName + '; RefCount: ' + IntToStr(Res.RefCount));
+      end;
+    end
+    else
+    begin
+      _Log.WriteLn('Warning: Resource leak ' + Res.ClassName + '; RefCount: ' + IntToStr(Res.RefCount));
+    end;
+    Res := Res.Next;
+  end;
+  {$endif}
   TG2Res.CleanUp;
   _PackLinker.Free;
   G2PackLinker := nil;
@@ -5892,6 +5990,7 @@ begin
   _Sys := nil;
   _Params.Free;
   _Params := nil;
+  _Log.Free;
   inherited Destroy;
 end;
 //TG2Core END
@@ -8005,13 +8104,18 @@ begin
     if (Res is TG2Texture2D)
     and (TG2Texture2D(Res).AssetName = SharedAssetName)
     and (TG2Texture2D(Res).Usage = TextureUsage)
-    and (Res.RefCount > 0) then Exit(TG2Texture2D(Res));
+    and (Res.RefCount > 0) then
+    begin
+      Result := TG2Texture2D(Res);
+      Exit;
+    end;
     Res := Res.Next;
   end;
   dm := TG2DataManager.Create(SharedAssetName, dmAsset);
   Result := TG2Texture2D.Create;
   Result.AssetName := SharedAssetName;
   Result.Load(dm);
+  dm.Free;
 end;
 
 function TG2Texture2D.Load(const FileName: String; const TextureUsage: TG2TextureUsage = tuDefault): Boolean;
@@ -8650,15 +8754,45 @@ begin
 end;
 
 destructor TG2Atlas.Destroy;
-  var i: Integer;
 begin
-  for i := 0 to Pages.Count - 1 do
-  Pages[i].Free;
-  for i := 0 to Frames.Count - 1 do
-  Frames[i].Free;
+  Clear;
+end;
+
+class function TG2Atlas.SharedAsset(const SharedAssetName: String): TG2Atlas;
+  var Res: TG2Res;
+  var dm: TG2DataManager;
+begin
+  Res := TG2Res.List;
+  while Res <> nil do
+  begin
+    if (Res is TG2Atlas)
+    and (TG2Atlas(Res).AssetName = SharedAssetName)
+    and Res.IsReferenced then
+    begin
+      Result := TG2Atlas(Res);
+      Exit;
+    end;
+    Res := Res.Next;
+  end;
+  dm := TG2DataManager.Create(SharedAssetName, dmAsset);
+  Result := TG2Atlas.Create;
+  Result.AssetName := SharedAssetName;
+  Result.Load(dm);
+  dm.Free;
 end;
 
 procedure TG2Atlas.Load(const FileName: String);
+  var dm: TG2DataManager;
+begin
+  dm := TG2DataManager.Create(FileName);
+  try
+    Load(dm);
+  finally
+    dm.Free;
+  end;
+end;
+
+procedure TG2Atlas.Load(const DataManager: TG2DataManager);
   var g2ml: TG2ML;
   var FileData: AnsiString;
   var Root: PG2MLObject;
@@ -8669,10 +8803,9 @@ procedure TG2Atlas.Load(const FileName: String);
   var Frame: TG2AtlasFrame;
   var sx, sy: Single;
 begin
-  fs := TG2DataManager.Create(FileName);
-  SetLength(FileData, fs.Size);
-  fs.ReadBuffer(@FileData[1], fs.Size);
-  fs.Free;
+  Clear;
+  SetLength(FileData, DataManager.Size);
+  DataManager.ReadBuffer(@FileData[1], DataManager.Size);
   g2ml := TG2ML.Create;
   Root := g2ml.Read(FileData);
   for i0 := 0 to Root^.Children.Count - 1 do
@@ -8692,8 +8825,8 @@ begin
             n2 := n1^.Children[i2];
             if n2^.Name = 'image' then
             begin
-              Page.Texture := TG2Texture2D.Create;
-              TG2Texture2D(Page.Texture).Load('../assets/' + n2^.AsString, tu2D);
+              Page.Texture := TG2Texture2D.SharedAsset(DataManager.Path + n2^.AsString, tu2D);
+              Page.Texture.RefInc;
             end
             else if n2^.Name = 'width' then
             begin
@@ -8813,13 +8946,8 @@ procedure TG2Atlas.RenderAtlas(
   var PrevRenderTarget: TG2Texture2DRT;
   var bm: TG2BlendMode;
 begin
+  Clear;
   if OutTexturesBaked <> nil then OutTexturesBaked^ := 0;
-  for i := 0 to Pages.Count - 1 do
-  Pages[i].Free;
-  Pages.Clear;
-  for i := 0 to Frames.Count - 1 do
-  Frames[i].Free;
-  Frames.Clear;
   if TextureCount <= 0 then Exit;
   rti := 0;
   SetLength(Remap, TextureCount);
@@ -8957,6 +9085,7 @@ begin
   for i := 0 to Pages.Count - 1 do
   begin
     Pages[i].Texture := TG2Texture2DRT.Create;
+    Pages[i].Texture.RefInc;
     if ForcePOT then
     begin
       w := 1; while w < Pages[i].Width do w := w shl 1;
@@ -9060,6 +9189,20 @@ begin
   g2.Gfx.StateChange.StateDepthEnable := PrevDepthEnable;
 end;
 
+procedure TG2Atlas.Clear;
+  var i: Integer;
+begin
+  for i := 0 to Frames.Count - 1 do
+  Frames[i].Free;
+  for i := 0 to Pages.Count - 1 do
+  begin
+    Pages[i].Texture.RefDec;
+    Pages[i].Free;
+  end;
+  Pages.Clear;
+  Frames.Clear;
+end;
+
 function TG2Atlas.FindFrame(const Name: String): TG2AtlasFrame;
   var i: Integer;
 begin
@@ -9074,29 +9217,99 @@ end;
 //TG2Atlas END
 
 //TG2Picture BEGIN
-function TG2Picture.IsAssigned: Boolean;
+class function TG2Picture.SharedAsset(const SharedAssetName: String; const Usage: TG2TextureUsage): TG2Picture;
+  var PathArr: TG2StrArrA;
+  var Tex: TG2Texture2D;
+  var Atlas: TG2Atlas;
+  var Frame: TG2AtlasFrame;
+  var PictureTexture: TG2PictureTexture absolute Result;
+  var PictureAtlasFrame: TG2PictureAtlasFrame absolute Result;
 begin
-  Result := Assigned(Texture);
-end;
-
-procedure TG2Picture.Clear;
-begin
-  Texture := nil;
-  TexCoords := G2Rect(0, 0, 0, 0);
-end;
-
-procedure TG2Picture.Assign(const NewTexture: TG2Texture2DBase);
-begin
-  Texture := NewTexture;
-  TexCoords := Texture.TexCoords;
-end;
-
-procedure TG2Picture.Assign(const NewAtlasFrame: TG2AtlasFrame);
-begin
-  Texture := NewAtlasFrame.Texture;
-  TexCoords := NewAtlasFrame.TexCoords;
+  PathArr := G2StrExplode(SharedAssetName, '#');
+  if Length(PathArr) = 1 then
+  begin
+    Tex := TG2Texture2D.SharedAsset(SharedAssetName, Usage);
+    PictureTexture := TG2PictureTexture.Create(Tex);
+  end
+  else
+  begin
+    Atlas := TG2Atlas.SharedAsset(PathArr[0]);
+    Frame := Atlas.FindFrame(PathArr[1]);
+    PictureAtlasFrame := TG2PictureAtlasFrame.Create(Atlas, Frame);
+  end;
+  Result.AssetName := SharedAssetName;
 end;
 //TG2Picture END
+
+//TG2PictureTexture BEGIN
+function TG2PictureTexture.GetTexture: TG2Texture2DBase;
+begin
+  Result := _Texture;
+end;
+
+function TG2PictureTexture.GetTexCoords: TG2Rect;
+begin
+  if Assigned(_Texture) then
+  Result := _Texture.TexCoords
+  else
+  Result := G2Rect(0, 0, 0, 0);
+end;
+
+function TG2PictureTexture.GetIsValid: Boolean;
+begin
+  Result := Assigned(_Texture);
+end;
+
+constructor TG2PictureTexture.Create(const SharedTexture: TG2Texture2DBase);
+begin
+  inherited Create;
+  _Texture := SharedTexture;
+  if Assigned(_Texture) then _Texture.RefInc;
+end;
+
+destructor TG2PictureTexture.Destroy;
+begin
+  if Assigned(_Texture) then _Texture.RefDec;
+  inherited Destroy;
+end;
+//TG2PictureTexture END
+
+//TG2PictureAtlasFrame BEGIN
+function TG2PictureAtlasFrame.GetTexture: TG2Texture2DBase;
+begin
+  if IsValid then
+  Result := _Frame.Texture
+  else
+  Result := nil;
+end;
+
+function TG2PictureAtlasFrame.GetTexCoords: TG2Rect;
+begin
+  if IsValid then
+  Result := _Frame.TexCoords
+  else
+  Result := G2Rect(0, 0, 0, 0);
+end;
+
+function TG2PictureAtlasFrame.GetIsValid: Boolean;
+begin
+  Result := Assigned(_Atlas) and Assigned(_Frame);
+end;
+
+constructor TG2PictureAtlasFrame.Create(const SharedAtlas: TG2Atlas; const SharedFrame: TG2AtlasFrame);
+begin
+  inherited Create;
+  _Atlas := SharedAtlas;
+  _Frame := SharedFrame;
+  if Assigned(_Atlas) then _Atlas.RefInc;
+end;
+
+destructor TG2PictureAtlasFrame.Destroy;
+begin
+  if Assigned(_Atlas) then _Atlas.RefDec;
+  inherited Destroy;
+end;
+//TG2PictureAtlasFrame END
 
 //TG2Effect2DMod BEGIN
 {$Hints off}
@@ -9814,6 +10027,7 @@ begin
   Result := TG2Effect2D.Create;
   Result.AssetName := SharedAssetName;
   Result.Load(dm);
+  dm.Free;
 end;
 
 constructor TG2Effect2D.Create;
@@ -17509,7 +17723,7 @@ begin
       if G2FileExists(MeshData.Materials[i].Channels[j].DiffuseMap) then
       {$endif}
       begin
-        _Materials[i].Channels[j].MapDiffuse := _Scene.FindTexture(MeshData.Materials[i].Channels[j].DiffuseMap, {$if defined(G2Target_Android)}tuDefault{$else}tuUsage3D{$endif});
+        _Materials[i].Channels[j].MapDiffuse := _Scene.FindTexture(MeshData.Materials[i].Channels[j].DiffuseMap, {$if defined(G2Target_Android)}tuDefault{$else}tu3D{$endif});
       end
       else
       _Materials[i].Channels[j].MapDiffuse := nil;
@@ -19632,33 +19846,6 @@ function G2KeyName(const Key: TG2IntS32): AnsiString;
   );
 begin
   if (Key >= 0) and (Key <= High(NameMap)) then Result := NameMap[Key] else Result := 'Undefined';
-end;
-
-function G2Picture: TG2Picture;
-begin
-  {$Warnings off}
-  Result.Clear;
-  {$Warnings on}
-end;
-
-function G2Picture(const Texture: TG2Texture2DBase): TG2Picture;
-begin
-  {$Warnings off}
-  Result.Assign(Texture);
-  {$Warnings on}
-end;
-
-function G2Picture(const Texture: TG2Texture2DBase; const TexCoords: TG2Rect): TG2Picture;
-begin
-  Result.Texture := Texture;
-  Result.TexCoords := TexCoords;
-end;
-
-function G2Picture(const Frame: TG2AtlasFrame): TG2Picture;
-begin
-  {$Warnings off}
-  Result.Assign(Frame);
-  {$Warnings on}
 end;
 
 procedure G2TraceBegin;

@@ -413,9 +413,8 @@ end;
 
 function TG2Asset.IsShared: Boolean;
 begin
-
+  Result := Length(_AssetName) > 0;
 end;
-
 //TG2Asset END
 
 operator := (c: TG2Color) cr: TG2IntU32;
