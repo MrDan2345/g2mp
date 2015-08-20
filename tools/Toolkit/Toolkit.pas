@@ -3541,9 +3541,12 @@ type
   end;
 
   TScene2DComponentDataPolyLayer = class
+  private
+    var _Texture: TG2Texture2DBase;
+    procedure SetTexture(const Value: TG2Texture2DBase);
   public
+    property Texture: TG2Texture2DBase read _Texture write SetTexture;
     var TexturePath: String;
-    var Texture: TG2Texture2DBase;
     var Scale: TG2Vec2;
     var Layer: TG2IntS32;
     var PathProp: TPropertySet.TPropertyPath;
@@ -3838,8 +3841,6 @@ type
     var _Editor: TScene2DEditor;
     procedure AddComponentTypePair(const ComponentClass: CG2Scene2DComponent; const ComponentDataClass: CScene2DComponentData; const AddProc: TG2ProcObj);
     procedure SetEditor(const Value: TScene2DEditor); inline;
-    function ModifySavePath(const Path: String): String;
-    function ModifyLoadPath(const Path: String): String;
   public
     var ComponentList: TComponentList;
     var Selection: TG2Scene2DEntityList;
@@ -25792,7 +25793,7 @@ begin
   xf := _Component.Component.Owner.Transform;
   LayersSorted.Clear;
   for i := 0 to _Component.Layers.Count - 1 do
-  if _Component.Layers[i].Texture <> nil then
+  if Assigned(_Component.Layers[i].Texture) then
   LayersSorted.Add(_Component.Layers[i], _Component.Layers[i].Layer);
   for l := 0 to LayersSorted.Count - 1 do
   begin
@@ -27010,12 +27011,20 @@ begin
   Result := VertexOpposite(Edge.v[0], Edge.v[1]);
 end;
 
+procedure TScene2DComponentDataPolyLayer.SetTexture(const Value: TG2Texture2DBase);
+begin
+  if _Texture = Value then Exit;
+  if Assigned(_Texture) then _Texture.RefDec;
+  _Texture := Value;
+  if Assigned(_Texture) then _Texture.RefInc;
+end;
+
 constructor TScene2DComponentDataPolyLayer.Create;
 begin
   inherited Create;
-  Texture := nil;
   Scale := G2Vec2(1, 1);
   Layer := 0;
+  _Texture := nil;
 end;
 
 function TScene2DComponentDataPoly.FindEdge(const v0, v1: TScene2DComponentDataPolyVertex): TScene2DComponentDataPolyEdge;
@@ -27080,6 +27089,10 @@ begin
   for i := 0 to Layers.Count - 1 do
   begin
     LayerGroup := Properties.PropGroup('Layer ' + IntToStr(i), Group);
+    if Assigned(Component.Layers[i].Texture) then
+    Layers[i].TexturePath := Component.Layers[i].Texture.AssetName
+    else
+    Layers[i].TexturePath := '';
     Layers[i].PathProp := Properties.PropPath('Texture', @Layers[i].TexturePath, TAssetTexture, LayerGroup, @OnChangeLayerTexture);
     Layers[i].ScaleProp := Properties.PropVec2('Scale', @Layers[i].Scale, LayerGroup, @OnChangeParam);
     Layers[i].LayerProp := Properties.PropInt('Layer', @Layers[i].Layer, LayerGroup, @OnChangeParam);
@@ -27110,10 +27123,7 @@ begin
   Component.LayerCount := Layers.Count;
   for i := 0 to Layers.Count - 1 do
   begin
-    if Layers[i].Texture <> nil then
-    Component.Layers[i].Texture := Layers[i].Texture
-    else
-    Component.Layers[i].Texture := nil;
+    Component.Layers[i].Texture := Layers[i].Texture;
     for j := 0 to Vertices.Count - 1 do
     Component.Layers[i].Opacity[j] := Vertices[j].o[i];
     Component.Layers[i].Scale := Layers[i].Scale;
@@ -27221,8 +27231,8 @@ begin
   Vertices[i].o.Add(0);
   for i := 0 to Layers.Count - 1 do
   Layers[i].Index := i;
-  UpdateGroup;
   UpdateComponent;
+  UpdateGroup;
 end;
 
 procedure TScene2DComponentDataPoly.OnEdit;
@@ -27257,14 +27267,7 @@ begin
   for i := 0 to Component.LayerCount - 1 do
   begin
     Layer := TScene2DComponentDataPolyLayer.Create;
-    if Component.Layers[i].Texture <> nil then
-    begin
-      if Component.Layers[i].Texture is TG2Texture2D then
-      begin
-        Layer.TexturePath := TG2Texture2D(Component.Layers[i].Texture).TextureFileName;
-        Layer.Texture := App.AssetManager.GetTexture(Layer.TexturePath);
-      end;
-    end;
+    Layer.Texture := Component.Layers[i].Texture;
     Layer.Layer := Component.Layers[i].Layer;
     Layer.Scale := Component.Layers[i].Scale;
     Layer.Index := i;
@@ -27332,8 +27335,7 @@ procedure TScene2DComponentDataPoly.Clear;
 begin
   for i := 0 to Layers.Count - 1 do
   begin
-    if Layers[i].Texture <> nil then
-    Layers[i].Texture.RefDec;
+    Layers[i].Texture := nil;
     Layers[i].Free;
   end;
   Layers.Clear;
@@ -27349,7 +27351,7 @@ begin
 end;
 
 procedure TScene2DComponentDataPoly.OnChangeLayerTexture(const Sender: Pointer);
-  var i: Integer;
+  var i, l: Integer;
   var Layer: TScene2DComponentDataPolyLayer;
 begin
   Layer := nil;
@@ -27357,14 +27359,11 @@ begin
   if Pointer(Layers[i].PathProp) = Sender then
   begin
     Layer := Layers[i];
+    l := i;
     Break;
   end;
   if Layer = nil then Exit;
-  if Layer.Texture <> nil then
-  Layer.Texture.RefDec;
   Layer.Texture := App.AssetManager.GetTexture(Layer.TexturePath);
-  if Layer.Texture <> nil then
-  Layer.Texture.RefInc;
   UpdateComponent;
 end;
 
@@ -28478,26 +28477,6 @@ begin
   _Editor.Initialize;
 end;
 
-function TScene2DData.ModifySavePath(const Path: String): String;
-begin
-  if App.Project.Open then
-  begin
-    Result := G2PathRelative(App.Project.FilePath + G2PathSep + 'bin', Path);
-  end
-  else
-  Result := Path;
-end;
-
-function TScene2DData.ModifyLoadPath(const Path: String): String;
-begin
-  if FileExists(Path) or not App.Project.Open then
-  begin
-    Result := Path;
-    Exit;
-  end;
-  Result := G2PathClean(App.Project.FilePath + G2PathSep + 'bin' + G2PathSep + Path);
-end;
-
 function TScene2DData.FindEntity(const Name: AnsiString; const IgnoreEntity: TG2Scene2DEntity): TG2Scene2DEntity;
   var i: Integer;
 begin
@@ -29204,8 +29183,6 @@ begin
   _SavedStream := TMemoryStream.Create;
   _PropertySet := nil;
   _Scene := TG2Scene2D.Create;
-  _Scene.ModifySavePath := @ModifySavePath;
-  _Scene.ModifyLoadPath := @ModifyLoadPath;
   _ComponentSet := TPropertySet.Create;
   ComponentList.Clear;
   _Editor := nil;

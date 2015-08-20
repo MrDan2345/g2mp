@@ -216,8 +216,6 @@ type
     destructor Destroy; override;
   end;
 
-  TG2Scene2DModifyFilePathProc = function (const Path: String): String of Object;
-
   TG2Scene2D = class
   private
     type TRenderHookList = specialize TG2QuickListG<TG2Scene2DRenderHook>;
@@ -247,8 +245,6 @@ type
     var _ContactListener: TPhysContactListener;
     var _PhysDraw: TPhysDraw;
     var _Simulate: Boolean;
-    var _ModifySavePathProc: TG2Scene2DModifyFilePathProc;
-    var _ModifyLoadPathProc: TG2Scene2DModifyFilePathProc;
     procedure Update;
     function GetEntity(const Index: TG2IntS32): TG2Scene2DEntity; inline;
     function GetEntityCount: TG2IntS32; inline;
@@ -269,8 +265,6 @@ type
     property Gravity: TG2Vec2 read _Gravity write SetGravity;
     property Simulate: Boolean read _Simulate write _Simulate;
     property PhysWorld: tb2_world read _PhysWorld;
-    property ModifySavePath: TG2Scene2DModifyFilePathProc read _ModifySavePathProc write _ModifySavePathProc;
-    property ModifyLoadPath: TG2Scene2DModifyFilePathProc read _ModifyLoadPathProc write _ModifyLoadPathProc;
     constructor Create;
     destructor Destroy; override;
     procedure Clear;
@@ -1750,8 +1744,6 @@ begin
   _PhysWorld.set_warm_starting(true);
   _PhysWorld.set_contact_listener(_ContactListener);
   _Simulate := False;
-  _ModifySavePathProc := nil;
-  _ModifyLoadPathProc := nil;
   g2.CallbackUpdateAdd(@Update);
   inherited Create;
 end;
@@ -2438,19 +2430,15 @@ procedure TG2Scene2DComponentBackground.Save(const Stream: TStream);
   var TexFile: String;
 begin
   SaveClassType(Stream);
-  if (_Texture = nil)
-  or not (_Texture is TG2Texture2D)
-  or (TG2Texture2D(_Texture).TextureFileName = '') then
+  if Assigned(_Texture)
+  and _Texture.IsShared then
   begin
-  n := 0;
+    TexFile := _Texture.AssetName;
+    n := Length(TexFile);
   end
   else
   begin
-    if Assigned(Scene.ModifySavePath) then
-    TexFile := Scene.ModifySavePath(TG2Texture2D(_Texture).TextureFileName)
-    else
-    TexFile := TG2Texture2D(_Texture).TextureFileName;
-    n := Length(TexFile);
+    n := 0;
   end;
   Stream.Write(n, SizeOf(n));
   if n > 0 then
@@ -2474,22 +2462,7 @@ begin
   begin
     SetLength(TexFile, n);
     Stream.Read(TexFile[1], n);
-    if Assigned(Scene.ModifyLoadPath) then
-    TexFile := Scene.ModifyLoadPath(TexFile);
-    _Texture := TG2Texture2D.FindTexture(TexFile);
-    if _Texture = nil then
-    begin
-      if FileExists(TexFile) then
-      begin
-        _Texture := TG2Texture2D.Create;
-        TG2Texture2D(_Texture).Load(TexFile);
-      end;
-    end;
-    if _Texture <> nil then
-    begin
-      _RefTexture := True;
-      _Texture.RefInc;
-    end;
+    Texture := TG2Texture2D.SharedAsset(TexFile);
   end;
   Stream.Read(_Scale, SizeOf(_Scale));
   Stream.Read(_ScrollSpeed, SizeOf(_ScrollSpeed));
