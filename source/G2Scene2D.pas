@@ -605,8 +605,8 @@ type
     procedure SetHeight(const Value: TG2Float); inline;
     procedure SetOffset(const Value: TG2Vec2); inline;
     procedure SetAngle(const Value: TG2Float); inline;
-    procedure SetUp(const v: PG2Vec2Arr; const vc: TG2IntS32); override;
   protected
+    procedure SetUp(const v: PG2Vec2Arr; const vc: TG2IntS32); override;
     procedure OnInitialize; override;
     procedure OnFinalize; override;
   public
@@ -2017,14 +2017,15 @@ procedure TG2Scene2DComponentSprite.Save(const Stream: TStream);
   var TexFile: String;
 begin
   SaveClassType(Stream);
-  if (_Picture.Texture = nil) then
+  if Assigned(_Picture)
+  and (_Picture.IsShared) then
   begin
-    n := 0;
+    TexFile := _Picture.AssetName;
+    n := Length(TexFile);
   end
   else
   begin
-    TexFile := _Picture.Texture.AssetName;
-    n := Length(TexFile);
+    n := 0;
   end;
   Stream.Write(n, SizeOf(n));
   if n > 0 then
@@ -2960,6 +2961,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeEdge.Save(const Stream: TStream);
+  var n: TG2IntS32;
 begin
   SaveClassType(Stream);
   Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
@@ -2969,9 +2971,19 @@ begin
   Stream.Write(_EdgeShape.vertex3, SizeOf(_EdgeShape.vertex3));
   Stream.Write(_EdgeShape.has_vertex0, SizeOf(_EdgeShape.has_vertex0));
   Stream.Write(_EdgeShape.has_vertex3, SizeOf(_EdgeShape.has_vertex3));
+  n := Length(_EventBeginContact.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventBeginContact.Name[1], n);
+  n := Length(_EventEndContact.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventEndContact.Name[1], n);
+  n := Length(_EventBeforeContactSolve.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventBeforeContactSolve.Name[1], n);
+  n := Length(_EventAfterContactSolve.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventAfterContactSolve.Name[1], n);
 end;
 
 procedure TG2Scene2DComponentCollisionShapeEdge.Load(const Stream: TStream);
+  var n: TG2IntS32;
+  var EventName: String;
 begin
   Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_EdgeShape;
@@ -2981,6 +2993,15 @@ begin
   Stream.Read(_EdgeShape.vertex3, SizeOf(_EdgeShape.vertex3));
   Stream.Read(_EdgeShape.has_vertex0, SizeOf(_EdgeShape.has_vertex0));
   Stream.Read(_EdgeShape.has_vertex3, SizeOf(_EdgeShape.has_vertex3));
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeforeContactSolve.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventAfterContactSolve.Name := EventName; end;
+  Reattach;
 end;
 //TG2Scene2DComponentCollisionShapeEdge END
 
@@ -3044,6 +3065,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapePoly.Save(const Stream: TStream);
+  var n: TG2IntS32;
 begin
   SaveClassType(Stream);
   Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
@@ -3051,9 +3073,19 @@ begin
   Stream.Write(_PolyShape.vertices, SizeOf(_PolyShape.vertices));
   Stream.Write(_PolyShape.normals, SizeOf(_PolyShape.normals));
   Stream.Write(_PolyShape.centroid, SizeOf(_PolyShape.centroid));
+  n := Length(_EventBeginContact.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventBeginContact.Name[1], n);
+  n := Length(_EventEndContact.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventEndContact.Name[1], n);
+  n := Length(_EventBeforeContactSolve.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventBeforeContactSolve.Name[1], n);
+  n := Length(_EventAfterContactSolve.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventAfterContactSolve.Name[1], n);
 end;
 
 procedure TG2Scene2DComponentCollisionShapePoly.Load(const Stream: TStream);
+  var n: TG2IntS32;
+  var EventName: String;
 begin
   Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_PolyShape;
@@ -3061,6 +3093,15 @@ begin
   Stream.Read(_PolyShape.vertices, SizeOf(_PolyShape.vertices));
   Stream.Read(_PolyShape.normals, SizeOf(_PolyShape.normals));
   Stream.Read(_PolyShape.centroid, SizeOf(_PolyShape.centroid));
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeforeContactSolve.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventAfterContactSolve.Name := EventName; end;
+  Reattach;
 end;
 //TG2Scene2DComponentCollisionShapePoly END
 
@@ -3142,6 +3183,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeBox.Save(const Stream: TStream);
+  var n: TG2IntS32;
 begin
   SaveClassType(Stream);
   Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
@@ -3149,9 +3191,19 @@ begin
   Stream.Write(_Height, SizeOf(_Height));
   Stream.Write(_Offset, SizeOf(_Offset));
   Stream.Write(_Angle, SizeOf(_Angle));
+  n := Length(_EventBeginContact.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventBeginContact.Name[1], n);
+  n := Length(_EventEndContact.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventEndContact.Name[1], n);
+  n := Length(_EventBeforeContactSolve.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventBeforeContactSolve.Name[1], n);
+  n := Length(_EventAfterContactSolve.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventAfterContactSolve.Name[1], n);
 end;
 
 procedure TG2Scene2DComponentCollisionShapeBox.Load(const Stream: TStream);
+  var n: TG2IntS32;
+  var EventName: String;
 begin
   Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_PolyShape;
@@ -3159,7 +3211,16 @@ begin
   Stream.Read(_Height, SizeOf(_Height));
   Stream.Read(_Offset, SizeOf(_Offset));
   Stream.Read(_Angle, SizeOf(_Angle));
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeforeContactSolve.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventAfterContactSolve.Name := EventName; end;
   UpdateProperties;
+  Reattach;
 end;
 //TG2Scene2DComponentCollisionShapeBox END
 
@@ -3221,19 +3282,38 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeCircle.Save(const Stream: TStream);
+  var n: TG2IntS32;
 begin
   SaveClassType(Stream);
   Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
   Stream.Write(_CircleShape.center, SizeOf(_CircleShape.center));
   Stream.Write(_CircleShape.radius, SizeOf(_CircleShape.radius));
+  n := Length(_EventBeginContact.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventBeginContact.Name[1], n);
+  n := Length(_EventEndContact.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventEndContact.Name[1], n);
+  n := Length(_EventBeforeContactSolve.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventBeforeContactSolve.Name[1], n);
+  n := Length(_EventAfterContactSolve.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventAfterContactSolve.Name[1], n);
 end;
 
 procedure TG2Scene2DComponentCollisionShapeCircle.Load(const Stream: TStream);
+  var n: TG2IntS32;
+  var EventName: String;
 begin
   Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_CircleShape;
   Stream.Read(_CircleShape.center, SizeOf(_CircleShape.center));
   Stream.Read(_CircleShape.radius, SizeOf(_CircleShape.radius));
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeforeContactSolve.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventAfterContactSolve.Name := EventName; end;
   Reattach;
 end;
 //TG2Scene2DComponentCollisionShapeCircle END
@@ -3301,6 +3381,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeChain.Save(const Stream: TStream);
+  var n: TG2IntS32;
 begin
   SaveClassType(Stream);
   Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
@@ -3312,9 +3393,19 @@ begin
   Stream.Write(_ChainShape.has_prev_vertex, SizeOf(_ChainShape.has_prev_vertex));
   if (_ChainShape.has_prev_vertex) then
   Stream.Write(_ChainShape.prev_vertex, SizeOf(_ChainShape.prev_vertex));
+  n := Length(_EventBeginContact.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventBeginContact.Name[1], n);
+  n := Length(_EventEndContact.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventEndContact.Name[1], n);
+  n := Length(_EventBeforeContactSolve.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventBeforeContactSolve.Name[1], n);
+  n := Length(_EventAfterContactSolve.Name); Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_EventAfterContactSolve.Name[1], n);
 end;
 
 procedure TG2Scene2DComponentCollisionShapeChain.Load(const Stream: TStream);
+  var n: TG2IntS32;
+  var EventName: String;
 begin
   Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_ChainShape;
@@ -3332,6 +3423,14 @@ begin
   Stream.Read(_ChainShape.prev_vertex, SizeOf(_ChainShape.prev_vertex))
   else
   _ChainShape.prev_vertex.set_zero;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeforeContactSolve.Name := EventName; end;
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventAfterContactSolve.Name := EventName; end;
   Reattach;
 end;
 //TG2Scene2DComponentCollisionShapeChain END

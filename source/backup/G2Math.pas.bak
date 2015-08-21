@@ -395,7 +395,6 @@ function G2Vec2: TG2Vec2; inline;
 function G2Vec2(const x, y: TG2Float): TG2Vec2; inline;
 function G2Vec2(const pt: TPoint): TG2Vec2; inline;
 function G2Vec2InRect(const v: TG2Vec2; const r: TG2Rect): Boolean; inline;
-function G2Vec2InTriangle(const v0: TG2Vec2; const t0, t1, t2: TG2Vec2): Boolean;
 function G2Vec2InPoly(const v: TG2Vec2; const VArr: PG2Vec2; const VCount: TG2IntS32): Boolean;
 function G2Vec3: TG2Vec3; inline;
 function G2Vec3(const x, y, z: TG2Float): TG2Vec3; inline; overload;
@@ -474,6 +473,8 @@ function G2Intersect2DLineVsSegment(const l0, l1, s0, s1: TG2Vec2; var xp: TG2Ve
 function G2Intersect2DSegmentVsSegment(const s0v0, s0v1, s1v0, s1v1: TG2Vec2; var xp: TG2Vec2): Boolean;
 function G2Intersect2DLineVsCircle(const lv0, lv1, cc: TG2Vec2; const r: TG2Float; var xp0, xp1: TG2Vec2): Boolean;
 function G2Intersect2DSegmentVsCircle(const lv0, lv1, cc: TG2Vec2; const r: TG2Float; var xp0, xp1: TG2Vec2; var xb0, xb1: Boolean): Boolean;
+function G2Intersect2DLineVsRect(const lv0, lv1: TG2Vec2; const r: TG2Rect; var xp0, xp1: TG2Vec2): Boolean;
+function G2Intersect2DSegmentVsRect(const lv0, lv1: TG2Vec2; const r: TG2Rect; var xp0, xp1: TG2Vec2): Boolean;
 function G2Intersect3DLineVsPlane(const lv0, lv1: TG2Vec3; const p: TG2Plane; var xp: TG2Vec3): Boolean;
 function G2Intersect3DLineVsSphere(const lv0, lv1: TG2Vec3; const s: TG2Sphere; var xp0, xp1: TG2Vec3): Boolean;
 function G2Intersect3Planes(const p1, p2, p3: TG2Plane; var xp: TG2Vec3): Boolean;
@@ -493,6 +494,7 @@ function G2LineVsCircle(const v0, v1, c: TG2Vec2; const r: TG2Float; var p0, p1:
 function G2LineVsLine(const l0v0, l0v1, l1v0, l1v1: TG2Vec2; var p: TG2Vec2): Boolean;
 function G2LineVsLineInf(const l0v0, l0v1, l1v0, l1v1: TG2Vec2; var p: TG2Vec2): Boolean;
 function G2RectVsRect(const r0, r1: TG2Rect; var Resp: TG2Vec2): Boolean;
+function G2RectVsTri(const r: TG2Rect; const Tri: PG2Vec2): Boolean;
 function G2Ray2VsRect(const RayOrigin, RayDir: TG2Vec2; const R: TG2Rect; var Intersection: TG2Vec2; var Dist: TG2Float): Boolean;
 function G2Ballistics(const PosOrigin, PosTarget: TG2Vec2; const TotalVelocity, Gravity: TG2Float; var Trajectory0, Trajectory1: TG2Vec2; var Time0, Time1: TG2Float): Boolean;
 
@@ -2679,6 +2681,74 @@ begin
   Result := xb0 or xb1;
 end;
 
+function G2Intersect2DLineVsRect(const lv0, lv1: TG2Vec2; const r: TG2Rect; var xp0, xp1: TG2Vec2): Boolean;
+  var tn, tf, d, t, t0, t1: TG2Float;
+  var v: TG2Vec2;
+  var i: TG2IntS32;
+begin
+  tn := -1E+16;
+  tf := 1E+16;
+  v := lv1 - lv0;
+  for i := 0 to 1 do
+  begin
+    if Abs(v[i]) < G2EPS then
+    begin
+      if (lv0[i] < r.tl[i])
+      or (lv0[i] > r.br[i]) then
+      Exit(False);
+    end;
+    d := 1 / v[i];
+    t0 := (r.tl[i] - lv0[i]) * d;
+    t1 := (r.br[i] - lv0[i]) * d;
+    if t0 > t1 then
+    begin
+      t := t1;
+      t1 := t0;
+      t0 := t;
+    end;
+    if t0 > tn then tn := t0;
+    if t1 < tf then tf := t1;
+    if (tn > tf) then Exit(False);
+  end;
+  xp0 := lv0 + v * tn;
+  xp1 := lv0 + v * tf;
+  Result := True;
+end;
+
+function G2Intersect2DSegmentVsRect(const lv0, lv1: TG2Vec2; const r: TG2Rect; var xp0, xp1: TG2Vec2): Boolean;
+  var tn, tf, d, t, t0, t1: TG2Float;
+  var v: TG2Vec2;
+  var i: TG2IntS32;
+begin
+  tn := 0;
+  tf := 1;
+  v := lv1 - lv0;
+  for i := 0 to 1 do
+  begin
+    if Abs(v[i]) < G2EPS then
+    begin
+      if (lv0[i] < r.tl[i])
+      or (lv0[i] > r.br[i]) then
+      Exit(False);
+    end;
+    d := 1 / v[i];
+    t0 := (r.tl[i] - lv0[i]) * d;
+    t1 := (r.br[i] - lv0[i]) * d;
+    if t0 > t1 then
+    begin
+      t := t1;
+      t1 := t0;
+      t0 := t;
+    end;
+    if t0 > tn then tn := t0;
+    if t1 < tf then tf := t1;
+    if (tn > tf) or (tf < 0) then Exit(False);
+  end;
+  xp0 := lv0 + v * tn;
+  xp1 := lv0 + v * tf;
+  Result := True;
+end;
+
 function G2Intersect3DLineVsPlane(const lv0, lv1: TG2Vec3; const p: TG2Plane; var xp: TG2Vec3): Boolean;
   var u: TG2Vec3 absolute lv0;
   var v: TG2Vec3;
@@ -3470,6 +3540,42 @@ begin
     Resp.y := dy0
     else
     Resp.y := -dy1;
+  end;
+end;
+
+function G2RectVsTri(const r: TG2Rect; const Tri: PG2Vec2): Boolean;
+  var i, j: TG2IntS32;
+  var n: array[0..2] of TG2Vec2;
+  var d: array[0..2] of TG2Float;
+  var v: array[0..3] of TG2Vec2;
+  var vmin: TG2Vec2;
+  var xmin, xmax, ymin, ymax: Boolean;
+  var TriArr: PG2Vec2Arr absolute Tri;
+begin
+  Result := True;
+  xmin := True; xmax := True; ymin := True; ymax := True;
+  for i := 0 to 2 do
+  begin
+    if TriArr^[i].x >= r.l then xmin := False;
+    if TriArr^[i].x <= r.r then xmax := False;
+    if TriArr^[i].y >= r.t then ymin := False;
+    if TriArr^[i].y <= r.b then ymax := False;
+    n[i] := (TriArr^[i] - TriArr^[(i + 1) mod 3]).Perp;
+    d[i] := n[i].Dot(TriArr^[i]);
+  end;
+  if xmin or xmax or ymin or ymax then Exit(False);
+  if n[0].Dot(TriArr^[2]) > d[0] then
+  for i := 0 to 2 do
+    begin
+      n[i] := -n[i];
+      d[i] := -d[i];
+    end;
+  end;
+  for i := 0 to 2 do
+  begin
+    if n[i].x >= 0 then vmin.x := r.l else vmin.x := r.r;
+    if n[i].y >= 0 then vmin.y := r.t else vmin.y := r.b;
+    if n[i].Dot(vmin) - d[i] > 0 then Exit(False);
   end;
 end;
 

@@ -1440,10 +1440,14 @@ end;
 
 //TG2AssetSourceFile BEGIN
 constructor TG2AssetSourceFile.Create;
+  var AppPath: String;
 begin
   inherited Create;
   _Paths.Clear;
-  AddPath(G2GetAppPath);
+  AppPath := G2GetAppPath;
+  AddPath(AppPath);
+  AddPath(AppPath + 'assets');
+  AddPath(AppPath + '../assets');
 end;
 
 procedure TG2AssetSourceFile.ClearPaths;

@@ -41,12 +41,13 @@ type
     procedure MouseUp(const Button, x, y: Integer);
     procedure Scroll(const y: Integer);
     procedure Print(const c: AnsiChar);
+    procedure OnArmHit(const EventData: TG2Scene2DEventData);
   end;
 
 var
   Game: TGame;
 
- const EnginePower = 2;
+ const EnginePower = 1;
  const JetPower = 14.5;
 
 implementation
@@ -95,15 +96,16 @@ begin
   Display.Height := 10;
   Display.Position := G2Vec2(0, 0);
   Scene := TG2Scene2D.Create;
-  Scene.Load('../assets/scene1.g2s2d');
+  Scene.Load('../assets/scene2.g2s2d');
   Scene.Gravity := G2Vec2(0, 6);
   Scene.Simulate := True;
   Scene.EnablePhysics;
-  Player := Scene.FindEntityByName('Car');
+  Player := Scene.FindEntityByName('Object');
   Wheel0 := Scene.FindEntityByName('Wheel0');
   Wheel1 := Scene.FindEntityByName('Wheel1');
   Jet0 := Scene.FindEntityByName('Jet0');
   Jet1 := Scene.FindEntityByName('Jet1');
+  Player.AddEvent('OnArmHit', @OnArmHit);
   rt := TG2Texture2DRT.Create;
   rt.Make(128, 128);
   rt1 := TG2Texture2DRT.Create;
@@ -141,42 +143,48 @@ begin
     rb := TG2Scene2DComponentRigidBody(Wheel1.ComponentOfType[TG2Scene2DComponentRigidBody]);
     rb.PhysBody^.apply_torque(-EnginePower, true);
   end;
-  fx := TG2Scene2DComponentEffect(Jet0.ComponentOfType[TG2Scene2DComponentEffect]);
-  if Assigned(fx) then
+  if Assigned(Jet0) then
   begin
-    if g2.KeyDown[G2K_D] then
+    fx := TG2Scene2DComponentEffect(Jet0.ComponentOfType[TG2Scene2DComponentEffect]);
+    if Assigned(fx) then
     begin
-      fx.Play;
-      rb := TG2Scene2DComponentRigidBody(Player.ComponentOfType[TG2Scene2DComponentRigidBody]);
-      if Assigned(rb) then
+      if g2.KeyDown[G2K_D] then
       begin
-        jp0 := G2LerpFloat(jp0, JetPower, 0.1);
-        rb.PhysBody^.apply_force(-Jet0.Transform.r.AxisX * jp0, Jet0.Transform.p, true);
+        fx.Play;
+        rb := TG2Scene2DComponentRigidBody(Player.ComponentOfType[TG2Scene2DComponentRigidBody]);
+        if Assigned(rb) then
+        begin
+          jp0 := G2LerpFloat(jp0, JetPower, 0.1);
+          rb.PhysBody^.apply_force(-Jet0.Transform.r.AxisX * jp0, Jet0.Transform.p, true);
+        end;
+      end
+      else
+      begin
+        jp0 := 0;
+        fx.Stop;
       end;
-    end
-    else
-    begin
-      jp0 := 0;
-      fx.Stop;
     end;
   end;
-  fx := TG2Scene2DComponentEffect(Jet1.ComponentOfType[TG2Scene2DComponentEffect]);
-  if Assigned(fx) then
+  if Assigned(Jet1) then
   begin
-    if g2.KeyDown[G2K_A] then
+    fx := TG2Scene2DComponentEffect(Jet1.ComponentOfType[TG2Scene2DComponentEffect]);
+    if Assigned(fx) then
     begin
-      fx.Play;
-      rb := TG2Scene2DComponentRigidBody(Player.ComponentOfType[TG2Scene2DComponentRigidBody]);
-      if Assigned(rb) then
+      if g2.KeyDown[G2K_A] then
       begin
-        jp1 := G2LerpFloat(jp1, JetPower, 0.1);
-        rb.PhysBody^.apply_force(-Jet1.Transform.r.AxisX * jp1, Jet1.Transform.p, true);
+        fx.Play;
+        rb := TG2Scene2DComponentRigidBody(Player.ComponentOfType[TG2Scene2DComponentRigidBody]);
+        if Assigned(rb) then
+        begin
+          jp1 := G2LerpFloat(jp1, JetPower, 0.1);
+          rb.PhysBody^.apply_force(-Jet1.Transform.r.AxisX * jp1, Jet1.Transform.p, true);
+        end;
+      end
+      else
+      begin
+        jp1 := 0;
+        fx.Stop;
       end;
-    end
-    else
-    begin
-      jp1 := 0;
-      fx.Stop;
     end;
   end;
   Recover := g2.KeyDown[G2K_Space];
@@ -247,6 +255,27 @@ procedure TGame.Print(const c: AnsiChar);
 begin
 
 end;
+
+procedure TGame.OnArmHit(const EventData: TG2Scene2DEventData);
+  var Data: TG2Scene2DEventBeginContactData absolute EventData;
+  var wm: tb2_world_manifold;
+  var fxe: TG2Scene2DEntity;
+  var fx: TG2Scene2DComponentEffect;
+begin
+  if EventData is TG2Scene2DEventBeginContactData then
+  begin
+    fxe := Scene.FindEntityByName('fx');
+    if Assigned(fxe) then
+    begin
+      fx := TG2Scene2DComponentEffect(fxe.ComponentOfType[TG2Scene2DComponentEffect]);
+      if Assigned(fx) then
+      begin
+        fx.Play;
+      end;
+    end;
+  end;
+end;
+
 //TGame END
 
 end.

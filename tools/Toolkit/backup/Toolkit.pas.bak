@@ -3193,6 +3193,7 @@ type
     property Ref: Integer read _Ref;
     procedure RefInc;
     procedure RefDec;
+    procedure Update; virtual;
     procedure Update(const Display: TG2Display2D); virtual;
     procedure Render(const Display: TG2Display2D); virtual;
     procedure MouseDown(const Display: TG2Display2D; const Button, x, y: Integer); virtual;
@@ -3361,6 +3362,8 @@ type
     function CheckMesh: Integer;
     procedure VerifyMesh;
     function IsSelecting: Boolean;
+    function SelectRect: TG2Rect; overload;
+    function SelectRect(const Display: TG2Display2D; var ClipRect: TG2Rect): Boolean; overload;
     function AddButton(const Name: String): TBtn;
   public
     var EditMode: TEditMode;
@@ -3369,6 +3372,7 @@ type
     property Component: TScene2DComponentDataPoly read _Component write _Component;
     constructor Create;
     destructor Destroy; override;
+    procedure Update; override;
     procedure Update(const Display: TG2Display2D); override;
     procedure Render(const Display: TG2Display2D); override;
     procedure MouseDown(const Display: TG2Display2D; const Button, x, y: Integer); override;
@@ -24452,6 +24456,11 @@ begin
   if _Ref <= 0 then Free;
 end;
 
+procedure TScene2DEditor.Update;
+begin
+
+end;
+
 procedure TScene2DEditor.Update(const Display: TG2Display2D);
 begin
 
@@ -25175,65 +25184,74 @@ begin
   case EditMode of
     em_vertex:
     begin
-      for i := 0 to _SelectVertex.Count - 1 do
-      _VDrag.Add(_SelectVertex[i]);
+      if Assigned(_MOverVertex) then
+      begin
+        for i := 0 to _SelectVertex.Count - 1 do
+        _VDrag.Add(_SelectVertex[i]);
+      end;
     end;
     em_edge:
     begin
-      if g2.KeyDown[G2K_ShiftL] or g2.KeyDown[G2K_ShiftR] then
+      if Assigned(_MOverEdge) then
       begin
-        Edges.Clear;
+        if g2.KeyDown[G2K_ShiftL] or g2.KeyDown[G2K_ShiftR] then
+        begin
+          Edges.Clear;
+          for i := 0 to _SelectEdge.Count - 1 do
+          if (_SelectEdge[i].f[0] = nil) or (_SelectEdge[i].f[1] = nil) then
+          begin
+            v[0] := ReplicateVertex(_SelectEdge[i].v[0]);
+            v[1] := ReplicateVertex(_SelectEdge[i].v[1]);
+            e := TScene2DComponentDataPolyEdge.Create;
+            e.v[0] := v[0];
+            e.v[1] := v[1];
+            Component.Edges.Add(e);
+            Edges.Add(e);
+            f := TScene2DComponentDataPolyFace.Create;
+            f.v[0] := _SelectEdge[i].v[0];
+            f.v[1] := v[0];
+            f.v[2] := v[1];
+            Component.Faces.Add(f);
+            f := TScene2DComponentDataPolyFace.Create;
+            f.v[0] := _SelectEdge[i].v[0];
+            f.v[1] := v[1];
+            f.v[2] := _SelectEdge[i].v[1];
+            Component.Faces.Add(f);
+            e := TScene2DComponentDataPolyEdge.Create;
+            e.v[0] := _SelectEdge[i].v[0];
+            e.v[1] := v[1];
+            Component.Edges.Add(e);
+          end;
+          for i := 0 to High(VertexReplica) do
+          begin
+            e := TScene2DComponentDataPolyEdge.Create;
+            e.v[0] := VertexReplica[i][0];
+            e.v[1] := VertexReplica[i][1];
+            Component.Edges.Add(e);
+          end;
+          _SelectEdge.Clear;
+          for i := 0 to Edges.Count - 1 do
+          _SelectEdge.Add(Edges[i]);
+          Component.CompleteData;
+        end;
         for i := 0 to _SelectEdge.Count - 1 do
-        if (_SelectEdge[i].f[0] = nil) or (_SelectEdge[i].f[1] = nil) then
         begin
-          v[0] := ReplicateVertex(_SelectEdge[i].v[0]);
-          v[1] := ReplicateVertex(_SelectEdge[i].v[1]);
-          e := TScene2DComponentDataPolyEdge.Create;
-          e.v[0] := v[0];
-          e.v[1] := v[1];
-          Component.Edges.Add(e);
-          Edges.Add(e);
-          f := TScene2DComponentDataPolyFace.Create;
-          f.v[0] := _SelectEdge[i].v[0];
-          f.v[1] := v[0];
-          f.v[2] := v[1];
-          Component.Faces.Add(f);
-          f := TScene2DComponentDataPolyFace.Create;
-          f.v[0] := _SelectEdge[i].v[0];
-          f.v[1] := v[1];
-          f.v[2] := _SelectEdge[i].v[1];
-          Component.Faces.Add(f);
-          e := TScene2DComponentDataPolyEdge.Create;
-          e.v[0] := _SelectEdge[i].v[0];
-          e.v[1] := v[1];
-          Component.Edges.Add(e);
+          for j := 0 to 1 do
+          if _VDrag.Find(_SelectEdge[i].v[j]) = -1 then
+          _VDrag.Add(_SelectEdge[i].v[j]);
         end;
-        for i := 0 to High(VertexReplica) do
-        begin
-          e := TScene2DComponentDataPolyEdge.Create;
-          e.v[0] := VertexReplica[i][0];
-          e.v[1] := VertexReplica[i][1];
-          Component.Edges.Add(e);
-        end;
-        _SelectEdge.Clear;
-        for i := 0 to Edges.Count - 1 do
-        _SelectEdge.Add(Edges[i]);
-        Component.CompleteData;
-      end;
-      for i := 0 to _SelectEdge.Count - 1 do
-      begin
-        for j := 0 to 1 do
-        if _VDrag.Find(_SelectEdge[i].v[j]) = -1 then
-        _VDrag.Add(_SelectEdge[i].v[j]);
       end;
     end;
     em_face:
     begin
-      for i := 0 to _SelectFace.Count - 1 do
+      if Assigned(_MOverFace) then
       begin
-        for j := 0 to 2 do
-        if _VDrag.Find(_SelectFace[i].v[j]) = -1 then
-        _VDrag.Add(_SelectFace[i].v[j]);
+        for i := 0 to _SelectFace.Count - 1 do
+        begin
+          for j := 0 to 2 do
+          if _VDrag.Find(_SelectFace[i].v[j]) = -1 then
+          _VDrag.Add(_SelectFace[i].v[j]);
+        end;
       end;
     end;
   end;
@@ -25612,7 +25630,25 @@ end;
 
 function TScene2DEditorPoly.IsSelecting: Boolean;
 begin
-  Result := _Drag and (_SelectVertex.Count = 0) and (_SelectEdge.Count = 0) and (_SelectFace.Count = 0);
+  Result := _Drag and (_VDrag.Count = 0);//(_SelectVertex.Count = 0) and (_SelectEdge.Count = 0) and (_SelectFace.Count = 0);
+end;
+
+function TScene2DEditorPoly.SelectRect: TG2Rect;
+begin
+  Result.Left := G2Min(g2.MousePos.x, g2.MouseDownPos[G2MB_Left].x);
+  Result.Top := G2Min(g2.MousePos.y, g2.MouseDownPos[G2MB_Left].y);
+  Result.Right := G2Max(g2.MousePos.x, g2.MouseDownPos[G2MB_Left].x);
+  Result.Bottom := G2Max(g2.MousePos.y, g2.MouseDownPos[G2MB_Left].y);
+end;
+
+function TScene2DEditorPoly.SelectRect(const Display: TG2Display2D; var ClipRect: TG2Rect): Boolean;
+begin
+  ClipRect := SelectRect();
+  ClipRect.l := G2Max(ClipRect.l, Display.ViewPort.Left);
+  ClipRect.t := G2Max(ClipRect.t, Display.ViewPort.Top);
+  ClipRect.r := G2Min(ClipRect.r, Display.ViewPort.Right);
+  ClipRect.b := G2Min(ClipRect.b, Display.ViewPort.Bottom);
+  Result := (ClipRect.w > 0) and (ClipRect.h > 0);
 end;
 
 function TScene2DEditorPoly.AddButton(const Name: String): TBtn;
@@ -25653,6 +25689,11 @@ begin
   _PopUp.Free;
   Instance := nil;
   inherited Destroy;
+end;
+
+procedure TScene2DEditorPoly.Update;
+begin
+
 end;
 
 procedure TScene2DEditorPoly.Update(const Display: TG2Display2D);
@@ -25727,7 +25768,7 @@ begin
   else if not _Drag
   and g2.MouseDown[G2MB_Left]
   and TG2Rect(Display.ViewPort).Contains(g2.MouseDownPos[G2MB_Left])
-  and ((G2Vec2(g2.MouseDownPos[G2MB_Left]) - G2Vec2(g2.MousePos)).Len > 2) then
+  and ((G2Vec2(g2.MouseDownPos[G2MB_Left]) - G2Vec2(g2.MousePos)).Len > 4) then
   begin
     StartDrag(mc);
   end;
@@ -25778,17 +25819,19 @@ end;
 procedure TScene2DEditorPoly.Render(const Display: TG2Display2D);
   var i, j, l: Integer;
   var varr: array[0..2] of TG2Vec2;
-  var v, v0, v1, pv0, pv1, mc, pmc, pn, n, t: TG2Vec2;
+  var v, v0, v1, pv0, pv1, mc, pmc, pn, n, t, xp0, xp1: TG2Vec2;
   var xf: TG2Transform2;
   var b: Boolean;
   var c, c1: TG2Color;
   var r: TG2Rect;
   var sr: TRect;
   var tc: array[0..4] of TG2Float;
+  var d: TG2Float;
   var str: AnsiString;
   var bm: TG2BlendMode;
   var LayersSorted: TG2QuickSortList;
   var Layer: TScene2DComponentDataPolyLayer;
+  var Sel: Boolean;
 begin
   xf := _Component.Component.Owner.Transform;
   LayersSorted.Clear;
@@ -25828,6 +25871,7 @@ begin
     v1 := Display.CoordToDisplay(v1 + G2Vec2(4, 4)) - v0;
     Display.PrimRect(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ff0000ff);
   end;
+  Sel := IsSelecting and SelectRect(Display, r);
   if (EditMode = em_vertex) then
   begin
     for i := 0 to _SelectVertex.Count - 1 do
@@ -25843,6 +25887,19 @@ begin
       v1 := Display.CoordToScreen(v0);
       v1 := Display.CoordToDisplay(v1 + G2Vec2(4, 4)) - v0;
       Display.PrimRectHollow(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ffff0000);
+    end;
+    if Sel then
+    begin
+      for i := 0 to _Component.Vertices.Count - 1 do
+      begin
+        v0 := xf.Transform(_Component.Vertices[i].v);
+        v1 := Display.CoordToScreen(v0);
+        if r.Contains(v1) then
+        begin
+          v1 := Display.CoordToDisplay(v1 + G2Vec2(4, 4)) - v0;
+          Display.PrimRectHollow(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ffff0000);
+        end;
+      end;
     end;
   end;
   if (EditMode = em_edge) then
@@ -25867,6 +25924,22 @@ begin
       n := Display.CoordToDisplay(pv0 + pn) - v0;
       Display.PrimQuadHollowCol(v0 - n, v1 - n, v0 + n, v1 + n, $ffff0000, $ffff0000, $ffff0000, $ffff0000);
     end;
+    if Sel then
+    begin
+      for i := 0 to _Component.Edges.Count - 1 do
+      begin
+        v0 := xf.Transform(_Component.Edges[i].v[0].v);
+        v1 := xf.Transform(_Component.Edges[i].v[1].v);
+        pv0 := Display.CoordToScreen(v0);
+        pv1 := Display.CoordToScreen(v1);
+        if G2Intersect2DSegmentVsRect(pv0, pv1, r, xp0, xp1) then
+        begin
+          pn := (pv1 - pv0).Perp.Norm * 2;
+          n := Display.CoordToDisplay(pv0 + pn) - v0;
+          Display.PrimQuadHollowCol(v0 - n, v1 - n, v0 + n, v1 + n, $ffff0000, $ffff0000, $ffff0000, $ffff0000);
+        end;
+      end;
+    end;
   end;
   if (EditMode = em_face) then
   begin
@@ -25883,6 +25956,19 @@ begin
       varr[1] := xf.Transform(_MOverFace.v[1].v);
       varr[2] := xf.Transform(_MOverFace.v[2].v);
       Display.PrimTriHollowCol(varr[0], varr[1], varr[2], $ffff0000, $ffff0000, $ffff0000);
+    end;
+    if Sel then
+    begin
+      for i := 0 to _Component.Faces.Count - 1 do
+      begin
+        varr[0] := Display.CoordToScreen(xf.Transform(_Component.Faces[i].v[0].v));
+        varr[1] := Display.CoordToScreen(xf.Transform(_Component.Faces[i].v[1].v));
+        varr[2] := Display.CoordToScreen(xf.Transform(_Component.Faces[i].v[2].v));
+        if G2RectVsTri(r, @varr[0]) then
+        begin
+          g2.PrimTriHollowCol(varr[0], varr[1], varr[2], $ffff0000, $ffff0000, $ffff0000);
+        end;
+      end;
     end;
   end;
   if (EditMode = em_layer) then
@@ -25990,7 +26076,7 @@ begin
         end
         else
         begin
-          _SelectVertex.Clear;
+          if not g2.KeyDown[G2K_CtrlL] and not g2.KeyDown[G2K_CtrlR] then _SelectVertex.Clear;
         end;
       end;
       if EditMode = em_edge then
@@ -26009,7 +26095,7 @@ begin
         end
         else
         begin
-          _SelectEdge.Clear;
+          if not g2.KeyDown[G2K_CtrlL] and not g2.KeyDown[G2K_CtrlR] then _SelectEdge.Clear;
         end;
       end;
       if EditMode = em_face then
@@ -26028,7 +26114,7 @@ begin
         end
         else
         begin
-          _SelectFace.Clear;
+          if not g2.KeyDown[G2K_CtrlL] and not g2.KeyDown[G2K_CtrlR] then _SelectFace.Clear;
         end;
       end;
     end;
@@ -26036,8 +26122,12 @@ begin
 end;
 
 procedure TScene2DEditorPoly.MouseUp(const Display: TG2Display2D; const Button, x, y: Integer);
-  var i: Integer;
+  var i, j: Integer;
   var r: TG2Rect;
+  var xf: TG2Transform2;
+  var v0, v1, xp0, xp1: TG2Vec2;
+  var varr: array[0..2] of TG2Vec2;
+  var AddSelection: Boolean;
 begin
   if Button = G2MB_Left then
   begin
@@ -26067,6 +26157,79 @@ begin
       and (_MOverFace = _MdInFace) then
       begin
 
+      end;
+    end;
+    if IsSelecting and SelectRect(Display, r) then
+    begin
+      xf := _Component.Component.Owner.Transform;
+      case EditMode of
+        em_vertex:
+        begin
+          for i := 0 to _Component.Vertices.Count - 1 do
+          begin
+            v0 := xf.Transform(_Component.Vertices[i].v);
+            v1 := Display.CoordToScreen(v0);
+            if r.Contains(v1) then
+            begin
+              AddSelection := True;
+              for j := 0 to _SelectVertex.Count - 1 do
+              if _SelectVertex[j] = _Component.Vertices[i] then
+              begin
+                AddSelection := False;
+                Break;
+              end;
+              if AddSelection then
+              begin
+                _SelectVertex.Add(_Component.Vertices[i]);
+              end;
+            end;
+          end;
+        end;
+        em_edge:
+        begin
+          for i := 0 to _Component.Edges.Count - 1 do
+          begin
+            v0 := Display.CoordToScreen(xf.Transform(_Component.Edges[i].v[0].v));
+            v1 := Display.CoordToScreen(xf.Transform(_Component.Edges[i].v[1].v));
+            if G2Intersect2DSegmentVsRect(v0, v1, r, xp0, xp1) then
+            begin
+              AddSelection := True;
+              for j := 0 to _SelectEdge.Count - 1 do
+              if _SelectEdge[j] = _Component.Edges[i] then
+              begin
+                AddSelection := False;
+                Break;
+              end;
+              if AddSelection then
+              begin
+                _SelectEdge.Add(_Component.Edges[i]);
+              end;
+            end;
+          end;
+        end;
+        em_face:
+        begin
+          for i := 0 to _Component.Faces.Count - 1 do
+          begin
+            varr[0] := Display.CoordToScreen(xf.Transform(_Component.Faces[i].v[0].v));
+            varr[1] := Display.CoordToScreen(xf.Transform(_Component.Faces[i].v[1].v));
+            varr[2] := Display.CoordToScreen(xf.Transform(_Component.Faces[i].v[2].v));
+            if G2RectVsTri(r, @varr[0]) then
+            begin
+              AddSelection := True;
+              for j := 0 to _SelectFace.Count - 1 do
+              if _SelectFace[j] = _Component.Faces[i] then
+              begin
+                AddSelection := False;
+                Break;
+              end;
+              if AddSelection then
+              begin
+                _SelectFace.Add(_Component.Faces[i]);
+              end;
+            end;
+          end;
+        end;
       end;
     end;
     _Drag := False;
@@ -27267,6 +27430,7 @@ begin
   for i := 0 to Component.LayerCount - 1 do
   begin
     Layer := TScene2DComponentDataPolyLayer.Create;
+    Layer.Texture := Component.Layers[i].Texture;
     Layer.Layer := Component.Layers[i].Layer;
     Layer.Scale := Component.Layers[i].Scale;
     Layer.Index := i;
@@ -27663,6 +27827,11 @@ begin
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
   PropertySet.PropButton('Edit', @OnEdit, Group);
+  EventGroup := PropertySet.PropGroup('Events', Group);
+  PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
+  PropertySet.PropString('Event Contact End', @Component.EventEndContact.Name, EventGroup);
+  PropertySet.PropString('Event Before Contact Solve', @Component.EventBeforeContactSolve.Name, EventGroup);
+  PropertySet.PropString('Event After Contact Solve', @Component.EventAfterContactSolve.Name, EventGroup);
   //PropertySet.PropVec2('Position', @_Position, Group, @OnChangeWidth);
 end;
 
@@ -27761,6 +27930,7 @@ end;
 
 procedure TScene2DComponentDataShapeBox.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
+  var EventGroup: TPropertySet.TProperty;
 begin
   _Width := Component.Width;
   _Height := Component.Height;
@@ -27775,10 +27945,11 @@ begin
   PropertySet.PropFloat('Rotation', @_Angle, Group, @OnChangeAngle);
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
-  PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, Group);
-  PropertySet.PropString('Event Contact End', @Component.EventEndContact.Name, Group);
-  PropertySet.PropString('Event Before Contact Solve', @Component.EventBeforeContactSolve.Name, Group);
-  PropertySet.PropString('Event After Contact Solve', @Component.EventAfterContactSolve.Name, Group);
+  EventGroup := PropertySet.PropGroup('Events', Group);
+  PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
+  PropertySet.PropString('Event Contact End', @Component.EventEndContact.Name, EventGroup);
+  PropertySet.PropString('Event Before Contact Solve', @Component.EventBeforeContactSolve.Name, EventGroup);
+  PropertySet.PropString('Event After Contact Solve', @Component.EventAfterContactSolve.Name, EventGroup);
 end;
 
 procedure TScene2DComponentDataShapeBox.OnChangeWidth(const Sender: Pointer);
@@ -27864,6 +28035,7 @@ end;
 
 procedure TScene2DComponentDataShapeCircle.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
+  var EventGroup: TPropertySet.TProperty;
 begin
   _Offset := Component.Center;
   _Radius := Component.Radius;
@@ -27874,6 +28046,11 @@ begin
   PropertySet.PropFloat('Radius', @_Radius, Group, @OnChangeRadius);
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
+  EventGroup := PropertySet.PropGroup('Events', Group);
+  PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
+  PropertySet.PropString('Event Contact End', @Component.EventEndContact.Name, EventGroup);
+  PropertySet.PropString('Event Before Contact Solve', @Component.EventBeforeContactSolve.Name, EventGroup);
+  PropertySet.PropString('Event After Contact Solve', @Component.EventAfterContactSolve.Name, EventGroup);
 end;
 
 procedure TScene2DComponentDataShapeCircle.OnChangeOffset(const Sender: Pointer);
@@ -27932,6 +28109,7 @@ end;
 
 procedure TScene2DComponentDataShapeEdge.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
+  var EventGroup: TPropertySet.TProperty;
 begin
   _Friction := Component.Fricton;
   _Density := Component.Density;
@@ -27939,6 +28117,11 @@ begin
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
   PropertySet.PropButton('Edit', @OnEdit, Group);
+  EventGroup := PropertySet.PropGroup('Events', Group);
+  PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
+  PropertySet.PropString('Event Contact End', @Component.EventEndContact.Name, EventGroup);
+  PropertySet.PropString('Event Before Contact Solve', @Component.EventBeforeContactSolve.Name, EventGroup);
+  PropertySet.PropString('Event After Contact Solve', @Component.EventAfterContactSolve.Name, EventGroup);
 end;
 
 procedure TScene2DComponentDataShapeEdge.OnEdit;
@@ -28007,12 +28190,18 @@ end;
 
 procedure TScene2DComponentDataShapeChain.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
+  var EventGroup: TPropertySet.TProperty;
 begin
   _Friction := Component.Fricton;
   Group := PropertySet.PropComponent('Collision Chain', Component);
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
   PropertySet.PropButton('Edit', @OnEdit, Group);
+  EventGroup := PropertySet.PropGroup('Events', Group);
+  PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
+  PropertySet.PropString('Event Contact End', @Component.EventEndContact.Name, EventGroup);
+  PropertySet.PropString('Event Before Contact Solve', @Component.EventBeforeContactSolve.Name, EventGroup);
+  PropertySet.PropString('Event After Contact Solve', @Component.EventAfterContactSolve.Name, EventGroup);
 end;
 
 procedure TScene2DComponentDataShapeChain.OnEdit;
@@ -29245,6 +29434,7 @@ procedure TScene2DData.Update;
 begin
   if Selection.Count = 1 then
   PScene2DEntityData(Selection[0].UserData)^.SyncProperties;
+  if Assigned(_Editor) then Editor.Update;
 end;
 
 procedure TScene2DData.MouseClick(const Display: TG2Display2D; const Button: Integer; const x, y: TG2Float);
