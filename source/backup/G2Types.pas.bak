@@ -236,8 +236,8 @@ type
   private
     var _Ref: TG2IntS32;
   public
-    procedure RefInc; inline;
-    procedure RefDec; inline;
+    procedure RefInc; //inline;
+    procedure RefDec; //inline;
     property RefCount: TG2IntS32 read _Ref;
     constructor Create; virtual;
     destructor Destroy; override;
@@ -261,11 +261,22 @@ type
 
   TG2Asset = class (TG2Res)
   private
+    class var ListLocked: array [0..1] of TG2Asset;
+    var PrevLocked: array [0..1] of TG2Asset;
+    var NextLocked: array [0..1] of TG2Asset;
+    var _Lock: array[0..1] of Boolean;
     var _AssetName: String;
+    var _MarkForDeletion: Boolean;
   public
     property AssetName: String read _AssetName write _AssetName;
+    class constructor CreateClass;
+    class procedure UnlockQueue(const Queue: TG2IntU8);
     constructor Create; override;
+    destructor Destroy; override;
     function IsShared: Boolean; inline;
+    procedure Lock(const Queue: TG2IntU8);
+    procedure Unlock(const Queue: TG2IntU8);
+    procedure Free; reintroduce;
   end;
 
   operator := (c: TG2Color) cr: TG2IntU32;
@@ -337,7 +348,8 @@ end;
 procedure TG2Ref.RefDec;
 begin
   Dec(_Ref);
-  if _Ref <= 0 then Free;
+  if _Ref <= 0 then
+  Free;
 end;
 
 constructor TG2Ref.Create;
@@ -405,15 +417,71 @@ end;
 //TG2Res END
 
 //TG2Asset BEGIN
+class constructor TG2Asset.CreateClass;
+begin
+  ListLocked[0] := nil;
+  ListLocked[1] := nil;
+end;
+
+class procedure TG2Asset.UnlockQueue(const Queue: TG2IntU8);
+begin
+  while ListLocked[Queue] <> nil do
+  ListLocked[Queue].Unlock(Queue);
+end;
+
 constructor TG2Asset.Create;
 begin
   inherited Create;
   _AssetName := '';
+  _Lock[0] := False;
+  _Lock[1] := False;
+  _MarkForDeletion := False;
+  PrevLocked[0] := nil;
+  PrevLocked[1] := nil;
+  NextLocked[0] := nil;
+  NextLocked[1] := nil;
+end;
+
+destructor TG2Asset.Destroy;
+begin
+  inherited Destroy;
 end;
 
 function TG2Asset.IsShared: Boolean;
 begin
   Result := Length(_AssetName) > 0;
+end;
+
+procedure TG2Asset.Lock(const Queue: TG2IntU8);
+begin
+  if _Lock[Queue] then Exit;
+  _Lock[Queue] := True;
+  NextLocked[Queue] := ListLocked[Queue];
+  PrevLocked[Queue] := nil;
+  if ListLocked[Queue] <> nil then ListLocked[Queue].PrevLocked[Queue] := Self;
+  ListLocked[Queue] := Self;
+end;
+
+procedure TG2Asset.Unlock(const Queue: TG2IntU8);
+begin
+  if not _Lock[Queue] then Exit;
+  _Lock[Queue] := False;
+  if PrevLocked[Queue] <> nil then PrevLocked[Queue].NextLocked[Queue] := NextLocked[Queue];
+  if NextLocked[Queue] <> nil then NextLocked[Queue].PrevLocked[Queue] := PrevLocked[Queue];
+  if Self = ListLocked[Queue] then ListLocked[Queue] := NextLocked[Queue];
+  if _MarkForDeletion then Free;
+end;
+
+procedure TG2Asset.Free;
+begin
+  if not _Lock[0] and not _Lock[1] then
+  begin
+    if (Self <> nil) then Self.Destroy;
+  end
+  else
+  begin
+    _MarkForDeletion := True;
+  end;
 end;
 //TG2Asset END
 

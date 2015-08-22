@@ -6728,6 +6728,8 @@ end;
 procedure TG2Gfx.Finalize;
   var i: TG2IntS32;
 begin
+  TG2Asset.UnlockQueue(0);
+  TG2Asset.UnlockQueue(1);
   for i := 0 to _RenderControls.Count - 1 do
   TG2RenderControl(_RenderControls[i]).Free;
   {$if defined(G2RM_SM2)}
@@ -6748,6 +6750,7 @@ procedure TG2Gfx.Swap;
 begin
   _NeedToSwap := True;
   while not _CanSwap do;
+  TG2Asset.UnlockQueue(_QueueDraw);
   t := _QueueFill;
   _QueueFill := _QueueDraw;
   _QueueDraw := t;
@@ -13753,6 +13756,7 @@ begin
   s := @_CurData^.Samplers[_CurData^.SamplerCount];
   s^.Name := Name;
   s^.Texture := Texture;
+  Texture.Lock(_FillID^);
   _CurData^.SamplerCount := _CurData^.SamplerCount + 1;
 end;
 
@@ -13962,6 +13966,7 @@ begin
   p^.Texture := Texture;
   p^.BlendMode := BlendMode;
   p^.Filter := Filter;
+  Texture.Lock(_FillID^);
   _Gfx.AddRenderQueueItem(Self, p);
   Inc(_QueueCount[_FillID^]);
 end;
@@ -14887,6 +14892,7 @@ begin
   _CurPoly^.BlendMode := BlendMode;
   _CurPoly^.Filter := Filter;
   _CurPoly^.Count := 0;
+  Texture.Lock(_FillID^);
 end;
 
 procedure TG2RenderControlPoly2D.PolyEnd;
@@ -15213,6 +15219,7 @@ begin
   _CurPoly^.Texture := Texture;
   _CurPoly^.Filter := Filter;
   _CurPoly^.WVP := WVP;
+  Texture.Lock(_FillID^);
 end;
 
 procedure TG2RenderControlPoly3D.PolyEnd;

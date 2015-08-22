@@ -1,5 +1,0 @@
-program MyProgram;
-
-begin
-
-end;
