@@ -514,20 +514,26 @@ type
     procedure SetFriction(const Value: TG2Float); inline;
     function GetDensity: TG2Float; inline;
     procedure SetDensity(const Value: TG2Float); inline;
+    function GetIsSensor: Boolean; inline;
+    procedure SetIsSensor(const Value: Boolean); inline;
     procedure OnBeginContact(
-      const Other: TG2Scene2DComponentCollisionShape;
+      const OtherEntity: TG2Scene2DEntity;
+      const OtherShape: TG2Scene2DComponentCollisionShape;
       const Contact: pb2_contact
     ); inline;
     procedure OnEndContact(
-      const Other: TG2Scene2DComponentCollisionShape;
+      const OtherEntity: TG2Scene2DEntity;
+      const OtherShape: TG2Scene2DComponentCollisionShape;
       const Contact: pb2_contact
     ); inline;
     procedure OnBeforeContactSolve(
-      const Other: TG2Scene2DComponentCollisionShape;
+      const OtherEntity: TG2Scene2DEntity;
+      const OtherShape: TG2Scene2DComponentCollisionShape;
       const Contact: pb2_contact
     ); inline;
     procedure OnAfterContactSolve(
-      const Other: TG2Scene2DComponentCollisionShape;
+      const OtherEntity: TG2Scene2DEntity;
+      const OtherShape: TG2Scene2DComponentCollisionShape;
       const Contact: pb2_contact
     ); inline;
   public
@@ -536,6 +542,7 @@ type
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
     property Fricton: TG2Float read GetFriction write SetFriction;
     property Density: TG2Float read GetDensity write SetDensity;
+    property IsSensor: Boolean read GetIsSensor write SetIsSensor;
     property EventBeginContact: TG2Scene2DEventDispatcher read _EventBeginContact;
     property EventEndContact: TG2Scene2DEventDispatcher read _EventEndContact;
     property EventBeforeContactSolve: TG2Scene2DEventDispatcher read _EventBeforeContactSolve;
@@ -679,20 +686,60 @@ type
     var _BodyFeetDef: tb2_body_def;
     var _BodyFeet: pb2_body;
     var _Joint: pb2_joint;
+    var _BodyMassData: tb2_mass_data;
     var _BodyVerts: array[0..5] of tb2_vec2;
     var _Width: TG2Float;
     var _Height: TG2Float;
+    var _WalkSpeed: TG2Float;
+    var _JumpSpeed: TG2Vec2;
+    var _JumpDelay: TG2Float;
+    var _GlideSpeed: TG2Vec2;
+    var _MaxGlideSpeed: TG2Float;
+    var _Standing: Boolean;
+    var _Duck: TG2Float;
+    var _FootContactCount: TG2IntS32;
     procedure SetupShapes;
     procedure OnInitialize; override;
     procedure OnFinalize; override;
+    procedure OnUpdate; override;
     procedure SetEnabled(const Value: Boolean); override;
     procedure SetWidth(const Value: TG2Float); inline;
     procedure SetHeight(const Value: TG2Float); inline;
+    procedure SetDuck(const Value: TG2Float); inline;
+    procedure OnBeginContact(
+      const OtherEntity: TG2Scene2DEntity;
+      const OtherShape: TG2Scene2DComponentCollisionShape;
+      const SelfFixture: pb2_fixture;
+      const Contact: pb2_contact
+    ); inline;
+    procedure OnEndContact(
+      const OtherEntity: TG2Scene2DEntity;
+      const OtherShape: TG2Scene2DComponentCollisionShape;
+      const SelfFixture: pb2_fixture;
+      const Contact: pb2_contact
+    ); inline;
+    procedure OnBeforeContactSolve(
+      const OtherEntity: TG2Scene2DEntity;
+      const OtherShape: TG2Scene2DComponentCollisionShape;
+      const SelfFixture: pb2_fixture;
+      const Contact: pb2_contact
+    ); inline;
+    procedure OnAfterContactSolve(
+      const OtherEntity: TG2Scene2DEntity;
+      const OtherShape: TG2Scene2DComponentCollisionShape;
+      const SelfFixture: pb2_fixture;
+      const Contact: pb2_contact
+    ); inline;
   public
     class constructor CreateClass;
     class function GetName: String; override;
     property Width: TG2Float read _Width write SetWidth;
     property Height: TG2Float read _Height write SetHeight;
+    property Duck: TG2Float read _Duck write SetDuck;
+    property MaxGlideSpeed: TG2Float read _MaxGlideSpeed write _MaxGlideSpeed;
+    procedure Walk(const Speed: TG2Float);
+    procedure Jump(const Speed: TG2Vec2);
+    procedure Glide(const Speed: TG2Vec2);
     procedure Save(const Stream: TStream); override;
     procedure Load(const Stream: TStream); override;
   end;
@@ -1616,50 +1663,166 @@ begin
 end;
 
 procedure TG2Scene2D.TPhysContactListener.begin_contact(const contact: pb2_contact);
+  var Obj0, Obj1: TObject;
   var Shape0, Shape1: TG2Scene2DComponentCollisionShape;
+  var Character0, Character1: TG2Scene2DComponentCharacter;
+  var Entity0, Entity1: TG2Scene2DEntity;
 begin
-  Shape0 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_a^.get_user_data);
-  Shape1 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_b^.get_user_data);
-  if Assigned(Shape0) and Assigned(Shape1) then
+  Obj0 := TObject(contact^.get_fixture_a^.get_user_data);
+  Obj1 := TObject(contact^.get_fixture_b^.get_user_data);
+  if (Obj0 <> nil) and (Obj1 <> nil) then
   begin
-    Shape0.OnBeginContact(Shape1, contact);
-    Shape1.OnBeginContact(Shape0, contact);
+    if Obj0 is TG2Scene2DComponentCollisionShape then
+    begin
+      Shape0 := TG2Scene2DComponentCollisionShape(Obj0);
+      Character0 := nil;
+      Entity0 := Shape0.Owner;
+    end
+    else if Obj0 is TG2Scene2DComponentCharacter then
+    begin
+      Shape0 := nil;
+      Character0 := TG2Scene2DComponentCharacter(Obj0);
+      Entity0 := Character0.Owner;
+    end;
+    if Obj1 is TG2Scene2DComponentCollisionShape then
+    begin
+      Shape1 := TG2Scene2DComponentCollisionShape(Obj1);
+      Character1 := nil;
+      Entity1 := Shape1.Owner;
+    end
+    else if Obj1 is TG2Scene2DComponentCharacter then
+    begin
+      Shape1 := nil;
+      Character1 := TG2Scene2DComponentCharacter(Obj1);
+      Entity1 := Character1.Owner;
+    end;
+    if Assigned(Shape0) then Shape0.OnBeginContact(Entity1, Shape1, contact)
+    else if Assigned(Character0) then Character0.OnBeginContact(Entity1, Shape1, contact^.get_fixture_a, contact);
+    if Assigned(Shape1) then Shape1.OnBeginContact(Entity0, Shape0, contact)
+    else if Assigned(Character1) then Character1.OnBeginContact(Entity0, Shape0, contact^.get_fixture_b, contact);
   end;
 end;
 
 procedure TG2Scene2D.TPhysContactListener.end_contact(const contact: pb2_contact);
+  var Obj0, Obj1: TObject;
   var Shape0, Shape1: TG2Scene2DComponentCollisionShape;
+  var Character0, Character1: TG2Scene2DComponentCharacter;
+  var Entity0, Entity1: TG2Scene2DEntity;
 begin
-  Shape0 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_a^.get_user_data);
-  Shape1 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_b^.get_user_data);
-  if Assigned(Shape0) and Assigned(Shape1) then
+  Obj0 := TObject(contact^.get_fixture_a^.get_user_data);
+  Obj1 := TObject(contact^.get_fixture_b^.get_user_data);
+  if (Obj0 <> nil) and (Obj1 <> nil) then
   begin
-    Shape0.OnEndContact(Shape1, contact);
-    Shape1.OnEndContact(Shape0, contact);
+    if Obj0 is TG2Scene2DComponentCollisionShape then
+    begin
+      Shape0 := TG2Scene2DComponentCollisionShape(Obj0);
+      Character0 := nil;
+      Entity0 := Shape0.Owner;
+    end
+    else if Obj0 is TG2Scene2DComponentCharacter then
+    begin
+      Shape0 := nil;
+      Character0 := TG2Scene2DComponentCharacter(Obj0);
+      Entity0 := Character0.Owner;
+    end;
+    if Obj1 is TG2Scene2DComponentCollisionShape then
+    begin
+      Shape1 := TG2Scene2DComponentCollisionShape(Obj1);
+      Character1 := nil;
+      Entity1 := Shape1.Owner;
+    end
+    else if Obj1 is TG2Scene2DComponentCharacter then
+    begin
+      Shape1 := nil;
+      Character1 := TG2Scene2DComponentCharacter(Obj1);
+      Entity1 := Character1.Owner;
+    end;
+    if Assigned(Shape0) then Shape0.OnEndContact(Entity1, Shape1, contact)
+    else if Assigned(Character0) then Character0.OnEndContact(Entity1, Shape1, contact^.get_fixture_a, contact);
+    if Assigned(Shape1) then Shape1.OnEndContact(Entity0, Shape0, contact)
+    else if Assigned(Character1) then Character1.OnEndContact(Entity0, Shape0, contact^.get_fixture_b, contact);
   end;
 end;
 
 procedure TG2Scene2D.TPhysContactListener.pre_solve(const contact: pb2_contact; const old_manifold: pb2_manifold);
+  var Obj0, Obj1: TObject;
   var Shape0, Shape1: TG2Scene2DComponentCollisionShape;
+  var Character0, Character1: TG2Scene2DComponentCharacter;
+  var Entity0, Entity1: TG2Scene2DEntity;
 begin
-  Shape0 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_a^.get_user_data);
-  Shape1 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_b^.get_user_data);
-  if Assigned(Shape0) and Assigned(Shape1) then
+  Obj0 := TObject(contact^.get_fixture_a^.get_user_data);
+  Obj1 := TObject(contact^.get_fixture_b^.get_user_data);
+  if (Obj0 <> nil) and (Obj1 <> nil) then
   begin
-    Shape0.OnBeforeContactSolve(Shape1, contact);
-    Shape1.OnBeforeContactSolve(Shape0, contact);
+    if Obj0 is TG2Scene2DComponentCollisionShape then
+    begin
+      Shape0 := TG2Scene2DComponentCollisionShape(Obj0);
+      Character0 := nil;
+      Entity0 := Shape0.Owner;
+    end
+    else if Obj0 is TG2Scene2DComponentCharacter then
+    begin
+      Shape0 := nil;
+      Character0 := TG2Scene2DComponentCharacter(Obj0);
+      Entity0 := Character0.Owner;
+    end;
+    if Obj1 is TG2Scene2DComponentCollisionShape then
+    begin
+      Shape1 := TG2Scene2DComponentCollisionShape(Obj1);
+      Character1 := nil;
+      Entity1 := Shape1.Owner;
+    end
+    else if Obj1 is TG2Scene2DComponentCharacter then
+    begin
+      Shape1 := nil;
+      Character1 := TG2Scene2DComponentCharacter(Obj1);
+      Entity1 := Character1.Owner;
+    end;
+    if Assigned(Shape0) then Shape0.OnBeforeContactSolve(Entity1, Shape1, contact)
+    else if Assigned(Character0) then Character0.OnBeforeContactSolve(Entity1, Shape1, contact^.get_fixture_a, contact);
+    if Assigned(Shape1) then Shape1.OnBeforeContactSolve(Entity0, Shape0, contact)
+    else if Assigned(Character1) then Character1.OnBeforeContactSolve(Entity0, Shape0, contact^.get_fixture_b, contact);
   end;
 end;
 
 procedure TG2Scene2D.TPhysContactListener.post_solve(const contact: pb2_contact; const impulse: pb2_contact_impulse);
+  var Obj0, Obj1: TObject;
   var Shape0, Shape1: TG2Scene2DComponentCollisionShape;
+  var Character0, Character1: TG2Scene2DComponentCharacter;
+  var Entity0, Entity1: TG2Scene2DEntity;
 begin
-  Shape0 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_a^.get_user_data);
-  Shape1 := TG2Scene2DComponentCollisionShape(contact^.get_fixture_b^.get_user_data);
-  if Assigned(Shape0) and Assigned(Shape1) then
+  Obj0 := TObject(contact^.get_fixture_a^.get_user_data);
+  Obj1 := TObject(contact^.get_fixture_b^.get_user_data);
+  if (Obj0 <> nil) and (Obj1 <> nil) then
   begin
-    Shape0.OnAfterContactSolve(Shape1, contact);
-    Shape1.OnAfterContactSolve(Shape0, contact);
+    if Obj0 is TG2Scene2DComponentCollisionShape then
+    begin
+      Shape0 := TG2Scene2DComponentCollisionShape(Obj0);
+      Character0 := nil;
+      Entity0 := Shape0.Owner;
+    end
+    else if Obj0 is TG2Scene2DComponentCharacter then
+    begin
+      Shape0 := nil;
+      Character0 := TG2Scene2DComponentCharacter(Obj0);
+      Entity0 := Character0.Owner;
+    end;
+    if Obj1 is TG2Scene2DComponentCollisionShape then
+    begin
+      Shape1 := TG2Scene2DComponentCollisionShape(Obj1);
+      Character1 := nil;
+      Entity1 := Shape1.Owner;
+    end
+    else if Obj1 is TG2Scene2DComponentCharacter then
+    begin
+      Shape1 := nil;
+      Character1 := TG2Scene2DComponentCharacter(Obj1);
+      Entity1 := Character1.Owner;
+    end;
+    if Assigned(Shape0) then Shape0.OnAfterContactSolve(Entity1, Shape1, contact)
+    else if Assigned(Character0) then Character0.OnAfterContactSolve(Entity1, Shape1, contact^.get_fixture_a, contact);
+    if Assigned(Shape1) then Shape1.OnAfterContactSolve(Entity0, Shape0, contact)
+    else if Assigned(Character1) then Character1.OnAfterContactSolve(Entity0, Shape0, contact^.get_fixture_b, contact);
   end;
 end;
 
@@ -2807,46 +2970,61 @@ begin
   if _Fixture <> nil then _Fixture^.set_density(Value);
 end;
 
+function TG2Scene2DComponentCollisionShape.GetIsSensor: Boolean;
+begin
+  Result := _FixtureDef.is_sensor;
+end;
+
+procedure TG2Scene2DComponentCollisionShape.SetIsSensor(const Value: Boolean);
+begin
+  _FixtureDef.is_sensor := Value;
+  if _Fixture <> nil then _Fixture^.set_sensor(Value);
+end;
+
 procedure TG2Scene2DComponentCollisionShape.OnBeginContact(
-  const Other: TG2Scene2DComponentCollisionShape;
+  const OtherEntity: TG2Scene2DEntity;
+  const OtherShape: TG2Scene2DComponentCollisionShape;
   const Contact: pb2_contact
 );
 begin
   _EventBeginContactData.Shapes[0] := Self;
-  _EventBeginContactData.Shapes[1] := Other;
+  _EventBeginContactData.Shapes[1] := OtherShape;
   _EventBeginContactData.PhysContact := Contact;
   _EventBeginContact.DispatchEvent(_EventBeginContactData);
 end;
 
 procedure TG2Scene2DComponentCollisionShape.OnEndContact(
-  const Other: TG2Scene2DComponentCollisionShape;
+  const OtherEntity: TG2Scene2DEntity;
+  const OtherShape: TG2Scene2DComponentCollisionShape;
   const Contact: pb2_contact
 );
 begin
   _EventEndContactData.Shapes[0] := Self;
-  _EventEndContactData.Shapes[1] := Other;
+  _EventEndContactData.Shapes[1] := OtherShape;
   _EventEndContactData.PhysContact := Contact;
   _EventEndContact.DispatchEvent(_EventEndContactData);
 end;
 
 procedure TG2Scene2DComponentCollisionShape.OnBeforeContactSolve(
-  const Other: TG2Scene2DComponentCollisionShape;
+  const OtherEntity: TG2Scene2DEntity;
+  const OtherShape: TG2Scene2DComponentCollisionShape;
   const Contact: pb2_contact
 );
 begin
   _EventBeforeContactSolveData.Shapes[0] := Self;
-  _EventBeforeContactSolveData.Shapes[1] := Other;
+  _EventBeforeContactSolveData.Shapes[1] := OtherShape;
   _EventBeforeContactSolveData.PhysContact := Contact;
   _EventBeforeContactSolve.DispatchEvent(_EventBeforeContactSolveData);
 end;
 
 procedure TG2Scene2DComponentCollisionShape.OnAfterContactSolve(
-  const Other: TG2Scene2DComponentCollisionShape;
+  const OtherEntity: TG2Scene2DEntity;
+  const OtherShape: TG2Scene2DComponentCollisionShape;
   const Contact: pb2_contact
 );
 begin
   _EventAfterContactSolveData.Shapes[0] := Self;
-  _EventAfterContactSolveData.Shapes[1] := Other;
+  _EventAfterContactSolveData.Shapes[1] := OtherShape;
   _EventAfterContactSolveData.PhysContact := Contact;
   _EventAfterContactSolve.DispatchEvent(_EventAfterContactSolveData);
 end;
@@ -3437,20 +3615,21 @@ end;
 
 //TG2Scene2DComponentCharacter BEGIN
 procedure TG2Scene2DComponentCharacter.SetupShapes;
-  var qw, hw, hh: TG2Float;
+  var qw, hw, hh, d: TG2Float;
 begin
   hw := _Width * 0.5;
   hh := _Height * 0.5;
   qw := hw * 0.5;
+  d := (1 - _Duck) * 0.5 + 0.5;
   _BodyVerts[0] := b2_vec2(hw, hh - hw);
-  _BodyVerts[1] := b2_vec2(hw, -hh + qw);
-  _BodyVerts[2] := b2_vec2(hw - qw, -hh);
-  _BodyVerts[3] := b2_vec2(-hw + qw, -hh);
-  _BodyVerts[4] := b2_vec2(-hw, -hh + qw);
+  _BodyVerts[1] := b2_vec2(hw, -hh * d + qw);
+  _BodyVerts[2] := b2_vec2(hw - qw, -hh * d);
+  _BodyVerts[3] := b2_vec2(-hw + qw, -hh * d);
+  _BodyVerts[4] := b2_vec2(-hw, -hh * d + qw);
   _BodyVerts[5] := b2_vec2(-hw, hh - hw);
   _ShapeBody.set_polygon(@_BodyVerts, 6);
   _ShapeFeet.center := b2_vec2(0, 0);
-  _ShapeFeet.radius := hw;
+  _ShapeFeet.radius := hw * 0.95;
 end;
 
 procedure TG2Scene2DComponentCharacter.OnInitialize;
@@ -3461,13 +3640,27 @@ begin
   _BodyFeetDef := b2_body_def;
   _BodyFeetDef.body_type := b2_dynamic_body;
   _FixtureBodyDef := b2_fixture_def;
+  _FixtureBodyDef.friction := 1;
+  _FixtureBodyDef.density := 1;
+  _FixtureBodyDef.user_data := Self;
   _FixtureFeetDef := b2_fixture_def;
+  _FixtureFeetDef.friction := 2;
+  _FixtureFeetDef.density := 1;
+  _FixtureFeetDef.user_data := Self;
   _ShapeBody.create;
   _FixtureBodyDef.shape := @_ShapeBody;
   _ShapeFeet.create;
   _FixtureFeetDef.shape := @_ShapeFeet;
   _Width := 0.5;
   _Height := 1;
+  _WalkSpeed := 0;
+  _JumpSpeed := G2Vec2;
+  _JumpDelay := 0;
+  _GlideSpeed := G2Vec2;
+  _MaxGlideSpeed := 2;
+  _Standing := False;
+  _FootContactCount := 0;
+  _Duck := 0;
   SetupShapes;
 end;
 
@@ -3478,13 +3671,53 @@ begin
   inherited OnFinalize;
 end;
 
+procedure TG2Scene2DComponentCharacter.OnUpdate;
+  var n: TG2Vec2;
+  var d: TG2Float;
+begin
+  if _JumpDelay > 0 then _JumpDelay -= g2.DeltaTimeSec;
+  _Standing := _FootContactCount > 0;
+  if _Standing and (_Body <> nil) and (_JumpDelay <= 0) and (Abs(_JumpSpeed.LenSq) > G2EPS2) then
+  begin
+    _Body^.apply_force_to_center(_JumpSpeed, true);
+    _JumpDelay := 0.1;
+  end;
+  _JumpSpeed.SetZero;
+  if _Standing and (_BodyFeet <> nil) and (Abs(_WalkSpeed) > G2EPS2) then
+  begin
+    _BodyFeet^.set_fixed_rotation(false);
+    _BodyFeet^.set_angular_velocity(_WalkSpeed);
+  end
+  else
+  begin
+    _BodyFeet^.set_angular_velocity(0);
+    _BodyFeet^.set_fixed_rotation(true);
+  end;
+  _WalkSpeed := 0;
+  if not _Standing and (_Body <> nil) and (Abs(_GlideSpeed.LenSq) > G2EPS2) then
+  begin
+    n := _GlideSpeed.Norm;
+    d := n.Dot(_Body^.get_linear_velocity);
+    if d < _MaxGlideSpeed then
+    begin
+      d := G2Min(_GlideSpeed.Len, G2Max(_MaxGlideSpeed - d, 0));
+      _Body^.apply_force_to_center(n * d, true);
+    end;
+  end;
+  _GlideSpeed.SetZero;
+  inherited OnUpdate;
+end;
+
 procedure TG2Scene2DComponentCharacter.SetEnabled(const Value: Boolean);
   var bd: tb2_body_def;
   var jd: tb2_revolute_joint_def;
+  var md: tb2_mass_data;
+  var PrevDuck: TG2Float;
 begin
   if Value = _Enabled then Exit;
   if not Value then
   begin
+    _Duck := 0;
     _Scene.PhysWorld.destroy_joint(_Joint);
     _BodyFeet^.destroy_fixture(_FixtureFeet);
     _Body^.destroy_fixture(_FixtureBody);
@@ -3500,6 +3733,7 @@ begin
     _FixtureBodyDef.shape := @_ShapeBody;
     _FixtureFeetDef.shape := @_ShapeFeet;
     bd := _BodyFeetDef;
+    bd.body_type := b2_dynamic_body;
     bd.angle := bd.angle + Owner.Transform.r.Angle;
     bd.position := Owner.Transform.Transform(G2Vec2(0, _Height * 0.5 - _Width * 0.5));
     _BodyFeet := Scene.PhysWorld.create_body(bd);
@@ -3508,19 +3742,86 @@ begin
     jd := b2_revolute_joint_def;
     jd.initialize(_Body, _BodyFeet, bd.position);
     _Joint := _Scene.PhysWorld.create_joint(jd);
+    _Body^.get_mass_data(_BodyMassData);
   end;
 end;
 
 procedure TG2Scene2DComponentCharacter.SetWidth(const Value: TG2Float);
 begin
+  if Abs(_Width - Value) <= G2EPS2 then Exit;
   _Width := Value;
   SetupShapes;
+  if _Enabled then
+  begin
+    Enabled := False;
+    Enabled := True;
+  end;
 end;
 
 procedure TG2Scene2DComponentCharacter.SetHeight(const Value: TG2Float);
 begin
+  if Abs(_Height - Value) <= G2EPS2 then Exit;
   _Height := Value;
   SetupShapes;
+  if _Enabled then
+  begin
+    Enabled := False;
+    Enabled := True;
+  end;
+end;
+
+procedure TG2Scene2DComponentCharacter.SetDuck(const Value: TG2Float);
+  var v: TG2Float;
+begin
+  if not _Enabled then Exit;
+  v := G2Clamp(Value, 0, 1);
+  if Abs(_Duck - v) <= G2EPS2 then Exit;
+  _Duck := Value;
+  SetupShapes;
+  if _Body <> nil then
+  begin
+    _Body^.destroy_fixture(_FixtureBody);
+    _FixtureBody := _Body^.create_fixture(_FixtureBodyDef);
+    _Body^.set_mass_data(_BodyMassData);
+  end;
+end;
+
+procedure TG2Scene2DComponentCharacter.OnBeginContact(
+  const OtherEntity: TG2Scene2DEntity;
+  const OtherShape: TG2Scene2DComponentCollisionShape;
+  const SelfFixture: pb2_fixture; const Contact: pb2_contact);
+begin
+  if (OtherShape <> nil)
+  and (_FixtureFeet <> nil)
+  and (SelfFixture = _FixtureFeet) then
+  Inc(_FootContactCount);
+end;
+
+procedure TG2Scene2DComponentCharacter.OnEndContact(
+  const OtherEntity: TG2Scene2DEntity;
+  const OtherShape: TG2Scene2DComponentCollisionShape;
+  const SelfFixture: pb2_fixture; const Contact: pb2_contact);
+begin
+  if (OtherShape <> nil)
+  and (_FixtureFeet <> nil)
+  and (SelfFixture = _FixtureFeet) then
+  Dec(_FootContactCount);
+end;
+
+procedure TG2Scene2DComponentCharacter.OnBeforeContactSolve(
+  const OtherEntity: TG2Scene2DEntity;
+  const OtherShape: TG2Scene2DComponentCollisionShape;
+  const SelfFixture: pb2_fixture; const Contact: pb2_contact);
+begin
+
+end;
+
+procedure TG2Scene2DComponentCharacter.OnAfterContactSolve(
+  const OtherEntity: TG2Scene2DEntity;
+  const OtherShape: TG2Scene2DComponentCollisionShape;
+  const SelfFixture: pb2_fixture; const Contact: pb2_contact);
+begin
+
 end;
 
 class constructor TG2Scene2DComponentCharacter.CreateClass;
@@ -3532,6 +3833,21 @@ end;
 class function TG2Scene2DComponentCharacter.GetName: String;
 begin
   Result := 'Character';
+end;
+
+procedure TG2Scene2DComponentCharacter.Walk(const Speed: TG2Float);
+begin
+  if _Standing then _WalkSpeed := Speed;
+end;
+
+procedure TG2Scene2DComponentCharacter.Jump(const Speed: TG2Vec2);
+begin
+  if _Standing then _JumpSpeed := Speed;
+end;
+
+procedure TG2Scene2DComponentCharacter.Glide(const Speed: TG2Vec2);
+begin
+  if not _Standing then _GlideSpeed := Speed;
 end;
 
 procedure TG2Scene2DComponentCharacter.Save(const Stream: TStream);
@@ -3546,6 +3862,7 @@ begin
   Stream.Write(_BodyFeetDef, SizeOf(_BodyFeetDef));
   Stream.Write(_FixtureBodyDef, SizeOf(_FixtureBodyDef));
   Stream.Write(_FixtureFeetDef, SizeOf(_FixtureFeetDef));
+  Stream.Write(_MaxGlideSpeed, SizeOf(_MaxGlideSpeed));
   Stream.Write(_Enabled, SizeOf(_Enabled));
 end;
 
@@ -3560,7 +3877,10 @@ begin
   Stream.Read(_BodyFeetDef, SizeOf(_BodyFeetDef));
   Stream.Read(_FixtureBodyDef, SizeOf(_FixtureBodyDef));
   Stream.Read(_FixtureFeetDef, SizeOf(_FixtureFeetDef));
+  Stream.Read(_MaxGlideSpeed, SizeOf(_MaxGlideSpeed));
   Stream.Read(b, SizeOf(b));
+  _FixtureBodyDef.user_data := Self;
+  _FixtureFeetDef.user_data := Self;
   SetupShapes;
   Enabled := b;
   Transform := xf;

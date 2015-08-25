@@ -3654,6 +3654,7 @@ type
   private
     var _Friction: TG2Float;
     var _Density: TG2Float;
+    var _Sensor: Boolean;
   public
     var Component: TG2Scene2DComponentCollisionShapePoly;
     class function GetName: String; override;
@@ -3665,6 +3666,7 @@ type
     procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnChangeFriction(const Sender: Pointer);
     procedure OnChangeDensity(const Sender: Pointer);
+    procedure OnChangeSensor(const Sender: Pointer);
     procedure OnEdit;
   end;
 //TScene2DComponentDataShapePoly END
@@ -3678,6 +3680,7 @@ type
     var _Height: TG2Float;
     var _Friction: TG2Float;
     var _Density: TG2Float;
+    var _Sensor: Boolean;
   public
     var Component: TG2Scene2DComponentCollisionShapeBox;
     class function GetName: String; override;
@@ -3693,6 +3696,7 @@ type
     procedure OnChangeAngle(const Sender: Pointer);
     procedure OnChangeFriction(const Sender: Pointer);
     procedure OnChangeDensity(const Sender: Pointer);
+    procedure OnChangeSensor(const Sender: Pointer);
   end;
 //TScene2DComponentDataShapeBox END
 
@@ -3703,6 +3707,7 @@ type
     var _Radius: TG2Float;
     var _Friction: TG2Float;
     var _Density: TG2Float;
+    var _Sensor: Boolean;
   public
     var Component: TG2Scene2DComponentCollisionShapeCircle;
     class function GetName: String; override;
@@ -3715,6 +3720,7 @@ type
     procedure OnChangeRadius(const Sender: Pointer);
     procedure OnChangeFriction(const Sender: Pointer);
     procedure OnChangeDensity(const Sender: Pointer);
+    procedure OnChangeSensor(const Sender: Pointer);
   end;
 //TScene2DComponentDataShapeCircle END
 
@@ -3723,6 +3729,7 @@ type
   private
     var _Friction: TG2Float;
     var _Density: TG2Float;
+    var _Sensor: Boolean;
   public
     var Component: TG2Scene2DComponentCollisionShapeEdge;
     class function GetName: String; override;
@@ -3733,6 +3740,7 @@ type
     procedure OnEdit;
     procedure OnChangeFriction(const Sender: Pointer);
     procedure OnChangeDensity(const Sender: Pointer);
+    procedure OnChangeSensor(const Sender: Pointer);
   end;
 //TScene2DComponentDataShapeEdge END
 
@@ -3741,6 +3749,7 @@ type
   private
     var _Friction: TG2Float;
     var _Density: TG2Float;
+    var _Sensor: Boolean;
   public
     var Component: TG2Scene2DComponentCollisionShapeChain;
     class function GetName: String; override;
@@ -3751,6 +3760,7 @@ type
     procedure OnEdit;
     procedure OnChangeFriction(const Sender: Pointer);
     procedure OnChangeDensity(const Sender: Pointer);
+    procedure OnChangeSensor(const Sender: Pointer);
   end;
 //TScene2DComponentDataShapeChain END
 
@@ -14290,11 +14300,10 @@ begin
 end;
 
 function TUIWorkspaceScene2DStructure.GetContentSize: TG2Float;
-  var h: Single;
   procedure CheckItem(const Item: TG2Scene2DEntity);
     var i: Integer;
   begin
-    Result += h;
+    Result += _ItemHeight;
     if ItemOpen(Item) then
     for i := 0 to Item.ChildCount - 1 do
     CheckItem(Item.Children[i]);
@@ -14302,7 +14311,6 @@ function TUIWorkspaceScene2DStructure.GetContentSize: TG2Float;
   var i: Integer;
 begin
   Result := 0;
-  h := App.UI.Font1.TextHeight('A');
   for i := 0 to App.Scene2DData.Scene.EntityCount - 1 do
   if App.Scene2DData.Scene.Entities[i].Parent = nil then
   CheckItem(App.Scene2DData.Scene.Entities[i]);
@@ -14523,6 +14531,7 @@ procedure TUIWorkspaceScene2DStructure.OnMouseDown(const Button, x, y: Integer);
   var InExpand: Boolean;
   var ItemData: PScene2DEntityData;
   var r: TG2Rect;
+  var i, ItemID, SelID: TG2IntS32;
 begin
   r := _ListFrame;
   //r.r := r.r - _ScrollV.Frame.w;
@@ -14554,6 +14563,74 @@ begin
             else
             begin
               App.Scene2DData.SelectionUpdateStart;
+              App.Scene2DData.Selection.Add(Item);
+              App.Scene2DData.SelectionUpdateEnd;
+            end;
+          end
+          else if g2.KeyDown[G2K_ShiftL] or g2.KeyDown[G2K_ShiftR] then
+          begin
+            if App.Scene2DData.Selection.Count > 0 then
+            begin
+              SelID := -1;
+              for i := 0 to App.Scene2DData.Scene.EntityCount - 1 do
+              if App.Scene2DData.Scene.Entities[i] = App.Scene2DData.Selection.Last then
+              begin
+                SelID := i;
+                Break;
+              end;
+              for i := 0 to App.Scene2DData.Scene.EntityCount - 1 do
+              if App.Scene2DData.Scene.Entities[i] = Item then
+              begin
+                ItemID := i;
+                Break;
+              end;
+              if (SelID > -1) and (ItemID > -1) then
+              begin
+                App.Scene2DData.SelectionUpdateStart;
+                if ItemID > SelID then
+                begin
+                  for i := SelID + 1 to ItemID do
+                  begin
+                    if not PScene2DEntityData(App.Scene2DData.Scene.Entities[i].UserData)^.Selected
+                    and (App.Scene2DData.Scene.Entities[i].Parent = Item.Parent) then
+                    App.Scene2DData.Selection.Add(App.Scene2DData.Scene.Entities[i]);
+                  end;
+                end
+                else
+                begin
+                  for i := SelID - 1 downto ItemID do
+                  begin
+                    if not PScene2DEntityData(App.Scene2DData.Scene.Entities[i].UserData)^.Selected
+                    and (App.Scene2DData.Scene.Entities[i].Parent = Item.Parent) then
+                    App.Scene2DData.Selection.Add(App.Scene2DData.Scene.Entities[i]);
+                  end;
+                  App.Scene2DData.Selection.Add(Item);
+                end;
+                App.Scene2DData.SelectionUpdateEnd;
+              end
+              else
+              begin
+                if not ItemData^.Selected then
+                begin
+                  App.Scene2DData.SelectionUpdateStart;
+                  App.Scene2DData.Selection.Clear;
+                  App.Scene2DData.Selection.Add(Item);
+                  App.Scene2DData.SelectionUpdateEnd;
+                end;
+              end;
+            end
+            else
+            begin
+              App.Scene2DData.SelectionUpdateStart;
+              App.Scene2DData.Selection.Clear;
+              i := 0;
+              while (App.Scene2DData.Scene.EntityCount > i)
+              and (App.Scene2DData.Scene.Entities[i] <> Item) do
+              begin
+                if App.Scene2DData.Scene.Entities[i].Parent = Item.Parent then
+                App.Scene2DData.Selection.Add(App.Scene2DData.Scene.Entities[i]);
+                Inc(i);
+              end;
               App.Scene2DData.Selection.Add(Item);
               App.Scene2DData.SelectionUpdateEnd;
             end;
@@ -14590,6 +14667,8 @@ begin
       if (App.Scene2DData.Selection.Count > 1)
       and (not g2.KeyDown[G2K_CtrlL])
       and (not g2.KeyDown[G2K_CtrlR])
+      and (not g2.KeyDown[G2K_ShiftL])
+      and (not g2.KeyDown[G2K_ShiftR])
       and (Item <> nil)
       and (Item = ItemPrev)
       and (not InExpand)
@@ -27713,6 +27792,7 @@ procedure TScene2DComponentDataCharacter.AddToProperties(const PropertySet: TPro
   var Group: TPropertySet.TPropertyComponent;
 begin
   Group := PropertySet.PropComponent('Character', Component);
+  PropertySet.PropFloat('Max Glide Speed', @Component.MaxGlideSpeed, );
 end;
 
 procedure TScene2DComponentDataCharacter.DebugDraw(const Display: TG2Display2D);
@@ -27820,12 +27900,15 @@ end;
 
 procedure TScene2DComponentDataShapePoly.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
+  var EventGroup: TPropertySet.TProperty;
 begin
   Group := PropertySet.PropComponent('Collision Polygon', Component);
   _Friction := Component.Fricton;
   _Density := Component.Density;
+  _Sensor := Component.IsSensor;
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
+  PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
   PropertySet.PropButton('Edit', @OnEdit, Group);
   EventGroup := PropertySet.PropGroup('Events', Group);
   PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
@@ -27843,6 +27926,11 @@ end;
 procedure TScene2DComponentDataShapePoly.OnChangeDensity(const Sender: Pointer);
 begin
   Component.Density := _Density;
+end;
+
+procedure TScene2DComponentDataShapePoly.OnChangeSensor(const Sender: Pointer);
+begin
+  Component.IsSensor := _Sensor;
 end;
 
 procedure TScene2DComponentDataShapePoly.OnEdit;
@@ -27938,6 +28026,7 @@ begin
   _Angle := Component.Angle * G2RadToDeg;
   _Friction := Component.Fricton;
   _Density := Component.Density;
+  _Sensor := Component.IsSensor;
   Group := PropertySet.PropComponent('Collision Box', Component);
   PropertySet.PropFloat('Width', @_Width, Group, @OnChangeWidth);
   PropertySet.PropFloat('Height', @_Height, Group, @OnChangeHeight);
@@ -27945,6 +28034,7 @@ begin
   PropertySet.PropFloat('Rotation', @_Angle, Group, @OnChangeAngle);
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
+  PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
   EventGroup := PropertySet.PropGroup('Events', Group);
   PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
   PropertySet.PropString('Event Contact End', @Component.EventEndContact.Name, EventGroup);
@@ -27980,6 +28070,11 @@ end;
 procedure TScene2DComponentDataShapeBox.OnChangeDensity(const Sender: Pointer);
 begin
   Component.Density := _Density;
+end;
+
+procedure TScene2DComponentDataShapeBox.OnChangeSensor(const Sender: Pointer);
+begin
+
 end;
 //TScene2DComponentDataShapeBox END
 
@@ -28041,11 +28136,13 @@ begin
   _Radius := Component.Radius;
   _Friction := Component.Fricton;
   _Density := Component.Density;
+  _Sensor := Component.IsSensor;
   Group := PropertySet.PropComponent('Collision Circle', Component);
   PropertySet.PropVec2('Offset', @_Offset, Group, @OnChangeOffset);
   PropertySet.PropFloat('Radius', @_Radius, Group, @OnChangeRadius);
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
+  PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
   EventGroup := PropertySet.PropGroup('Events', Group);
   PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
   PropertySet.PropString('Event Contact End', @Component.EventEndContact.Name, EventGroup);
@@ -28071,6 +28168,11 @@ end;
 procedure TScene2DComponentDataShapeCircle.OnChangeDensity(const Sender: Pointer);
 begin
   Component.Density := _Density;
+end;
+
+procedure TScene2DComponentDataShapeCircle.OnChangeSensor(const Sender: Pointer);
+begin
+
 end;
 //TScene2DComponentDataShapeCircle END
 
@@ -28113,9 +28215,11 @@ procedure TScene2DComponentDataShapeEdge.AddToProperties(const PropertySet: TPro
 begin
   _Friction := Component.Fricton;
   _Density := Component.Density;
+  _Sensor := Component.IsSensor;
   Group := PropertySet.PropComponent('Collision Edge', Component);
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
+  PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
   PropertySet.PropButton('Edit', @OnEdit, Group);
   EventGroup := PropertySet.PropGroup('Events', Group);
   PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
@@ -28143,6 +28247,11 @@ end;
 procedure TScene2DComponentDataShapeEdge.OnChangeDensity(const Sender: Pointer);
 begin
   Component.Density := _Density;
+end;
+
+procedure TScene2DComponentDataShapeEdge.OnChangeSensor(const Sender: Pointer);
+begin
+
 end;
 //TScene2DComponentDataShapeEdge END
 
@@ -28193,9 +28302,12 @@ procedure TScene2DComponentDataShapeChain.AddToProperties(const PropertySet: TPr
   var EventGroup: TPropertySet.TProperty;
 begin
   _Friction := Component.Fricton;
+  _Density := Component.Density;
+  _Sensor := Component.IsSensor;
   Group := PropertySet.PropComponent('Collision Chain', Component);
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
+  PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
   PropertySet.PropButton('Edit', @OnEdit, Group);
   EventGroup := PropertySet.PropGroup('Events', Group);
   PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
@@ -28223,6 +28335,11 @@ end;
 procedure TScene2DComponentDataShapeChain.OnChangeDensity(const Sender: Pointer);
 begin
   Component.Density := _Density;
+end;
+
+procedure TScene2DComponentDataShapeChain.OnChangeSensor(const Sender: Pointer);
+begin
+
 end;
 //TScene2DComponentDataShapeChain END
 

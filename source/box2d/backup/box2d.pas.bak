@@ -60,7 +60,7 @@ const
   b2_two_pi = b2_pi * b2_pi;
 
   b2_max_manifold_points = 2;
-  b2_max_polygon_vertices = 12;
+  b2_max_polygon_vertices = 8;
   b2_aabb_extension = 0.1;
   b2_aabb_multiplier = 2.0;
   b2_linear_slop = 0.005;

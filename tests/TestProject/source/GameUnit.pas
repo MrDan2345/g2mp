@@ -81,6 +81,7 @@ end;
 
 procedure TGame.Initialize;
   var i: Integer;
+  var Character: TG2Scene2DComponentCharacter;
 begin
   Font := TG2Font.Create;
   Font.Make(32);
@@ -94,15 +95,22 @@ begin
   Scene.Gravity := G2Vec2(0, 9.8);
   Scene.Simulate := True;
   Scene.EnablePhysics;
-  //PlayerEntity := Scene.FindEntityByName('Car');
+  PlayerEntity := Scene.FindEntityByName('Player');
+  //Character := TG2Scene2DComponentCharacter.Create(Scene);
+  //Character.Attach(PlayerEntity);
+  //Character.Enabled := True;
   //Wheel0 := Scene.FindEntityByName('Wheel0');
   //Wheel1 := Scene.FindEntityByName('Wheel1');
+  TG2Picture.SharedAsset('atlas.g2atlas#TestCharB.png').RefInc;
+  TG2Picture.SharedAsset('atlas.g2atlas#TestCharC.png').RefInc;
   rt := TG2Texture2DRT.Create;
   rt.Make(64, 64);
 end;
 
 procedure TGame.Finalize;
 begin
+  TG2Picture.SharedAsset('atlas.g2atlas#TestCharB.png').RefDec;
+  TG2Picture.SharedAsset('atlas.g2atlas#TestCharC.png').RefDec;
   rt.Free;
   Scene.Free;
   Display.Free;
@@ -111,10 +119,42 @@ end;
 
 procedure TGame.Update;
   var rb: TG2Scene2DComponentRigidBody;
+  var Character: TG2Scene2DComponentCharacter;
+  var Sprite: TG2Scene2DComponentSprite;
 begin
-//  if PlayerEntity <> nil then
-//  Display.Position := PlayerEntity.Transform.p;
-//  if g2.KeyDown[G2K_Right] then
+  if PlayerEntity <> nil then
+  begin
+    Display.Position := G2LerpVec2(Display.Position, PlayerEntity.Transform.p, 0.1);
+    Character := TG2Scene2DComponentCharacter(PlayerEntity.ComponentOfType[TG2Scene2DComponentCharacter]);
+    if g2.KeyDown[G2K_Right] then
+    begin
+      Character.Walk(10);
+      Character.Glide(G2Vec2(10, 0));
+    end
+    else if g2.KeyDown[G2K_Left] then
+    begin
+      Character.Walk(-10);
+      Character.Glide(G2Vec2(-10, 0));
+    end;
+    if g2.KeyDown[G2K_Space] then
+    begin
+      Character.Jump(G2Vec2(0, -200));
+    end;
+    if g2.KeyDown[G2K_Down] then
+    begin
+      Character.Duck := 1;
+      Sprite := TG2Scene2DComponentSprite(PlayerEntity.ComponentOfType[TG2Scene2DComponentSprite]);
+      if Assigned(Sprite) and (Sprite.Picture.AssetName <> 'atlas.g2atlas#TestCharB.png') then
+      Sprite.Picture := TG2Picture.SharedAsset('atlas.g2atlas#TestCharB.png');
+    end
+    else
+    begin
+      Character.Duck := 0;
+      Sprite := TG2Scene2DComponentSprite(PlayerEntity.ComponentOfType[TG2Scene2DComponentSprite]);
+      if Assigned(Sprite) and (Sprite.Picture.AssetName <> 'atlas.g2atlas#TestCharC.png') then
+      Sprite.Picture := TG2Picture.SharedAsset('atlas.g2atlas#TestCharC.png');
+    end;
+  end;
 //  begin
 //    rb := TG2Scene2DComponentRigidBody(Wheel0.ComponentOfType[TG2Scene2DComponentRigidBody]);
 //    rb.PhysBody^.apply_torque(EnginePower, true);
@@ -135,6 +175,7 @@ begin
   //g2.RenderTarget := rt;
   //Display.ViewPort := Rect(0, 0, 64, 64);
   Scene.Render(Display);
+  //Scene.DebugDraw(Display);
   //g2.RenderTarget := nil;
   //g2.PicRect(0, 0, 768, 768, $ffffffff, rt, bmNormal, tfPoint);
 end;

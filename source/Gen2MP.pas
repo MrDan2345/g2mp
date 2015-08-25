@@ -9227,7 +9227,21 @@ class function TG2Picture.SharedAsset(const SharedAssetName: String; const Usage
   var Frame: TG2AtlasFrame;
   var PictureTexture: TG2PictureTexture absolute Result;
   var PictureAtlasFrame: TG2PictureAtlasFrame absolute Result;
+  var Res: TG2Res;
 begin
+  Res := TG2Res.List;
+  while Res <> nil do
+  begin
+    if (Res is TG2Picture)
+    and (TG2Picture(Res).AssetName = SharedAssetName)
+    and (TG2Picture(Res).Texture.Usage = Usage)
+    and (Res.RefCount > 0) then
+    begin
+      Result := TG2Picture(Res);
+      Exit;
+    end;
+    Res := Res.Next;
+  end;
   PathArr := G2StrExplode(SharedAssetName, '#');
   if Length(PathArr) = 1 then
   begin
