@@ -61,7 +61,7 @@ begin
   g2.Params.MaxFPS := 100;
   g2.Params.Width := 768;
   g2.Params.Height := 768;
-  g2.Params.ScreenMode := smMaximized;
+  g2.Params.ScreenMode := smWindow;
 end;
 
 destructor TGame.Destroy;

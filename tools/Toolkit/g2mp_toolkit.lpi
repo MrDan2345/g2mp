@@ -158,6 +158,7 @@
       <Unit17>
         <Filename Value="..\..\source\Gen2MP.pas"/>
         <UnitName Value="Gen2MP"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="10"/>
         <TopLine Value="893"/>
         <CursorPos X="15" Y="909"/>
@@ -196,7 +197,7 @@
         <EditorIndex Value="8"/>
         <TopLine Value="351"/>
         <CursorPos X="12" Y="354"/>
-        <UsageCount Value="77"/>
+        <UsageCount Value="78"/>
         <Loaded Value="True"/>
       </Unit21>
       <Unit22>
@@ -216,10 +217,9 @@
       <Unit24>
         <Filename Value="..\..\source\G2Scene2D.pas"/>
         <UnitName Value="G2Scene2D"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
         <TopLine Value="3672"/>
-        <CursorPos X="55" Y="3680"/>
+        <CursorPos X="38" Y="3678"/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
       </Unit24>
@@ -289,7 +289,7 @@
         <EditorIndex Value="7"/>
         <TopLine Value="208"/>
         <CursorPos X="21" Y="196"/>
-        <UsageCount Value="13"/>
+        <UsageCount Value="14"/>
         <Loaded Value="True"/>
       </Unit33>
       <Unit34>
