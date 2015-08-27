@@ -173,6 +173,8 @@ type
   TG2ProcMouseObj = procedure (const Button, x, y: TG2IntS32) of Object;
   TG2ProcScroll = procedure (const y: TG2IntS32);
   TG2ProcScrollObj = procedure (const y: TG2IntS32) of Object;
+  TG2ProcResize = procedure (const PrevWidth, PrevHeight, NewWidth, NewHeight: TG2IntS32);
+  TG2ProcResizeObj = procedure (const PrevWidth, PrevHeight, NewWidth, NewHeight: TG2IntS32) of Object;
   TG2ProcInt = procedure (const v: Integer);
   TG2ProcIntObj = procedure (const v: Integer) of Object;
   TG2ProcString = procedure (const s: AnsiString);
@@ -300,6 +302,14 @@ type
   PG2LinkScroll = ^TG2LinkScroll;
   TG2LinkScrollList = specialize TG2QuickListG<PG2LinkScroll>;
 
+  TG2LinkResize = record
+    Obj: Boolean;
+    Proc: TG2ProcResize;
+    ProcObj: TG2ProcResizeObj;
+  end;
+  PG2LinkResize = ^TG2LinkResize;
+  TG2LinkResizeList = specialize TG2QuickListG<PG2LinkResize>;
+
   TG2Log = class
   private
     {$if defined(G2Log)}
@@ -349,6 +359,7 @@ type
     _LinkMouseDown: TG2LinkMouseList;
     _LinkMouseUp: TG2LinkMouseList;
     _LinkScroll: TG2LinkScrollList;
+    _LinkResize: TG2LinkResizeList;
     _KeyDown: array[0..255] of Boolean;
     _MBDown: array[0..31] of Boolean;
     _MDPos: array[0..31] of TPoint;
@@ -376,6 +387,7 @@ type
     procedure OnMouseDown(const Button: TG2IntS32; const x, y: TG2IntS32);
     procedure OnMouseUp(const Button: TG2IntS32; const x, y: TG2IntS32);
     procedure OnScroll(const y: TG2IntS32);
+    procedure OnResize(const PrevWidth, PrevHeight, NewWidth, NewHeight: TG2IntS32);
     function GetKeyDown(const Index: TG2IntS32): Boolean; inline;
     function GetMouseDown(const Index: TG2IntS32): Boolean; inline;
     function GetMouseDownPos(const Index: TG2IntS32): TPoint; inline;
@@ -456,6 +468,10 @@ type
     procedure CallbackScrollAdd(const ProcScroll: TG2ProcScrollObj); overload;
     procedure CallbackScrollRemove(const ProcScroll: TG2ProcScroll); overload;
     procedure CallbackScrollRemove(const ProcScroll: TG2ProcScrollObj); overload;
+    procedure CallbackResizeAdd(const ProcScroll: TG2ProcResize); overload;
+    procedure CallbackResizeAdd(const ProcScroll: TG2ProcResizeObj); overload;
+    procedure CallbackResizeRemove(const ProcScroll: TG2ProcResize); overload;
+    procedure CallbackResizeRemove(const ProcScroll: TG2ProcResizeObj); overload;
     procedure PicQuadCol(
       const Pos0, Pos1, Pos2, Pos3, Tex0, Tex1, Tex2, Tex3: TG2Vec2;
       const Col0, Col1, Col2, Col3: TG2Color;
@@ -757,7 +773,6 @@ type
     procedure Stop; inline;
     procedure SetCaption(const Value: AnsiString); inline;
     procedure SetCursor(const Value: TG2Cursor);
-    function ScreenSize: TPoint;
   public
     {$if defined(G2Target_Windows)}
     property Handle: THandle read _Handle;
@@ -789,27 +804,37 @@ type
   private
     _ScreenWidth: TG2IntS32;
     _ScreenHeight: TG2IntS32;
+    _NewWidth: TG2IntS32;
     _Width: TG2IntS32;
+    _NewHeight: TG2IntS32;
     _Height: TG2IntS32;
+    _NewScreenMode: TG2ScreenMode;
+    _ScreenMode: TG2ScreenMode;
     _WidthRT: TG2IntS32;
     _HeightRT: TG2IntS32;
-    _ScreenMode: TG2ScreenMode;
     _TargetUPS: TG2IntS32;
     _MaxFPS: TG2IntS32;
     _PreventUpdateOverload: Boolean;
+    _Buffered: Boolean;
+    procedure SetWidth(const Value: TG2IntS32); inline;
+    procedure SetHeight(const Value: TG2IntS32); inline;
+    procedure SetScreenMode(const Value: TG2ScreenMode); inline;
+    procedure SetBuffered(const Value: Boolean); inline;
   public
     property ScreenWidth: TG2IntS32 read _ScreenWidth;
     property ScreenHeight: TG2IntS32 read _ScreenHeight;
-    property Width: TG2IntS32 read _Width write _Width;
-    property Height: TG2IntS32 read _Height write _Height;
+    property Width: TG2IntS32 read _Width write SetWidth;
+    property Height: TG2IntS32 read _Height write SetHeight;
     property WidthRT: TG2IntS32 read _WidthRT;
     property HeightRT: TG2IntS32 read _HeightRT;
-    property ScreenMode: TG2ScreenMode read _ScreenMode write _ScreenMode;
+    property ScreenMode: TG2ScreenMode read _ScreenMode write SetScreenMode;
     property TargetUPS: TG2IntS32 read _TargetUPS write _TargetUPS;
     property MaxFPS: TG2IntS32 read _MaxFPS write _MaxFPS;
     property PreventUpdateOverload: Boolean read _PreventUpdateOverload write _PreventUpdateOverload;
     constructor Create;
     destructor Destroy; override;
+    function NeedUpdate: Boolean;
+    procedure Apply;
   end;
 
   TG2Sys = class
@@ -3401,8 +3426,9 @@ end;
 
 {$if defined(G2Target_Windows)}
 function G2MessageHandler(Wnd: HWnd; Msg: UInt; wParam: WPARAM; lParam: LPARAM): LResult; stdcall;
-  var WndowMode: TG2IntS32;
+  var WindowMode: TG2IntS32;
 begin
+  if Assigned(g2.Window) then
   case Msg of
     WM_DESTROY, WM_QUIT, WM_CLOSE:
     begin
@@ -4068,6 +4094,7 @@ begin
     _Renderer.FreeOnTerminate := False;
     _Renderer.Resume;
     {$endif}
+    _Params.SetBuffered(True);
     _CanRender := False;
     _Started := True;
     {$if defined(G2Target_Windows) or defined(G2Target_Linux) or defined(G2Target_OSX)}
@@ -4184,6 +4211,16 @@ begin
   _LinkScroll[i]^.ProcObj(y)
   else
   _LinkScroll[i]^.Proc(y);
+end;
+
+procedure TG2Core.OnResize(const PrevWidth, PrevHeight, NewWidth, NewHeight: TG2IntS32);
+  var i: TG2IntS32;
+begin
+  for i := 0 to _LinkResize.Count - 1 do
+  if _LinkResize[i]^.Obj then
+  _LinkResize[i]^.ProcObj(PrevWidth, PrevHeight, NewWidth, NewHeight)
+  else
+  _LinkResize[i]^.Proc(PrevWidth, PrevHeight, NewWidth, NewHeight);
 end;
 
 function TG2Core.GetKeyDown(const Index: TG2IntS32): Boolean;
@@ -4899,6 +4936,57 @@ begin
     begin
       Dispose(Link);
       _LinkScroll.Delete(i);
+      Break;
+    end;
+  end;
+end;
+
+procedure TG2Core.CallbackResizeAdd(const ProcScroll: TG2ProcResize);
+  var Link: PG2LinkResize;
+begin
+  New(Link);
+  Link^.Obj := False;
+  Link^.Proc := ProcResize;
+  _LinkResize.Add(Link);
+end;
+
+procedure TG2Core.CallbackResizeAdd(const ProcScroll: TG2ProcResizeObj);
+  var Link: PG2LinkResize;
+begin
+  New(Link);
+  Link^.Obj := True;
+  Link^.ProcObj := ProcResize;
+  _LinkResize.Add(Link);
+end;
+
+procedure TG2Core.CallbackResizeRemove(const ProcScroll: TG2ProcResize);
+  var i: TG2IntS32;
+  var Link: PG2LinkResize;
+begin
+  for i := 0 to _LinkResize.Count - 1 do
+  begin
+    Link := _LinkResize[i];
+    if not Link^.Obj and (Link^.Proc = ProcResize) then
+    begin
+      Dispose(Link);
+      _LinkResize.Delete(i);
+      Break;
+    end;
+  end;
+end;
+
+procedure TG2Core.CallbackResizeRemove(const ProcScroll: TG2ProcResizeObj);
+  var i: TG2IntS32;
+  var Link: PG2LinkResize;
+begin
+  for i := 0 to _LinkResize.Count - 1 do
+  begin
+    Link := _LinkResize[i];
+    if Link^.Obj
+    and G2CmpObjFuncPtr(@Link^.ProcObj, @ProcResize) then
+    begin
+      Dispose(Link);
+      _LinkResize.Delete(i);
       Break;
     end;
   end;
@@ -5766,6 +5854,7 @@ begin
   _LinkMouseDown.Clear;
   _LinkMouseUp.Clear;
   _LinkScroll.Clear;
+  _LinkResize.Clear;
   _ShowCursor := True;
   {$if defined(G2Target_Android) or defined(G2Target_iOS)}
   _CursorPos := Point(0, 0);
@@ -5953,11 +6042,47 @@ begin
 end;
 
 procedure TG2Window.OnResize(const Mode, NewWidth, NewHeight: TG2IntS32);
+  var PrevWidth, PrevHeight, NextWidth, NextHeight: TG2IntS32;
+  var PrevScreenMode, NextScreenMode: TG2ScreenMode;
+  var R: TRect;
+  var WndStyle: TG2IntU32;
 begin
-  case Mode of
-    0: g2.Params.ScreenMode := smWindow;
-    1: g2.Params.ScreenMode := smMaximized;
+  g2.Params.SetBuffered(False);
+  PrevWidth := g2.Params.Width;
+  PrevHeight := g2.Params.Height;
+  PrevScreenMode := g2.Params.ScreenMode;
+  if PrevScreenMode <> smFullscreen then
+  begin
+    case Mode of
+      0: NextScreenMode := smWindow;
+      1: NextScreenMode := smMaximized;
+    end;
+  end
+  else
+  begin
+    NextScreenMode := PrevScreenMode;
   end;
+  {$if defined(G2Target_Windows)}
+  if PrevScreenMode <> NextScreenMode then
+  begin
+    WndStyle := (
+      WS_CAPTION or
+      WS_POPUP or
+      WS_VISIBLE or
+      WS_EX_TOPMOST or
+      WS_MINIMIZEBOX or
+      WS_MAXIMIZEBOX or
+      WS_SYSMENU
+    );
+    SetWindowLongA(_Handle, GWL_STYLE, WndStyle);
+  end;
+  GetClientRect(_Handle, R);
+  NextWidth := R.Right - R.Left;
+  NextHeight := R.Bottom - R.Top;
+  {$elseif defined(G2Target_Linux)}
+  {$elseif defined(G2Target_OSX)}
+  {$endif}
+  g2.Params.SetBuffered(True);
 end;
 {$Hints on}
 
@@ -6000,18 +6125,6 @@ begin
     Windows.SetCursor(_Cursor);
     {$endif}
   end;
-end;
-
-function TG2Window.ScreenSize: TPoint;
-begin
-{$if defined(G2Target_Windows)}
-
-{$elseif defined(G2Target_Linux)}
-  var Event: TXEvent;
-{$elseif defined(G2Target_OSX)}
-  var EvMask: MacOSAll.EventMask;
-  var Event: MacOSAll.EventRecord;
-{$endif}
 end;
 
 {$Hints off}
@@ -6440,6 +6553,29 @@ end;
 //TG2Window END
 
 //TG2Params BEGIN
+procedure TG2Params.SetWidth(const Value: TG2IntS32);
+begin
+  if not _Buffered then _Width := Value;
+  _NewWidth := Value;
+end;
+
+procedure TG2Params.SetHeight(const Value: TG2IntS32);
+begin
+  if not _Buffered then _Height := Value;
+  _NewHeight := Value;
+end;
+
+procedure TG2Params.SetScreenMode(const Value: TG2ScreenMode);
+begin
+  if not _Buffered then _ScreenMode := Value;
+  _NewScreenMode := Value;
+end;
+
+procedure TG2Params.SetBuffered(const Value: Boolean);
+begin
+  _Buffered := Value;
+end;
+
 constructor TG2Params.Create;
 {$if defined(G2Target_Linux)}
   var Display: PXDisplay;
@@ -6474,12 +6610,27 @@ begin
   _ScreenMode := smWindow;
   _TargetUPS := 60;
   _MaxFPS := 0;
+  _Buffered := False;
   _PreventUpdateOverload := false;
 end;
 
 destructor TG2Params.Destroy;
 begin
   inherited Destroy;
+end;
+
+function TG2Params.NeedUpdate: Boolean;
+begin
+  Result := (_NewWidth <> _Width) or (_NewHeight <> _Height) or (_NewScreenMode <> _ScreenHeight);
+end;
+
+procedure TG2Params.Apply;
+begin
+  if not NeedUpdate then Exit;
+  g2.Gfx.Resize(_Width, _Height, _NewWidth, _NewHeight);
+  _Width := _NewWidth;
+  _Height := _NewHeight;
+  _ScreenMode := _NewScreenMode;
 end;
 //TG2Params END
 
