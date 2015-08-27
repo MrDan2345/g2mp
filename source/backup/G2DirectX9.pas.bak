@@ -1,6 +1,7 @@
 {$optimization off}
-unit G2DirectX9;
 {$mode objfpc}
+unit G2DirectX9;
+
 interface
 
 uses
@@ -175,6 +176,11 @@ const
   D3DFVF_TEXTUREFORMAT1 = 3;
   D3DFVF_TEXTUREFORMAT3 = 1;
   D3DFVF_TEXTUREFORMAT4 = 2;
+
+  D3DPRESENT_DONOTWAIT                   = $00000001;
+  D3DPRESENT_LINEAR_CONTENT              = $00000002;
+  D3DPRESENT_DONOTFLIP                   = $00000004;
+  D3DPRESENT_FLIPRESTART                 = $00000008;
 
 type
   TD3DTextureFilterType = type DWord;

@@ -3629,7 +3629,7 @@ begin
   _BodyVerts[5] := b2_vec2(-hw, hh - hw);
   _ShapeBody.set_polygon(@_BodyVerts, 6);
   _ShapeFeet.center := b2_vec2(0, 0);
-  _ShapeFeet.radius := hw * 0.95;
+  _ShapeFeet.radius := hw * 0.9;
 end;
 
 procedure TG2Scene2DComponentCharacter.OnInitialize;
@@ -3683,7 +3683,7 @@ begin
     _JumpDelay := 0.1;
   end;
   _JumpSpeed.SetZero;
-  if _Standing and (_BodyFeet <> nil) and (Abs(_WalkSpeed) > G2EPS2) then
+  if (_BodyFeet <> nil) and (Abs(_WalkSpeed) > G2EPS2) then
   begin
     _BodyFeet^.set_fixed_rotation(false);
     _BodyFeet^.set_angular_velocity(_WalkSpeed);
@@ -3837,7 +3837,7 @@ end;
 
 procedure TG2Scene2DComponentCharacter.Walk(const Speed: TG2Float);
 begin
-  if _Standing then _WalkSpeed := Speed;
+  _WalkSpeed := Speed;
 end;
 
 procedure TG2Scene2DComponentCharacter.Jump(const Speed: TG2Vec2);

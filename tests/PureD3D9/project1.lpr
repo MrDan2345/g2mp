@@ -17,6 +17,9 @@ var WindowHandle: HWND;
 var AppRunning: Boolean;
 var D3D9: IDirect3D9;
 var Device: IDirect3DDevice9;
+var SwapChain: IDirect3DSwapChain9;
+var RenderTarget: IDirect3DSurface9;
+var DepthStencil: IDirect3DSurface9;
 var VB: IDirect3DVertexBuffer9;
 var FVF: DWord;
 
@@ -61,13 +64,15 @@ end;
 
 procedure OnRender;
   var W, V, P: TG2Mat;
+  var Viewport: TD3DViewport9;
 begin
+  Device.GetViewport(Viewport);
   Device.SetRenderState(D3DRS_LIGHTING, 0);
   Device.SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
   Device.SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
   W := G2MatRotationY(GetTickCount * 0.001);
   V := G2MatView(G2Vec3(0, 5, -5), G2Vec3(0, 0, 0), G2Vec3(0, 1, 0));
-  P := G2MatProj(Pi / 4, 1, 1, 100);
+  P := G2MatProj(Pi / 4, Viewport.Width / Viewport.Height, 1, 100);
   Device.SetTexture(0, nil);
   Device.SetTransform(D3DTS_WORLD, W);
   Device.SetTransform(D3DTS_VIEW, V);
@@ -78,10 +83,13 @@ begin
   Device.SetFVF(FVF);
   Device.DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
   Device.EndScene;
-  Device.Present(nil, nil, 0, nil);
+  SwapChain.Present(nil, nil, 0, nil, 0);
 end;
 
 function MessageHandler(Wnd: HWnd; Msg: UInt; wParam: WPARAM; lParam: LPARAM): LResult; stdcall;
+  var w, h: Integer;
+  var pp: TD3DPresentParameters;
+  var Viewport: TD3DViewport9;
 begin
   case Msg of
     WM_DESTROY, WM_QUIT, WM_CLOSE:
@@ -122,6 +130,30 @@ begin
     begin
 
     end;
+    WM_SIZE:
+    begin
+      if Device <> nil then
+      begin
+        Device.GetViewport(Viewport);
+        w := lParam and $ffff;
+        h := (lParam shr 16) and $ffff;
+        Viewport.Width := w;
+        Viewport.Height := h;
+        ZeroMemory(@pp, SizeOf(pp));
+        SwapChain.GetPresentParameters(pp);
+        pp.BackBufferWidth := w;
+        pp.BackBufferHeight := h;
+        Device.SetRenderTarget(0, nil);
+        Device.SetDepthStencilSurface(nil);
+        SafeRelease(RenderTarget);
+        SafeRelease(SwapChain);
+        Device.CreateAdditionalSwapChain(pp, SwapChain);
+        SwapChain.GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, RenderTarget);
+        Device.SetRenderTarget(0, RenderTarget);
+        Device.SetDepthStencilSurface(DepthStencil);
+        Device.SetViewport(Viewport);
+      end;
+    end;
   end;
   Result := DefWindowProcA(Wnd, Msg, wParam, lParam);
 end;
@@ -147,10 +179,11 @@ begin
   WndClassName := 'Static';
   WndStyle := (
     WS_CAPTION or
-    WS_POPUP or
+    WS_THICKFRAME or
     WS_VISIBLE or
     WS_EX_TOPMOST or
     WS_MINIMIZEBOX or
+    WS_MAXIMIZEBOX or
     WS_SYSMENU
   );
   R.Left := (GetSystemMetrics(SM_CXSCREEN) - W) div 2;
@@ -190,7 +223,7 @@ begin
   pp.SwapEffect := D3DSWAPEFFECT_DISCARD;
   pp.hDeviceWindow := WindowHandle;
   pp.Windowed := True;
-  pp.EnableAutoDepthStencil := True;
+  pp.EnableAutoDepthStencil := False;
   pp.AutoDepthStencilFormat := D3DFMT_D16;
   pp.PresentationInterval := D3DPRESENT_INTERVAL_IMMEDIATE;
   D3D9.CreateDevice(
@@ -200,6 +233,20 @@ begin
     @pp,
     Device
   );
+  Device.CreateDepthStencilSurface(
+    2048,
+    2048,
+    D3DFMT_D16,
+    D3DMULTISAMPLE_NONE,
+    0,
+    True,
+    DepthStencil,
+    nil
+  );
+  Device.CreateAdditionalSwapChain(pp, SwapChain);
+  SwapChain.GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, RenderTarget);
+  Device.SetRenderTarget(0, RenderTarget);
+  Device.SetDepthStencilSurface(DepthStencil);
   Device.SetRenderState(D3DRS_ALPHABLENDENABLE, 1);
   Device.SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
   Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
@@ -214,6 +261,9 @@ end;
 
 procedure FreeDevice;
 begin
+  SafeRelease(DepthStencil);
+  SafeRelease(RenderTarget);
+  SafeRelease(SwapChain);
   SafeRelease(Device);
   SafeRelease(D3D9);
 end;

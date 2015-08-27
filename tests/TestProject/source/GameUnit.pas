@@ -7,6 +7,7 @@ uses
   G2Types,
   G2Math,
   G2Utils,
+  G2ImagePNG,
   G2DataManager,
   G2Scene2D,
   box2d,
@@ -155,19 +156,6 @@ begin
       Sprite.Picture := TG2Picture.SharedAsset('atlas.g2atlas#TestCharC.png');
     end;
   end;
-//  begin
-//    rb := TG2Scene2DComponentRigidBody(Wheel0.ComponentOfType[TG2Scene2DComponentRigidBody]);
-//    rb.PhysBody^.apply_torque(EnginePower, true);
-//    rb := TG2Scene2DComponentRigidBody(Wheel1.ComponentOfType[TG2Scene2DComponentRigidBody]);
-//    rb.PhysBody^.apply_torque(EnginePower, true);
-//  end
-//  else if g2.KeyDown[G2K_Left] then
-//  begin
-//    rb := TG2Scene2DComponentRigidBody(Wheel0.ComponentOfType[TG2Scene2DComponentRigidBody]);
-//    rb.PhysBody^.apply_torque(-EnginePower, true);
-//    rb := TG2Scene2DComponentRigidBody(Wheel1.ComponentOfType[TG2Scene2DComponentRigidBody]);
-//    rb.PhysBody^.apply_torque(-EnginePower, true);
-//  end;
 end;
 
 procedure TGame.Render;
@@ -175,7 +163,7 @@ begin
   //g2.RenderTarget := rt;
   //Display.ViewPort := Rect(0, 0, 64, 64);
   Scene.Render(Display);
-  //Scene.DebugDraw(Display);
+  Scene.DebugDraw(Display);
   //g2.RenderTarget := nil;
   //g2.PicRect(0, 0, 768, 768, $ffffffff, rt, bmNormal, tfPoint);
 end;

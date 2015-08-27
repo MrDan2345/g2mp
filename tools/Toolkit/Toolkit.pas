@@ -2282,6 +2282,7 @@ type
     procedure Initialize;
     procedure Finalize;
     procedure Adjust;
+    procedure AdjustWorkspaces;
     procedure Render;
     procedure Update;
     procedure RenderTabs;
@@ -2653,6 +2654,7 @@ type
     procedure Finalize;
     procedure Render;
     procedure Update;
+    procedure Resize;
     procedure MsgInsertWorkspace(
       const Workspace: TUIWorkspace;
       const InsertPos: TG2Vec2;
@@ -4113,6 +4115,7 @@ type
     procedure MouseUp(const Button, x, y: Integer);
     procedure Scroll(const y: Integer);
     procedure Print(const Char: AnsiChar);
+    procedure Resize(const OldWidth, OldHeight, NewWidth, NewHeight: Integer);
     function LoadFile(const f: String): AnsiString;
   end;
 //TG2Toolkit END
@@ -17453,6 +17456,11 @@ begin
   UI.OnPrint(Char);
 end;
 
+procedure TG2Toolkit.Resize(const OldWidth, OldHeight, NewWidth, NewHeight: Integer);
+begin
+  UI.Resize;
+end;
+
 function TG2Toolkit.LoadFile(const f: String): AnsiString;
   var fs: TFileStream;
 begin
@@ -17847,6 +17855,16 @@ begin
   NewTabRect.Left := NewTabRect.Right - i;
   NewTabRect.Top := (Height - i) div 2;
   NewTabRect.Bottom := NewTabRect.Top + i;
+end;
+
+procedure TUIViews.AdjustWorkspaces;
+  var i: Integer;
+begin
+  for i := 0 to Views.Count - 1 do
+  begin
+    if PView(Views[i])^.Workspace <> nil then
+    PView(Views[i])^.Workspace.Frame := App.UI.WorkspaceFrame;
+  end;
 end;
 
 procedure TUIViews.Render;
@@ -20418,6 +20436,16 @@ begin
   ProcessMessages;
   Hint.Update;
   g2.Window.Cursor := Cursor;
+end;
+
+procedure TUI.Resize;
+begin
+  WorkspaceFrame.l := 0;
+  WorkspaceFrame.t := Views.Height;
+  WorkspaceFrame.r := g2.Params.Width;
+  WorkspaceFrame.b := g2.Params.Height;
+  Views.Adjust;
+  Views.AdjustWorkspaces;
 end;
 
 procedure TUI.MsgInsertWorkspace(

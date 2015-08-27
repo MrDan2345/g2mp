@@ -468,10 +468,10 @@ type
     procedure CallbackScrollAdd(const ProcScroll: TG2ProcScrollObj); overload;
     procedure CallbackScrollRemove(const ProcScroll: TG2ProcScroll); overload;
     procedure CallbackScrollRemove(const ProcScroll: TG2ProcScrollObj); overload;
-    procedure CallbackResizeAdd(const ProcScroll: TG2ProcResize); overload;
-    procedure CallbackResizeAdd(const ProcScroll: TG2ProcResizeObj); overload;
-    procedure CallbackResizeRemove(const ProcScroll: TG2ProcResize); overload;
-    procedure CallbackResizeRemove(const ProcScroll: TG2ProcResizeObj); overload;
+    procedure CallbackResizeAdd(const ProcResize: TG2ProcResize); overload;
+    procedure CallbackResizeAdd(const ProcResize: TG2ProcResizeObj); overload;
+    procedure CallbackResizeRemove(const ProcResize: TG2ProcResize); overload;
+    procedure CallbackResizeRemove(const ProcResize: TG2ProcResizeObj); overload;
     procedure PicQuadCol(
       const Pos0, Pos1, Pos2, Pos3, Tex0, Tex1, Tex2, Tex3: TG2Vec2;
       const Col0, Col1, Col2, Col3: TG2Color;
@@ -909,6 +909,7 @@ type
     {$if defined(G2RM_SM2)}
     procedure SetShaderMethod(const Value: PG2ShaderMethod); virtual; abstract;
     {$endif}
+    procedure Resize(const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32); virtual;
   public
     SizeRT: TPoint;
     property StateChange: TG2RenderControlStateChange read _ControlStateChange;
@@ -964,8 +965,10 @@ type
   private
     _D3D9: IDirect3D9;
     _Device: IDirect3DDevice9;
+    _DefSwapChain: IDirect3DSwapChain9;
     _DefRenderTarget: IDirect3DSurface9;
     _DefDepthStencil: IDirect3DSurface9;
+    _PresentParameters: TD3DPresentParameters;
   protected
     procedure SetRenderTarget(const Value: TG2Texture2DRT); override;
     procedure SetBlendMode(const Value: TG2BlendMode); override;
@@ -978,6 +981,7 @@ type
     {$if defined(G2RM_SM2)}
     procedure SetShaderMethod(const Value: PG2ShaderMethod); override;
     {$endif}
+    procedure Resize(const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32); override;
   public
     Caps: TD3DCaps9;
     property Device: IDirect3DDevice9 read _Device;
@@ -1023,6 +1027,7 @@ type
     {$if defined(G2RM_SM2)}
     procedure SetShaderMethod(const Value: PG2ShaderMethod); override;
     {$endif}
+    procedure Resize(const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32); override;
   public
     {$if defined(G2Target_Windows)}
     property Context: HGLRC read _Context;
@@ -2633,6 +2638,7 @@ type
     _ScreenScaleMax: Single;
     _ConvertCoord: TG2Vec4;
     _ViewPort: TRect;
+    _AutoResizeViewport: Boolean;
     procedure SetMode(const Value: TG2Display2DMode); inline;
     procedure SetWidth(const Value: TG2IntS32); inline;
     procedure SetHeight(const Value: TG2IntS32); inline;
@@ -2641,6 +2647,8 @@ type
     procedure SetViewPort(const Value: TRect); inline;
     procedure UpdateMode;
     function GetRotationVector: TG2Vec2; inline;
+    procedure OnResize(const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32);
+    procedure SetAutoResizeViewport(const Value: Boolean);
   public
     property Position: TG2Vec2 read _Pos write _Pos;
     property Rotation: TG2Float read _Rotation write SetRotation;
@@ -2656,6 +2664,7 @@ type
     property ScreenScaleMin: Single read _ScreenScaleMin;
     property ScreenScaleMax: Single read _ScreenScaleMax;
     property ViewPort: TRect read _ViewPort write SetViewPort;
+    property AutoResizeViewport: Boolean read _AutoResizeViewport write SetAutoResizeViewport;
     constructor Create;
     destructor Destroy; override;
     function CoordToScreen(const Coord: TG2Vec2): TG2Vec2;
@@ -3491,7 +3500,7 @@ begin
     WM_SETCURSOR:
     begin
       Windows.SetCursor(g2.Window.Cursor);
-      Exit;
+      if g2.Window.Cursor <> g2.Window.CursorArrow then Exit;
     end;
     WM_SIZE:
     begin
@@ -3499,7 +3508,7 @@ begin
       g2.Window.AddMessage(@g2.Window.OnResize, WindowMode, lParam and $ffff, (lParam shr 16) and $ffff);
     end;
   end;
-  Result := DefWindowProcA(Wnd, Msg, wParam, lParam);
+  Result := DefWindowProc(Wnd, Msg, wParam, lParam);
 end;
 {$elseif defined(G2Target_Linux)}
 procedure G2MessageHandler(Event: TXEvent);
@@ -4941,7 +4950,7 @@ begin
   end;
 end;
 
-procedure TG2Core.CallbackResizeAdd(const ProcScroll: TG2ProcResize);
+procedure TG2Core.CallbackResizeAdd(const ProcResize: TG2ProcResize);
   var Link: PG2LinkResize;
 begin
   New(Link);
@@ -4950,7 +4959,7 @@ begin
   _LinkResize.Add(Link);
 end;
 
-procedure TG2Core.CallbackResizeAdd(const ProcScroll: TG2ProcResizeObj);
+procedure TG2Core.CallbackResizeAdd(const ProcResize: TG2ProcResizeObj);
   var Link: PG2LinkResize;
 begin
   New(Link);
@@ -4959,7 +4968,7 @@ begin
   _LinkResize.Add(Link);
 end;
 
-procedure TG2Core.CallbackResizeRemove(const ProcScroll: TG2ProcResize);
+procedure TG2Core.CallbackResizeRemove(const ProcResize: TG2ProcResize);
   var i: TG2IntS32;
   var Link: PG2LinkResize;
 begin
@@ -4975,7 +4984,7 @@ begin
   end;
 end;
 
-procedure TG2Core.CallbackResizeRemove(const ProcScroll: TG2ProcResizeObj);
+procedure TG2Core.CallbackResizeRemove(const ProcResize: TG2ProcResizeObj);
   var i: TG2IntS32;
   var Link: PG2LinkResize;
 begin
@@ -5875,6 +5884,7 @@ begin
   for i := 0 to _LinkMouseDown.Count - 1 do Dispose(_LinkMouseDown[i]);
   for i := 0 to _LinkMouseUp.Count - 1 do Dispose(_LinkMouseUp[i]);
   for i := 0 to _LinkScroll.Count - 1 do Dispose(_LinkScroll[i]);
+  for i := 0 to _LinkResize.Count - 1 do Dispose(_LinkResize[i]);
   if _Started then Stop;
   {$if defined(G2Log)}
   Res := TG2Res.List;
@@ -6065,17 +6075,43 @@ begin
   {$if defined(G2Target_Windows)}
   if PrevScreenMode <> NextScreenMode then
   begin
-    WndStyle := (
-      WS_CAPTION or
-      WS_POPUP or
-      WS_VISIBLE or
-      WS_EX_TOPMOST or
-      WS_MINIMIZEBOX or
-      WS_MAXIMIZEBOX or
-      WS_SYSMENU
-    );
+    case NextScreenMode of
+      smWindow:
+      begin
+        WndStyle := (
+          WS_CAPTION or
+          WS_POPUP or
+          WS_VISIBLE or
+          WS_EX_TOPMOST or
+          WS_MINIMIZEBOX or
+          WS_MAXIMIZEBOX or
+          WS_SYSMENU or
+          WS_THICKFRAME
+        );
+      end;
+      smMaximized:
+      begin
+        WndStyle := (
+          WS_CAPTION or
+          WS_POPUP or
+          WS_VISIBLE or
+          WS_EX_TOPMOST or
+          WS_MINIMIZEBOX or
+          WS_MAXIMIZEBOX or
+          WS_MAXIMIZE or
+          WS_SYSMENU
+        );
+      end;
+      smFullscreen:
+      begin
+        WndStyle := (
+          WS_POPUP or
+          WS_VISIBLE or
+          WS_EX_TOPMOST
+        );
+      end;
+    end;
     SetWindowLongA(_Handle, GWL_STYLE, WndStyle);
-
   end;
   GetClientRect(_Handle, R);
   NextWidth := R.Right - R.Left;
@@ -6083,7 +6119,12 @@ begin
   {$elseif defined(G2Target_Linux)}
   {$elseif defined(G2Target_OSX)}
   {$endif}
+  g2.Params.ScreenMode := NextScreenMode;
+  g2.Params.Width := NextWidth;
+  g2.Params.Height := NextHeight;
   g2.Params.SetBuffered(True);
+  g2.Gfx.Resize(PrevWidth, PrevHeight, NextWidth, NextHeight);
+  g2.OnResize(PrevWidth, PrevHeight, NextWidth, NextHeight);
 end;
 {$Hints on}
 
@@ -6263,7 +6304,8 @@ begin
         WS_EX_TOPMOST or
         WS_MINIMIZEBOX or
         WS_MAXIMIZEBOX or
-        WS_SYSMENU
+        WS_SYSMENU or
+        WS_THICKFRAME
       );
       R.Left := (GetSystemMetrics(SM_CXSCREEN) - w) div 2;
       R.Right := R.Left + w;
@@ -6271,7 +6313,7 @@ begin
       R.Bottom := R.Top + h;
       AdjustWindowRect(R, WndStyle, False);
       _Handle := CreateWindowExA(
-        0, PAnsiChar(G2WndClassName), PAnsiChar(Caption),
+        WS_EX_WINDOWEDGE or WS_EX_APPWINDOW, PAnsiChar(G2WndClassName), PAnsiChar(Caption),
         WndStyle,
         R.Left, R.Top, R.Right - R.Left, R.Bottom - R.Top,
         0, 0, HInstance, nil
@@ -6622,7 +6664,7 @@ end;
 
 function TG2Params.NeedUpdate: Boolean;
 begin
-  Result := (_NewWidth <> _Width) or (_NewHeight <> _Height) or (_NewScreenMode <> _ScreenHeight);
+  Result := (_NewWidth <> _Width) or (_NewHeight <> _Height) or (_NewScreenMode <> _ScreenMode);
 end;
 
 procedure TG2Params.Apply;
@@ -6702,6 +6744,15 @@ begin
   end;
   if CurRenderControl <> nil then
   CurRenderControl.RenderEnd;
+end;
+
+procedure TG2Gfx.Resize(const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32);
+begin
+  if _RenderTarget = nil then
+  begin
+    SizeRT.x := NewWidth;
+    SizeRT.y := NewHeight;
+  end;
 end;
 
 procedure TG2Gfx.Initialize;
@@ -6988,31 +7039,55 @@ begin
 end;
 {$endif}
 
-procedure TG2GfxD3D9.Initialize;
-  var pp: TD3DPresentParameters;
+procedure TG2GfxD3D9.Resize(const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32);
+  var Viewport: TD3DViewport9;
+  var PrevDepthStencil: IDirect3DSurface9;
 begin
-  ZeroMemory(@pp, SizeOf(pp));
-  pp.BackBufferWidth := g2.Params.Width;
-  pp.BackBufferHeight := g2.Params.Height;
-  pp.BackBufferFormat := D3DFMT_X8R8G8B8;
-  pp.BackBufferCount := 1;
-  pp.MultiSampleType := D3DMULTISAMPLE_NONE;
-  pp.SwapEffect := D3DSWAPEFFECT_DISCARD;
-  pp.hDeviceWindow := g2.Window.Handle;
-  pp.Windowed := True;
-  pp.EnableAutoDepthStencil := False;
-  pp.AutoDepthStencilFormat := D3DFMT_D16;
-  pp.PresentationInterval := D3DPRESENT_INTERVAL_IMMEDIATE;
+  inherited Resize(OldWidth, OldHeight, NewWidth, NewHeight);
+  _Device.GetViewport(Viewport);
+  _Device.SetRenderTarget(0, nil);
+  _Device.GetDepthStencilSurface(PrevDepthStencil);
+  SafeRelease(_DefRenderTarget);
+  SafeRelease(_DefSwapChain);
+  _PresentParameters.BackBufferWidth := NewWidth;
+  _PresentParameters.BackBufferHeight := NewHeight;
+  _Device.CreateAdditionalSwapChain(_PresentParameters, _DefSwapChain);
+  _DefSwapChain.GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, _DefRenderTarget);
+  _Device.SetRenderTarget(0, _DefRenderTarget);
+  _Device.SetDepthStencilSurface(PrevDepthStencil);
+  Viewport.Width := NewWidth;
+  Viewport.Height := NewHeight;
+  _Device.SetViewport(Viewport);
+end;
+
+procedure TG2GfxD3D9.Initialize;
+  var Viewport: TD3DViewport9;
+begin
+  ZeroMemory(@_PresentParameters, SizeOf(_PresentParameters));
+  _PresentParameters.BackBufferWidth := 1;
+  _PresentParameters.BackBufferHeight := 1;
+  _PresentParameters.BackBufferFormat := D3DFMT_X8R8G8B8;
+  _PresentParameters.BackBufferCount := 1;
+  _PresentParameters.MultiSampleType := D3DMULTISAMPLE_NONE;
+  _PresentParameters.SwapEffect := D3DSWAPEFFECT_DISCARD;
+  _PresentParameters.hDeviceWindow := g2.Window.Handle;
+  _PresentParameters.Windowed := True;
+  _PresentParameters.EnableAutoDepthStencil := False;
+  _PresentParameters.AutoDepthStencilFormat := D3DFMT_D16;
+  _PresentParameters.PresentationInterval := D3DPRESENT_INTERVAL_IMMEDIATE;
   _D3D9.CreateDevice(
     0, D3DDEVTYPE_HAL,
     g2.Window.Handle,
-    //D3DCREATE_SOFTWARE_VERTEXPROCESSING
     D3DCREATE_HARDWARE_VERTEXPROCESSING
     or D3DCREATE_MULTITHREADED,
-    @pp,
+    @_PresentParameters,
     _Device
   );
-  _Device.GetRenderTarget(0, _DefRenderTarget);
+  _PresentParameters.BackBufferWidth := g2.Params.Width;
+  _PresentParameters.BackBufferHeight := g2.Params.Height;
+  _Device.CreateAdditionalSwapChain(_PresentParameters, _DefSwapChain);
+  _DefSwapChain.GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, _DefRenderTarget);
+  _Device.SetRenderTarget(0, _DefRenderTarget);
   _Device.CreateDepthStencilSurface(
     G2Max(2048, g2.Params.Width),
     G2Max(2048, g2.Params.Height),
@@ -7023,6 +7098,10 @@ begin
     _DefDepthStencil,
     nil
   );
+  _Device.GetViewport(Viewport);
+  Viewport.Width := g2.Params.Width;
+  Viewport.Height := g2.Params.Height;
+  _Device.SetViewport(Viewport);
   SizeRT.x := g2.Params.Width;
   SizeRT.y := g2.Params.Height;
   _Device.SetRenderState(D3DRS_NORMALIZENORMALS, 1);
@@ -7060,7 +7139,7 @@ begin
   _Device.BeginScene;
   ProcessRenderQueue;
   _Device.EndScene;
-  _Device.Present(nil, nil, 0, nil);
+  _DefSwapChain.Present(nil, nil, 0, nil, 0);
 end;
 
 procedure TG2GfxD3D9.Clear(
@@ -7281,6 +7360,12 @@ begin
   glUseProgram(_ShaderMethod^.ShaderProgram);
 end;
 {$endif}
+
+procedure TG2GfxOGL.Resize(const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32);
+begin
+  inherited Resize(OldWidth, OldHeight, NewWidth, NewHeight);
+  glViewport(0, 0, NewWidth, NewHeight);
+end;
 
 procedure TG2GfxOGL.Initialize;
   {$if defined(G2Target_Windows)}
@@ -8343,7 +8428,7 @@ begin
   GetMem(TexData, _RealWidth * _RealHeight * 4);
   FillChar(TexData^, _RealWidth * _RealHeight * 4, 0);
   case _Usage of
-    tuDefault, tuUsage3D:
+    tuDefault, tu3D:
     begin
       for j := 0 to _RealHeight - 1 do
       for i := 0 to _RealWidth - 1 do
@@ -8356,7 +8441,7 @@ begin
         PG2IntU8(TexData + (j * _RealWidth + i) * 4 + 3)^ := Image.Pixels[x, y].a;
       end;
     end;
-    tuUsage2D:
+    tu2D:
     begin
       for j := 0 to _Height - 1 do
       for i := 0 to _Width - 1 do
@@ -8382,7 +8467,7 @@ begin
     GL_UNSIGNED_BYTE,
     TexData
   );
-  if _Usage = tuUsage3D then
+  if _Usage = tu3D then
   begin
     Mip0 := TexData;
     px := _RealWidth; py := _RealHeight;
@@ -14076,7 +14161,7 @@ begin
       {$elseif defined(G2RM_SM2)}
       _ShaderGroup.Sampler('Tex0', _CurTexture);
       {$endif}
-      _Gfx.EnableMipMaps(_CurTexture.Usage = tuUsage3D);
+      _Gfx.EnableMipMaps(_CurTexture.Usage = tu3D);
       _CurFilter := p^.Filter;
       _Gfx.Filter := _CurFilter;
       {$endif}
@@ -15032,7 +15117,7 @@ begin
       {$elseif defined(G2RM_SM2)}
       _ShaderGroup.Sampler('Tex0', _CurTexture, 0);
       {$endif}
-      _Gfx.EnableMipMaps(_CurTexture.Usage = tuUsage3D);
+      _Gfx.EnableMipMaps(_CurTexture.Usage = tu3D);
       _CurFilter := p^.Filter;
       _Gfx.Filter := _CurFilter;
       {$endif}
@@ -15380,7 +15465,7 @@ begin
       {$elseif defined(G2RM_SM2)}
       _ShaderGroup.Sampler('Tex0', _CurTexture, 0);
       {$endif}
-      _Gfx.EnableMipMaps(_CurTexture.Usage = tuUsage3D);
+      _Gfx.EnableMipMaps(_CurTexture.Usage = tu3D);
       _CurFilter := p^.Filter;
       _Gfx.Filter := _CurFilter;
       {$endif}
@@ -15631,6 +15716,31 @@ begin
 {$Warnings on}
 end;
 
+procedure TG2Display2D.OnResize(const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32);
+  var ScaleX, ScaleY: TG2Float;
+begin
+  ScaleX := NewWidth / OldWidth;
+  ScaleY := NewHeight / OldHeight;
+  ViewPort := Rect(
+    Round(Viewport.Left * ScaleX), Round(Viewport.Top * ScaleY),
+    Round(Viewport.Right * ScaleX), Round(Viewport.Bottom * ScaleY)
+  );
+end;
+
+procedure TG2Display2D.SetAutoResizeViewport(const Value: Boolean);
+begin
+  if _AutoResizeViewport = Value then Exit;
+  _AutoResizeViewport := Value;
+  if _AutoResizeViewport then
+  begin
+    g2.CallbackResizeAdd(@OnResize);
+  end
+  else
+  begin
+    g2.CallbackResizeRemove(@OnResize);
+  end;
+end;
+
 constructor TG2Display2D.Create;
 begin
   inherited Create;
@@ -15641,12 +15751,15 @@ begin
   _Zoom := 1;
   _Rotation := 0;
   _rs := 0; _rc := 1;
+  _AutoResizeViewport := False;
+  AutoResizeViewport := True;
   UpdateMode;
   _Pos := G2Vec2(_Width * 0.5, _Height * 0.5);
 end;
 
 destructor TG2Display2D.Destroy;
 begin
+  AutoResizeViewport := False;
   inherited Destroy;
 end;
 
@@ -17580,7 +17693,7 @@ begin
       {$if defined(G2Gfx_D3D9)}
       g2.Gfx.Filter := _CurFilter;
       {$elseif defined(G2Gfx_OGL)}
-      if _CurTexture.Usage = tuUsage3D then
+      if _CurTexture.Usage = tu3D then
       begin
         case _CurFilter of
           tfPoint:

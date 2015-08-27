@@ -19,8 +19,9 @@ begin
   g2.CallbackMouseUpAdd(@App.MouseUp);
   g2.CallbackScrollAdd(@App.Scroll);
   g2.CallbackPrintAdd(@App.Print);
+  g2.CallbackResizeAdd();
   g2.Params.MaxFPS := 60;
-  g2.Params.TargetUPS := 100;
+  g2.Params.TargetUPS := 60;
   //g2.Params.Width := 960;//480;//960;//1440;
   //g2.Params.Height := 640;//320;//640;//960;
   g2.Params.ScreenMode := smMaximized;
