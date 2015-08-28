@@ -685,9 +685,13 @@ type
     var _ShapeBody: tb2_polygon_shape;
     var _BodyFeetDef: tb2_body_def;
     var _BodyFeet: pb2_body;
+    var _ShapeDuckCheck: tb2_polygon_shape;
+    var _FixtureDuckCheck: pb2_fixture;
     var _Joint: pb2_joint;
     var _BodyMassData: tb2_mass_data;
     var _BodyVerts: array[0..5] of tb2_vec2;
+    var _DuckCheckVerts: array[0..3] of tb2_vec2;
+    var _DuckCheckContacts: TG2IntS32;
     var _Width: TG2Float;
     var _Height: TG2Float;
     var _WalkSpeed: TG2Float;
@@ -1668,6 +1672,14 @@ procedure TG2Scene2D.TPhysContactListener.begin_contact(const contact: pb2_conta
   var Character0, Character1: TG2Scene2DComponentCharacter;
   var Entity0, Entity1: TG2Scene2DEntity;
 begin
+  //if contact^.get_fixture_a^.is_sensor then
+  //begin
+  //  Obj0 := nil;
+  //end
+  //else if contact^.get_fixture_b^.is_sensor then
+  //begin
+  //  Obj1 := nil;
+  //end;
   Obj0 := TObject(contact^.get_fixture_a^.get_user_data);
   Obj1 := TObject(contact^.get_fixture_b^.get_user_data);
   if (Obj0 <> nil) and (Obj1 <> nil) then
@@ -1696,10 +1708,16 @@ begin
       Character1 := TG2Scene2DComponentCharacter(Obj1);
       Entity1 := Character1.Owner;
     end;
-    if Assigned(Shape0) then Shape0.OnBeginContact(Entity1, Shape1, contact)
-    else if Assigned(Character0) then Character0.OnBeginContact(Entity1, Shape1, contact^.get_fixture_a, contact);
-    if Assigned(Shape1) then Shape1.OnBeginContact(Entity0, Shape0, contact)
-    else if Assigned(Character1) then Character1.OnBeginContact(Entity0, Shape0, contact^.get_fixture_b, contact);
+    if not contact^.get_fixture_b^.is_sensor then
+    begin
+      if Assigned(Shape0) then Shape0.OnBeginContact(Entity1, Shape1, contact)
+      else if Assigned(Character0) then Character0.OnBeginContact(Entity1, Shape1, contact^.get_fixture_a, contact);
+    end;
+    if not contact^.get_fixture_a^.is_sensor then
+    begin
+      if Assigned(Shape1) then Shape1.OnBeginContact(Entity0, Shape0, contact)
+      else if Assigned(Character1) then Character1.OnBeginContact(Entity0, Shape0, contact^.get_fixture_b, contact);
+    end;
   end;
 end;
 
@@ -1737,10 +1755,16 @@ begin
       Character1 := TG2Scene2DComponentCharacter(Obj1);
       Entity1 := Character1.Owner;
     end;
-    if Assigned(Shape0) then Shape0.OnEndContact(Entity1, Shape1, contact)
-    else if Assigned(Character0) then Character0.OnEndContact(Entity1, Shape1, contact^.get_fixture_a, contact);
-    if Assigned(Shape1) then Shape1.OnEndContact(Entity0, Shape0, contact)
-    else if Assigned(Character1) then Character1.OnEndContact(Entity0, Shape0, contact^.get_fixture_b, contact);
+    if not contact^.get_fixture_b^.is_sensor then
+    begin
+      if Assigned(Shape0) then Shape0.OnEndContact(Entity1, Shape1, contact)
+      else if Assigned(Character0) then Character0.OnEndContact(Entity1, Shape1, contact^.get_fixture_a, contact);
+    end;
+    if not contact^.get_fixture_a^.is_sensor then
+    begin
+      if Assigned(Shape1) then Shape1.OnEndContact(Entity0, Shape0, contact)
+      else if Assigned(Character1) then Character1.OnEndContact(Entity0, Shape0, contact^.get_fixture_b, contact);
+    end;
   end;
 end;
 
@@ -3627,9 +3651,14 @@ begin
   _BodyVerts[3] := b2_vec2(-hw + qw, -hh * d);
   _BodyVerts[4] := b2_vec2(-hw, -hh * d + qw);
   _BodyVerts[5] := b2_vec2(-hw, hh - hw);
+  _DuckCheckVerts[0] := b2_vec2(_BodyVerts[2].x, _BodyVerts[0].y);
+  _DuckCheckVerts[1] := b2_vec2(_BodyVerts[2].x, _BodyVerts[2].y);
+  _DuckCheckVerts[2] := b2_vec2(_BodyVerts[3].x, _BodyVerts[3].y);
+  _DuckCheckVerts[3] := b2_vec2(_BodyVerts[3].x, _BodyVerts[0].y);
   _ShapeBody.set_polygon(@_BodyVerts, 6);
   _ShapeFeet.center := b2_vec2(0, 0);
   _ShapeFeet.radius := hw * 0.9;
+  _ShapeDuckCheck.set_polygon(@_DuckCheckVerts, 4);
 end;
 
 procedure TG2Scene2DComponentCharacter.OnInitialize;
@@ -3644,13 +3673,14 @@ begin
   _FixtureBodyDef.density := 1;
   _FixtureBodyDef.user_data := Self;
   _FixtureFeetDef := b2_fixture_def;
-  _FixtureFeetDef.friction := 2;
+  _FixtureFeetDef.friction := 4;
   _FixtureFeetDef.density := 1;
   _FixtureFeetDef.user_data := Self;
   _ShapeBody.create;
   _FixtureBodyDef.shape := @_ShapeBody;
   _ShapeFeet.create;
   _FixtureFeetDef.shape := @_ShapeFeet;
+  _ShapeDuckCheck.create;
   _Width := 0.5;
   _Height := 1;
   _WalkSpeed := 0;
@@ -3661,11 +3691,13 @@ begin
   _Standing := False;
   _FootContactCount := 0;
   _Duck := 0;
+  _DuckCheckContacts := 0;
   SetupShapes;
 end;
 
 procedure TG2Scene2DComponentCharacter.OnFinalize;
 begin
+  _ShapeDuckCheck.destroy;
   _ShapeFeet.destroy;
   _ShapeBody.destroy;
   inherited OnFinalize;
@@ -3710,6 +3742,7 @@ end;
 
 procedure TG2Scene2DComponentCharacter.SetEnabled(const Value: Boolean);
   var bd: tb2_body_def;
+  var fd: tb2_fixture_def;
   var jd: tb2_revolute_joint_def;
   var md: tb2_mass_data;
   var PrevDuck: TG2Float;
@@ -3719,6 +3752,7 @@ begin
   begin
     _Duck := 0;
     _Scene.PhysWorld.destroy_joint(_Joint);
+    _Body^.destroy_fixture(_FixtureDuckCheck);
     _BodyFeet^.destroy_fixture(_FixtureFeet);
     _Body^.destroy_fixture(_FixtureBody);
     Scene.PhysWorld.destroy_body(_BodyFeet);
@@ -3730,6 +3764,7 @@ begin
   inherited SetEnabled(Value);
   if _Enabled then
   begin
+    _DuckCheckContacts := 0;
     _FixtureBodyDef.shape := @_ShapeBody;
     _FixtureFeetDef.shape := @_ShapeFeet;
     bd := _BodyFeetDef;
@@ -3739,6 +3774,11 @@ begin
     _BodyFeet := Scene.PhysWorld.create_body(bd);
     _FixtureBody := _Body^.create_fixture(_FixtureBodyDef);
     _FixtureFeet := _BodyFeet^.create_fixture(_FixtureFeetDef);
+    fd := b2_fixture_def;
+    fd.is_sensor := True;
+    fd.shape := @_ShapeDuckCheck;
+    fd.user_data := Self;
+    _FixtureDuckCheck := _Body^.create_fixture(fd);
     jd := b2_revolute_joint_def;
     jd.initialize(_Body, _BodyFeet, bd.position);
     _Joint := _Scene.PhysWorld.create_joint(jd);
@@ -3776,6 +3816,7 @@ begin
   if not _Enabled then Exit;
   v := G2Clamp(Value, 0, 1);
   if Abs(_Duck - v) <= G2EPS2 then Exit;
+  if (_DuckCheckContacts > 0) and (Value < _Duck) then Exit;
   _Duck := Value;
   SetupShapes;
   if _Body <> nil then
@@ -3794,7 +3835,9 @@ begin
   if (OtherShape <> nil)
   and (_FixtureFeet <> nil)
   and (SelfFixture = _FixtureFeet) then
-  Inc(_FootContactCount);
+  Inc(_FootContactCount)
+  else if SelfFixture = _FixtureDuckCheck then
+  Inc(_DuckCheckContacts);
 end;
 
 procedure TG2Scene2DComponentCharacter.OnEndContact(
@@ -3805,7 +3848,9 @@ begin
   if (OtherShape <> nil)
   and (_FixtureFeet <> nil)
   and (SelfFixture = _FixtureFeet) then
-  Dec(_FootContactCount);
+  Dec(_FootContactCount)
+  else if SelfFixture = _FixtureDuckCheck then
+  Dec(_DuckCheckContacts);
 end;
 
 procedure TG2Scene2DComponentCharacter.OnBeforeContactSolve(

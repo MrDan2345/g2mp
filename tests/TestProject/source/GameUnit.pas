@@ -13,7 +13,8 @@ uses
   box2d,
   Types,
   SysUtils,
-  Classes;
+  Classes,
+  Windows;
 
 type
   TGame = class
@@ -129,12 +130,12 @@ begin
     Character := TG2Scene2DComponentCharacter(PlayerEntity.ComponentOfType[TG2Scene2DComponentCharacter]);
     if g2.KeyDown[G2K_Right] then
     begin
-      Character.Walk(10);
+      Character.Walk(15);
       Character.Glide(G2Vec2(10, 0));
     end
     else if g2.KeyDown[G2K_Left] then
     begin
-      Character.Walk(-10);
+      Character.Walk(-15);
       Character.Glide(G2Vec2(-10, 0));
     end;
     if g2.KeyDown[G2K_Space] then
@@ -144,15 +145,18 @@ begin
     if g2.KeyDown[G2K_Down] then
     begin
       Character.Duck := 1;
-      Sprite := TG2Scene2DComponentSprite(PlayerEntity.ComponentOfType[TG2Scene2DComponentSprite]);
-      if Assigned(Sprite) and (Sprite.Picture.AssetName <> 'atlas.g2atlas#TestCharB.png') then
-      Sprite.Picture := TG2Picture.SharedAsset('atlas.g2atlas#TestCharB.png');
     end
     else
     begin
       Character.Duck := 0;
-      Sprite := TG2Scene2DComponentSprite(PlayerEntity.ComponentOfType[TG2Scene2DComponentSprite]);
-      if Assigned(Sprite) and (Sprite.Picture.AssetName <> 'atlas.g2atlas#TestCharC.png') then
+    end;
+    Sprite := TG2Scene2DComponentSprite(PlayerEntity.ComponentOfType[TG2Scene2DComponentSprite]);
+    if Character.Duck > G2EPS2 then
+    begin
+      Sprite.Picture := TG2Picture.SharedAsset('atlas.g2atlas#TestCharB.png');
+    end
+    else
+    begin
       Sprite.Picture := TG2Picture.SharedAsset('atlas.g2atlas#TestCharC.png');
     end;
   end;
@@ -170,7 +174,18 @@ end;
 
 procedure TGame.KeyDown(const Key: Integer);
 begin
-
+  if Key = G2K_P then
+  begin
+    if g2.Params.ScreenMode = smWindow then
+    g2.Params.ScreenMode := smFullscreen
+    else
+    begin
+      g2.Params.ScreenMode := smWindow;
+      g2.Params.Width := 768;
+      g2.Params.Height := 768;
+    end;
+    g2.Params.Apply;
+  end;
 end;
 
 procedure TGame.KeyUp(const Key: Integer);

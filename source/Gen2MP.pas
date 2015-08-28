@@ -731,6 +731,8 @@ type
     Param3: TG2IntS32;
   end;
 
+  TG2ScreenMode = (smWindow, smMaximized, smFullscreen);
+
   {$if defined(G2Target_Windows)}
   TG2Cursor = HCursor;
   {$endif}
@@ -739,6 +741,7 @@ type
   private
     {$if defined(G2Target_Windows)}
     _Handle: THandle;
+    _ProcessResize: Boolean;
     {$elseif defined(G2Target_Linux)}
     _Display: PDisplay;
     _Handle: TWindow;
@@ -770,6 +773,11 @@ type
     procedure OnScroll(const y, Param2, Param3: TG2IntS32);
     procedure OnResize(const Mode, NewWidth, NewHeight: TG2IntS32);
     {$Hints on}
+    procedure Adjust(
+      const OldScreenMode, NewScreenMode: TG2ScreenMode;
+      const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32;
+      const OldResizable, NewResizable: Boolean
+    );
     procedure Stop; inline;
     procedure SetCaption(const Value: AnsiString); inline;
     procedure SetCursor(const Value: TG2Cursor);
@@ -797,8 +805,6 @@ type
     constructor Create(const Width: TG2IntS32 = 0; const Height: TG2IntS32 = 0; const NewCaption: AnsiString = 'Gen2MP');
     destructor Destroy; override;
   end;
-
-  TG2ScreenMode = (smWindow, smMaximized, smFullscreen);
 
   TG2Params = class
   private
@@ -6061,74 +6067,176 @@ procedure TG2Window.OnResize(const Mode, NewWidth, NewHeight: TG2IntS32);
   var R: TRect;
   var WndStyle: TG2IntU32;
 begin
-  g2.Params.SetBuffered(False);
-  PrevWidth := g2.Params.Width;
-  PrevHeight := g2.Params.Height;
-  PrevScreenMode := g2.Params.ScreenMode;
-  if PrevScreenMode <> smFullscreen then
-  begin
-    case Mode of
-      0: NextScreenMode := smWindow;
-      1: NextScreenMode := smMaximized;
-    end;
-  end
-  else
-  begin
-    NextScreenMode := PrevScreenMode;
+  if not _ProcessResize then Exit;
+  GetClientRect(_Handle, R);
+  g2.Params.Width := R.Right - R.Left;
+  g2.Params.Height := R.Bottom - R.Top;
+  if g2.Params.ScreenMode <> smFullscreen then
+  case Mode of
+    0: g2.Params.ScreenMode := smWindow;
+    1: g2.Params.ScreenMode := smMaximized;
   end;
+  g2.Params.Apply;
+
+  //g2.Params.SetBuffered(False);
+  //PrevWidth := g2.Params.Width;
+  //PrevHeight := g2.Params.Height;
+  //PrevScreenMode := g2.Params.ScreenMode;
+  //if PrevScreenMode <> smFullscreen then
+  //begin
+  //  case Mode of
+  //    0: NextScreenMode := smWindow;
+  //    1: NextScreenMode := smMaximized;
+  //  end;
+  //end
+  //else
+  //begin
+  //  NextScreenMode := PrevScreenMode;
+  //end;
+  //{$if defined(G2Target_Windows)}
+  //if PrevScreenMode <> NextScreenMode then
+  //begin
+  //  case NextScreenMode of
+  //    smWindow:
+  //    begin
+  //      WndStyle := (
+  //        WS_CAPTION or
+  //        WS_POPUP or
+  //        WS_VISIBLE or
+  //        WS_EX_TOPMOST or
+  //        WS_MINIMIZEBOX or
+  //        WS_MAXIMIZEBOX or
+  //        WS_SYSMENU or
+  //        WS_THICKFRAME
+  //      );
+  //    end;
+  //    smMaximized:
+  //    begin
+  //      WndStyle := (
+  //        WS_CAPTION or
+  //        WS_POPUP or
+  //        WS_VISIBLE or
+  //        WS_EX_TOPMOST or
+  //        WS_MINIMIZEBOX or
+  //        WS_MAXIMIZEBOX or
+  //        WS_MAXIMIZE or
+  //        WS_SYSMENU
+  //      );
+  //    end;
+  //    smFullscreen:
+  //    begin
+  //      WndStyle := (
+  //        WS_POPUP or
+  //        WS_VISIBLE or
+  //        WS_EX_TOPMOST
+  //      );
+  //    end;
+  //  end;
+  //  SetWindowLongA(_Handle, GWL_STYLE, WndStyle);
+  //end;
+  //GetClientRect(_Handle, R);
+  //NextWidth := R.Right - R.Left;
+  //NextHeight := R.Bottom - R.Top;
+  //{$elseif defined(G2Target_Linux)}
+  //{$elseif defined(G2Target_OSX)}
+  //{$endif}
+  //g2.Params.ScreenMode := NextScreenMode;
+  //g2.Params.Width := NextWidth;
+  //g2.Params.Height := NextHeight;
+  //g2.Params.SetBuffered(True);
+  //g2.Gfx.Resize(PrevWidth, PrevHeight, NextWidth, NextHeight);
+  //g2.OnResize(PrevWidth, PrevHeight, NextWidth, NextHeight);
+end;
+
+procedure TG2Window.Adjust(
+  const OldScreenMode, NewScreenMode: TG2ScreenMode;
+  const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32;
+  const OldResizable, NewResizable: Boolean
+);
+  var R: TRect;
+  var OldWndStyle, NewWndStyle: TG2IntU32;
+  var w, h: TG2IntS32;
+begin
   {$if defined(G2Target_Windows)}
-  if PrevScreenMode <> NextScreenMode then
-  begin
-    case NextScreenMode of
-      smWindow:
+  _ProcessResize := False;
+  case NewScreenMode of
+    smWindow:
+    begin
+      NewWndStyle := (
+        WS_CAPTION or
+        WS_POPUP or
+        WS_VISIBLE or
+        WS_EX_TOPMOST or
+        WS_MINIMIZEBOX or
+        WS_MAXIMIZEBOX or
+        WS_SYSMENU
+      );
+      if (OldScreenMode <> NewScreenMode)
+      or (OldResizable <> NewResizable) then
       begin
-        WndStyle := (
-          WS_CAPTION or
-          WS_POPUP or
-          WS_VISIBLE or
-          WS_EX_TOPMOST or
-          WS_MINIMIZEBOX or
-          WS_MAXIMIZEBOX or
-          WS_SYSMENU or
-          WS_THICKFRAME
-        );
+        if NewResizable then NewWndStyle := NewWndStyle or WS_THICKFRAME;
+        SetWindowLongA(_Handle, GWL_STYLE, NewWndStyle);
       end;
-      smMaximized:
+      GetClientRect(_Handle, R);
+      w := R.Right - R.Left;
+      h := R.Bottom - R.Top;
+      if (w <> NewWidth)
+      or (h <> NewHeight) then
       begin
-        WndStyle := (
-          WS_CAPTION or
-          WS_POPUP or
-          WS_VISIBLE or
-          WS_EX_TOPMOST or
-          WS_MINIMIZEBOX or
-          WS_MAXIMIZEBOX or
-          WS_MAXIMIZE or
-          WS_SYSMENU
-        );
+        R.Left := (GetSystemMetrics(SM_CXSCREEN) - NewWidth) shr 1;
+        R.Right := R.Left + NewWidth;
+        R.Top := (GetSystemMetrics(SM_CYSCREEN) - NewHeight) shr 1;
+        R.Bottom := R.Top + NewHeight;
+        AdjustWindowRect(R, NewWndStyle, False);
+        SetWindowPos(_Handle, HWND_TOPMOST, R.Left, R.Top, R.Right - R.Left, R.Bottom - R.Top, SWP_NOZORDER);
       end;
-      smFullscreen:
+    end;
+    smMaximized:
+    begin
+      if OldScreenMode <> NewScreenMode then
       begin
-        WndStyle := (
+        OldWndStyle := GetWindowLong(_Handle, GWL_STYLE);
+        if (OldWndStyle and WS_MAXIMIZE) = 0 then
+        begin
+          NewWndStyle := (
+            WS_CAPTION or
+            WS_POPUP or
+            WS_VISIBLE or
+            WS_EX_TOPMOST or
+            WS_MINIMIZEBOX or
+            WS_MAXIMIZEBOX or
+            WS_SYSMENU
+          );
+          SetWindowLongA(_Handle, GWL_STYLE, NewWndStyle);
+          ShowWindow(_Handle, SW_MAXIMIZE);
+        end;
+        GetClientRect(_Handle, R);
+        g2.Params.Width := R.Right - R.Left;
+        g2.Params.Height := R.Bottom - R.Top;
+      end;
+    end;
+    smFullscreen:
+    begin
+      if OldScreenMode <> NewScreenMode then
+      begin
+        NewWndStyle := (
           WS_POPUP or
           WS_VISIBLE or
           WS_EX_TOPMOST
         );
+        SetWindowLongA(_Handle, GWL_STYLE, NewWndStyle);
+        w := GetSystemMetrics(SM_CXSCREEN);
+        h := GetSystemMetrics(SM_CYSCREEN);
+        SetWindowPos(_Handle, HWND_TOPMOST, 0, 0, w, h, SWP_NOZORDER);
+        g2.Params.Width := w;
+        g2.Params.Height := h;
       end;
     end;
-    SetWindowLongA(_Handle, GWL_STYLE, WndStyle);
   end;
-  GetClientRect(_Handle, R);
-  NextWidth := R.Right - R.Left;
-  NextHeight := R.Bottom - R.Top;
+  _ProcessResize := True;
   {$elseif defined(G2Target_Linux)}
   {$elseif defined(G2Target_OSX)}
   {$endif}
-  g2.Params.ScreenMode := NextScreenMode;
-  g2.Params.Width := NextWidth;
-  g2.Params.Height := NextHeight;
-  g2.Params.SetBuffered(True);
-  g2.Gfx.Resize(PrevWidth, PrevHeight, NextWidth, NextHeight);
-  g2.OnResize(PrevWidth, PrevHeight, NextWidth, NextHeight);
 end;
 {$Hints on}
 
@@ -6291,6 +6399,7 @@ begin
   _Caption := NewCaption;
   _MessageCount := 0;
   {$if defined(G2Target_Windows)}
+  _ProcessResize := False;
   _CursorArrow := LoadCursor(0, IDC_ARROW);
   _CursorText := LoadCursor(0, IDC_IBEAM);
   _CursorHand := LoadCursor(0, IDC_HAND);
@@ -6308,12 +6417,12 @@ begin
         WS_EX_TOPMOST or
         WS_MINIMIZEBOX or
         WS_MAXIMIZEBOX or
-        WS_SYSMENU or
-        WS_THICKFRAME
+        WS_SYSMENU
       );
-      R.Left := (GetSystemMetrics(SM_CXSCREEN) - w) div 2;
+      if g2.Params.Resizable then WndStyle := WndStyle or WS_THICKFRAME;
+      R.Left := (GetSystemMetrics(SM_CXSCREEN) - w) shr 1;
       R.Right := R.Left + w;
-      R.Top := (GetSystemMetrics(SM_CYSCREEN) - h) div 2;
+      R.Top := (GetSystemMetrics(SM_CYSCREEN) - h) shr 1;
       R.Bottom := R.Top + h;
       AdjustWindowRect(R, WndStyle, False);
       _Handle := CreateWindowExA(
@@ -6334,7 +6443,6 @@ begin
         WS_EX_TOPMOST or
         WS_MINIMIZEBOX or
         WS_MAXIMIZEBOX or
-        WS_MAXIMIZE or
         WS_SYSMENU
       );
       R.Left := 0;
@@ -6347,6 +6455,7 @@ begin
         R.Left, R.Top, R.Right - R.Left, R.Bottom - R.Top,
         0, 0, HInstance, nil
       );
+      ShowWindow(_Handle, SW_MAXIMIZE);
       GetClientRect(_Handle, R);
       g2.Params.Width := R.Right - R.Left;
       g2.Params.Height := R.Bottom - R.Top;
@@ -6373,6 +6482,7 @@ begin
     end;
   end;
   BringWindowToTop(_Handle);
+  _ProcessResize := True;
   {$elseif defined(G2Target_Linux)}
   _Display := XOpenDisplay(nil);
   {$Hints off}
@@ -6662,6 +6772,10 @@ begin
   _HeightRT := _Height;
   _ScreenMode := smWindow;
   _Resizable := True;
+  _NewWidth := _Width;
+  _NewHeight := _Height;
+  _NewResizable := _Resizable;
+  _NewScreenMode := _ScreenMode;
   _TargetUPS := 60;
   _MaxFPS := 0;
   _Buffered := False;
@@ -6685,11 +6799,20 @@ end;
 
 procedure TG2Params.Apply;
 begin
-  if not NeedUpdate then Exit;
-  g2.Gfx.Resize(_Width, _Height, _NewWidth, _NewHeight);
-  _Width := _NewWidth;
-  _Height := _NewHeight;
-  _ScreenMode := _NewScreenMode;
+  if NeedUpdate then
+  begin
+    g2.Window.Adjust(
+      _ScreenMode, _NewScreenMode,
+      _Width, _Height, _NewWidth, _NewHeight,
+      _Resizable, _NewResizable
+    );
+    g2.Gfx.Resize(_Width, _Height, _NewWidth, _NewHeight);
+    g2.OnResize(_Width, _Height, _NewWidth, _NewHeight);
+    _ScreenMode := _NewScreenMode;
+    _Width := _NewWidth;
+    _Height := _NewHeight;
+    _Resizable := _NewResizable;
+  end;
 end;
 //TG2Params END
 
