@@ -810,6 +810,8 @@ type
     _Height: TG2IntS32;
     _NewScreenMode: TG2ScreenMode;
     _ScreenMode: TG2ScreenMode;
+    _NewResizable: Boolean;
+    _Resizable: Boolean;
     _WidthRT: TG2IntS32;
     _HeightRT: TG2IntS32;
     _TargetUPS: TG2IntS32;
@@ -819,6 +821,7 @@ type
     procedure SetWidth(const Value: TG2IntS32); inline;
     procedure SetHeight(const Value: TG2IntS32); inline;
     procedure SetScreenMode(const Value: TG2ScreenMode); inline;
+    procedure SetResizable(const Value: Boolean); inline;
     procedure SetBuffered(const Value: Boolean); inline;
   public
     property ScreenWidth: TG2IntS32 read _ScreenWidth;
@@ -828,6 +831,7 @@ type
     property WidthRT: TG2IntS32 read _WidthRT;
     property HeightRT: TG2IntS32 read _HeightRT;
     property ScreenMode: TG2ScreenMode read _ScreenMode write SetScreenMode;
+    property Resizable: Boolean read _Resizable write SetResizable;
     property TargetUPS: TG2IntS32 read _TargetUPS write _TargetUPS;
     property MaxFPS: TG2IntS32 read _MaxFPS write _MaxFPS;
     property PreventUpdateOverload: Boolean read _PreventUpdateOverload write _PreventUpdateOverload;
@@ -6614,6 +6618,12 @@ begin
   _NewScreenMode := Value;
 end;
 
+procedure TG2Params.SetResizable(const Value: Boolean);
+begin
+  if not _Buffered then _Resizable := Value;
+  _NewResizable := Value;
+end;
+
 procedure TG2Params.SetBuffered(const Value: Boolean);
 begin
   _Buffered := Value;
@@ -6651,6 +6661,7 @@ begin
   _WidthRT := _Width;
   _HeightRT := _Height;
   _ScreenMode := smWindow;
+  _Resizable := True;
   _TargetUPS := 60;
   _MaxFPS := 0;
   _Buffered := False;
@@ -6664,7 +6675,12 @@ end;
 
 function TG2Params.NeedUpdate: Boolean;
 begin
-  Result := (_NewWidth <> _Width) or (_NewHeight <> _Height) or (_NewScreenMode <> _ScreenMode);
+  Result := (
+    (_NewWidth <> _Width)
+    or (_NewHeight <> _Height)
+    or (_NewScreenMode <> _ScreenMode)
+    or (_NewResizable <> _Resizable)
+  );
 end;
 
 procedure TG2Params.Apply;
