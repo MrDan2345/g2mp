@@ -689,7 +689,7 @@ type
     var _FixtureDuckCheck: pb2_fixture;
     var _Joint: pb2_joint;
     var _BodyMassData: tb2_mass_data;
-    var _BodyVerts: array[0..5] of tb2_vec2;
+    var _BodyVerts: array[0..6] of tb2_vec2;
     var _DuckCheckVerts: array[0..3] of tb2_vec2;
     var _DuckCheckContacts: TG2IntS32;
     var _Width: TG2Float;
@@ -1760,7 +1760,7 @@ begin
       if Assigned(Shape0) then Shape0.OnEndContact(Entity1, Shape1, contact)
       else if Assigned(Character0) then Character0.OnEndContact(Entity1, Shape1, contact^.get_fixture_a, contact);
     end;
-    if not contact^.get_fixture_b^.is_sensor then
+    if not contact^.get_fixture_a^.is_sensor then
     begin
       if Assigned(Shape1) then Shape1.OnEndContact(Entity0, Shape0, contact)
       else if Assigned(Character1) then Character1.OnEndContact(Entity0, Shape0, contact^.get_fixture_b, contact);
@@ -3651,13 +3651,14 @@ begin
   _BodyVerts[3] := b2_vec2(-hw + qw, -hh * d);
   _BodyVerts[4] := b2_vec2(-hw, -hh * d + qw);
   _BodyVerts[5] := b2_vec2(-hw, hh - hw);
+  _BodyVerts[6] := b2_vec2(0, hh - hw * 0.5);
   _DuckCheckVerts[0] := b2_vec2(_BodyVerts[2].x, _BodyVerts[0].y);
   _DuckCheckVerts[1] := b2_vec2(_BodyVerts[2].x, _BodyVerts[2].y);
   _DuckCheckVerts[2] := b2_vec2(_BodyVerts[3].x, _BodyVerts[3].y);
   _DuckCheckVerts[3] := b2_vec2(_BodyVerts[3].x, _BodyVerts[0].y);
-  _ShapeBody.set_polygon(@_BodyVerts, 6);
+  _ShapeBody.set_polygon(@_BodyVerts, 7);
   _ShapeFeet.center := b2_vec2(0, 0);
-  _ShapeFeet.radius := hw * 0.9;
+  _ShapeFeet.radius := hw * 0.95;
   _ShapeDuckCheck.set_polygon(@_DuckCheckVerts, 4);
 end;
 

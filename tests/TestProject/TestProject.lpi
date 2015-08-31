@@ -37,7 +37,8 @@
       <Unit0>
         <Filename Value="TestProject.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="27"/>
+        <CursorPos X="24" Y="10"/>
+        <UsageCount Value="30"/>
         <Loaded Value="True"/>
       </Unit0>
     </Units>
