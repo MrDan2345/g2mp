@@ -3514,6 +3514,7 @@ begin
     end;
     WM_SIZE:
     begin
+      if wParam <> SIZE_MINIMIZED then
       if wParam = SIZE_MAXIMIZED then WindowMode := 1 else WindowMode := 0;
       g2.Window.AddMessage(@g2.Window.OnResize, WindowMode, lParam and $ffff, (lParam shr 16) and $ffff);
     end;
@@ -6077,75 +6078,6 @@ begin
     1: g2.Params.ScreenMode := smMaximized;
   end;
   g2.Params.Apply;
-
-  //g2.Params.SetBuffered(False);
-  //PrevWidth := g2.Params.Width;
-  //PrevHeight := g2.Params.Height;
-  //PrevScreenMode := g2.Params.ScreenMode;
-  //if PrevScreenMode <> smFullscreen then
-  //begin
-  //  case Mode of
-  //    0: NextScreenMode := smWindow;
-  //    1: NextScreenMode := smMaximized;
-  //  end;
-  //end
-  //else
-  //begin
-  //  NextScreenMode := PrevScreenMode;
-  //end;
-  //{$if defined(G2Target_Windows)}
-  //if PrevScreenMode <> NextScreenMode then
-  //begin
-  //  case NextScreenMode of
-  //    smWindow:
-  //    begin
-  //      WndStyle := (
-  //        WS_CAPTION or
-  //        WS_POPUP or
-  //        WS_VISIBLE or
-  //        WS_EX_TOPMOST or
-  //        WS_MINIMIZEBOX or
-  //        WS_MAXIMIZEBOX or
-  //        WS_SYSMENU or
-  //        WS_THICKFRAME
-  //      );
-  //    end;
-  //    smMaximized:
-  //    begin
-  //      WndStyle := (
-  //        WS_CAPTION or
-  //        WS_POPUP or
-  //        WS_VISIBLE or
-  //        WS_EX_TOPMOST or
-  //        WS_MINIMIZEBOX or
-  //        WS_MAXIMIZEBOX or
-  //        WS_MAXIMIZE or
-  //        WS_SYSMENU
-  //      );
-  //    end;
-  //    smFullscreen:
-  //    begin
-  //      WndStyle := (
-  //        WS_POPUP or
-  //        WS_VISIBLE or
-  //        WS_EX_TOPMOST
-  //      );
-  //    end;
-  //  end;
-  //  SetWindowLongA(_Handle, GWL_STYLE, WndStyle);
-  //end;
-  //GetClientRect(_Handle, R);
-  //NextWidth := R.Right - R.Left;
-  //NextHeight := R.Bottom - R.Top;
-  //{$elseif defined(G2Target_Linux)}
-  //{$elseif defined(G2Target_OSX)}
-  //{$endif}
-  //g2.Params.ScreenMode := NextScreenMode;
-  //g2.Params.Width := NextWidth;
-  //g2.Params.Height := NextHeight;
-  //g2.Params.SetBuffered(True);
-  //g2.Gfx.Resize(PrevWidth, PrevHeight, NextWidth, NextHeight);
-  //g2.OnResize(PrevWidth, PrevHeight, NextWidth, NextHeight);
 end;
 
 procedure TG2Window.Adjust(
@@ -6183,7 +6115,7 @@ begin
       if (w <> NewWidth)
       or (h <> NewHeight) then
       begin
-        R.Left := (GetSystemMetrics(SM_CXSCREEN) -p NewWidth) shr 1;
+        R.Left := (GetSystemMetrics(SM_CXSCREEN) - NewWidth) shr 1;
         R.Right := R.Left + NewWidth;
         R.Top := (GetSystemMetrics(SM_CYSCREEN) - NewHeight) shr 1;
         R.Bottom := R.Top + NewHeight;

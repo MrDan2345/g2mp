@@ -22,6 +22,7 @@ begin
   g2.CallbackResizeAdd(@App.Resize);
   g2.Params.MaxFPS := 60;
   g2.Params.TargetUPS := 60;
+  g2.Params.Resizable := False;
   //g2.Params.Width := 960;//480;//960;//1440;
   //g2.Params.Height := 640;//320;//640;//960;
   g2.Params.ScreenMode := smMaximized;

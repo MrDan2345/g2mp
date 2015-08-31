@@ -19,7 +19,7 @@ begin
   g2.CallbackMouseUpAdd(@App.MouseUp);
   g2.CallbackScrollAdd(@App.Scroll);
   g2.CallbackPrintAdd(@App.Print);
-  g2.CallbackResizeAdd();
+  g2.CallbackResizeAdd(@App.Resize);
   g2.Params.MaxFPS := 60;
   g2.Params.TargetUPS := 60;
   //g2.Params.Width := 960;//480;//960;//1440;
