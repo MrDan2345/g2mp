@@ -37,8 +37,7 @@
       <Unit0>
         <Filename Value="SpineIntegration.lpr"/>
         <IsPartOfProject Value="True"/>
-        <CursorPos X="26" Y="14"/>
-        <UsageCount Value="21"/>
+        <UsageCount Value="28"/>
         <Loaded Value="True"/>
       </Unit0>
     </Units>
@@ -51,7 +50,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="G:\[SDK]\g2mp\source\;G:\[SDK]\g2mp\source\box2d\;source"/>
+      <OtherUnitFiles Value="D:\other\g2mp\source\;D:\other\g2mp\source\box2d\;source\"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>
@@ -63,15 +62,6 @@
     </Linking>
   </CompilerOptions>
   <Debugging>
-    <BreakPoints Count="1">
-      <Item1>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="source\GameUnit.pas"/>
-        <Line Value="157"/>
-      </Item1>
-    </BreakPoints>
     <Exceptions Count="3">
       <Item1>
         <Name Value="EAbort"/>
