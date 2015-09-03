@@ -9,9 +9,18 @@ uses
 type
   TSpineClass = class;
   TSpineBoneData = class;
-  TSpineBone = class;
-  TSpineSkin = class;
+  TSpineSlotData = class;
   TSpineSkeletonData = class;
+  TSpineEventData = class;
+  TSpineBone = class;
+  TSpineSlot = class;
+  TSpineSkeleton = class;
+  TSpineEvent = class;
+  TSpineSkin = class;
+  TSpineAtlasPage = class;
+  TSpineAtlasRegion = class;
+  TSpineAtlas = class;
+
 
   TSpineClass = class
   private
@@ -54,6 +63,7 @@ type
     function Insert(const Index: Integer; const Item: T): Integer;
     procedure Delete(const Index: Integer; const ItemCount: Integer = 1);
     procedure Remove(const Item: T);
+    procedure FreeItems;
     procedure Clear;
     function Search(const CmpFunc: TCmpFunc; const Item: T): Integer; overload;
     function Search(const CmpFunc: TCmpFuncObj; const Item: T): Integer; overload;
@@ -63,12 +73,58 @@ type
     procedure Sort(const CmpFunc: TCmpFuncObj); overload;
   end;
 
+  TSpineStringArray = array of String;
+  TSpineAttachmentArray = array of TSpineAttachment;
+  TSpineRegionVertices = array[0..7] of Single;
+
   TSpineBoneDataList = specialize TSpineList<TSpineBoneData>;
+  TSpineSlotDataList = specialize TSpineList<TSpineSlotData>;
+  TSpineEventDataList = specialize TSpineList<TSpineEventData>;
   TSpineBoneList = specialize TSpineList<TSpineBone>;
+  TSpineSlotList = specialize TSpineList<TspineSlot>;
+  TSpineSkinList = specialize TSpineList<TSpineSkin>;
+  TSpineAttachmentList = specialize TSpineList<TSpineAttachment>;
+  TSpineAnimationList = specialize TSpineList<TSpineAnimation>;
+  TSpineIKConstraintList = specialize TSpineList<TSpineIKConstraint>;
+  TSpineAtlasPageList = specialize TSpineList<TSpineAtlasPage>;
+  TSpineAtlasRegionList = specialize TSpineList<TSpineAtlasRegion>;
   TSpineAtlasList = specialize TSpineList<TSpineAtlas>;
 
-  TSpineRegionVertices = array[0..7] of Single;
-  TSpineMat = array[0..1, 0..1] of Single;
+  TSpineBlendMode = (
+    sp_bm_normal,
+    sp_bm_additive,
+    sp_bm_multiply,
+    sp_bm_screen
+  );
+
+  TSpineAttachmentType = (
+    sp_at_region,
+    sp_at_bounding_box,
+    sp_at_mesh,
+    sp_at_skinned_mesh
+  );
+
+  TSpineAtlasPageFormat = (
+    sp_af_alpha,
+    sp_af_intensity,
+    sp_af_luminance_alpha,
+    sp_af_rgb565,
+    sp_af_rgba4444,
+    sp_af_rgb888,
+    sp_af_rgba8888
+  );
+
+  TSpineAtlasPageTextureFilter = (
+    sp_tf_nearest,
+    sp_tf_linear,
+    sp_tf_mip_map
+  );
+
+  TSpineAtlasPageWrap = (
+    sp_apw_mirror,
+    sp_apw_clamp,
+    sp_apw_repeat
+  );
 
   TSpineBoneData = class (TSpineClass)
   private
@@ -101,12 +157,106 @@ type
     constructor Create(const AName: String; const AParent: TSpineBoneData);
   end;
 
+  TSpineSlotData = class (TSpineClass)
+  private
+    var _Name: String;
+    var _BoneData: TSpineBoneData;
+    var _AttachmentName: String;
+    var _BlendMode: TSpineBlendMode;
+    var _r: Single;
+    var _g: Single;
+    var _b: Single;
+    var _a: Single;
+  public
+    property Name: String read _Name;
+    property BoneData: TSpineBoneData read _BoneData;
+    property r: Single read _r write _r;
+    property g: Single read _g write _g;
+    property b: Single read _b write _b;
+    property a: Single read _a write _a;
+    property AttachmentName: String read _AttachmentName write _AttachmentName;
+    property BlendMode: TSpineBlendMode read _BlendMode write _BlendMode;
+    constructor Create(const AName: String; const ABoneData: TSpineBoneData);
+  end;
+
+  TSpineSkeletonData = class (TSpineClass)
+  private
+    var _Name: String;
+    var _Bones: TSpineBoneDataList;
+    var _Slots: TSpineSlotDataList;
+    var _Skins: TSpineSkinList;
+    var _DefaultSkin: TSpineSkin;
+    var _Events: TSpineEventDataList;
+    var _Animations: TSpineAnimationList;
+    var _IKConstraints: TSpineIKConstraintList;
+    var _Width: Single;
+    var _Height: Single;
+    var _Version: String;
+    var _Hash: String;
+    var _ImagePath: String;
+  public
+    property Name: String read _Name write _Name;
+    property Bones: TSpineBoneDataList read _Bones;
+    property Slots: TSpineSlotDataList read _Slots;
+    property Skins: TSpineSkinList read _Skins;
+    property DefaultSkin: TSpineSkin read _DefaultSkin;
+    property Events: TSpineEventDataList read _Events;
+    property Animations: TSpineAnimationList read _Animations;
+    property IKConstraints: TSpineIKConstraintList read _IKConstraints;
+    property Width: Single read _Width write _Width;
+    property Height: Single read _Height write _Height;
+    property Version: String read _Version write _Version;
+    property Hash: String read _Hash write _Hash;
+    constructor Create;
+    destructor Destroy; override;
+    function FindBone(const BoneName: String): TSpineBoneData;
+    function FindBoneIndex(const BoneName: String): Integer;
+    function FindSlot(const SlotName: String): TSpineSlotData;
+    function FindSlotIndex(const SlotName: String): Integer;
+    function FindSkin(const SkinName: String): TSpineSkin;
+    function FindSkinIndex(const SkinName: String): Integer;
+    function FindEvent(const EventName: String): TSpineEventData;
+    function FindEventIndex(const EventName: String): Integer;
+    function FindAnimation(const AnimationName: String): TSpineAnimation;
+    function FindAnimationIndex(const AnimationName: String): Integer;
+    function FindIKConstraint(const IKConstraintName: String): TSpineIKConstraintData;
+    function FindIKConstraintIndex(const IKConstraintName: String): Integer;
+  end;
+
+  TSpineEventData = class (TSpineClass)
+  private
+    var _Name: String;
+    var _IntValue: Integer;
+    var _FloatValie: Single;
+    var _StringValue: String;
+  public
+    property Name: String read _Name;
+    constructor Create(const AName: String);
+  end;
+
+  TSpineIKConstraintData = class (TSpineClass)
+  private
+    var _Name: String;
+    var _Bones: TSpineBoneDataList;
+    var _Target: TSpineBoneData;
+    var _BlendDirection: Integer;
+    var _Mix: Single;
+  public
+    property Name: String read _Name;
+    property Bones: TSpineBoneDataList read _Bones;
+    property Target: TSpineBoneData read _Target write _Target;
+    property BlendDirection: Integer read _BlendDirection write _BlendDirection;
+    property Mix: Single read _Mix write _Mix;
+    constructor Create(const AName: String);
+    destructor Destroy; override;
+  end;
+
   TSpineBone = class (TSpineClass)
   public
     class var YDown: Boolean;
   private
-    _FlipX: Boolean;
-    _FlipY: Boolean;
+    var _FlipX: Boolean;
+    var _FlipY: Boolean;
     var _Data: TSpineBoneData;
     var _Skeleton: TSpineSkeleton;
     var _Parent: TSpineBone;
@@ -153,12 +303,184 @@ type
     procedure LocalToWorld(const InLocalX, InLocalY: Single; var OutWorldX, OutWorldY: Single);
   end;
 
-  TSpineAttachmentType = (
-    sp_at_region,
-    sp_at_bounding_box,
-    sp_at_mesh,
-    sp_at_skinned_mesh
-  );
+  TSpineSlot = class (TSpineClass)
+  private
+    var _Data: TSpineSlotData;
+    var _Bone: TSpineBone;
+    var _r: Single;
+    var _g: Single;
+    var _b: Single;
+    var _a: Single;
+    var _Attachment: TSpineAttachment;
+    var _AttachmentTime: Single;
+    var _AttachmentVertices: array of Single;
+    function GetAttachemntVertex(const Index: Integer): Single; inline;
+    procedure SetAttachmentVertex(const Index: Integer; const Value: Single); inline;
+    function GetAttachmentVertexCount: Integer; inline;
+    procedure SetAttachmentVertexCount(const Value: Integer); inline;
+    procedure SetAttachment(const Value: TSpineAttachment); inline;
+    function GetAttachmentTime: Single; inline;
+    procedure SetAttachmentTime(const Value: Single); inline;
+  public
+    property Data: TSpineSlotData read _Data;
+    property Bone: TSpineBone read _Bone;
+    property Skeleton: TSpineSkeleton read _Bone.Skeleton;
+    property r: Single read _r write _r;
+    property g: Single read _g write _g;
+    property b: Single read _b write _b;
+    property a: Single read _a write _a;
+    property AttachmentVertices[const Index: Integer]: Single read GetAttachemntVertex write SetAttachmentVertex;
+    property AttachmentVertexCount: Integer read GetAttachmentVertexCount write SetAttachmentVertexCount;
+    property Attachment: TSpineAttachment read _Attachment write SetAttachment;
+    property AttachmentTime: Single read GetAttachmentTime write SetAttachmentTime;
+    constructor Create(const AData: TSpineSlotData; const ABone: TSpineBone);
+    procedure SetToSetupPose(const SlotIndex: Integer); overload;
+    procedure SetToSetupPose; overload;
+  end;
+
+  TSpineSkeleton = class (TSpineClass)
+  private
+    _a: Single;
+    var _Data: TSpineSkeletonData;
+    var _Bones: TSpineBoneList;
+    var _Slots: TSpineSlotlist;
+    var _DrawOrder: TSpineSlotList;
+    var _IKConstraints: TSpineIKConstraintList;
+    var _BoneCache: specialize TSpineList<TSpineBoneList>;
+    var _Skin: TSpineSkin;
+    var _r: Single;
+    var _g: Single;
+    var _b: Single;
+    var _b: Single;
+    var _Time: Single;
+    var _FlipX: Boolean;
+    var _FlipY: Boolean;
+    var _x: Single;
+    var _y: Single;
+    procedure SetIKConstraints(const Value: TSpineIKConstraintList); inline;
+    procedure SetSkin(const Value: TSpineSkin); inline;
+    function GetRootBone: TSpineBone; inline;
+  public
+    property Data: TSpineSkeletonData read _Data;
+    property Bones: TSpineBoneList read _Bones;
+    property Slots: TSpineSlotList read _Slots;
+    property DrawOrder: TSpineSlotList read _DrawOrder;
+    property IKConstraints: TSpineIKConstraintList read _IKConstraints write SetIKConstraints;
+    property Skin: TSpineSkin read _Skin write SetSkin;
+    property r: Single read _r write _r;
+    property g: Single read _g write _g;
+    property b: Single read _b write _b;
+    property a: Single read _a write _a;
+    property Time: Single read _Time write _Time;
+    property x: Single read _x write _x;
+    property y: Single read _y write _y;
+    property FlipX: Boolean read _FlipX write _FlipX;
+    property FlipY: Boolean read _FlipY write _FlipY;
+    property RootBone: TSpineBone read GetRootBone;
+    constructor Create(const AData: TSkeletonData);
+    destructor Destroy; override;
+    procedure UpdateCache;
+    procedure UpdateWorldTransform;
+    procedure SetToSetupPose;
+    procedure SetBonesToSetupPose;
+    procedure SetSlotsToSetupPose;
+    function FindBone(const BoneName: String): TSpineBone;
+    function FindBoneIndex(const BoneName: String): Integer;
+    function FindSlot(const SlotName: String): TSpineSlot;
+    function FindSlotIndex(const SlotName: String): Integer;
+    function FindIKConstraint(const IKConstraintName: String): TSpineIKConstraint;
+    procedure SetSkinByName(const SkinName: String);
+    function GetAttachment(const SlotName, AttachmentName: String): TSpineAttachment;
+    function GetAttachment(const SlotIndex: Integer; const AttachmentName: String): TSpineAttachment;
+    procedure SetAttachment(const SlotName, AttachmentName: String);
+    procedure Update(const Delta: Single);
+  end;
+
+  TSpineIKConstraint = class (TSpineClass)
+  private
+    var _Data: TSpineIKConstraintData;
+    var _Bones: TSpineBoneList;
+    var _Target: TSpineBone;
+    var _BlendDirection: Integer;
+    var _Mix: Single;
+    class procedure Apply(var Bone: TSpineBone; const TargetX, TargetY, Alpha: Single); overload;
+    class procedure Apply(var Parent, Child: TSpineBone; const TargetX, TargetY, Alpha: Single; const ABlendDirection: Integer); overload;
+  public
+    property Data: TSpineIKConstraintData read _Data;
+    property Bones: TSpineBoneList read _Bones;
+    property Target: TSpineBone read _Target write _Target;
+    property BlendDiretion: Integer read _BlendDirection write _BlendDirection;
+    property Mix: Single read _Mix write _Mix;
+    constructor Create(const AData: TSpineIKConstraintData; const ASkeleton: TSpineSkeleton);
+    destructor Destroy; override;
+    procedure Apply;
+  end;
+
+  type TSpineSkinKey = class (TSpineClass)
+  public
+    var SlotIndex: Integer;
+    var Name: String;
+    var Attachment: TSpineAttachment;
+  end;
+
+  TSpineSkinKeyList = specialize TSpineList<TSpineSkinKey>;
+
+  TSpineSkin = class (TSpineClass)
+  private
+    var _Name: String;
+    var _Attachments: TSpineSkinKeyList;
+    property Attachments: TSpineSkinKeyList read _Attachments;
+    procedure AttachAll(const Skeleton: TSpineSkeleton; const OldSkin: TSpineSkin);
+  public
+    property Name: String read _Name;
+    constructor Create(const AName: String);
+    destructor Destroy; override;
+    procedure AddAttachment(const SlotIndex: Integer; const KeyName: String; const Attachment: TSpineAttachment);
+    function GetAttachment(const SlotIndex: Integer; const KeyName: String): TSpineAttachment;
+    procedure FindNamesForSlot(const SlotIndex: Integer; var KeyNames: TSpineStringArray);
+    procedure FindAttachmentsForSlot(const SlotIndex: Integer; var KeyAttachments: TSpineAttachmentArray);
+  end;
+
+  TSpineAtlasPage = class (TSpineClass)
+  public
+    var Name: String;
+    var Format: TSpineAtlasPageFormat;
+    var MinFilter: TSpineAtlasPageTextureFilter;
+    var MagFilter: TSpineAtlasPageTextureFilter;
+    var WrapU: TSpineAtlasPageWrap;
+    var WrapV: TSpineAtlasPageWrap;
+    var Texture: TSpineTexture;
+    var Width: Integer;
+    var Height: Integer;
+  end;
+
+  TSpineAtlasRegion = class (TSpineClass)
+  public
+    var Page: String;
+    var Name: String;
+    var x: Integer;
+    var y: Integer;
+    var w: Integer;
+    var h: Integer;
+    var u: Single;
+    var v: Single;
+    var u2: Single;
+    var v2: Single;
+    var OffsetX, OffsetY: Single;
+    var OriginalWidth: Integer;
+    var OriginalHeight: Integer;
+    var Index: Integer;
+    var Rotate: Boolean;
+    var Splits: array of Integer;
+    var Pads: array of Integer;
+  end;
+
+  TSpineAtlas = class (TSpineClass)
+  private
+    var _Pages: TSpineAtlasPageList;
+    var _Regions: TSpineAtlasRegionList;
+  public
+  end;
 
   TSpineAttachment = class (TSpineClass)
   private
@@ -241,101 +563,36 @@ type
     var _AtlasList: TSpineAtlasList;
   public
     constructor Create(const AAtlasList: TSpineAtlasList);
-    function NewRegionAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineRegionAttachment; {
-			AtlasRegion region = FindRegion(path);
-			if (region == null) throw new Exception("Region not found in atlas: " + path + " (region attachment: " + name + ")");
-			RegionAttachment attachment = new RegionAttachment(name);
-			attachment.RendererObject = region;
-			attachment.SetUVs(region.u, region.v, region.u2, region.v2, region.rotate);
-			attachment.regionOffsetX = region.offsetX;
-			attachment.regionOffsetY = region.offsetY;
-			attachment.regionWidth = region.width;
-			attachment.regionHeight = region.height;
-			attachment.regionOriginalWidth = region.originalWidth;
-			attachment.regionOriginalHeight = region.originalHeight;
-			return attachment;
-		}
-
-    function NewMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineMeshAttachment; {
-			AtlasRegion region = FindRegion(path);
-			if (region == null) throw new Exception("Region not found in atlas: " + path + " (mesh attachment: " + name + ")");
-			MeshAttachment attachment = new MeshAttachment(name);
-			attachment.RendererObject = region;
-			attachment.RegionU = region.u;
-			attachment.RegionV = region.v;
-			attachment.RegionU2 = region.u2;
-			attachment.RegionV2 = region.v2;
-			attachment.RegionRotate = region.rotate;
-			attachment.regionOffsetX = region.offsetX;
-			attachment.regionOffsetY = region.offsetY;
-			attachment.regionWidth = region.width;
-			attachment.regionHeight = region.height;
-			attachment.regionOriginalWidth = region.originalWidth;
-			attachment.regionOriginalHeight = region.originalHeight;
-			return attachment;
-		}
-
-    function NewSkinnedMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineSkinnedMeshAttachment; {
-			AtlasRegion region = FindRegion(path);
-			if (region == null) throw new Exception("Region not found in atlas: " + path + " (skinned mesh attachment: " + name + ")");
-			SkinnedMeshAttachment attachment = new SkinnedMeshAttachment(name);
-			attachment.RendererObject = region;
-			attachment.RegionU = region.u;
-			attachment.RegionV = region.v;
-			attachment.RegionU2 = region.u2;
-			attachment.RegionV2 = region.v2;
-			attachment.RegionRotate = region.rotate;
-			attachment.regionOffsetX = region.offsetX;
-			attachment.regionOffsetY = region.offsetY;
-			attachment.regionWidth = region.width;
-			attachment.regionHeight = region.height;
-			attachment.regionOriginalWidth = region.originalWidth;
-			attachment.regionOriginalHeight = region.originalHeight;
-			return attachment;
-		}
-
-    function NewBoundingBoxAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineBoundingBoxAttachment; {
-			return new BoundingBoxAttachment(name);
-		}
-
-    function FindRegion(const Name: String): TSpineAtlasRegion; {
-			AtlasRegion region;
-
-			for (int i = 0; i < atlasArray.Length; i++) {
-				region = atlasArray[i].FindRegion(name);
-				if (region != null)
-					return region;
-			}
-
-			return null;
-		}
-  end;
-
-  TSpineSkin = class (TSpineClass)
-  private
-    var _Name: String;
-  public
-    property Name: String read _Name;
-  end;
-
-  TSpineSkeletonData = class (TSpineClass)
-  private
-    var _Name: String;
-    var _Bones: TSpineBoneDataList;
-    var _Slots: TSpineSlotDataList;
-  public
-    property Name: String read _Name write _Name;
-  end;
-
-  TSpineSkeleton = class (TSpineClass)
-  private
-  public
+    function NewRegionAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineRegionAttachment;
+    function NewMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineMeshAttachment;
+    function NewSkinnedMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineSkinnedMeshAttachment;
+    function NewBoundingBoxAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineBoundingBoxAttachment;
+    function FindRegion(const Name: String): TSpineAtlasRegion;
   end;
 
 const
   SP_DEG_TO_RAD = Pi / 180;
+  SP_RAD_TO_DEG = 180 / Pi;
 
 implementation
+
+function SpineArcTan2(const y, x: Single): Single;
+  const HalgPi = Pi * 0.5;
+  const TwoPi = Pi * 2;
+begin
+  if x = 0 then
+  begin
+    if y = 0 then Result := 0
+    else if y > 0 then Result := HalfPi
+    else if y < 0 then Result := -HalfPi;
+  end
+  else
+  Result := ArcTan(y / x);
+  if x < 0 then
+  Result := Result + pi;
+  if Result > pi then
+  Result := Result - TwoPi;
+end;
 
 //TSpineBoneData BEGIN
 constructor TSpineBoneData.Create(const AName: String; const AParent: TSpineBoneData);
@@ -346,6 +603,161 @@ begin
   _ScaleY := 1;
 end;
 //TSpineBoneData END
+
+//TSpineSlotData BEGIN
+constructor TSpineSlotData.Create(const AName: String; const ABoneData: TSpineBoneData);
+begin
+  _Name := AName;
+  _BoneData := ABoneData;
+  _r := 1;
+  _g := 1;
+  _b := 1;
+  _a := 1;
+end;
+//TSpineSlotData END
+
+//TSpineSkeletonData BEGIN
+constructor TSpineSkeletonData.Create;
+begin
+  _Bones := TSpineBoneDataList.Create;
+  _Slots := TSpineSlotDataList.Create;
+  _Skins := TSpineSkinList.Create;
+  _DefaultSkin := TSpineSkin.Create;
+  _Events := TSpineEventDataList.Create;
+  _Animations := TSpineAnimationList.Create;
+  _IKConstraints := TSpineIKConstraintList.Create;
+end;
+
+destructor TSpineSkeletonData.Destroy;
+begin
+  _Bones.Free;
+  _Slots.Free;
+  _Skins.Free;
+  _DefaultSkin.Free;
+  _Events.Free;
+  _Animations.Free;
+  _IKConstraints.Free;
+  inherited Destroy;
+end;
+
+function TSpineSkeletonData.FindBone(const BoneName: String): TSpineBoneData;
+  var i: Integer;
+begin
+  i := FindBoneIndex(BoneName);
+  if i > -1 then Result := _Bones[i] else Result := nil;
+end;
+
+function TSpineSkeletonData.FindBoneIndex(const BoneName: String): Integer;
+  var i: Integer;
+begin
+  for i := 0 to _Bones.Count - 1 do
+  if _Bones[i].Name = BoneName then
+  Exit(i);
+  Result := -1;
+end;
+
+function TSpineSkeletonData.FindSlot(const SlotName: String): TSpineSlotData;
+  var i: Integer;
+begin
+  i := FindSlotIndex(SlotName);
+  if i > -1 then Result := _Slots[i] else Result := nil;
+end;
+
+function TSpineSkeletonData.FindSlotIndex(const SlotName: String): Integer;
+  var i: Integer;
+begin
+  for i := 0 to _Slots.Count - 1 do
+  if _Slots[i].Name = SlotName then
+  Exit(i);
+  Result := -1;
+end;
+
+function TSpineSkeletonData.FindSkin(const SkinName: String): TSpineSkin;
+  var i: Integer;
+begin
+  i := FindSkinIndex(SkinName);
+  if i > -1 then Result := _Skins[i] else Result := nil;
+end;
+
+function TSpineSkeletonData.FindSkinIndex(const SkinName: String): Integer;
+  var i: Integer;
+begin
+  for i := 0 to _Skins.Count - 1 do
+  if _Skins[i].Name = SkinName then
+  Exit(i);
+  Result := -1;
+end;
+
+function TSpineSkeletonData.FindEvent(const EventName: String): TSpineEventData;
+  var i: Integer;
+begin
+  i := FindEventIndex(EventName);
+  if i > -1 then Result := _Events[i] else Result := nil;
+end;
+
+function TSpineSkeletonData.FindEventIndex(const EventName: String): Integer;
+  var i: Integer;
+begin
+  for i := 0 to _Events.Count - 1 do
+  if _Events[i].Name = EventName then
+  Exit(i);
+  Result := -1;
+end;
+
+function TSpineSkeletonData.FindAnimation(const AnimationName: String): TSpineAnimation;
+  var i: Integer;
+begin
+  i := FindAnimationIndex(AnimationName);
+  if i > -1 then Result := _Animations[i] else Result := nil;
+end;
+
+function TSpineSkeletonData.FindAnimationIndex(const AnimationName: String): Integer;
+  var i: Integer;
+begin
+  for i := 0 to _Animations.Count - 1 do
+  if _Animations[i].Name = AnimationName then
+  Exit(i);
+  Result := -1;
+end;
+
+function TSpineSkeletonData.FindIKConstraint(const IKConstraintName: String): TSpineIKConstraintData;
+begin
+
+end;
+
+function TSpineSkeletonData.FindIKConstraintIndex(const IKConstraintName: String): Integer;
+  var i: Integer;
+begin
+  for i := 0 to _IKConstraints.Count - 1 do
+  if _IKConstraints[i].Name = IKConstraintName then
+  Exit(i);
+  Result := -1;
+end;
+//TSpineSkeletonData END
+
+//TSpineEventData BEGIN
+constructor TSpineEventData.Create(const AName: String);
+begin
+  _Name := AName;
+  _IntValue := 0;
+  _FloatValue := 0;
+  _StringValue := '';
+end;
+//TSpineEventData END
+
+//TSpineIKConstraintData BEGIN
+constructor TSpineIKConstraintData.Create(const AName: String);
+begin
+  _Name := AName;
+  _Bones := TSpineBoneList.Create;
+end;
+
+destructor TSpineIKConstraintData.Destroy;
+begin
+  _Bones.Free;
+  inherited Destroy;
+end;
+//TSpineIKConstraintData END
 
 //TSpineBone BEGIN
 constructor TSpineBone.Create(const AData: TSpineBoneData; const ASkeleton: TSpineSkeleton; const AParent: TSpineBone);
@@ -450,6 +862,536 @@ begin
   OutWorldY := InLocalX * m[1, 0] + InLocalY * m[1, 1] + _WorldY;
 end;
 //TSpineBone END
+
+//TSpineSlot BEGIN
+function TSpineSlot.GetAttachemntVertex(const Index: Integer): Single;
+begin
+  Result := _AttachmentVertices[Index];
+end;
+
+procedure TSpineSlot.SetAttachmentVertex(const Index: Integer; const Value: Single);
+begin
+  _AttachmentVertices[Index] := Value;
+end;
+
+function TSpineSlot.GetAttachmentVertexCount: Integer;
+begin
+  Result := Length(_AttachmentVertices);
+end;
+
+procedure TSpineSlot.SetAttachmentVertexCount(const Value: Integer);
+begin
+  SetLength(_AttachmentVertices, Value);
+end;
+
+procedure TSpineSlot.SetAttachment(const Value: TSpineAttachment);
+begin
+  _Attachment := Value;
+  _AttachmentTime := _Bone.Skeleton.Time;
+  SetLength(_AttachmentVertices, 0);
+end;
+
+function TSpineSlot.GetAttachmentTime: Single;
+begin
+  Result := _Bone.Skeleton.Time - _AttachmentTime;
+end;
+
+procedure TSpineSlot.SetAttachmentTime(const Value: Single);
+begin
+  _AttachmentTime := _Bone.Skeleton.Time - Value;
+end;
+
+constructor TSpineSlot.Create(const AData: TSpineSlotData; const ABone: TSpineBone);
+begin
+  _Data := AData;
+  _Bone := ABone;
+  SetToSetupPose;
+end;
+
+procedure TSpineSlot.SetToSetupPose(const SlotIndex: Integer);
+begin
+  _r := _Data.r;
+  _g := _Data.g;
+  _b := _Data.b;
+  _a := _Data.a;
+  if Length(_Data.AttachmentName) > 0 then
+  _Attachment := _Bone.Skeleton.GetAttachment(SlotIndex, _Data.AttachmentName)
+  else
+  _Attachment := nil;
+end;
+
+procedure TSpineSlot.SetToSetupPose;
+begin
+  SetToSetupPose(_Bone.Skeleton.Data.Slots.Find(_Data));
+end;
+//TSpineSlot END
+
+//TSpineSkeleton BEGIN
+procedure TSpineSkeleton.SetIKConstraints(const Value: TSpineIKConstraintList);
+begin
+  if Assigned(_IKConstraints) then _IKConstraints.RefDec;
+  _IKConstraints := Value;
+  if Assigned(_IKConstraints) then _IKConstraints.RefInc;
+end;
+
+procedure TSpineSkeleton.SetSkin(const Value: TSpineSkin);
+  var PrevSkin: TSpineSkin;
+  var i: Integer;
+  var Slot: TSpineSlot;
+  var Attachment: TSpineAttachment;
+begin
+  if Value = _Skin then Exit;
+  PrevSkin := _Skin;
+  _Skin := Value;
+  if Assigned(_Skin) then
+  begin
+    _Skin.RefInc;
+    if Assigned(PrevSkin) then
+    begin
+      _Skin.AttachAll(Self, PrevSkin)
+    end
+    else
+    begin
+      for i := 0 to _Slots.Count - 1 do
+      begin
+        Slot := _Slots[i];
+        if Length(Slot.Data.AttachmentName) > 0 then
+        begin
+          Attachment := _Skin.GetAttachment(i, Slot.Data.AttachmentName);
+          if Assigned(Attachment) then Slot.Attachment := Attachment;
+        end;
+      end;
+    end;
+  end;
+  if Assigned(PrevSkin) then PrevSkin.RefDec;
+end;
+
+function TSpineSkeleton.GetRootBone: TSpineBone;
+begin
+  if _Bones.Count > 0 then Result := _Bones[0] else Result := nil;
+end;
+
+constructor TSpineSkeleton.Create(const AData: TSkeletonData);
+  var i: Integer;
+  var BoneData: TSpineBoneData;
+  var Bone, Parent: TSpineBone;
+  var SlotData: TSpineSlotData;
+  var Slot: TSpineSlot;
+  var IKConstraintData: TSpineIKConstraintData;
+  var IKConstraint: TSpineIKConstraint;
+begin
+  _Data := AData;
+  _Bones := TSpineBoneList.Create;
+  for i := 0 to _Data.Bones.Count - 1 do
+  begin
+    BoneData := _Data.Bones[i];
+    if Assigned(BoneData.Parent) then
+    Parent := _Bones[_Data.Bones.Find(BoneData.Parent)]
+    else
+    Parent := nil;
+    Bone := TSpineBone.Create(BoneData, Self, Parent);
+    if Assigned(Parent) then
+    begin
+      Parent.Children.Add(Bone);
+      Bone.RefInc;
+    end;
+    _Bones.Add(Bone);
+  end;
+  _Slots := TSpineSlotList.Create;
+  _DrawOrder := TSpineSlotList.Create;
+  for i := 0 to _Data.Slots.Count - 1 do
+  begin
+    SlotData := _Data.Slots[i];
+    Bone := _Bones[_Data.Bones.Find(SlotData.BoneData)];
+    Slot := TSpineSlot.Create(SlotData, Bone);
+    _Slots.Add(Slot);
+    _DrawOrder.Add(Slot);
+  end;
+  _IKConstraints := TSpineIKConstraintList.Create;
+  for i := 0 to _Data.IKConstraints.Count - 1 do
+  begin
+    IKConstraintData := _Data.IKConstraints[i];
+    IKConstraint := TSpineIKConstraint.Create(IKConstraintData, Self);
+    _IKConstraints.Add(IKConstraint);
+  end;
+  UpdateCache;
+end;
+
+destructor TSpineSkeleton.Destroy;
+begin
+  _Bones.FreeItems;
+  _Bones.Free;
+  _Slots.FreeItems;
+  _Slots.Free;
+  _IKConstraints.FreeItems;
+  _IKConstraints.Free;
+  inherited Destroy;
+end;
+
+procedure TSpineSkeleton.UpdateCache;
+  var i, j, ArrayCount: Integer;
+  var NonIKBones: TSpineBoneList;
+  var Bone, CurBone, Parent, Child: TSpineBone;
+  var Constraint: TSpineIKConstraint;
+  var Done: Boolean;
+begin
+  ArrayCount := _IKConstraints.Count + 1;
+  if _BoneCache.Count > ArrayCount then
+  for i := _BoneCache.Count - 1 downto ArrayCount do
+  begin
+    _BoneCache[i].Free;
+    _BoneCache.Delete(i);
+  end;
+  for i := 0 to _BoneCache.Count - 1 do
+  _BoneCache[i].Clear;
+  while _BoneCache.Count < ArrayCount do
+  _BoneCache.Add(TSpineBoneList.Create);
+  NonIKBones := _BoneCahce[0];
+  Done := False;
+  for i := 0 to _Bones.Count - 1 do
+  begin
+    Bone := _Bones[i];
+    CurBone := Bone;
+    repeat
+      for j := 0 to _IKConstraints.Count - 1 do
+      begin
+        Constraint := _IKConstraints[j];
+        Parent := Constraint.Bones[0]
+        Child := Constraint.Bones[Constraint.Bones.Last];
+        while True do
+        begin
+          if CurBone = Child then
+          begin
+            _BoneCache[j].Add(Bone);
+            _BoneCache[j + 1].Add(Bone);
+            Done := True;
+            Break;
+          end;
+          if Child = Parent then Break;
+          Child := Child.Parent;
+        end;
+        if Done then Break;
+        CurBone := CurBone.Parent;
+      end;
+      if Done then Break;
+    until CurBone = nil;
+    NonIKBones.Add(Bone);
+  end;
+end;
+
+procedure TSpineSkeleton.UpdateWorldTransform;
+  var i, j, last: Integer;
+  var UpdateBones: TSpineBoneList;
+begin
+  for i := 0 to _Bones.Count - 1 do
+  _Bones[i].RotationIK := _Bones[i].Rotation;
+  i := 0;
+  last := _BoneCache.Count;
+  while True do
+  begin
+    UpdateBones := _BoneCache[i];
+    for j := 0 to UpdateBones.Count - 1 do
+    UpdateBones[j].UpdateWorldTransform;
+    if i = last then Break;
+    _IKConstraints[i].Apply;
+    Inc(i);
+  end;
+end;
+
+procedure TSpineSkeleton.SetToSetupPose;
+begin
+  SetBonesToSetupPose;
+  SetSlotsToSetupPose;
+end;
+
+procedure TSpineSkeleton.SetBonesToSetupPose;
+  var i: Integer;
+  var Constraint: TSpineIKConstraint;
+begin
+  for i := 0 to _Bones.Count - 1 do
+  _Bones[i].SetToSetupPose;
+  for i := 0 to _IKConstraints.Count - 1 do
+  begin
+    Constraint := _IKConstraints[i];
+    Constraint.BlendDirection := Constraint.Data.BlendDirection;
+    Constraint.Mix := Constraint.Data.Mix;
+  end;
+end;
+
+procedure TSpineSkeleton.SetSlotsToSetupPose;
+  var i: Integer;
+begin
+  _DrawOrder.Clear;
+  for i := 0 to _Slots.Count - 1 do
+  begin
+    _DrawOrder.Add(_Slots[i]);
+    _Slots[i].SetToSetupPose(i);
+  end;
+end;
+
+function TSpineSkeleton.FindBone(const BoneName: String): TSpineBone;
+  var i: Integer;
+begin
+  i := FindBoneIndex(BoneName);
+  if i > -1 then Result := _Bones[i] else Result := nil;
+end;
+
+function TSpineSkeleton.FindBoneIndex(const BoneName: String): Integer;
+  var i: Integer;
+begin
+  for i := 0 to _Bones.Count - 1 do
+  if _Bones[i].Name = BoneName then
+  Exit(i);
+  Result := -1;
+end;
+
+function TSpineSkeleton.FindSlot(const SlotName: String): TSpineSlot;
+  var i: Integer;
+begin
+  i := FindSlotIndex(SlotName);
+  if i > -1 then Result := _Slots[i] else Result := nil;
+end;
+
+function TSpineSkeleton.FindSlotIndex(const SlotName: String): Integer;
+  var i: Integer;
+begin
+  for i := 0 to _Slots.Count - 1 do
+  if _Slots[i].Name = SlotName then
+  Exit(i);
+  Result := -1;
+end;
+
+function TSpineSkeleton.FindIKConstraint(const IKConstraintName: String): TSpineIKConstraint;
+  var i: Integer;
+begin
+  for i := 0 to _IKConstraints.Count - 1 do
+  if _IKConstraints[i].Data.Name = IKConstraintName then
+  Exit(_IKConstraints[i]);
+  Result := nil;
+end;
+
+procedure TSpineSkeleton.SetSkinByName(const SkinName: String);
+  var TempSkin: TSpineSkin;
+begin
+  TempSkin := FindSkin(SkinName);
+  if Assigned(TempSkin) then Skin := TempSkin;
+end;
+
+function TSpineSkeleton.GetAttachment(const SlotName, AttachmentName: String): TSpineAttachment;
+begin
+  Result := GetAttachemnt(_Data.FindSlotIndex(SlotName), AttachmentName);
+end;
+
+function TSpineSkeleton.GetAttachment(const SlotIndex: Integer; const AttachmentName: String): TSpineAttachment;
+begin
+  if Assigned(_Skin) then
+  begin
+    Result := _Skin.GetAttachment(SlotIndex, AttachmentName);
+    if Assigned(Result) then Exit;
+  end;
+  if Assigned(_Data.DefaultSkin) then
+  Exit(_Data.DefaultSkin.GetAttachment(SlotIndex, AttachmentName));
+  Result := nil;
+end;
+
+procedure TSpineSkeleton.SetAttachment(const SlotName, AttachmentName: String);
+  var i: Integer;
+  var Slot: TSpineSlot;
+  var Attachment: TSpineAttachment;
+begin
+  for i := 0 to _Slots.Count - 1 do
+  begin
+    Slot := _Slots[i];
+    if Slot.Data.NAme = SlotName then
+    begin
+      Attachment := GetAttachment(i, AttachmentName);
+      if Assigned(Attachment) then Slot.Attachment := Attachment;
+    end;
+  end;
+end;
+
+procedure TSpineSkeleton.Update(const Delta: Single);
+begin
+  _Time += Delta;
+end;
+//TSpineSkeleton END
+
+//TSpineIKConstraint BEGIN
+class procedure TSpineIKConstraint.Apply(var Bone: TSpineBone; const TargetX, TargetY, Alpha: Single);
+  var Rotation, RotationIK: Single;
+begin
+  Rotation := Bone.Rotation;
+  RotationIK := SpineArcTan2(TargetY - Bone.WorldY, TargetX - Bone.WorldX) * SP_RAD_TO_DEG;
+  if (Bone.WorldFlipX <> (Bone.WorldFlipY <> TSpineBone.YDown)) then RotationIK = -RotationIK;
+  if Bone.Data.InheritRotation and Assigned(Bone.Parent) then RotationIK -= Bone.Parent.WorldRotation;
+  Bone.RotationIK := Rotation + (RotationIK - Rotation) * Alpha;
+end;
+
+class procedure TSpineIKConstraint.Apply(var Parent, Child: TSpineBone; const TargetX, TargetY, Alpha: Single; const ABlendDirection: Integer);
+  var PositionX, PositionY, NewTargetX, NewTargetY: Single;
+  var ChildX, ChildY, Offset, Len1, Len2, CosDenom, c: Single;
+  var ChildAngle, ParentAngle, Adjacent, Opposite: Single;
+  var Rotation: Single;
+begin
+  if Alpha = 0 then
+  begin
+    Child.RotationIK := Child.Rotation;
+    Parent.RotationIK := Parent.Rotation;
+    Exit;
+  end;
+  if Assigned(Parent.Parent) then
+  begin
+    Parent.Parent.WorldToLocal(TargetX, TargetY, PositionX, PositionY);
+    NewTargetX := (PositionX - Parent.x) * Parent.Parent.WorldScaleX;
+    NewTargetY := (PositionY - Parent.y) * Parent.Parent.WorldScaleY;
+  end
+  else
+  begin
+    NewTargetX -= Parent.x;
+    NewTtargetY -= Parent.y;
+  end;
+  if Child.Parent = Parent then
+  begin
+    PositionX := Child.x;
+    PositionY := Child.y;
+  end
+  else
+  begin
+    Child.Parent.LocalToWorld(Child.x, Child.y, PositionX, PositionY);
+    Parent.WorldToLocal(PositionX, PositionY, PositionX, PositionY);
+  end;
+  ChildX := PositionX * Parent.WorldScaleX;
+  ChildY := PositionY * Parent.WorldScaleY;
+  Offset := SpineArcTan2(ChildY, ChildX);
+  Len1 := Sqrt(ChildX * ChildX + ChildY * ChildY);
+  len2 := Child.Data.BoneLength * Child.WorldScaleX;
+  CosDenom := 2 * len1 * len2;
+  if CosDenom < 0.0001 then
+  begin
+    Child.RotationIK := Child.Rotation + (ArcTan2(TargetY, TargetX) * SP_RAD_TO_DEG - Parent.Rotation - Child.Rotation) * Alpha;
+    Exit;
+  end;
+  c := (TargetX * TargetX + TargetY * TargetY - Len1 * Len1 - Len2 * Len2) / CosDenom;
+  if c < -1 then cos := -1
+  else if c > 1 then c := 1;
+  ChildAngle := ArcCos(c) * BendDirection;
+  Adjacent := Len1 + Len2 * c;
+  Opposite := Len2 * Sin(ChildAngle);
+  ParentAngle := ArcTan2(TargetY * Adjacent - TargetX * Opposite, TargetX * Adjacent + TargetY * Opposite);
+  Rotation := (ParentAngle - Offset) * SP_RAD_TO_DEG - Parent.Rotation;
+  if Rotation > 180 then Rotation -= 360;
+  else if Rotation < -180 then Rotation += 360;
+  Parent.RotationIK := Parent.Rotation + Rotation * Alpha;
+  Rotation := (ChildAngle + Offset) * SP_RAD_TO_DEG - ChildRotation;
+  if Rotation > 180 then Rotation -= 360;
+  else if Rotation < -180 then Rotation += 360;
+  Child.RotationIK := Child.Rotation + (Rotation + Parent.WorldRotation - Child.Parent.WorldRotation) * Alpha;
+end;
+
+constructor TSpineIKConstraint.Create(const AData: TSpineIKConstraintData; const ASkeleton: TSpineSkeleton);
+  var i: Integer;
+begin
+  _Bones := TSpineBoneList.Create;
+  _Data := AData;
+  _Data.RefInc;
+  _Mix := _Data.Mix;
+  _BlendDirection := _Data.BlendDirection;
+  for i := 0 to _Data.Bones.Count - 1 do
+  _Bones.Add(ASkeleton.FindBone(_Data.Bones[i].Name));
+  _Target := ASkeleton.FindBone(_Data.Target.Name);
+end;
+
+destructor TSpineIKConstraint.Destroy;
+begin
+  _Bones.Free;
+  inherited Destroy;
+end;
+
+procedure TSpineIKConstraint.Apply;
+begin
+  case _Bones.Count of
+    1: Apply(_Bones[0], _Target.WorldX, _Target.WorldY, _Mix);
+    2: Apply(_Bones[0], _Bones[1], _TargetX, _TargetY, _Mix, _BlendDirection);
+  end;
+end;
+//TSpineIKConstraint END
+
+//TSpineSkin BEGIN
+procedure TSpineSkin.AttachAll(const Skeleton: TSpineSkeleton; const OldSkin: TSpineSkin);
+  var i, SlotIndex: Integer;
+  var Slot: TSpineSlot;
+  var Attachment: TSpineAttachment;
+begin
+  for i := 0 to OldSkin.Attachments.Count - 1 do
+  begin
+    SlotIndex := OldSkin.Attachments[i].SlotIndex;
+    Slot := Skeleton.Slots[SlotIndex];
+    if (Slot.Attachment = OldSkin.Attachments[i].Attachment) then
+    begin
+      Attachment := GetAttachment(SlotIndex, OldSkin.Attachments[i].Name);
+      if Assigned(Attachment) then Slot.Attachment := Attachment;
+    end;
+  end;
+end;
+
+constructor TSpineSkin.Create(const AName: String);
+begin
+  _Name := AName;
+  _Attachments := TSpineSkinKeyList.Create;
+end;
+
+destructor TSpineSkin.Destroy;
+begin
+  _Attachments.FreeItems;
+  _Attachments.Free;
+  inherited Destroy;
+end;
+
+procedure TSpineSkin.AddAttachment(const SlotIndex: Integer; const KeyName: String; const Attachment: TSpineAttachment);
+  var Key: TSpineSkinKey;
+begin
+  Key := TSpineSkinKey.Create;
+  Key.SlotIndex := SlotIndex;
+  Key.Name := KeyName;
+  Key.Attachment := Attachment;
+  _Attachments.Add(Key);
+end;
+
+function TSpineSkin.GetAttachment(const SlotIndex: Integer; const KeyName: String): TSpineAttachment;
+  var i: Integer;
+begin
+  for i := 0 to _Attachments.Count - 1 do
+  if (_Attachments[i].SlotIndex = SlotIndex)
+  and (_Attachments[i].Name = KeyName) then
+  Exit(_Attachments[i].Attachment);
+  Result := nil;
+end;
+
+procedure TSpineSkin.FindNamesForSlot(const SlotIndex: Integer; var KeyNames: TSpineStringArray);
+  var i: Integer;
+begin
+  SetLength(KeyNames, 0);
+  for i := 0 to _Attachments.Count - 1 do
+  if _Attachments[i].SlotIndex = SlotIndex then
+  begin
+    SetLength(KeyNames, Length(KeyNames) + 1);
+    KeyNames[High(KeyNames)] := _Attachments[i].Name;
+  end;
+end;
+
+procedure TSpineSkin.FindAttachmentsForSlot(const SlotIndex: Integer; var KeyAttachments: TSpineAttachmentArray);
+  var i: Integer;
+begin
+  SetLength(KeyAttachments, 0);
+  for i := 0 to _Attachments.Count - 1 do
+  if _Attachments[i].SlotIndex = SlotIndex then
+  begin
+    SetLength(KeyAttachments, Length(KeyAttachments) + 1);
+    KeyAttachments[High(KeyAttachments)] := _Attachments[i].Attachment;
+  end;
+end;
+
+//TSpineSkin END
 
 //TSpineAttachment BEGIN
 constructor TSpineAttachment.Create(const AName: String);
@@ -575,34 +1517,68 @@ function TSpineAtlasAttachmentLoader.NewRegionAttachment(const Skin: TSpineSkin;
 begin
   Region := FindRegion(Path);
   Result := TSpineRegionAttachment.Create(Name);
-  Result.RendererObject = Region;
+  Result.RendererObject := Region;
   Result.SetUV(Region.u, Region.v, Region.u2, Region.v2, Region.Rotate);
-  Result.RegionOffsetX = Region.OffsetX;
-  Result.RegionOffsetY = Region.OffsetY;
-  Result.RegionWidth = Region.Width;
-  Result.RegionHeight = Region.Height;
-  Result.RegionOriginalWidth = Region.OriginalWidth;
-  Result.RegionOriginalHeight = Region.OriginalHeight;
+  Result.RegionOffsetX := Region.OffsetX;
+  Result.RegionOffsetY := Region.OffsetY;
+  Result.RegionWidth := Region.Width;
+  Result.RegionHeight := Region.Height;
+  Result.RegionOriginalWidth := Region.OriginalWidth;
+  Result.RegionOriginalHeight := Region.OriginalHeight;
 end;
 
 function TSpineAtlasAttachmentLoader.NewMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineMeshAttachment;
+  var Region: TSpineAtlasRegion;
 begin
-
+  Region := FindRegion(Path);
+  Result := TSpineMeshAttachment.Create(Name);
+  Result.RendererObject := region;
+  Result.RegionU := Region.u;
+  Result.RegionV := Region.v;
+  Result.RegionU2 := Region.u2;
+  Result.RegionV2 := Region.v2;
+  Result.RegionRotate := Region.Rotate;
+  Result.RegionOffsetX := Region.OffsetX;
+  Result.RegionOffsetY := Region.OffsetY;
+  Result.RegionWidth := Region.Width;
+  Result.RegionHeight := Region.Height;
+  Result.RegionOriginalWidth := Region.OriginalWidth;
+  Result.RegionOriginalHeight := Region.OriginalHeight;
 end;
 
 function TSpineAtlasAttachmentLoader.NewSkinnedMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineSkinnedMeshAttachment;
+  var Region: TSpineAtlasRegion;
 begin
-
+  Region := FindRegion(Path);
+  Result := TSpineSkinnedMeshAttachment(Name);
+  Result.RendererObject := region;
+  Result.RegionU := Region.u;
+  Result.RegionV := Region.v;
+  Result.RegionU2 := Region.u2;
+  Result.RegionV2 := Region.v2;
+  Result.RegionRotate := Region.Rotate;
+  Result.regionOffsetX := Region.OffsetX;
+  Result.regionOffsetY := Region.OffsetY;
+  Result.regionWidth := Region.Width;
+  Result.regionHeight := Region.Height;
+  Result.regionOriginalWidth := Region.OriginalWidth;
+  Result.regionOriginalHeight := Region.OriginalHeight;
 end;
 
 function TSpineAtlasAttachmentLoader.NewBoundingBoxAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineBoundingBoxAttachment;
 begin
-
+  Result := BoundingBoxAttachment(Name);
 end;
 
 function TSpineAtlasAttachmentLoader.FindRegion(const Name: String): TSpineAtlasRegion;
+  var i: Integer;
 begin
-
+  for i := 0 to _AtlasList.Count - 1 do
+  begin
+    Result := _AtlasList[i].FindRegion(Name);
+    if Assigned(Region) then Exit;
+  end
+  Result := nil;
 end;
 //TSpineAtlasAttachmentLoader END
 
@@ -677,10 +1653,7 @@ begin
 end;
 
 destructor TSpineList.Destroy;
-  var i: Integer;
 begin
-  for i := 0 to _ItemCount - 1 do
-  _Items[i].Free;
   Clear;
   inherited Destroy;
 end;
@@ -751,6 +1724,13 @@ begin
   i := Find(Item);
   if i > -1 then
   Delete(i);
+end;
+
+procedure TSpineList.FreeItems;
+  var i: Integer;
+begin
+  for i := 0 to _ItemCount - 1 do
+  _Items[i].Free;
 end;
 
 procedure TSpineList.Clear;
