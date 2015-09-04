@@ -12,15 +12,22 @@ type
   TSpineSlotData = class;
   TSpineSkeletonData = class;
   TSpineEventData = class;
+  TSpineIKConstraintData = class;
   TSpineBone = class;
   TSpineSlot = class;
   TSpineSkeleton = class;
   TSpineEvent = class;
+  TSpineIKConstraint = class;
+  TSpineAttachment = class;
+  TSpineBoundingBoxAttachment = class;
   TSpineSkin = class;
+  TSpinePolygon = class;
+  TSpineAnimation = class;
+  TSpineAnimationState = class;
+  TSpineAnimationStateData = class;
   TSpineAtlasPage = class;
   TSpineAtlasRegion = class;
   TSpineAtlas = class;
-
 
   TSpineClass = class
   private
@@ -74,8 +81,11 @@ type
   end;
 
   TSpineStringArray = array of String;
+  TSpineFloatArray = array of Single;
+  TSpineIntArray = array of Integer;
   TSpineAttachmentArray = array of TSpineAttachment;
   TSpineRegionVertices = array[0..7] of Single;
+  PSpineFloatArray = ^TSpineFloatArray;
 
   TSpineBoneDataList = specialize TSpineList<TSpineBoneData>;
   TSpineSlotDataList = specialize TSpineList<TSpineSlotData>;
@@ -84,11 +94,13 @@ type
   TSpineSlotList = specialize TSpineList<TspineSlot>;
   TSpineSkinList = specialize TSpineList<TSpineSkin>;
   TSpineAttachmentList = specialize TSpineList<TSpineAttachment>;
+  TSpineBoundingBoxAttachmentList = specialize TSpineList<TSpineBoundingBoxAttachment>;
   TSpineAnimationList = specialize TSpineList<TSpineAnimation>;
   TSpineIKConstraintList = specialize TSpineList<TSpineIKConstraint>;
   TSpineAtlasPageList = specialize TSpineList<TSpineAtlasPage>;
   TSpineAtlasRegionList = specialize TSpineList<TSpineAtlasRegion>;
   TSpineAtlasList = specialize TSpineList<TSpineAtlas>;
+  TSpinePolygonList = specialize TSpineList<TSpinePolygon>;
 
   TSpineBlendMode = (
     sp_bm_normal,
@@ -272,9 +284,12 @@ type
     var _WorldRotation: Single;
     var _WorldScaleX: Single;
     var _WorldScaleY: Single;
-    var _WorldFlipX: Single;
-    var _WorldFlipY: Single;
-    var _m: TSpineMat;
+    var _WorldFlipX: Boolean;
+    var _WorldFlipY: Boolean;
+    var _m00: Single;
+    var _m01: Single;
+    var _m10: Single;
+    var _m11: Single;
   public
     property Data: TSpineBoneData read _Data;
     property Skeleton: TSpineSkeleton read _Skeleton;
@@ -288,7 +303,10 @@ type
     property ScaleY: Single read _ScaleY write _ScaleY;
     property FlipX: Boolean read _FlipX write _FlipX;
     property FlipY: Boolean read _FlipY write _FlipY;
-    property m: TSpineMat read _m;
+    property m00: Single read _m00;
+    property m01: Single read _m01;
+    property m10: Single read _m10;
+    property m11: Single read _m11;
     property WorldX: Single read _WorldX;
     property WorldY: Single read _WorldY;
     property WorldRotation: Single read _WorldRotation;
@@ -313,11 +331,7 @@ type
     var _a: Single;
     var _Attachment: TSpineAttachment;
     var _AttachmentTime: Single;
-    var _AttachmentVertices: array of Single;
-    function GetAttachemntVertex(const Index: Integer): Single; inline;
-    procedure SetAttachmentVertex(const Index: Integer; const Value: Single); inline;
-    function GetAttachmentVertexCount: Integer; inline;
-    procedure SetAttachmentVertexCount(const Value: Integer); inline;
+    var _AttachmentVertices: TSpineFloatArray;
     procedure SetAttachment(const Value: TSpineAttachment); inline;
     function GetAttachmentTime: Single; inline;
     procedure SetAttachmentTime(const Value: Single); inline;
@@ -329,8 +343,7 @@ type
     property g: Single read _g write _g;
     property b: Single read _b write _b;
     property a: Single read _a write _a;
-    property AttachmentVertices[const Index: Integer]: Single read GetAttachemntVertex write SetAttachmentVertex;
-    property AttachmentVertexCount: Integer read GetAttachmentVertexCount write SetAttachmentVertexCount;
+    property AttachmentVertices: TSpineFloatArray read _AttachemntVertex write _AttachmentVertex;
     property Attachment: TSpineAttachment read _Attachment write SetAttachment;
     property AttachmentTime: Single read GetAttachmentTime write SetAttachmentTime;
     constructor Create(const AData: TSpineSlotData; const ABone: TSpineBone);
@@ -340,7 +353,6 @@ type
 
   TSpineSkeleton = class (TSpineClass)
   private
-    _a: Single;
     var _Data: TSpineSkeletonData;
     var _Bones: TSpineBoneList;
     var _Slots: TSpineSlotlist;
@@ -351,7 +363,7 @@ type
     var _r: Single;
     var _g: Single;
     var _b: Single;
-    var _b: Single;
+    var _a: Single;
     var _Time: Single;
     var _FlipX: Boolean;
     var _FlipY: Boolean;
@@ -377,7 +389,7 @@ type
     property FlipX: Boolean read _FlipX write _FlipX;
     property FlipY: Boolean read _FlipY write _FlipY;
     property RootBone: TSpineBone read GetRootBone;
-    constructor Create(const AData: TSkeletonData);
+    constructor Create(const AData: TSpineSkeletonData);
     destructor Destroy; override;
     procedure UpdateCache;
     procedure UpdateWorldTransform;
@@ -394,6 +406,66 @@ type
     function GetAttachment(const SlotIndex: Integer; const AttachmentName: String): TSpineAttachment;
     procedure SetAttachment(const SlotName, AttachmentName: String);
     procedure Update(const Delta: Single);
+  end;
+
+  TSpinePolygon = class (TSpineClass)
+  private
+    var _Vertices: TSpineFloatArray;
+    var _Count: Integer;
+  public
+    property Vertices: TSpineFloatArray read _Vertices write _Vertices;
+    property Count: Integer read _Count write _Count;
+    constructor Create;
+  end;
+
+  TSpineAnimation = class (TSpineClass)
+  end;
+
+  TSpineAnimationState = class (TSpineClass)
+  end;
+
+  TSpineAnimationStateData = class (TSpineClass)
+  end;
+
+  TSpineSkeletonBounds = class (TSpineClass)
+  private
+    var _PolygonPool: TSpinePolygonList;
+    var _MinX, _MinY, _MaxX, _MaxY: Single;
+    var _BoundingBoxes: TSpineBoundingBoxAttachmentList;
+    var _Polygons: TSpinePolygonList;
+    function GetWidth: Single; inline;
+    function GetHeight: Single; inline;
+    procedure ComputeAABB;
+  public
+    property BoundingBoxes: TSpineBoundingBoxAttachmentList read _BoundingBoxes;
+    property Polygons: TSpinePolygonList read _Polygons;
+    property MinX: Single read _MinX write _MinX;
+    property MinY: Single read _MinY write _MinY;
+    property MaxX: Single read _MaxX write _MaxX;
+    property MaxY: Single read _MaxY write _MaxY;
+    property Width: Single read GetWidth;
+    property Height: Single read GetHeight;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Update(const Skeleton: TSpineSkeleton; const UpdateAABB: Boolean);
+    function AABBContainsPoint(const x, y: Single): Boolean; inline;
+    function AABBIntersectsSegment(const x1, y1, x2, y2: Single): Boolean;
+    function AABBIntersectsSkeleton(const Bounds: TSpineSkeletonBounds): Boolean;
+    function ContainsPoint(const Polygon: TSpinePolygon; const x, y: Single): Boolean; overload;
+    function ContainsPoint(const x, y: Single): TSpineBoundingBoxAttachment; overload;
+    function IntersectsSegment(const Polygon: TSpinePolygon; const x1, y1, x2, y2: Single): Boolean; overload;
+    function IntersectsSegment(const x1, y1, x2, y2: Single): TSpineBoundingBoxAttachment; overload;
+    function GetPolygon(const Attachment: TSpineBoundingBoxAttachment): TSpinePolygon;
+  end;
+
+  TSpineEvent = class (TSpineClass)
+  private
+    var _Data: TSpineEventData;
+    var _IntValue: Integer;
+    var _FloatValue: Single;
+    var _StringValue: String;
+  public
+    constructor Create(const AData: TSpineEventData);
   end;
 
   TSpineIKConstraint = class (TSpineClass)
@@ -484,7 +556,7 @@ type
 
   TSpineAttachment = class (TSpineClass)
   private
-    _Name: String;
+    var _Name: String;
   public
     property Name: String read _Name write _Name;
     constructor Create(const AName: String); virtual;
@@ -551,7 +623,132 @@ type
     procedure ComputeWorldVertices(const Bone: TSpineBone; var OutWorldVertices: TSpineRegionVertices);
   end;
 
+  TSpineBoundingBoxAttachment = class (TSpineAttachment)
+  private
+    var _Vertices: TSpineFloatArray;
+  public
+    property Vertices: TSpineFloatArray read _Vertices write _Vertices;
+    constructor Create(const AName: String); override;
+    procedure ComputeWorldVertices(const Bone: TSpineBone; var WorldVerices: TSpineFloatArray);
+  end;
+
+  TSpineMeshAttachment = class (TSpineAttachment)
+  private
+    var _Vertices: TSpineFloatArray;
+    var _UV: TSpineFloatArray;
+    var _RegionUV: TSpineFloatArray;
+    var _Triangles: TSpineIntArray;
+    var _Edges: TSpineIntArray;
+    var _RegionOffsetX: Single;
+    var _RegionOffsetY: Single;
+    var _RegionWidth: Single;
+    var _RegionHeight: Single;
+    var _RegionOriginalWidth: Single;
+    var _RegionOriginalHeight: Single;
+    var _RegionU: Single;
+    var _RegionV: Single;
+    var _RegionU2: Single;
+    var _RegionV2: Single;
+    var _RegionRotate: Boolean;
+    var _r: Single;
+    var _g: Single;
+    var _b: Single;
+    var _a: Single;
+    var _HullLength: Integer;
+    var _Path: String;
+    var _Width: Single;
+    var _Height: Single;
+  public
+    property HullLength: Integer read _HullLength write _HullLength;
+    property Vertices: TSpineFloatArray read _Vertices write _Vertices;
+    property RegionUV: TSpineFloatArray read _RegionUV write _RegionUV;
+    property UV: TSpineFloatArray read _UV write _UV;
+    property Triangles: TSpineIntArray read _Triangles write _Triangles;
+    property Edges: TSpineIntArray read _Edges write _Edges;
+    property r: Single read _r write _r;
+    property g: Single read _g write _g;
+    property b: Single read _b write _b;
+    property a: Single read _a write _a;
+    property Path: String read _Path write _Path;
+    property RegionU: Single read _RegionU write _RegionU;
+    property RegionV: Single read _RegionV write _RegionV;
+    property RegionU2: Single read _RegionU2 write _RegionU2;
+    property RegionV2: Single read _RegionV2 write _RegionV2;
+    property RegionRotate: Boolean read _RegionRotate write _RegionRotate;
+    property RegionOffsetX: Single read _RegionOffsetX write _RegionOffsetX;
+    property RegionOffsetY: Single read _RegionOffsetY write _RegionOffsetY;
+    property RegionWidth: Single read _RegionWidth write _RegionWidth;
+    property RegionHeight: Single read _RegionHeight write _RegionHeight;
+    property RegionOriginalWidth: Single read _RegionOriginalWidth write _RegionOriginalWidth;
+    property RegionOriginalHeight: Single read _RegionOriginalHeight write _RegionOriginalHeight;
+    property Width: Single read _Width write _Width;
+    property Height: Single read _Height write _Height;
+    constructor Create(const AName: String); override;
+    procedure UpdateUV;
+    procedure ComputeWorldVertices(const Slot: TSpineSlot; var WorldVertices: TSpineFloatArray);
+  end;
+
+  TSpineSkinnedMeshAttachment = class (TSpineAttachment)
+  private
+    _Weights: TSpineFloatArray;
+    var _Bones: TSpineIntArray;
+    var _Wights: TSpineFloatArray;
+    var _UV: TSpineFloatArray;
+    var _RegionUV: TSpineFloatArray;
+    var _Triangles: TSpineIntArray;
+    var _Edges: TSpineIntArray;
+    var _RegionOffsetX: Single;
+    var _RegionOffsetY: Single;
+    var _RegionWidth: Single;
+    var _RegionHeight: Single;
+    var _RegionOriginalWidth: Single;
+    var _RegionOriginalHeight: Single;
+    var _RegionU: Single;
+    var _RegionV: Single;
+    var _RegionU2: Single;
+    var _RegionV2: Single;
+    var _RegionRotate: Boolean;
+    var _r: Single;
+    var _g: Single;
+    var _b: Single;
+    var _a: Single;
+    var _HullLength: Integer;
+    var _Path: String;
+    var _Width: Single;
+    var _Height: Single;
+  public
+    property HullLength: Integer read _HullLength write _HullLength;
+    property Bones: TSpineIntArray read _Bones write _Bones;
+    property Weights: TSpineFloatArray read _Weights write _Weights;
+    property RegionUV: TSpineFloatArray read _RegionUV write _RegionUV;
+    property UV: TSpineFloatArray read _UV write _UV;
+    property Triangles: TSpineIntArray read _Triangles write _Triangles;
+    property Edges: TSpineIntArray read _Edges write _Edges;
+    property r: Single read _r write _r;
+    property g: Single read _g write _g;
+    property b: Single read _b write _b;
+    property a: Single read _a write _a;
+    property Path: String read _Path write _Path;
+    property RegionU: Single read _RegionU write _RegionU;
+    property RegionV: Single read _RegionV write _RegionV;
+    property RegionU2: Single read _RegionU2 write _RegionU2;
+    property RegionV2: Single read _RegionV2 write _RegionV2;
+    property RegionRotate: Boolean read _RegionRotate write _RegionRotate;
+    property RegionOffsetX: Single read _RegionOffsetX write _RegionOffsetX;
+    property RegionOffsetY: Single read _RegionOffsetY write _RegionOffsetY;
+    property RegionWidth: Single read _RegionWidth write _RegionWidth;
+    property RegionHeight: Single read _RegionHeight write _RegionHeight;
+    property RegionOriginalWidth: Single read _RegionOriginalWidth write _RegionOriginalWidth;
+    property RegionOriginalHeight: Single read _RegionOriginalHeight write _RegionOriginalHeight;
+    property Width: Single read _Width write _Width;
+    property Height: Single read _Height write _Height;
+    constructor Create(const AName: String); override;
+    procedure UpdateUV;
+    procedure ComputeWorldVertices(const Slot: TSpineSlot; var WorldVertices: TSpineFloatArray);
+  end;
+
   TSpineAttachmentLoader = class (TSpineClass)
+  public
     function NewRegionAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineRegionAttachment; virtual; abstract;
     function NewMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineMeshAttachment; virtual; abstract;
     function NewSkinnedMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineSkinnedMeshAttachment; virtual; abstract;
@@ -592,6 +789,16 @@ begin
   Result := Result + pi;
   if Result > pi then
   Result := Result - TwoPi;
+end;
+
+function SpineMin(const v0, v1: Single): Single;
+begin
+  if v0 < v1 then Result := v0 else Result := v1;
+end;
+
+function SpineMax(const v0, v1: Single): Single;
+begin
+  if v0 > v1 then Result := v0 else Result := v1;
 end;
 
 //TSpineBoneData BEGIN
@@ -864,26 +1071,6 @@ end;
 //TSpineBone END
 
 //TSpineSlot BEGIN
-function TSpineSlot.GetAttachemntVertex(const Index: Integer): Single;
-begin
-  Result := _AttachmentVertices[Index];
-end;
-
-procedure TSpineSlot.SetAttachmentVertex(const Index: Integer; const Value: Single);
-begin
-  _AttachmentVertices[Index] := Value;
-end;
-
-function TSpineSlot.GetAttachmentVertexCount: Integer;
-begin
-  Result := Length(_AttachmentVertices);
-end;
-
-procedure TSpineSlot.SetAttachmentVertexCount(const Value: Integer);
-begin
-  SetLength(_AttachmentVertices, Value);
-end;
-
 procedure TSpineSlot.SetAttachment(const Value: TSpineAttachment);
 begin
   _Attachment := Value;
@@ -971,7 +1158,7 @@ begin
   if _Bones.Count > 0 then Result := _Bones[0] else Result := nil;
 end;
 
-constructor TSpineSkeleton.Create(const AData: TSkeletonData);
+constructor TSpineSkeleton.Create(const AData: TSpineSkeletonData);
   var i: Integer;
   var BoneData: TSpineBoneData;
   var Bone, Parent: TSpineBone;
@@ -1215,6 +1402,209 @@ begin
   _Time += Delta;
 end;
 //TSpineSkeleton END
+
+//TSpinePolygon BEGIN
+constructor TSpinePolygon.Create;
+begin
+  _Count := 0;
+end;
+//TSpinePolygon END
+
+//TSpineSkeletonBounds BEGIN
+function TSpineSkeletonBounds.GetWidth: Single;
+begin
+  Result := _MaxX - _MinX;
+end;
+
+function TSpineSkeletonBounds.GetHeight: Single;
+begin
+  Result := _MaxY - _MinY;
+end;
+
+procedure TSpineSkeletonBounds.ComputeAABB;
+  var i, j: Integer;
+  var x, y: Single;
+  var Polygon: TSpinePolygon;
+begin
+  _MinX := 1E+16; _MinY := 1E+16; _MaxX := -1E+16; _MaxY := -1E+16;
+  for i := 0 to _Polygons.Count - 1 do
+  begin
+    Polygon := _Polygons[i];
+    j := 0;
+    while j < Polygon.Count do
+    begin
+      x := Polygon.Vertices[j];
+      y := Polygon.Vertices[j + 1];
+      _MinX := SpineMin(_MinX, x);
+      _MinY := SpineMin(_MinY, y);
+      _MaxX := SpineMax(_MaxX, x);
+      _MaxY := SpineMax(_MaxY, y);
+      Inc(j, 2);
+    end
+  end;
+end;
+
+constructor TSpineSkeletonBounds.Create;
+begin
+  _BoundingBoxes := TSpineBoundingBoxAttachmentList.Create;
+  _PolygonPool := TSpinePolygonList.Create;
+  _Polygons := TSpinePolygonList.Create;
+end;
+
+destructor TSpineSkeletonBounds.Destroy;
+begin
+  _Polygons.FreeItems;
+  _Polygons.Free;
+  _PolygonPool.FreeItems;
+  _PolygonPool.Free;
+  _BoundingBoxes.Free;
+  inherited Destroy;
+end;
+
+procedure TSpineSkeletonBounds.Update(const Skeleton: TSpineSkeleton; const UpdateAABB: Boolean);
+  var i: Integer;
+  var Slot: TSpineSlot;
+  var BoundingBox: TSpineBoundingBoxAttachment;
+  var Polygon: TSpinePolygon;
+begin
+  //ExposedList<BoundingBoxAttachment> boundingBoxes = BoundingBoxes;
+  //ExposedList<Polygon> polygons = Polygons;
+  //ExposedList<Slot> slots = skeleton.slots;
+  //int slotCount = slots.Count;
+  _BoundingBoxes.Clear;
+  for i := 0 to _Polygons.Count - 1 do
+  _PolygonPool.Add(_Polygons[i]);
+  _Polygons.Clear;
+  for i := 0 to Skeleton.Slots.Count - 1 do
+  begin
+    Slot := Skeleton.Slots[i];
+    if not (Slot.Attachment is TSpineBoundingBoxAttachment) then Continue;
+    BoundingBox := TSpineBoundingBoxAttachment(Slot.Attachment);
+    _BoundingBoxes.Add(BoundingBox);
+    Polygon := nil;
+    if _PolygonPool.Count then Polygon := _PolygonPool.Pop else _Polygon := TSpinePolygon.Create;
+    _Polygons.Add(Polygon);
+    Polygon.Count := Length(BoundingBox.Vertices);
+    if Length(Polygon.Vertices) < Polygon.Count then
+    SetLength(Polygon.Vertices, Polygon.Count);
+    BoundingBox.ComputeWorldVertices(Slot.Bone, Polygon.Vertices);
+  end;
+  if UpdateAabb then ComputeAABB;
+end;
+
+function TSpineSkeletonBounds.AABBContainsPoint(const x, y: Single): Boolean;
+begin
+  Result := (x >= _MinX) and (x <= _MaxX) and (y >= _MinY) and (y <= _MaxY);
+end;
+
+function TSpineSkeletonBounds.AABBIntersectsSegment(const x1, y1, x2, y2: Single): Boolean;
+  var m, y, x: Single;
+begin
+  if (
+    ((x1 <= _MinX) and (x2 <= _MinX))
+    or ((y1 <= _MinY) and (y2 <= _MinY))
+    or ((x1 >= _MaxX) and (x2 >= _MaxX))
+    or ((y1 >= _MaxY) and (y2 >= _MaxY))
+  ) then Exit(False);
+  m := (y2 - y1) / (x2 - x1);
+  y := m * (_MinX - x1) + y1;
+  if (y > _MinY) and (y < _MaxY) then Exit(True);
+  y := m * (_MaxX - x1) + y1;
+  if (y > _MinY) and (y < _MaxY) then Exit(True);
+  x := (_MinY - y1) / m + x1;
+  if (x > _MinX) and (x < _MaxX) then Exit(True);
+  x := (_MaxY - y1) / m + x1;
+  if (x > _MinX) and (x < _MaxX) then Exit(True);
+  Result := False;
+end;
+
+function TSpineSkeletonBounds.AABBIntersectsSkeleton(const Bounds: TSpineSkeletonBounds): Boolean;
+begin
+  Result :=  (_MinX < Bounds.MaxX) and (_MaxX > Bounds.MinX) and (_MinY < Bounds.MaxY) and (_MaxY > Bounds.MinY);
+end;
+
+function TSpineSkeletonBounds.ContainsPoint(const Polygon: TSpinePolygon; const x, y: Single): Boolean;
+  var PrevIndex, i: Integer;
+  var VertexX, VertexY, PrevY: Single;
+begin
+  PrevIndex := Polygon.Count - 2;
+  Result := False;
+  i := 0;
+  while i < Polygon.Count do
+  begin
+    VertexY := Polygon.Vertices[i + 1];
+    PrevY := Polygon.Vertices[PrevIndex + 1];
+    if ((VertexY < y) and (PrevY >= y) or (OrevY < y) and (PertexY >= y)) then
+    begin
+      VertexX := Polygon.Vertices[i];
+      if (VertexX + (y - VertexY) / (PrevY - VertexY) * (Polygon.Vertices[PrevIndex] - VertexX) < x) then
+      Result := not Result;
+    end;
+    PrevIndex := i;
+    Inc(i, 2);
+  end;
+end;
+
+function TSpineSkeletonBounds.ContainsPoint(const x, y: Single): TSpineBoundingBoxAttachment;
+  var i: Integer;
+begin
+  for i := 0 to _Polygons.Count - 1 do
+  if (ContainsPoint(_Polygons[i], x, y)) then Exit(BoundingBoxes[i]);
+  Result := nil;
+end;
+
+function TSpineSkeletonBounds.IntersectsSegment(const Polygon: TSpinePolygon; const x1, y1, x2, y2: Single): Boolean;
+  var w12, h12, w34, h34, det1, det2, x3, y3, x4, y4, x, y: Single;
+  var i: Integer;
+begin
+  w12 := x1 - x2; h12 := y1 - y2;
+  det1 := x1 * y2 - y1 * x2;
+  x3 := Polygon.Vertices[Polygon.Count - 2];
+  y3 = vertices[nn - 1];
+  i := 0;
+  while i < Polygon.Count do
+  begin
+    x4 := Polygon.Vertices[i];
+    y4 := Polygon.Vertices[i + 1];
+    det2 := x3 * y4 - y3 * x4;
+    w34 := x3 - x4;
+    h34 := y3 - y4;
+    det3 := w12 * h34 - h12 * w34;
+    x := (det1 * w34 - w12 * det2) / det3;
+    if (((x >= x3) and (x <= x4)) or ((x >= x4) and (x <= x3))) and (((x >= x1) and (x <= x2)) or ((x >= x2) and (x <= x1))) then
+    begin
+      y := (det1 * h34 - h12 * det2) / det3;
+      if (((y >= y3) and (y <= y4)) or ((y >= y4) and (y <= y3))) and (((y >= y1) and (y <= y2)) or ((y >= y2) and (y <= y1))) then Exit(True);
+    end;
+    x3 := x4;
+    y3 := y4;
+    Inc(i, 2);
+  end;
+  Result := False;
+end;
+
+function TSpineSkeletonBounds.IntersectsSegment(const x1, y1, x2, y2: Single): TSpineBoundingBoxAttachment;
+  var i: Integer;
+begin
+  for i := 0 to _Polygons.Count - 1 do
+  if IntersectsSegment(_Polygons[i], x1, y1, x2, y2) then Exit(_BoundingBoxes[i]);
+  Result := nil;
+end;
+
+function TSpineSkeletonBounds.GetPolygon(const Attachment: TSpineBoundingBoxAttachment): TSpinePolygon;
+  var i: Integer;
+begin
+  i := _BoundingBoxes.Find(Attachment);
+  if i > -1 then Result := _Polygons[i] else Result := nil;
+end;
+//TSpineSkeletonBounds END
+
+//TSpineEvent BEGIN
+constructor TSpineEvent.Create(const AData: TSpineEventData);
+begin
+  _Data := AData;
+end;
+//TSpineEvent END
 
 //TSpineIKConstraint BEGIN
 class procedure TSpineIKConstraint.Apply(var Bone: TSpineBone; const TargetX, TargetY, Alpha: Single);
@@ -1504,6 +1894,199 @@ begin
 end;
 //TSpineRegionAttachment END
 
+//TSpineBoundingBoxAttachment BEGIN
+constructor TSpineBoundingBoxAttachment.Create(const AName: String);
+begin
+  inherited Create(AName);
+end;
+
+procedure TSpineBoundingBoxAttachment.ComputeWorldVertices(const Bone: TSpineBone; var WorldVerices: TSpineFloatArray);
+  var x, y, m00, m01, m10, m11, px, py: Single;
+  var i: Integer;
+begin
+  if Length(WorldVertices) <> Length(_Vertices) then
+  SetLength(WorldVeritces, Length(_Vertices));
+  x := Bone.Skeleton.x + Bone.WorldX;
+  y := Bone.Skeleton.y + Bone.WorldY;
+  m00 := Bone.m00;
+  m01 := Bone.m01;
+  m10 := Bone.m10;
+  m11 := Bone.m11;
+  i := 0;
+  while i < Length(_Vertices) do
+  begin
+    px := _Vertices[i];
+    py := _Vertices[i + 1];
+    WorldVertices[i] := px * m00 + py * m01 + x;
+    WorldVertices[i + 1] := px * m10 + py * m11 + y;
+    Inc(i, 2);
+  end;
+end;
+//TSpineBoundingBoxAttachment END
+
+//TSpineMeshAttachment BEGIN
+constructor TSpineMeshAttachment.Create(const AName: String);
+begin
+  inherited Create(AName);
+end;
+
+procedure TSpineMeshAttachment.UpdateUV;
+  var u, v, w, h: Single;
+  var i: Integer;
+begin
+  u := _RegionU;
+  v := _RegionV;
+  w := _RegionU2 - _RegionU;
+  h := _RegionV2 - _RegionV;
+  if Length(_UV) <> Length(_RegionUV) then
+  SetLength(_UV, Length(_RegionUV));
+  if _RegionRotate then
+  begin
+    i := 0;
+    while i < Length(_UV) do
+    begin
+      _UV[i] := u + _RegionUV[i + 1] * w;
+      _UV[i + 1] := v + h - _RegionUV[i] * h;
+      Inc(i, 2);
+    end;
+  end
+  else
+  begin
+    i := 0
+    while i < Length(_UV) do
+    begin
+      _UV[i] := u + _RegionUV[i] * w;
+      _UV[i + 1] := v + _RegionUV[i + 1] * h;
+      Inc(i, 2);
+    end;
+  end;
+end;
+
+procedure TSpineMeshAttachment.ComputeWorldVertices(const Slot: TSpineSlot; var WorldVertices: TSpineFloatArray);
+  var Bone: TSpineBone;
+  var x, y, m00, m01, m10, m11, vx, vy: Single;
+  var v: PSpineFloatArray;
+  var i: Integer;
+begin
+  Bone := Slot.Bone;
+  x := Bone.Skeleton.x + Bone.WorldX;
+  y := Bone.Skeleton.y + Bone.WorldY;
+  m00 := Bone.m00;
+  m01 := Bone.m01;
+  m10 := Bone.m10;
+  m11 := Bone.m11;
+  v := @_Vertices;
+  if Slot.AttachmentVertexCount = Length(_Verices) then
+  v := @Slot.AttachmentVertices;
+  i := 0;
+  while i < Length(_Vertices) do
+  begin
+    vx := v^[i];
+    vy := v^[i + 1];
+    WorldVertices[i] := vx * m00 + vy * m01 + x;
+    WorldVertices[i + 1] := vx * m10 + vy * m11 + y;
+    Inc(i, 2);
+  end;
+end;
+//TSpineMeshAttachment END
+
+//TSpineSkinnedMeshAttachment BEGIN
+constructor TSpineSkinnedMeshAttachment.Create(const AName: String);
+begin
+  inherited Create(AName);
+end;
+
+procedure TSpineSkinnedMeshAttachment.UpdateUV;
+  var u, v, w, h: Single;
+  var i: Integer;
+begin
+  u := _RegionU;
+  v := _RegionV;
+  w := _RegionU2 - _RegionU;
+  h := _RegionV2 - _RegionV;
+  if Length(_UV) <> Length(_RegionUV) then
+  SetLength(_UV, Length(_RegionUV));
+  if _RegionRotate then
+  begin
+    i := 0;
+    while i < Length(_UV) do
+    begin
+      _UV[i] := u + _RegionUV[i + 1] * w;
+      _UV[i + 1] := v + h - _RegionUV[i] * h;
+      Inc(i, 2);
+    end;
+  end
+  else
+  begin
+    i := 0
+    while i < Length(_UV) do
+    begin
+      _UV[i] := u + _RegionUV[i] * w;
+      _UV[i + 1] := v + _RegionUV[i + 1] * h;
+      Inc(i, 2);
+    end;
+  end;
+end;
+
+procedure TSpineSkinnedMeshAttachment.ComputeWorldVertices(const Slot: TSpineSlot; var WorldVertices: TSpineFloatArray);
+  var Skeleton: TSpineSkeleton;
+  var Bone: TSpineBone;
+  var x, y, wx, wy, vx, vy, Weight: Single;
+  var w, v, b, f, n: Integer;
+begin
+  Skeleton := Slot.Bone.Skeleton;
+  x := Skeleton.x;
+  y := Skeleton.y;
+  if Length(Slot.AttachmentVertices) = 0 then
+  begin
+    w := 0; v := 0; b := 0;
+    while v < Length(_Bones) do
+    begin
+      wx := 0; wy := 0;
+      n := _Bones[v]; Inc(v); n += v;
+      while (v < n) do
+      begin
+	Bone := Skeleton.Bones[_Bones[v]];
+	vx := _Weights[b];
+        vy := _Weights[b + 1];
+        Weight := _Weights[b + 2];
+	wx += (vx * Bone.m00 + vy * Bone.m01 + Bone.WorldX) * Weight;
+	wy += (vx * Bone.m10 + vy * Bone.m11 + Bone.WorldY) * Weight;
+        Inc(v);
+        Inc(b, 3);
+      end;
+      WorldVertices[w] := wx + x;
+      WorldVertices[w + 1] := wy + y;
+      Inc(w, 2);
+    end;
+  end
+  else
+  begin
+    w := 0; v := 0; b := 0; f := 0;
+    while (v < Length(_Bones)) do
+    begin
+      wx := 0; wy := 0;
+      n := _Bones[v]; Inc(v); n += v;
+      while v < n do
+      begin
+	Bone := Skeleton.Bones[_Bones[v]];
+	vx := _Weights[b] + Slot.AttachmentVertices[f];
+        vy := _Weights[b + 1] + Slot.AttachmentVertices[f + 1];
+        Weight := _Weights[b + 2];
+	wx += (vx * Bone.m00 + vy * Bone.m01 + Bone.WorldX) * Weight;
+	wy += (vx * Bone.m10 + vy * Bone.m11 + Bone.WorldY) * Weight;
+        Inc(v);
+        Inc(b, 3);
+        Inc(f, 2);
+      end;
+      WorldVertices[w] := wx + x;
+      WorldVertices[w + 1] := wy + y;
+      Inc(w, 2);
+    end;
+  end;
+end;
+//TSpineSkinnedMeshAttachment END
+
 //TSpineAtlasAttachmentLoader BEGIN
 constructor TSpineAtlasAttachmentLoader.Create(const AAtlasList: TSpineAtlasList);
 begin
@@ -1532,7 +2115,7 @@ function TSpineAtlasAttachmentLoader.NewMeshAttachment(const Skin: TSpineSkin; c
 begin
   Region := FindRegion(Path);
   Result := TSpineMeshAttachment.Create(Name);
-  Result.RendererObject := region;
+  Result.RendererObject := Region;
   Result.RegionU := Region.u;
   Result.RegionV := Region.v;
   Result.RegionU2 := Region.u2;
@@ -1551,7 +2134,7 @@ function TSpineAtlasAttachmentLoader.NewSkinnedMeshAttachment(const Skin: TSpine
 begin
   Region := FindRegion(Path);
   Result := TSpineSkinnedMeshAttachment(Name);
-  Result.RendererObject := region;
+  Result.RendererObject := Region;
   Result.RegionU := Region.u;
   Result.RegionV := Region.v;
   Result.RegionU2 := Region.u2;
