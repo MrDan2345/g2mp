@@ -101,6 +101,7 @@ type
   TSpineAtlasRegionList = specialize TSpineList<TSpineAtlasRegion>;
   TSpineAtlasList = specialize TSpineList<TSpineAtlas>;
   TSpinePolygonList = specialize TSpineList<TSpinePolygon>;
+  TSpineEventList = specialize TSpineList<TSpineEvent>;
 
   TSpineBlendMode = (
     sp_bm_normal,
@@ -421,10 +422,106 @@ type
   TSpineAnimation = class (TSpineClass)
   end;
 
+  TSpineAnimationStateStartEnd = procedure (const State: TSpineAnimationState; const TrackIndex; Integer) of Object;
+  TSpineAnimationStateEvent = procedure (const State: TSpineAnimationState; const TrackIndex: Integer; const Event: TSpineEvent) of Object;
+  TSpineAnimationStateComplete = procedure (const State: TSpineAnimationState; const TrackIndex, LoopCount: Integer) of Object;
+
+  TSpineAnimationTrackEntry = class (TSpineClass)
+  private
+    var _State: TSpineAnimationState;
+    var _Next: TSpineAnimationTrackEntry;
+    var _Prev: TSpineAnimationTrackEntry;
+    var _Animation: TSpineAnimation;
+    var _Loop: Integer;
+    var _Delay: Single;
+    var _Time: Single;
+    var _LastTime: Single;
+    var _EndTime: Single;
+    var _TimeScale: Single;
+    var _MixTime: Single
+    var _MixDuration: Single;
+    var _Mix: Single;
+    var _OnStart: TSpineAnimationStateStartEnd;
+    var _OnEnd: TSpineAnimationStateStartEnd;
+    var _OnEvent: TSpineAnimationStateEvent;
+    var _OnComplete: TSpineAnimationStateComplete;
+    procedure ProcStart(const State: TSpineAnimationState; const Index: Integer);
+    procedure ProcEnd(const State: TSpineAnimationState; const Index: Integer);
+    procedure ProcEvent(const State: TSpineAnimationState; const Index: Integer; const Event: TSpineEvent);
+    procedure ProcComplete(const State: TSpineAnimationState; const Index, LoopCount: Integer);
+  public
+    property Animation: TSpineAnimation read _Animation;
+    property Delay: Single read _Delay write _Delay;
+    property Time: Single read _Time write _Time;
+    property LastTime: Single read _LastTime write _LastTime;
+    property EndTime: Single read _EndTime write _EndTime;
+    property TimeScale: Single read _TimeScale write _TimeScale;
+    property Mix: Single read _Mix write _Mix;
+    property Loop: Boolean read _Loop write _Loop;
+    property OnStart: TSpineAnimationStateStartEnd read _OnStart write _OnStart;
+    property OnEnd: TSpineAnimationStateStartEnd read _OnEnd write _OnEnd;
+    property OnEvent: TSpineAnimationStateEvent read _OnEvent write _OnEvent;
+    property OnComplete: TSpineAnimationStateComplete read _OnComplete write _OnComplete;
+    constructor Create(const AState: TSpineAnimationState; const AAnimation: TSpineAnimation);
+    destructor Destroy; override;
+  end;
+  TSpineAnimationTrackEntryList = specialize TSpineList<TSpineAnimationTrackEntry>;
+
   TSpineAnimationState = class (TSpineClass)
+  private
+    var _Data: TSpineAnimationStateData;
+    var _Tracks: TSpineAnimationTrackEntryList;
+    var _Events: TSpineEvent;
+    var _TimeScale: Single;
+    var _OnStart: TSpineAnimationStateStartEnd;
+    var _OnEnd: TSpineAnimationStateStartEnd;
+    var _OnEvent: TSpineAnimationStateEvent;
+    var _OnComplete: TSpineAnimationStateComplete;
+  public
+    property Data: TSpineAnimationStateData read _Data;
+    property TimeScale: Single read _TimeScale write _TimeScale;
+    property OnStart: TSpineAnimationStateStartEnd read _OnStart write _OnStart;
+    property OnEnd: TSpineAnimationStateStartEnd read _OnEnd write _OnEnd;
+    property OnEvent: TSpineAnimationStateEvent read _OnEvent write _OnEvent;
+    property OnComplete: TSpineAnimationStateComplete read _OnComplete write _OnComplete;
+    constructor Create(const AData: TSpineAnimationStateData);
+    destructor Destroy; override;
+    procedure Update(const Delta: Single);
+    procedure Apply(const Skeleton: TSpineSkeleton);
   end;
 
+  TSpineAnimationMix0 = class;
+  TSpineAnimationMix1 = class;
+  TSpineAnimationMix0List = specialize TSpineList<TSpineAnimationMix0>;
+  TSpineAnimationMix1List = specialize TSpineList<TSpineAnimationMix1>;
+
+  TSpineAnimationMix1 = class (TSpineClass)
+  public
+    var Anim: TSpineAnimation;
+    var Duration: Single;
+  end;
+
+  TSpineAnimationMix0 = class (TSpineClass)
+  public
+    var Anim: TSpineAnimation;
+    var MixEnties: TSpineAnimationMix1List;
+  end;
+
+  TSpineAnimationMixList = specialize TSpineList<TSpineAnimationMix>;
+
   TSpineAnimationStateData = class (TSpineClass)
+  private
+    var _SkeletonData: TSpineSkeletonData;
+    var _MixTime: TSpineAnimationMix0List;
+    var _DefaultMix: Single;
+  public
+    property SkeletonData: TSpineSkeletonData read _SkeletonData;
+    property DefaultMix: Single read _DefaultMix write _DefaultMix;
+    constructor Create(const AData: TSpineSkeletonData);
+    destructor Destroy; override;
+    procedure SetMix(const FromName, ToName: String; const Duration: Single); overload;
+    procedure SetMix(const AnimFrom, AnimTo: TSpineAnimation; const Duration: Single); overload;
+    function GetMix(const AnimFrom, AnimTo: TSpineAnimation): Single;
   end;
 
   TSpineSkeletonBounds = class (TSpineClass)
@@ -799,6 +896,11 @@ end;
 function SpineMax(const v0, v1: Single): Single;
 begin
   if v0 > v1 then Result := v0 else Result := v1;
+end;
+
+function SpineModFloat(const v0, v1: Single): Single;
+begin
+  Result := v0 - Trunc(v0 / v1) * v1;
 end;
 
 //TSpineBoneData BEGIN
@@ -1409,6 +1511,180 @@ begin
   _Count := 0;
 end;
 //TSpinePolygon END
+
+//TSpineAnimationTrackEntry BEGIN
+procedure TSpineAnimationTrackEntry.ProcStart(const State: TSpineAnimationState; const Index: Integer);
+begin
+  if Assigned(_OnStart) then _OnStart(State, Index);
+end;
+
+procedure TSpineAnimationTrackEntry.ProcEnd(const State: TSpineAnimationState; const Index: Integer);
+begin
+  if Assigned(_OnEnd) then _OnEnd(State, Index);
+end;
+
+procedure TSpineAnimationTrackEntry.ProcEvent(const State: TSpineAnimationState; const Index: Integer; const Event: TSpineEvent);
+begin
+  if Assigned(_OnEvent) then _OnEvent(State, Index, Event);
+end;
+
+procedure TSpineAnimationTrackEntry.ProcComplete(const State: TSpineAnimationState; const Index, LoopCount: Integer);
+begin
+  if Assigned(_OnComplete) then _OnComplete(State, Index, LoopCount);
+end;
+
+constructor TSpineAnimationTrackEntry.Create(const AState: TSpineAnimationState; const AAnimation: TSpineAnimation);
+begin
+  _State := AState;
+  _Animation := AAnimation;
+end;
+
+destructor TSpineAnimationTrackEntry.Destroy;
+begin
+  inherited Destroy;
+end;
+//TSpineAnimationTrackEntry END
+
+//TSpineAnimationState BEGIN
+constructor TSpineAnimationState.Create(const AData: TSpineAnimationStateData);
+begin
+  _Data := AData;
+end;
+
+destructor TSpineAnimationState.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TSpineAnimationState.Update(const Delta: Single);
+  var dt, tdt, t, te: Single;
+  var i, n: Integer;
+  var Track: TSpineAnimationTrackEntry;
+begin
+  dt := Delta * _TimeScale;
+  for i := 0 to _Tracks.Count - 1 do
+  begin
+    Track := _Tracks[i];
+    if Track = nil then Continue;
+    tdt := Track.TimeScale;
+    t := Track.Time + tdt;
+    te := Track.EndTime;
+    Track.Time := Time;
+    if (Track.Prev <> nil) then
+    begin
+      Track.Prev.Time += tdt;
+      Track.MixTime += tdt;
+    end;
+    if (
+      (Track.Loop > 0) and (SpineModFloat(Track.LastTime, te) > SpineModFloat(t, te))
+    ) or (
+      (Track.Loop = 0) and (Track.LastTime < te) and (t >= te)
+    ) then
+    begin
+      n := Trunc(t / te);
+      Track.OnComplete(Self, i, n);
+      if Assigned(_OnComplete) then _OnComplete(Self, i, n);
+    end;
+    if Track.Next <> nil then
+    begin
+      Track.Next.Time := Track.LastTime - Track.Next.Delay;
+      if Track.Next.Time >= 0 then SetCurrent(i, Tract.Next);
+    end
+    else
+    begin
+      if (Track.Loop <= 0) and (Track.LastTime >= Track.EndTime) then ClearTrack(i);
+    end;
+  end;
+end;
+
+procedure TSpineAnimationState.Apply(const Skeleton: TSpineSkeleton);
+  var i: Integer;
+  var Track: TSpineAnimationTrackEntry;
+begin
+  for i := 0 to _Tracks.Count - 1 do
+  begin
+    Track := _Tracks[i];
+    if Track = nil then Continue;
+    _Events.Clear;
+  end;
+end;
+//TSpineAnimationState END
+
+//TSpineAnimationStateData BEGIN
+constructor TSpineAnimationStateData.Create(const AData: TSpineSkeletonData);
+begin
+  _Data := AData;
+  _MixTime := TSpineAnimationMix0List.Create;
+end;
+
+destructor TSpineAnimationStateData.Destroy;
+  var i, j: Integer;
+begin
+  for i := 0 to _MixTime.Count - 1 do
+  begin
+    for j := 0 to _MixTime[i].MixEnties.Count - 1 do
+    begin
+      _MixTime[i].MixEnties[j].Free;
+    end;
+    _MixTime[i].MixEnties.Free;
+    _MixTime[i].Free;
+  end;
+  _MixTime.Free;
+  inherited Destroy;
+end;
+
+procedure TSpineAnimationStateData.SetMix(const FromName, ToName: String; const Duration: Single);
+  var AnimFrom, AnimTo: TSpineAnimation;
+begin
+  AnimFrom := _SkeletonData.FindAnimation(FromName);
+  if AnimFrom = nil then Exit;
+  AnimTo := _SkeletonData.FindAnimation(ToName);
+  if AnimTo = nil then Exit;
+  SetMix(AnimFrom, AnimTo, Duration);
+end;
+
+procedure TSpineAnimationStateData.SetMix(const AnimFrom, AnimTo: TSpineAnimation; const Duration: Single);
+  var Mix0: TSpineAnimationMix0;
+  var Mix1: TSpineAnimationMix1;
+  var i, j: Integer;
+begin
+  if (AnimFrom = nil) or (AnimTo = nil) Exit;
+  for i := 0 to _MixTime.Count - 1 do
+  if _MixTime[i].Anim = AnimFrom then
+  begin
+    for j := 0 to _MixTime[i].MixEnties.Count - 1 do
+    if _MixTime[i].MixEnties[j].Anim = AnimTo then
+    begin
+      _MixTime[i].MixEnties[j].Duration := Duration;
+      Exit;
+    end;
+    Mix1 := TSpineAnimationMix1.Create;
+    Mix1.Anim := AnimTo;
+    Mix1.Duration := Duration;
+    _MixTime[i].MixEnties.Add(Mix1);
+  end;
+  Mix0 := TSpineAnimationMix.Create;
+  Mix0.MixEnties := TSpineAnimationMix1List.Create;
+  Mix0.Anim := AnimFrom;
+  Mix1 := TSpineAnimationMix1.Create;
+  Mix1.Anim := AnimTo;
+  Mix1.Duration := Duration;
+  _MixTime.Add(Mix0);
+end;
+
+function TSpineAnimationStateData.GetMix(const AnimFrom, AnimTo: TSpineAnimation): Single;
+  var i, j: Integer;
+begin
+  for i := 0 to _MixTime.Count - 1 do
+  if _MixTime[i].Anim = AnimFrom then
+  begin
+    for j := 0 to _MixTime[i].MixEnties.Count - 1 do
+    if _MixTime[i].MixEnties[j].Anim = AnimTo then
+    Exit(_MixTime[i].MixEnties[j].Duration);
+  end;
+  Result := _DefaultMix;
+end;
+//TSpineAnimationStateData END
 
 //TSpineSkeletonBounds BEGIN
 function TSpineSkeletonBounds.GetWidth: Single;
