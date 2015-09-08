@@ -82,8 +82,11 @@ type
 
   TSpineStringArray = array of String;
   TSpineFloatArray = array of Single;
+  TSpineFloatTable = array of array of Single;
   TSpineIntArray = array of Integer;
+  TSpineIntTable = array of array of Integer;
   TSpineAttachmentArray = array of TSpineAttachment;
+  TSpineEventArray = array of TSpineEvent;
   TSpineRegionVertices = array[0..7] of Single;
   PSpineFloatArray = ^TSpineFloatArray;
 
@@ -333,6 +336,7 @@ type
     var _Attachment: TSpineAttachment;
     var _AttachmentTime: Single;
     var _AttachmentVertices: TSpineFloatArray;
+    var _AttachmentVertexCount: Integer;
     procedure SetAttachment(const Value: TSpineAttachment); inline;
     function GetAttachmentTime: Single; inline;
     procedure SetAttachmentTime(const Value: Single); inline;
@@ -344,7 +348,8 @@ type
     property g: Single read _g write _g;
     property b: Single read _b write _b;
     property a: Single read _a write _a;
-    property AttachmentVertices: TSpineFloatArray read _AttachemntVertex write _AttachmentVertex;
+    property AttachmentVertices: TSpineFloatArray read _AttachemntVertices write _AttachmentVertices;
+    property AttachmentVertexCount: Integer read _AttachmentVertexCount write _AttachmentVertexCount;
     property Attachment: TSpineAttachment read _Attachment write SetAttachment;
     property AttachmentTime: Single read GetAttachmentTime write SetAttachmentTime;
     constructor Create(const AData: TSpineSlotData; const ABone: TSpineBone);
@@ -419,7 +424,202 @@ type
     constructor Create;
   end;
 
+  TSpineAnimationTimeline = class (TSpineClass)
+  public
+    procedure Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single); virtual; abstract;
+  end;
+
+  TSpineAnimationCurveTimeline = class (TSpineAnimationTimeline)
+  protected
+    const LINEAR: Single = 0;
+    const STEPPED: Single = 1;
+    const BEZIER: Single = 2;
+    const BEZIER_SEGMENTS = 10;
+    const BEZIER_SIZE = BEZIER_SEGMENTS * 2 - 1;
+  private
+    var _Curves: TSpineFloatArray;
+    function GetFrameCount: Integer; inline;
+  public
+    property FrameCount: Integer read GetFrameCount;
+    constructor Create(const AFrameCount: Integer); virtual;
+    procedure SetLinear(const FrameIndex: Integer); inline;
+    procedure SetStepped(const FrameIndex: Integer); inline;
+    procedure SetCurve(const FrameIndex: Integer; const cx1, cy1, cx2, cy2: Single);
+    function GetCurvePercent(const FrameIndex: Integer; const Percent: Single): Single;
+  end;
+
+  TSpineAnimationRotateTimeline = class (TSpineAnimationCurveTimeline)
+  protected
+    const PREV_FRAME_TIME = -2;
+    const FRAME_VALUE = 1;
+  private
+    var _BoneIndex: Integer;
+    var _Frames: TSpineFloatArray;
+  public
+    property BoneIndex: Integer read _BoneIndex write _BoneIndex;
+    property Frames: TSpineFloatArray read _Frames write _Frames;
+    constructor Create(const AFrameCount: Integer); override;
+    procedure SetFrame(const FrameIndex: Integer; const Time, Angle: Single);
+    procedure Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single); override;
+  end;
+
+  TSpineAnimationTranslateTimeline = class (TSpineAnimationCurveTimeline)
+  protected
+    const PREV_FRAME_TIME = -3;
+    const FRAME_X = 1;
+    const FRAME_Y = 2;
+  private
+    var _BoneIndex: Integer;
+    var _Frames: TSpineFloatArray;
+  public
+    property BoneIndex: Integer read _BoneIndex write _BoneIndex;
+    property Frames: TSpineFloatArray read _Frames write _Frames;
+    constructor Create(const AFrameCount: Integer); override;
+    procedure SetFrame(const FrameIndex: Integer; const Time, x, y: Single);
+    procedure Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single); override;
+  end;
+
+  TSpineAnimationScaleTimeline = class (TSpineAnimationTranslateTimeline)
+  public
+    constructor Create(const AFrameCount: Integer); override;
+    procedure Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single); override;
+  end;
+
+  TSpineAnimationColorTimeline = class (TSpineAnimationCurveTimeline)
+  protected
+    const PREV_FRAME_TIME = -5;
+    const FRAME_R = 1;
+    const FRAME_G = 2;
+    const FRAME_B = 3;
+    const FRAME_A = 4;
+  private
+    _BoneIndex: Integer;
+    var _SlotIndex: Integer;
+    var _Frames: TSpineFloatArray;
+  public
+    property BoneIndex: Integer read _BoneIndex write _BoneIndex;
+    property Frames: TSpineFloatArray read _Frames write _Frames;
+    constructor Create(const AFrameCount: Integer); override;
+    procedure SetFrame(const FrameIndex: Integer; const Time, r, g, b, a: Single);
+    procedure Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single); override;
+  end;
+
+  TSpineAnimationAttachmentTimeline = class (TSpineAnimationTimeline)
+  private
+    _SlotInedex: Integer;
+    var _SlotIndex: Integer;
+    var _Frames: TSpineFloatArray;
+    var _AttachmentNames: TSpineStringArray;
+    function GetFrameCount: Integer; inline;
+  public
+    property SlotIndex: Integer read _SlotInedex write _SlotIndex;
+    property Frames: TSpineFloatArray read _Frames write _Frames;
+    property AttachmentNames: TSpineStringArray read _AttachmentNames write _AttachmentNames;
+    property FrameCount: Integer read GetFrameCount;
+    constructor Create(const AFrameCount: Integer);
+    procedure SetFrame(const FrameIndex: Integer; const Time: Single; const AttachmentName: String);
+    procedure Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single); override;
+  end;
+
+  TSpineAnimationEventTimeline = class (TSpineAnimationTimeline)
+  private
+    var _Frames: TSpineFloatArray;
+    var _FrameEvents: TSpineEventArray;
+    function GetFrameCount: Integer; inline;
+  public
+    property Frames: TSpineFloatArray read _Frames write _Frames;
+    property FrameEvents: TSpineEventArray read _FrameEvents write _FrameEvents;
+    property FrameCount: Integer read GetFrameCount;
+    constructor Create(const AFrameCount: Integer);
+    procedure SetFrame(const FrameIndex: Integer; const Time: Single; const Event: TSpineEvent);
+    procedure Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single); override;
+  end;
+
+  TSpineAnimationDrawOrderTimeline = class (TSpineAnimationTimeline)
+  private
+    var _Frames: TSpineFloatArray;
+    var _DrawOrder: TSpineIntTable;
+    function GetFrameCount: Integer; inline;
+  public
+    property Frames: TSpineFloatArray read _Frames write _Frames;
+    property DrawOrder: TSpineIntArray read _Frames write _Frames;
+    property FrameCount: Integer read GetFrameCount;
+    constructor Create(const AFrameCount: Integer);
+    procedure SetFrame(const FrameIndex: Integer; const Time: Single; const ADrawOrder: TSpineIntArray);
+    procedure Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single); override;
+  end;
+
+  TSpineAnimationFFDTimeline = class (TSpineAnimationCurveTimeline)
+  private
+    _FrameVertices: TSpineFloatTable;
+    var _SlotIndex: Integer;
+    var _Frames: TSpineFloatArray;
+    var _FrameVerices: TSpineFloatTable;
+    var _Attachment: TSpineAttachment;
+  public
+    property SlotIndex: Integer read _SlotIndex write _SlotIndex;
+    property Frames: TSpineFloatArray read _Frames write _Frames;
+    property Vertices: TSpineFloatTable read _FrameVertices write _FrameVertices;
+    property Attachment: TSpineAttachment read _Attachment write _Attachment;
+    constructor Create(const AFrameCount: Integer);
+    procedure SetFrame(const FrameIndex: Integer; const Time: Single; const AVertices: TSpineFloatArray);
+    procedure Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single); override;
+  end;
+
+  TSpineAnimationIKConstraintTimeline = class (TSpineAnimationCurveTimeline)
+  private
+    const PREV_FRAME_TIME = -3;
+    const PREV_FRAME_MIX = -2;
+    const PREV_FRAME_BEND_DIRECTION = -1;
+    const FRAME_MIX = 1;
+    var _IKConstraintIndex: Integer;
+    var _Frames: TSpineFloatArray;
+  public
+    property IKConstraintIndex: Integer read _IKConstraintIndex write _IKConstraintIndex;
+    property Frames: TSpineFloatArray read _Frames write _Frames;
+    constructor Create(const AFrameCount: Integer); override;
+    procedure SetFrame(const FrameIndex: Integer; const Time, Mix: Single; const BlendDirection: Integer);
+    procedure Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single); override;
+  end;
+
+  TSpineAnimationFlipXTimeline = class (TSpineAnimationTimeline)
+  private
+    _Frames: TSpineFloatArray;
+    var _BoneIndex: Integer;
+    var _Frame: TSpineFloatArray;
+    function GetFrameCount: Integer; inline;
+    procedure SetFlip(const Bone: TSpineBone; const Flip: Boolean); virtual;
+  public
+    property BoneIndex: Integer read _BoneIndex write _BoneIndex;
+    property Frames: TSpineFloatArray read _Frames write _Frames;
+    property FrameCount: Integer read GetFrameCount;
+    constructor Create(const AFrameCount: Integer);
+    procedure SetFrame(const FrameIndex: Integer; const Time: Single; const Flip: Boolean);
+    procedure Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single); override;
+  end;
+
+  TSpineAnimationFlipYTimeline = class (TSpineAnimationFlipXTimeline)
+  protected
+    procedure SetFlip(const Bone: TSpineBone; const Flip: Boolean); override;
+  end;
+
+  TSpineTimelineList = specialize TSpineList<TSpineAnimationTimeline>;
+
   TSpineAnimation = class (TSpineClass)
+  private
+    var _Timelines: TSpineTimelineList;
+    var _Duration: Single;
+    var _Name: String;
+  public
+    property Name: String read _Name;
+    property Timelines: TSpineTimelineList read _Timelines;
+    property Duration: Single read _Duration write _Duration;
+    constructor Create(const AName: String; const ATimelines: TSpineTimelineList; const ADuration: Single);
+    procedure Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Loop: Boolean; const Events: TSpineEventList);
+    procedure Mix(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Loop: Boolean; const Events: TSpineEventList; const Alpha: Single);
+    class function BinarySearch(const Values: TSpineFloatArray; const Target: Single; const Step: Integer): Integer; overload;
+    class function BinarySearch(const Values: TSpineFloatArray; const Target: Single): Integer; overload;
+    class function LinearSearch(const Values: TSpineFloatArray; const Target: Single; const Step: Integer): Integer;
   end;
 
   TSpineAnimationStateStartEnd = procedure (const State: TSpineAnimationState; const TrackIndex; Integer) of Object;
@@ -438,7 +638,7 @@ type
     var _LastTime: Single;
     var _EndTime: Single;
     var _TimeScale: Single;
-    var _MixTime: Single
+    var _MixTime: Single;
     var _MixDuration: Single;
     var _Mix: Single;
     var _OnStart: TSpineAnimationStateStartEnd;
@@ -449,6 +649,9 @@ type
     procedure ProcEnd(const State: TSpineAnimationState; const Index: Integer);
     procedure ProcEvent(const State: TSpineAnimationState; const Index: Integer; const Event: TSpineEvent);
     procedure ProcComplete(const State: TSpineAnimationState; const Index, LoopCount: Integer);
+  protected
+    property Prev: TSpineAnimationTrackEntry read _Prev write _Prev;
+    property Next: TSpineAnimationTrackEntry read _Next write _Prev;
   public
     property Animation: TSpineAnimation read _Animation;
     property Delay: Single read _Delay write _Delay;
@@ -457,6 +660,8 @@ type
     property EndTime: Single read _EndTime write _EndTime;
     property TimeScale: Single read _TimeScale write _TimeScale;
     property Mix: Single read _Mix write _Mix;
+    property MixTime: Single read _MixTime write _MixTime;
+    property MixDuration: Single read _MixDuration write _MixDuration;
     property Loop: Boolean read _Loop write _Loop;
     property OnStart: TSpineAnimationStateStartEnd read _OnStart write _OnStart;
     property OnEnd: TSpineAnimationStateStartEnd read _OnEnd write _OnEnd;
@@ -471,12 +676,14 @@ type
   private
     var _Data: TSpineAnimationStateData;
     var _Tracks: TSpineAnimationTrackEntryList;
-    var _Events: TSpineEvent;
+    var _Events: TSpineEventList;
     var _TimeScale: Single;
     var _OnStart: TSpineAnimationStateStartEnd;
     var _OnEnd: TSpineAnimationStateStartEnd;
     var _OnEvent: TSpineAnimationStateEvent;
     var _OnComplete: TSpineAnimationStateComplete;
+    function ExpandToIndex(const Index: Integer): TSpineAnimationTrackEntry;
+    procedure SetCurrent(const Index: Integer; const Entry: TSpineAnimationTrackEntry);
   public
     property Data: TSpineAnimationStateData read _Data;
     property TimeScale: Single read _TimeScale write _TimeScale;
@@ -488,6 +695,13 @@ type
     destructor Destroy; override;
     procedure Update(const Delta: Single);
     procedure Apply(const Skeleton: TSpineSkeleton);
+    procedure ClearTracks;
+    procedure ClearTrack(const TrackIndex: Integer);
+    function SetAnimation(const TrackIndex: Integer; const AnimationName: String; const Loop: Boolean): TSpineAnimationTrackEntry; overload;
+    function SetAnimation(const TrackIndex: Integer; const Animation: TSpineAnimation; const Loop: Boolean): TSpineAnimationTrackEntry; overload;
+    function AddAnimation(const TrackIndex: Integer; const AnimationName: String; const Loop: Boolean; const Delay: Single): TSpineAnimationTrackEntry; overload;
+    function AddAnimation(const TrackIndex: Integer; const Animation: TSpineAnimation; const Loop: Boolean; const Delay: Single): TSpineAnimationTrackEntry; overload;
+    function GetCurrent(const TrackIndex: Integer): TSpineAnimationTrackEntry;
   end;
 
   TSpineAnimationMix0 = class;
@@ -570,7 +784,7 @@ type
     var _Data: TSpineIKConstraintData;
     var _Bones: TSpineBoneList;
     var _Target: TSpineBone;
-    var _BlendDirection: Integer;
+    var _BendDirection: Integer;
     var _Mix: Single;
     class procedure Apply(var Bone: TSpineBone; const TargetX, TargetY, Alpha: Single); overload;
     class procedure Apply(var Parent, Child: TSpineBone; const TargetX, TargetY, Alpha: Single; const ABlendDirection: Integer); overload;
@@ -578,7 +792,7 @@ type
     property Data: TSpineIKConstraintData read _Data;
     property Bones: TSpineBoneList read _Bones;
     property Target: TSpineBone read _Target write _Target;
-    property BlendDiretion: Integer read _BlendDirection write _BlendDirection;
+    property BendDiretion: Integer read _BendDirection write _BendDirection;
     property Mix: Single read _Mix write _Mix;
     constructor Create(const AData: TSpineIKConstraintData; const ASkeleton: TSpineSkeleton);
     destructor Destroy; override;
@@ -862,6 +1076,29 @@ type
     function NewSkinnedMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineSkinnedMeshAttachment;
     function NewBoundingBoxAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineBoundingBoxAttachment;
     function FindRegion(const Name: String): TSpineAtlasRegion;
+  end;
+
+  TSpineSkeletonBinary = class (TSpineClass)
+  private
+    const TIMELINE_SCALE = 0;
+    const TIMELINE_ROTATE = 1;
+    const TIMELINE_TRANSLATE = 2;
+    const TIMELINE_ATTACHMENT = 3;
+    const TIMELINE_COLOR = 4;
+    const TIMELINE_FLIPX = 5;
+    const TIMELINE_FLIPY = 6;
+    const CURVE_LINEAR = 0;
+    const CURVE_STEPPED = 1;
+    const CURVE_BEZIER = 2;
+    var _AttachmentLoader: TSpineAttachmentLoader;
+    var _Chars: array [0..31] of AnsiChar;
+    var _Buffer: array[0..3] of Byte;
+    var _Scale: Single;
+  public
+    property Scale: Single read _Scale write _Scale;
+    constructor Create(const AtlasList: TSpineAtlasList);
+    constructor Create(const AttachmentLoader: TSpineAttachmentLoader);
+    destructor Destroy; override;
   end;
 
 const
@@ -1512,6 +1749,686 @@ begin
 end;
 //TSpinePolygon END
 
+//TSpineAnimationCurveTimeline BEGIN
+function TSpineAnimationCurveTimeline.GetFrameCount: Integer;
+begin
+  Result := Length(_Curves) div BEZIER_SIZE + 1;
+end;
+
+constructor TSpineAnimationCurveTimeline.Create(const AFrameCount: Integer);
+begin
+  SetLength(_Curves, (AFrameCount - 1) * BEZIER_SIZE);
+end;
+
+procedure TSpineAnimationCurveTimeline.SetLinear(const FrameIndex: Integer);
+begin
+  _Curves[FrameIndex * BEZIER_SIZE] := LINEAR;
+end;
+
+procedure TSpineAnimationCurveTimeline.SetStepped(const FrameIndex: Integer);
+begin
+  _Curves[FrameIndex * BEZIER_SIZE] := STEPPED;
+end;
+
+procedure TSpineAnimationCurveTimeline.SetCurve(const FrameIndex: Integer; const cx1, cy1, cx2, cy2: Single);
+  var subdiv1, subdiv2, subdiv3: Single;
+  var pre1, pre2, pre4, pre5: Single;
+  var tmp1x, tmp1y, tmp2x, tmp2y: Single;
+  var dfx, dfy, ddfx, ddfy, dddfx, dddfy: Single;
+  var x, y: Single;
+  var i, n: Integer;
+begin
+  subdiv1 := 1 / BEZIER_SEGMENTS;
+  subdiv2 := subdiv1 * subdiv1;
+  subdiv3 := subdiv2 * subdiv1;
+  pre1 := 3 * subdiv1;
+  pre2 := 3 * subdiv2;
+  pre4 := 6 * subdiv2;
+  pre5 := 6 * subdiv3;
+  tmp1x := -cx1 * 2 + cx2;
+  tmp1y := -cy1 * 2 + cy2;
+  tmp2x := (cx1 - cx2) * 3 + 1;
+  tmp2y := (cy1 - cy2) * 3 + 1;
+  dfx := cx1 * pre1 + tmp1x * pre2 + tmp2x * subdiv3;
+  dfy := cy1 * pre1 + tmp1y * pre2 + tmp2y * subdiv3;
+  ddfx := tmp1x * pre4 + tmp2x * pre5;
+  ddfy := tmp1y * pre4 + tmp2y * pre5;
+  dddfx := tmp2x * pre5;
+  dddfy := tmp2y * pre5;
+  i := FrameIndex * BEZIER_SIZE;
+  _Curves[i] := BEZIER; Inc(i);
+  x := dfx;
+  y := dfy;
+  n := i + BEZIER_SIZE - 1;
+  while i < n do
+  begin
+    _Curves[i] := x;
+    _Curves[i + 1] := y;
+    dfx += ddfx;
+    dfy += ddfy;
+    ddfx += dddfx;
+    ddfy += dddfy;
+    x += dfx;
+    y += dfy;
+    Inc(i, 2);
+  end;
+end;
+
+function TSpineAnimationCurveTimeline.GetCurvePercent(const FrameIndex: Integer; const Percent: Single): Single;
+  var i, n, start: Integer;
+  var x, y, PrevX, PrevY: Single;
+begin
+  i := FrameIndex * BEZIER_SIZE;
+  if _Curves[i] = LINEAR then Exit(Percent);
+  if _Curves[i] = STEPPED then Exit(0);
+  Inc(i);
+  x := 0;
+  start := i;
+  n := i + BEZIER_SIZE - 1;
+  while i < n do
+  begin
+    x := _Curves[i];
+    if x >= Percent then
+    begin
+      float prevX, prevY;
+      if i = Start then
+      begin
+	PrevX := 0;
+	PrevY := 0;
+      end
+      else
+      begin
+	PrevX := _Curves[i - 2];
+	PrevY := _Curves[i - 1];
+      end;
+      Exit(PrevY + (_Curves[i + 1] - PrevY) * (Percent - PrevX) / (x - PrevX));
+    end;
+    Inc(i, 2);
+  end;
+  y := _Curves[i - 1];
+  Result := y + (1 - y) * (Percent - x) / (1 - x);
+end;
+//TSpineAnimationCurveTimeline END
+
+//TSpineAnimationRotateTimeline BEIGN
+constructor TSpineAnimationRotateTimeline.Create(const AFrameCount: Integer);
+begin
+  inherited Create(AFrameCount);
+  SetLength(_Frames, AFrameCount shl 1);
+end;
+
+procedure TSpineAnimationRotateTimeline.SetFrame(const FrameIndex: Integer; const Time, Angle: Single);
+  var i: Integer;
+begin
+  i := FrameIndex * 2;
+  _Frames[i] := Time;
+  _Frames[i + 1] := Angle;
+end;
+
+procedure TSpineAnimationRotateTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
+  var Bone: TSpineBone;
+  var Amount, PrevFrameValue, FrameTime, Percent: Single;
+  var FrameIndex: Integer;
+begin
+  if Time < _Frames[0] then Exit;
+  Bone := Skeleton.Bones[BoneIndex];
+  if (Time >= _Frames[Length(_Frames) - 2]) then
+  begin
+    Amount := Bone.Data.Rotation + _Frames[Length(_Frames) - 1] - Bone.Rotation;
+    while Amount > 180 do Amount -= 360;
+    while Amount < -180 do amount += 360;
+    Bone.Rotation += Amount * Alpha;
+    Exit;
+  end;
+  FrameIndex := TSpineAnimation.BinarySearch(_Frames, Time, 2);
+  PrevFrameValue:= := _Frames[FrameIndex - 1];
+  FrameTime := _Frames[FrameIndex];
+  Percent := 1 - (Time - FrameTime) / (_Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime);
+  if Percent < 0 then Percent := 0 else if Percent > 1 then Percent := 1;
+  Percent := GetCurvePercent((FrameIndex shr 1) - 1, Percent);
+  Amount := _Frames[FrameIndex + FRAME_VALUE] - PrevFrameValue;
+  while Amount > 180 do Amount -= 360;
+  while Amount < -180 do Amount += 360;
+  Amount := Bone.Data.Rotation + (PrevFrameValue + Amount * Percent) - Bone.Rotation;
+  while Amount > 180 do Amount -= 360;
+  while Amount < -180 do Amount += 360;
+  Bone.Rotation += Amount * Alpha;
+end;
+//TSpineAnimationRotateTimeline END
+
+//TSpineAnimationTranslateTimeline BEGIN
+constructor TSpineAnimationTranslateTimeline.Create(const AFrameCount: Integer);
+begin
+  inherited Create(AFrameCount);
+  SetLength(_Frames, AFrameCount * 3);
+end;
+
+procedure TSpineAnimationTranslateTimeline.SetFrame(const FrameIndex: Integer; const Time, x, y: Single);
+  var i: Integer;
+begin
+  i := FrameIndex * 3;
+  _Frames[i] := Time;
+  _Frames[i + 1] := x;
+  _Frames[i + 2] := y;
+end;
+
+procedure TSpineAnimationTranslateTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
+  var Bone: TSpineBone;
+  var FrameIndex: Integer;
+  var PrevFrameX: Single;
+  var PrevFrameY: Single;
+  var FrameTime: Single;
+  var Percent: Single;
+begin
+  if Time < _Frames[0] then Exit;
+  Bone := Skeleton.Bones[BoneIndex];
+  if Time >= _Frames[Length(_Frames) - 3] then
+  begin
+    Bone.x += (Bone.Data.x + _Frames[Length(_Frames) - 2] - Bone.x) * Alpha;
+    Bone.x += (Bone.Data.y + _Frames[Length(_Frames) - 1] - Bone.y) * Alpha;
+    Exit;
+  end;
+  FrameIndex := TSpineAnimation.BinarySearch(_Frames, Time, 3);
+  PrevFrameX := _Frames[FrameIndex - 2];
+  PrevFrameY := _Frames[FrameIndex - 1];
+  FrameTime := _Frames[FrameIndex];
+  Percent := 1 - (Time - FrameTime) / (_Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime);
+  if Percent < 0 then Percent := 0 else if Percent > 1 then Percent := 1;
+  Percent := GetCurvePercent(FrameIndex div 3 - 1, Percent);
+  Bone.x += (Bone.Data.x + PrevFrameX + (_Frames[FrameIndex + FRAME_X] - PrevFrameX) * Percent - Bone.x) * Alpha;
+  Bone.y += (Bone.Data.y + PrevFrameY + (_Frames[FrameIndex + FRAME_Y] - PrevFrameY) * Percent - Bone.y) * Alpha;
+end;
+//TSpineAnimationTranslateTimeline END
+
+//TSpineAnimationScaleTimeline BEGIN
+constructor TSpineAnimationScaleTimeline.Create(const AFrameCount: Integer);
+begin
+  inherited Create(AFrameCount);
+end;
+
+procedure TSpineAnimationScaleTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
+  var Bone: TSpineBone;
+  var FrameIndex: Integer;
+  var PrevFrameX: Single;
+  var PrevFrameY: Single;
+  var FrameTime: Single;
+  var Percent: Single;
+begin
+  if Time < _Frames[0] then Exit;
+  Bone := Skeleton.Bones[BoneIndex];
+  if Time >= _Frames[Length(_Frames) - 3] then
+  begin
+    Bone.ScaleX += (Bone.Data.ScaleX + _Frames[Length(_Frames) - 2] - Bone.ScaleX) * Alpha;
+    Bone.ScaleY += (Bone.Data.ScaleY + _Frames[Length(_Frames) - 1] - Bone.ScaleY) * Alpha;
+    Exit;
+  end;
+  FrameIndex := TSpineAnimation.BinarySearch(_Frames, Time, 3);
+  PrevFrameX := _Frames[FrameIndex - 2];
+  PrevFrameY := _Frames[FrameIndex - 1];
+  FrameTime := _Frames[FrameIndex];
+  Percent := 1 - (Time - FrameTime) / (_Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime);
+  if Percent < 0 then Percent := 0 else if Percent > 1 then Percent := 1;
+  Percent := GetCurvePercent(FrameIndex div 3 - 1, Percent);
+  Bone.ScaleX += (Bone.Data.ScaleX + PrevFrameX + (_Frames[FrameIndex + FRAME_X] - PrevFrameX) * Percent - Bone.ScaleX) * Alpha;
+  Bone.ScaleY += (Bone.Data.ScaleY + PrevFrameY + (_Frames[FrameIndex + FRAME_Y] - PrevFrameY) * Percent - Bone.ScaleY) * Alpha;
+end;
+//TSpineAnimationScaleTimeline END
+
+//TSpineAnimationColorTimeline BEGIN
+constructor TSpineAnimationColorTimeline.Create(const AFrameCount: Integer);
+begin
+  inherited Create(AFrameCount);
+  SetLength(_Frames, AFrameCount * 5);
+end;
+
+procedure TSpineAnimationColorTimeline.SetFrame(const FrameIndex: Integer; const Time, r, g, b, a: Single);
+  var i: Integer;
+begin
+  i := FrameIndex * 5;
+  _Frames[i] := Time;
+  _Frames[i + 1] := r;
+  _Frames[i + 2] := g;
+  _Frames[i + 3] := b;
+  _Frames[i + 4] := a;
+end;
+
+procedure TSpineAnimationColorTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
+  var r, g, b, a: Single;
+  var PrevFrameR, PrevFrameG, PrevFrameB, PrevFrameA: Single;
+  var FrameTime, Percent: Single;
+  var FrameIndex, i: Integer;
+  var Slot: TSpineSlot;
+begin
+  if Time < _Frames[0] then Exit;
+  if Time >= _Frames[Length(_Frames) - 5] then
+  begin
+    i := High(_Frames);
+    r := _Frames[i - 3];
+    g := _Frames[i - 2];
+    b := _Frames[i - 1];
+    a := _Frames[i];
+  end
+  else
+  begin
+    FrameIndex := TSpineAnimation.BinarySearch(_Frames, Time, 5);
+    PrevFrameR := _Frames[FrameIndex - 4];
+    PrevFrameG := _Frames[FrameIndex - 3];
+    PrevFrameB := _Frames[FrameIndex - 2];
+    PrevFrameA := _Frames[FrameIndex - 1];
+    FrameTime := _Frames[FrameIndex];
+    Percent := 1 - (Time - FrameTime) / (_Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime);
+    if Percent < 0 then Percent := 0 else if Percent > 1 then Percent := 1;
+    Percent := GetCurvePercent(FrameIndex div 5 - 1, Percent);
+    r := PrevFrameR + (_Frames[FrameIndex + FRAME_R] - PrevFrameR) * Percent;
+    g := PrevFrameG + (_Frames[FrameIndex + FRAME_G] - PrevFrameG) * Percent;
+    b := PrevFrameB + (_Frames[FrameIndex + FRAME_B] - PrevFrameB) * Percent;
+    a := PrevFrameA + (_Frames[FrameIndex + FRAME_A] - PrevFrameA) * Percent;
+  end;
+  Slot := Skeleton.Slots[SlotIndex];
+  if Alpha < 1 then
+  begin
+    Slot.r += (r - Slot.r) * Alpha;
+    Slot.g += (g - Slot.g) * Alpha;
+    Slot.b += (b - Slot.b) * Alpha;
+    Slot.a += (a - Slot.a) * Alpha;
+  end
+  else
+  begin
+    Slot.r := r;
+    Slot.g := g;
+    Slot.b := b;
+    Slot.a := a;
+  end;
+end;
+//TSpineAnimationColorTimeline END
+
+//TSpineAnimationAttachmentTimeline BEGIN
+function TSpineAnimationAttachmentTimeline.GetFrameCount: Integer;
+begin
+  Result := Length(_Frames);
+end;
+
+constructor TSpineAnimationAttachmentTimeline.Create(const AFrameCount: Integer);
+begin
+  SetLength(_Frames, AFrameCount);
+  SetLength(_AttachmentNames, AFrameCount);
+end;
+
+procedure TSpineAnimationAttachmentTimeline.SetFrame(const FrameIndex: Integer; const Time: Single; const AttachmentName: String);
+begin
+  _Frames[FrameIndex] := Time;
+  _AttachmentNames[FrameIndex] := AttachmentName;
+end;
+
+procedure TSpineAnimationAttachmentTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
+  var FrameIndex: Integer;
+  var AttachmentName: String;
+begin
+  if Time < _Frames[0] then
+  begin
+    if (LastTime > Time) then Apply(Skeleton, LastTime, 1E+16, nil, 0);
+    Exit;
+  end
+  else if (LastTime > Time) then
+  begin
+    LastTime = -1;
+  end;
+  if (Time >= _Frames[High(_Frames)] then
+  FrameIndex := Length(_Frames)
+  else
+  FrameIndex := TSpineAnimation.BinarySearch(_Frames, time)) - 1;
+  if (_Frames[FrameIndex] < LastTime) Exit;
+  AttachmentName := _AttachmentNames[FrameIndex];
+  if Length(AttachmentName) > 0 then
+  Skeleton.Slots[SlotIndex].Attachment := Skeleton.GetAttachment(SlotIndex, AttachmentName)
+  else
+  Skeleton.Slots[SlotIndex].Attachment := nil;
+end;
+//TSpineAnimationAttachmentTimeline END
+
+//TSpineAnimationEventTimeline BEGIN
+function TSpineAnimationEventTimeline.GetFrameCount: Integer;
+begin
+  Result := Length(_Frames);
+end;
+
+constructor TSpineAnimationEventTimeline.Create(const AFrameCount: Integer);
+begin
+  SetLength(_Frames, AFrameCount);
+  SetLength(_FrameEvents, AFrameCount);
+end;
+
+procedure TSpineAnimationEventTimeline.SetFrame(const FrameIndex: Integer; const Time: Single; const Event: TSpineEvent);
+begin
+  _Frames[FrameIndex] := Time;
+  _FrameEvents[FrameIndex] := Event;
+end;
+
+procedure TSpineAnimationEventTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
+  var FrameIndex, FrameCount: Integer;
+  var Frame: Single;
+begin
+  if Events = nil then Exit;
+  FrameCount := Length(_Frames);
+  if LastTime > Time then
+  begin
+    Apply(Skeleton, LastTime, 1E+16, Events, Alpha);
+    LastTime := -1;
+  end
+  else if LastTime >= _Frames[FrameCount - 1] then Exit;
+  if Time < _Frames[0] then Exit;
+  if LastTime < _Frames[0] then FrameIndex := 0;
+  else
+  begin
+    FrameIndex := TSpineAnimation.BinarySearch(_Frames, LastTime);
+    Frame := _Frames[FrameIndex];
+    while FrameIndex > 0 do
+    begin
+      if _Frames[FrameIndex - 1] <> Frame then Break;
+      Dec(FrameIndex);
+    end;
+  end;
+  while (FrameIndex < FrameCount) and (Time >= _Frames[FrameIndex]) do
+  begin
+    Events.Add(_FrameEvents[FrameIndex]);
+    Inc(FrameIndex);
+  end;
+end;
+//TSpineAnimationEventTimeline END
+
+//TSpineAnimationDrawOrderTimeline BEGIN
+function TSpineAnimationDrawOrderTimeline.GetFrameCount: Integer;
+begin
+  Result := Length(_Frames);
+end;
+
+constructor TSpineAnimationDrawOrderTimeline.Create(const AFrameCount: Integer);
+begin
+  SetLength(_Frames, AFrameCount);
+  SetLength(_DrawOrder, _FrameCount);
+end;
+
+procedure TSpineAnimationDrawOrderTimeline.SetFrame(const FrameIndex: Integer; const Time: Single; const ADrawOrder: TSpineIntArray);
+begin
+  _Frames[FrameIndex] := Time;
+  SetLength(_DrawOrder[FrameIndex], Length(ADrawOrder));
+  Move(ADrawOrder[FrameIndex][0], _DrawOrder[FrameIndex][0], Length(ADrawOrder) * SizeOf(Integer));
+end;
+
+procedure TSpineAnimationDrawOrderTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
+  var i, FrameIndex: Integer;
+begin
+  if Time < _Frames[0] Exit;
+  if Time >= _Frames[High(_Frames)] then FrameIndex := High(_Frames)
+  else FrameIndex := TSpineAnimation.BinarySearch(_Drames, Time) - 1;
+  if Length(_DrawOrder[FrameIndex]) = 0 then
+  begin
+    Skeleton.DrawOrder.Clear;
+    for i := 0 to Skeleton.Slots.Count - 1 do
+    Skeleton.DrawOrder.Add(Slots[i]);
+  end
+  else
+  begin
+    for i := 0 to High(_DrawOrder[FrameIndex]) do
+    Skeleton.DrawOrder[i] := Skeleton.Slots[_DrawOrder[FrameIndex][i]];
+  end;
+end;
+//TSpineAnimationDrawOrderTimeline END
+
+//TSpineAnimationFFDTimeline BEGIN
+constructor TSpineAnimationFFDTimeline.Create(const AFrameCount: Integer);
+begin
+  inherited Create(AFrameCount);
+  SetLength(_Frames, AFrameCount);
+  SetLength(_FrameVertices, AFrameCount);
+end;
+
+procedure TSpineAnimationFFDTimeline.SetFrame(const FrameIndex: Integer; const Time: Single; const AVertices: TSpineFloatArray);
+begin
+  _Frames[FrameIndex] := Time;
+  SetLength(_FrameVertices[FrameIndex], Length(AVertices));
+  Move(AVertices[0], _FrameVertices[FrameIndex][0], Length(AVertices) * SizeOf(Single));
+end;
+
+procedure TSpineAnimationFFDTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
+  var Slot: TSpineSlot;
+  var i, VertexCount, FrameIndex: Integer;
+  var a, f, FrameTime, Percent, pv, v: Single;
+  var LastVertices, PrevVertices, NextVertices: PSpineFloatArray;
+begin
+  Slot := Skeleton.Slots[SlotIndex];
+  if Slot.Attachment <> _Attachment then Exit;
+  if Time < _Frames[0] then Exit;
+  VertexCount := Length(_FrameVertices[0]);
+  if Length(Slot.AttachmentVertices) < VertexCount then
+  SetLength(Slot.AttachmentVertices, VertexCount);
+  a := Alpha;
+  if Length(Slot.AttachmentVertices) <> VertexCount then a := 1;
+  Slot.AttachmentVertexCount := VertexCount;
+  if Time >= _Frames[High(_Frames)]) then
+  begin
+    LastVertices := @_FrameVertices[High(_Frames)];
+    if a < 1 then
+    begin
+      for i := 0 to VertexCount - 1 do
+      begin
+	v := Slot.AttachmentVertices[i];
+	Slot.AttachmentVertices[i] := v + (LastVertices^[i] - v) * a;
+      end;
+    end
+    else
+    begin
+      Move(LastVertices^[0], Slot.AttachmentVertices[0], VertexCount * SizeOf(Single));
+    end;
+    Exit;
+  end;
+  FrameIndex := TSpineAnimation.BinarySearch(_Frames, Time);
+  FrameTime := _Frames[FrameIndex];
+  Percent := 1 - (Time - FrameTime) / (_Frames[FrameIndex - 1] - FrameTime);
+  if Percent < 0 then Percent := 0 else if Percent > 1 then Percent := 1;
+  Percent := GetCurvePercent(FrameIndex - 1, Percent);
+  PrevVertices := @_FrameVertices[FrameIndex - 1];
+  NextVertices := @_FrameVertices[FrameIndex];
+  if a < 1 then
+  begin
+    for i := 0 to VertexCount - 1 do
+    begin
+      pv := PrevVertices^[i];
+      v := Slot.AttachmentVertices[i];
+      Slot.AttachmentVertices[i] := v + (pv + (NextVertices^[i] - pv) * Percent - v) * a;
+    end;
+  end
+  else
+  begin
+    for i := 0 to VertexCount - 1 do
+    begin
+      pv := PrevVertices^[i];
+      Slot.AttachmentVertices[i] := pv + (NextVertices^[i] - pv) * Percent;
+    end;
+  end;
+end;
+//TSpineAnimationFFDTimeline END
+
+//TSpineAnimationIKConstraintTimeline BEGIN
+constructor TSpineAnimationIKConstraintTimeline.Create(const AFrameCount: Integer);
+begin
+  inherited Create(AFrameCount);
+  SetLength(_Frames, AFrameCount * 3);
+end;
+
+procedure TSpineAnimationIKConstraintTimeline.SetFrame(const FrameIndex: Integer; const Time, Mix: Single; const BlendDirection: Integer);
+  var i: Integer;
+begin
+  i := FrameIndex * 3;
+  _Frames[i] := Time;
+  _Frames[i + 1] := Mix;
+  _Frames[i + 2] := PSingle(@BlendDirection)^;
+end;
+
+procedure TSpineAnimationIKConstraintTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
+  var Constraint: TSpineIKConstraint;
+  var FrameIndex: Integer;
+  var PrevFrameMix, FrameTime, Percent, Mix: Single;
+begin
+  if Time < _Frames[0] then Exit;
+  Constraint := Skeleton.IKConstraints[_IKConstraintIndex];
+  if Time >= _Frames[High(_Frames)] then
+  begin
+    Constraint.Mix += (_Frames[Length(_Frames) - 2] - Constraint.Mix) * a;
+    Constraint.BendDiretion := PInteger(@_Frames[Length(_Frames) - 1])^;
+    Exit;
+  end;
+  FrameIndex := TSpineAnimation.BinarySearch(_Frames, Time, 3);
+  PrevFrameMix := _Frames[FrameIndex + PREV_FRAME_MIX];
+  FrameTime := _Frames[FrameIndex];
+  Percent := 1 - (Time - FrameTime) / (_Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime);
+  if Percent < 0 then Percent := 0 else if Percent > 1 then Percent := 1;
+  Percent := GetCurvePercent(FrameIndex div 3 - 1, Percent);
+  Mix := PrevFrameMix + (_Frames[FrameIndex + FRAME_MIX] - PrevFrameMix) * Percent;
+  Constraint.Mix += (Mix - Constraint.Mix) * Alpha;
+  Constraint.BendDiretion := PInteger(@_Frames[FrameIndex + PREV_FRAME_BEND_DIRECTION])^;
+end;
+//TSpineAnimationIKConstraintTimeline END
+
+//TSpineAnimationFlipXTimeline BEGIN
+function TSpineAnimationFlipXTimeline.GetFrameCount: Integer;
+begin
+  Result := Length(_Frames) shr 1;
+end;
+
+procedure TSpineAnimationFlipXTimeline.SetFlip(const Bone: TSpineBone; const Flip: Boolean);
+begin
+  Bone.FlipX := Flip;
+end;
+
+constructor TSpineAnimationFlipXTimeline.Create(const AFrameCount: Integer);
+begin
+  SetLength(_Frames, AFrameCount shl 1);
+end;
+
+procedure TSpineAnimationFlipXTimeline.SetFrame(const FrameIndex: Integer; const Time: Single; const Flip: Boolean);
+  var i: Integer;
+  var fb: Single;
+begin
+  i := FrameIndex * 2;
+  _Frames[i] := Time;
+  if Flip then _Frames[i + 1] := 1
+  else _Frames[i + 1] := 0;
+end;
+
+procedure TSpineAnimationFlipXTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
+  var tl: Single;
+  var FrameIndex: Integer;
+begin
+  tl := LastTime;
+  if Time < _Frames[0] then
+  begin
+    if tl > Time then Apply(Skeleton, tl, 1E+16, nil, 0);
+    Exit;
+  end
+  else if tl > Time then
+  begin
+    tl := -1;
+  end;
+  if Time >= _Frames[Length(_Frames) - 2] then
+  FrameIndex := Length(_Frames_)
+  else
+  FrameIndex := TSpineAnimation.BinarySearch(_Frames, Time, 2)) - 2;
+  if _Frames[FrameIndex] < LastTime) then Exit;
+  SetFlip(Skeleton.Bones[BoneIndex], _Frames[FrameIndex + 1] > 0.5);
+end;
+//TSpineAnimationFlipXTimeline END
+
+//TSpineAnimationFlipYTimeline BEGIN
+procedure TSpineAnimationFlipYTimeline.SetFlip(const Bone: TSpineBone; const Flip: Boolean);
+begin
+  Bone.FlipY := Flip;
+end;
+//TSpineAnimationFlipYTimeline END
+
+//TSpineAnimation BEGIN
+constructor TSpineAnimation.Create(const AName: String; const ATimelines: TSpineTimelineList; const ADuration: Single);
+begin
+  _Name := AName;
+  _Timelines := ATimelines;
+  _Duration := ADuration;
+end;
+
+procedure TSpineAnimation.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Loop: Boolean; const Events: TSpineEventList);
+  var t, tl: Single;
+  var i: Integer;
+begin
+  t := Time; tl := LastTime;
+  if Skeleton = nil then Exit;
+  if Loop and (_Duration > 0) then
+  begin
+    t := SpineModFloat(t, _Duration);
+    tl := SpineModFloat(tl, _Duration);
+  end;
+  for i := 0 to _Timelines.Count - 1 do
+  _Timelines[i].Apply(Skeleton, tl, t, _Events, 1);
+end;
+
+procedure TSpineAnimation.Mix(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Loop: Boolean; const Events: TSpineEventList; const Alpha: Single);
+  var t, tl: Single;
+  var i: Integer;
+begin
+  if Skeleton = nil then Exit;
+  t := Time; tl := LastTime;
+  if Loop and (_Duration > 0) then
+  begin
+    t := SpineModFloat(t, _Duration);
+    lt := SpineModFloat(lt, _Duration);
+  end;
+  for i := 0 to _Timelines.Count - 1 do
+  _Timelines[i].Apply(Skeleton, tl, t, _Events, Alpha);
+end;
+
+class function TSpineAnimation.BinarySearch(const Values: TSpineFloatArray; const Target: Single; const Step: Integer): Integer;
+  var l, h, c: Integer;
+begin
+  l := 0;
+  h := Length(Values) div Step - 2;
+  if h = 0 then Exit(Step);
+  c := h shr 1;
+  while True do
+  begin
+    if (Values[(c + 1) * Step] <= Target) then l := c + 1
+    else h := c;
+    if (l = h) then Exit((l + 1) * Step);
+    c := l + h shr 1;
+  end;
+end;
+
+class function TSpineAnimation.BinarySearch(const Values: TSpineFloatArray; const Target: Single): Integer;
+  var l, h, c: Integer;
+begin
+  l := 0;
+  h := Length(Values) - 2;
+  if h = 0 then Exit(1);
+  c := high shr 1;
+  while True do
+  begin
+    if Values[(c + 1)] <= Target then l := c + 1;
+    else h := c;
+    if l = h then Exit(l + 1);
+    c := l + h shr 1;
+  end;
+end;
+
+class function TSpineAnimation.LinearSearch(const Values: TSpineFloatArray; const Target: Single; const Step: Integer): Integer;
+  var i: Integer;
+begin
+  i := 0;
+  while i <= Length(Values) - Step do
+  begin
+    if Values[i] > Target then Exit(i);
+    Inc(i, Step);
+  end;
+  Result := -1;
+end;
+//TSpineAnimation END
+
 //TSpineAnimationTrackEntry BEGIN
 procedure TSpineAnimationTrackEntry.ProcStart(const State: TSpineAnimationState; const Index: Integer);
 begin
@@ -1546,6 +2463,38 @@ end;
 //TSpineAnimationTrackEntry END
 
 //TSpineAnimationState BEGIN
+function TSpineAnimationState.ExpandToIndex(const Index: Integer): TSpineAnimationTrackEntry;
+begin
+  if (Index < _Tracks.Count) then Exit(_Tracks.Items[Index]);
+  while (Index >= _Tracks.Count) do _Tracks.Add(nil);
+  Result := nil;
+end;
+
+procedure TSpineAnimationState.SetCurrent(const Index: Integer; const Entry: TSpineAnimationTrackEntry);
+  var Track, Prev: TSpineAnimationTrackEntry;
+begin
+  Track := ExpandToIndex(Index);
+  if Assigned(Track) then
+  begin
+    Prev := Track.Prev;
+    Track.Prev := nil;
+    Track.OnEnd(Self, Index);
+    if Assigned(_OnEnd) then _OnEnd(Self, Index);
+    Entry.MixDuration := _Data.GetMix(Track.Animation, Entry.Animation);
+    if Entry.MixDuration > 0 then
+    begin
+      Entry.MixTime := 0;
+      if Assigned(Prev) and (Track.MixTime / Track.MixDuration < 0.5) then
+      Entry.Prev := Prev
+      else
+      Entry.Prev := Track;
+    end;
+  end;
+  _Tracks[Index] := Entry;
+  Entry.OnStart(Self, Index);
+  if Assigned(_OnStart) then _OnStart(Self, Index);
+end;
+
 constructor TSpineAnimationState.Create(const AData: TSpineAnimationStateData);
 begin
   _Data := AData;
@@ -1598,7 +2547,8 @@ begin
 end;
 
 procedure TSpineAnimationState.Apply(const Skeleton: TSpineSkeleton);
-  var i: Integer;
+  var i, j: Integer;
+  var t, pt, a: Single;
   var Track: TSpineAnimationTrackEntry;
 begin
   for i := 0 to _Tracks.Count - 1 do
@@ -1606,8 +2556,120 @@ begin
     Track := _Tracks[i];
     if Track = nil then Continue;
     _Events.Clear;
+    t := Track.Time;
+    if not Track.Loop and (t > Track.EndTime) then t := Track.EndTime;
+    if Track.Prev = nil then
+    begin
+      if Track.Mix = 1 then
+      Track.Animation.Apply(Skeleton, Track.LastTime, t, Track.Loop, _Events)
+      else
+      Track.Animation.Mix(Skeleton, Track.LastTime, t, Track.Loop, _Events, Track.Mix);
+    end
+    else
+    begin
+      pt := Track.Prev.Time;
+      if not Track.Prev.Loop and (pt > Track.Prev.EndTime) pt := Track.Prev.EndTime;
+      Track.Animation.Apply(Skeleton, pt, pt, Track.Prev.Loop, nil);
+      a := Track.MixTime / Track.MixDuration * Track.Mix;
+      if a >= 1 then
+      begin
+        a := 1;
+        Track.Prev := nil;
+      end;
+      Track.Animation.Mix(Skeleton, Track.LastTime, t, Track.Loop, _Events, a);
+    end;
+    for j := 0 to _Events.Count - 1 do
+    begin
+      Track.OnEvent(Self, i, _Events[j]);
+      if Assigned(_OnEvent) then _OnEvent(Self, i, _Events[j]);
+    end;
+    Track.LastTime := Track.Time;
   end;
 end;
+
+procedure TSpineAnimationState.ClearTracks;
+  var i: Integer;
+begin
+  for i := 0 to _Tracks.Count - 1 do ClearTrack(i);
+  _Tracks.Clear;
+end;
+
+procedure TSpineAnimationState.ClearTrack(const TrackIndex: Integer);
+  var Track: TSpineAnimationTrackEntry;
+begin
+  if (TrackIndex >= _Tracks.Count) then Exit;
+  Track := _Tracks.Items[TrackIndex];
+  if (Track = nil) then Exit;
+  Track.OnEnd(Self, TrackIndex);
+  if Assigned(_OnEnd) then _OnEnd(Self, TrackIndex);
+  _Tracks[TrackIndex] := nil;
+end;
+
+function TSpineAnimationState.SetAnimation(const TrackIndex: Integer; const AnimationName: String; const Loop: Boolean): TSpineAnimationTrackEntry;
+  var Anim: TSpineAnimation;
+begin
+  Anim := _Data.SkeletonData.FindAnimation(AnimationName);
+  if Assigned(Anim) then
+  Result := SetAnimation(TrackIndex, Animation, Loop)
+  else
+  Result := nil;
+end;
+
+function TSpineAnimationState.SetAnimation(const TrackIndex: Integer; const Animation: TSpineAnimation; const Loop: Boolean): TSpineAnimationTrackEntry;
+  var Entry: TSpineAnimationTrackEntry;
+begin
+  if Animation = nil then Exit(nil);
+  Entry := TSpineAnimationTrackEntry.Create(Self, Animation);
+  Entry.Loop := Loop;
+  Entry.Time := 0;
+  Entry.EndTime := Animation.Duration;
+  SetCurrent(TrackIndex, Entry);
+  Result := Entry;
+end;
+
+function TSpineAnimationState.AddAnimation(const TrackIndex: Integer; const AnimationName: String; const Loop: Boolean; const Delay: Single): TSpineAnimationTrackEntry;
+  var Anim: TSpineAnimation;
+begin
+  Anim := _Data.SkeletonData.FindAnimation(AnimationName);
+  if Assigned(Anim) then
+  Result := AddAnimation(TrackIndex, Anim, Loop, Delay)
+  else
+  Result := nil;
+end;
+
+function TSpineAnimationState.AddAnimation(const TrackIndex: Integer; const Animation: TSpineAnimation; const Loop: Boolean; const Delay: Single): TSpineAnimationTrackEntry;
+  var Entry, Last: TSpineAnimationTrackEntry;
+begin
+  if not Assigned(Animation) then Exit(nil);
+  Entry := TSpineAnimationTrackEntry.Create(Self, Animation);
+  Entry.Loop := Loop;
+  Entry.Time := 0;
+  Entry.EndTime := Animation.Duration;
+  Last := ExpandToIndex(TrackIndex);
+  if Assigned(Last) then
+  begin
+    while Assigned(Last.Next) do Last := Last.Next;
+    Last.Next := Entry;
+  end
+  else
+  _Tracks[TrackIndex] := Entry;
+  if (Delay <= 0) then
+  begin
+    if Assigned(Last) then
+    Delay += Last.EndTime - _Data.GetMix(Last.Animation, Animation);
+    else
+    Delay := 0;
+  end;
+  Entry.Delay := Delay;
+  Result := Entry;
+end;
+
+function TSpineAnimationState.GetCurrent(const TrackIndex: Integer): TSpineAnimationTrackEntry;
+begin
+  if TrackIndex >= _Tracks.Count then Exit(nil);
+  Result := _Tracks[TrackIndex];
+end;
+
 //TSpineAnimationState END
 
 //TSpineAnimationStateData BEGIN
@@ -2440,6 +3502,26 @@ begin
   Result := nil;
 end;
 //TSpineAtlasAttachmentLoader END
+
+//TSpineSkeletonBinary BEGIN
+constructor TSpineSkeletonBinary.Create(const AtlasList: TSpineAtlasList);
+begin
+  _AttachmentLoader := TSpineAtlasAttachmentLoader.Create(AtlasList);
+  Scale := 1;
+end;
+
+constructor TSpineSkeletonBinary.Create(const AttachmentLoader: TSpineAttachmentLoader);
+begin
+  _AttachmentLoader := AttachmentLoader;
+  Scale := 1;
+end;
+
+destructor TSpineSkeletonBinary.Destroy;
+begin
+  _AttachmentLoader.Free;
+  inherited Destroy;
+end;
+//TSpineSkeletonBinary END
 
 //TSpineClass BEGIN
 procedure TSpineClass.AfterConstruction;
