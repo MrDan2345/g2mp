@@ -22,14 +22,16 @@ type
     function GetHeight: Integer; override;
   end;
 
-  TG2SpineTextureLoader = class (TSpineTextureLoader)
+  TG2SpineDataProvider = class (TSpineDataProvider)
   public
-    function LoadTexture(const TextureName: AnsiString): TSpineTexture; override;
+    class function FetchData(const DataName: String): TSpineDataProvider; override;
+    class function FetchTexture(const TextureName: String): TSpineTexture; override;
   end;
 
   TG2SpineRender = class (TSpineRender)
   public
-    procedure Render(const Texture: TSpineTexture; const Vertices: PSpineVertexArray); override;
+    procedure RenderQuad(const Texture: TSpineTexture; const Vertices: PSpineVertexArray); override;
+    procedure RenderPoly(const Texture: TSpineTexture; const Vertices: PSpineVertexArray; const Triangles: PIntegerArray; const TriangleCount: Integer); override;
   end;
 
   TGame = class
@@ -58,6 +60,22 @@ var
   Game: TGame;
 
 implementation
+
+//TG2SpineDataProvider BEGIN
+class function TG2SpineDataProvider.FetchData(const DataName: String): TSpineDataProvider;
+  var dm: TG2DataManager;
+begin
+  dm := TG2DataManager.Create(DataName, dmAsset);
+  Result := TSpineDataProvider.Create(dm.Size);
+  dm.ReadBuffer(Result.Data, dm.Size);
+  dm.Free;
+end;
+
+class function TG2SpineDataProvider.FetchTexture(const TextureName: String): TSpineTexture;
+begin
+  Result := TG2SpineTexture.Create(TextureName);
+end;
+//TG2SpineDataProvider END
 
 //TG2SpineTexture BEGIN
 constructor TG2SpineTexture.Create(const TextureName: AnsiString);
@@ -106,6 +124,17 @@ begin
     G2Color(Round(pv^[2].r * $ff), Round(pv^[2].g * $ff), Round(pv^[2].b * $ff), Round(pv^[2].a * $ff)),
     TG2SpineTexture(Texture).Texture, bmNormal, tfLinear
   );
+end;
+
+procedure TG2SpineRender.RenderQuad(const Texture: TSpineTexture;
+  const Vertices: PSpineVertexArray);
+begin
+
+end;
+
+procedure TG2SpineRender.RenderPoly(const Texture: TSpineTexture; const Vertices: PSpineVertexArray; const Triangles: PIntegerArray; const TriangleCount: Integer);
+begin
+
 end;
 //TG2SpineRender END
 
