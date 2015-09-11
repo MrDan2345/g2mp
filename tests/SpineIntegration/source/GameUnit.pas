@@ -227,6 +227,7 @@ begin
   al := TSpineAtlasList.Create;
   al.Add(Atlas);
   sb := TSpineSkeletonBinary.Create(al);
+  sb.Scale := 0.5;
   sd := sb.ReadSkeletonData(CharacterName + '.skel');
   Skeleton := TSpineSkeleton.Create(sd);
   Skeleton.x := 400;
@@ -235,10 +236,10 @@ begin
   ad.SetMix('run', 'jump', 0.2);
   ad.SetMix('jump', 'run', 0.2);
   State := TSpineAnimationState.Create(ad);
-  State.TimeScale := 0.5;
+  State.TimeScale := 1;
+  //State.SetAnimation(0, 'run', True);
+  //State.SetAnimation(0, 'jump', False);
   State.SetAnimation(0, 'run', True);
-  State.AddAnimation(0, 'jump', False, 2);
-  State.AddAnimation(0, 'run', True, 0);
   ad.Free;
   sd.Free;
   sb.Free;
@@ -257,11 +258,13 @@ end;
 
 procedure TGame.Update;
 begin
+  State.TimeScale := (Sin(G2PiTime()) + 1) * 0.25 + 0.5;
   State.Update(g2.DeltaTimeSec);
 end;
 
 procedure TGame.Render;
 begin
+  g2.Clear($ff80c0c0);
   State.Apply(Skeleton);
   Skeleton.UpdateWorldTransform;
   Skeleton.Draw(SpineRender);

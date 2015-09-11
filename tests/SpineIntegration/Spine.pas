@@ -355,6 +355,7 @@ type
     property WorldScaleY: Single read _WorldScaleY;
     property WorldFlipX: Boolean read _WorldFlipX write _WorldFlipX;
     property WorldFlipY: Boolean read _WorldFlipY write _WorldFlipY;
+    class constructor CreateClass;
     constructor Create(const AData: TSpineBoneData; const ASkeleton: TSpineSkeleton; const AParent: TSpineBone);
     destructor Destroy; override;
     procedure UpdateWorldTransform;
@@ -1472,6 +1473,11 @@ end;
 //TSpineIKConstraintData END
 
 //TSpineBone BEGIN
+class constructor TSpineBone.CreateClass;
+begin
+  YDown := True;
+end;
+
 constructor TSpineBone.Create(const AData: TSpineBoneData; const ASkeleton: TSpineSkeleton; const AParent: TSpineBone);
 begin
   _Children := TSpineBoneList.Create;
@@ -2034,7 +2040,7 @@ end;
 
 function TSpineAnimationCurveTimeline.GetCurvePercent(const FrameIndex: Integer; const Percent: Single): Single;
   var i, n, start: Integer;
-  var x, y, PrevX, PrevY: Single;
+  var dx, x, y, PrevX, PrevY: Single;
 begin
   i := FrameIndex * BEZIER_SIZE;
   if _Curves[i] = LINEAR then Exit(Percent);
@@ -2058,12 +2064,15 @@ begin
 	PrevX := _Curves[i - 2];
 	PrevY := _Curves[i - 1];
       end;
-      Exit(PrevY + (_Curves[i + 1] - PrevY) * (Percent - PrevX) / (x - PrevX));
+      dx := x - PrevX;
+      if dx = 0 then Exit(0);
+      Exit(PrevY + (_Curves[i + 1] - PrevY) * (Percent - PrevX) / dx);
     end;
     Inc(i, 2);
   end;
   y := _Curves[i - 1];
-  Result := y + (1 - y) * (Percent - x) / (1 - x);
+  dx := 1 - x;
+  Result := y + (1 - y) * (Percent - x) / dx;
 end;
 //TSpineAnimationCurveTimeline END
 
@@ -2084,7 +2093,7 @@ end;
 
 procedure TSpineAnimationRotateTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
   var Bone: TSpineBone;
-  var Amount, PrevFrameValue, FrameTime, Percent: Single;
+  var Amount, PrevFrameValue, FrameTime, Percent, dv: Single;
   var FrameIndex: Integer;
 begin
   if Time < _Frames[0] then Exit;
@@ -2100,7 +2109,8 @@ begin
   FrameIndex := TSpineAnimation.BinarySearch(_Frames, Time, 2);
   PrevFrameValue := _Frames[FrameIndex - 1];
   FrameTime := _Frames[FrameIndex];
-  Percent := 1 - (Time - FrameTime) / (_Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime);
+  dv := _Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime;
+  if dv = 0 then Percent := 0 else Percent := 1 - (Time - FrameTime) / dv;
   if Percent < 0 then Percent := 0 else if Percent > 1 then Percent := 1;
   Percent := GetCurvePercent((FrameIndex shr 1) - 1, Percent);
   Amount := _Frames[FrameIndex + FRAME_VALUE] - PrevFrameValue;
@@ -2136,6 +2146,7 @@ procedure TSpineAnimationTranslateTimeline.Apply(const Skeleton: TSpineSkeleton;
   var PrevFrameY: Single;
   var FrameTime: Single;
   var Percent: Single;
+  var dv: Single;
 begin
   if Time < _Frames[0] then Exit;
   Bone := Skeleton.Bones[BoneIndex];
@@ -2149,7 +2160,8 @@ begin
   PrevFrameX := _Frames[FrameIndex - 2];
   PrevFrameY := _Frames[FrameIndex - 1];
   FrameTime := _Frames[FrameIndex];
-  Percent := 1 - (Time - FrameTime) / (_Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime);
+  dv := _Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime;
+  if dv = 0 then Percent := 0 else Percent := 1 - (Time - FrameTime) / dv;
   if Percent < 0 then Percent := 0 else if Percent > 1 then Percent := 1;
   Percent := GetCurvePercent(FrameIndex div 3 - 1, Percent);
   Bone.x := Bone.x + ((Bone.Data.x + PrevFrameX + (_Frames[FrameIndex + FRAME_X] - PrevFrameX) * Percent - Bone.x) * Alpha);
@@ -2170,24 +2182,26 @@ procedure TSpineAnimationScaleTimeline.Apply(const Skeleton: TSpineSkeleton; con
   var PrevFrameY: Single;
   var FrameTime: Single;
   var Percent: Single;
+  var dv: Single;
 begin
   if Time < _Frames[0] then Exit;
-  Bone := Skeleton.Bones[BoneIndex];
+  Bone := Skeleton.Bones[_BoneIndex];
   if Time >= _Frames[Length(_Frames) - 3] then
   begin
-    Bone.ScaleX := Bone.ScaleX + ((Bone.Data.ScaleX + _Frames[Length(_Frames) - 2] - Bone.ScaleX) * Alpha);
-    Bone.ScaleY := Bone.ScaleY + ((Bone.Data.ScaleY + _Frames[Length(_Frames) - 1] - Bone.ScaleY) * Alpha);
+    Bone.ScaleX := Bone.ScaleX + ((Bone.Data.ScaleX * _Frames[Length(_Frames) - 2] - Bone.ScaleX) * Alpha);
+    Bone.ScaleY := Bone.ScaleY + ((Bone.Data.ScaleY * _Frames[Length(_Frames) - 1] - Bone.ScaleY) * Alpha);
     Exit;
   end;
   FrameIndex := TSpineAnimation.BinarySearch(_Frames, Time, 3);
   PrevFrameX := _Frames[FrameIndex - 2];
   PrevFrameY := _Frames[FrameIndex - 1];
   FrameTime := _Frames[FrameIndex];
-  Percent := 1 - (Time - FrameTime) / (_Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime);
+  dv := _Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime;
+  if dv = 0 then Percent := 0 else Percent := 1 - (Time - FrameTime) / dv;
   if Percent < 0 then Percent := 0 else if Percent > 1 then Percent := 1;
   Percent := GetCurvePercent(FrameIndex div 3 - 1, Percent);
-  Bone.ScaleX := Bone.ScaleX + ((Bone.Data.ScaleX + PrevFrameX + (_Frames[FrameIndex + FRAME_X] - PrevFrameX) * Percent - Bone.ScaleX) * Alpha);
-  Bone.ScaleY := Bone.ScaleY + ((Bone.Data.ScaleY + PrevFrameY + (_Frames[FrameIndex + FRAME_Y] - PrevFrameY) * Percent - Bone.ScaleY) * Alpha);
+  Bone.ScaleX := Bone.ScaleX + ((Bone.Data.ScaleX * (PrevFrameX + (_Frames[FrameIndex + FRAME_X] - PrevFrameX) * Percent) - Bone.ScaleX) * Alpha);
+  Bone.ScaleY := Bone.ScaleY + ((Bone.Data.ScaleY * (PrevFrameY + (_Frames[FrameIndex + FRAME_Y] - PrevFrameY) * Percent) - Bone.ScaleY) * Alpha);
 end;
 //TSpineAnimationScaleTimeline END
 
@@ -2212,7 +2226,7 @@ end;
 procedure TSpineAnimationColorTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
   var r, g, b, a: Single;
   var PrevFrameR, PrevFrameG, PrevFrameB, PrevFrameA: Single;
-  var FrameTime, Percent: Single;
+  var FrameTime, Percent, dv: Single;
   var FrameIndex, i: Integer;
   var Slot: TSpineSlot;
 begin
@@ -2233,7 +2247,8 @@ begin
     PrevFrameB := _Frames[FrameIndex - 2];
     PrevFrameA := _Frames[FrameIndex - 1];
     FrameTime := _Frames[FrameIndex];
-    Percent := 1 - (Time - FrameTime) / (_Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime);
+    dv := _Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime;
+    if dv = 0 then Percent := 0 else Percent := 1 - (Time - FrameTime) / dv;
     if Percent < 0 then Percent := 0 else if Percent > 1 then Percent := 1;
     Percent := GetCurvePercent(FrameIndex div 5 - 1, Percent);
     r := PrevFrameR + (_Frames[FrameIndex + FRAME_R] - PrevFrameR) * Percent;
@@ -2416,7 +2431,7 @@ end;
 procedure TSpineAnimationFFDTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
   var Slot: TSpineSlot;
   var i, VertexCount, FrameIndex: Integer;
-  var a, f, FrameTime, Percent, pv, v: Single;
+  var a, f, FrameTime, Percent, pv, v, dv: Single;
   var LastVertices, PrevVertices, NextVertices: PSpineFloatArray;
 begin
   Slot := Skeleton.Slots[SlotIndex];
@@ -2447,7 +2462,8 @@ begin
   end;
   FrameIndex := TSpineAnimation.BinarySearch(_Frames, Time);
   FrameTime := _Frames[FrameIndex];
-  Percent := 1 - (Time - FrameTime) / (_Frames[FrameIndex - 1] - FrameTime);
+  dv := _Frames[FrameIndex - 1] - FrameTime;
+  if dv = 0 then Percent := 0 else Percent := 1 - (Time - FrameTime) / dv;
   if Percent < 0 then Percent := 0 else if Percent > 1 then Percent := 1;
   Percent := GetCurvePercent(FrameIndex - 1, Percent);
   PrevVertices := @_FrameVertices[FrameIndex - 1];
@@ -2491,7 +2507,7 @@ end;
 procedure TSpineAnimationIKConstraintTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
   var Constraint: TSpineIKConstraint;
   var FrameIndex: Integer;
-  var PrevFrameMix, FrameTime, Percent, Mix: Single;
+  var PrevFrameMix, FrameTime, Percent, Mix, dv: Single;
 begin
   if Time < _Frames[0] then Exit;
   Constraint := Skeleton.IKConstraints[_IKConstraintIndex];
@@ -2504,7 +2520,8 @@ begin
   FrameIndex := TSpineAnimation.BinarySearch(_Frames, Time, 3);
   PrevFrameMix := _Frames[FrameIndex + PREV_FRAME_MIX];
   FrameTime := _Frames[FrameIndex];
-  Percent := 1 - (Time - FrameTime) / (_Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime);
+  dv := _Frames[FrameIndex + PREV_FRAME_TIME] - FrameTime;
+  if dv = 0 then Percent := 0 else Percent := 1 - (Time - FrameTime) / dv;
   if Percent < 0 then Percent := 0 else if Percent > 1 then Percent := 1;
   Percent := GetCurvePercent(FrameIndex div 3 - 1, Percent);
   Mix := PrevFrameMix + (_Frames[FrameIndex + FRAME_MIX] - PrevFrameMix) * Percent;
@@ -2712,6 +2729,7 @@ end;
 
 procedure TSpineAnimationState.SetCurrent(const Index: Integer; const Entry: TSpineAnimationTrackEntry);
   var Track, Prev: TSpineAnimationTrackEntry;
+  var dv: Single;
 begin
   Track := ExpandToIndex(Index);
   if Assigned(Track) then
@@ -2724,7 +2742,8 @@ begin
     if Entry.MixDuration > 0 then
     begin
       Entry.MixTime := 0;
-      if Assigned(Prev) and (Track.MixTime / Track.MixDuration < 0.5) then
+      if Track.MixDuration = 0 then dv := 1 else dv := Track.MixDuration;
+      if Assigned(Prev) and (Track.MixTime / dv < 0.5) then
       Entry.Prev := Prev
       else
       Entry.Prev := Track;
@@ -2761,7 +2780,7 @@ begin
   begin
     Track := _Tracks[i];
     if Track = nil then Continue;
-    tdt := Track.TimeScale;
+    tdt := dt * Track.TimeScale;
     t := Track.Time + tdt;
     te := Track.EndTime;
     Track.Time := t;
@@ -2776,7 +2795,7 @@ begin
       not Track.Loop and (Track.LastTime < te) and (t >= te)
     ) then
     begin
-      n := Trunc(t / te);
+      if te = 0 then n := 0 else n := Trunc(t / te);
       Track.ProcComplete(Self, i, n);
       if Assigned(_OnComplete) then _OnComplete(Self, i, n);
     end;
@@ -2816,7 +2835,7 @@ begin
       pt := Track.Prev.Time;
       if not Track.Prev.Loop and (pt > Track.Prev.EndTime) then pt := Track.Prev.EndTime;
       Track.Animation.Apply(Skeleton, pt, pt, Track.Prev.Loop, nil);
-      a := Track.MixTime / Track.MixDuration * Track.Mix;
+      if Track.MixDuration = 0 then a := 0 else a := Track.MixTime / Track.MixDuration * Track.Mix;
       if a >= 1 then
       begin
         a := 1;
