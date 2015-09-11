@@ -42,11 +42,9 @@ type
   generic TSpineList<T> = class (TSpineClass)
   public
     type TItemPtr = ^T;
-    type TCmpFunc = function (const Item0, Item1: T): Integer;
-    type TCmpFuncObj = function (const Item0, Item1: T): Integer of object;
   private
+    var _Items: array of T;
     var _ItemCount: Integer;
-    function GetItemPtr(const Index: Integer): TItemPtr; inline;
     procedure SetItem(const Index: Integer; const Value: T); inline;
     function GetItem(const Index: Integer): T; inline;
     procedure SetCapacity(const Value: Integer); inline;
@@ -54,8 +52,8 @@ type
     function GetFirst: T; inline;
     function GetLast: T; inline;
     function GetData: TItemPtr; inline;
+    function GetItemPtr(const Index: Integer): TItemPtr; inline;
   public
-    var _Items: array of T;
     property Capacity: Integer read GetCapacity write SetCapacity;
     property Count: Integer read _ItemCount;
     property Items[const Index: Integer]: T read GetItem write SetItem; default;
@@ -67,24 +65,17 @@ type
     destructor Destroy; override;
     function Find(const Item: T): Integer;
     function Add(const Item: T): Integer;
-    function Pop: T;
-    function Extract(const Index: Integer): T;
     function Insert(const Index: Integer; const Item: T): Integer;
     procedure Delete(const Index: Integer; const ItemCount: Integer = 1);
     procedure Remove(const Item: T);
     procedure FreeItems;
     procedure Clear;
-    function Search(const CmpFunc: TCmpFunc; const Item: T): Integer; overload;
-    function Search(const CmpFunc: TCmpFuncObj; const Item: T): Integer; overload;
-    procedure Sort(const CmpFunc: TCmpFunc; RangeStart, RangeEnd: Integer); overload;
-    procedure Sort(const CmpFunc: TCmpFuncObj; RangeStart, RangeEnd: Integer); overload;
-    procedure Sort(const CmpFunc: TCmpFunc); overload;
-    procedure Sort(const CmpFunc: TCmpFuncObj); overload;
   end;
 
   TSpineVertexData = packed record
     x, y, u, v, r, g, b, a: Single;
   end;
+  PSpineVertexData = ^TSpineVertexData;
   TSpineVertexArray = array[Word] of TSpineVertexData;
   PSpineVertexArray = ^TSpineVertexArray;
 
@@ -365,6 +356,7 @@ type
     property WorldFlipX: Boolean read _WorldFlipX write _WorldFlipX;
     property WorldFlipY: Boolean read _WorldFlipY write _WorldFlipY;
     constructor Create(const AData: TSpineBoneData; const ASkeleton: TSpineSkeleton; const AParent: TSpineBone);
+    destructor Destroy; override;
     procedure UpdateWorldTransform;
     procedure SetToSetupPose;
     procedure WorldToLocal(const InWorldX, InWorldY: Single; var OutLocalX, OutLocalY: Single);
@@ -403,9 +395,12 @@ type
     property Attachment: TSpineAttachment read _Attachment write SetAttachment;
     property AttachmentTime: Single read GetAttachmentTime write SetAttachmentTime;
     constructor Create(const AData: TSpineSlotData; const ABone: TSpineBone);
+    destructor Destroy; override;
     procedure SetToSetupPose(const SlotIndex: Integer); overload;
     procedure SetToSetupPose; overload;
   end;
+
+  TSpineBoneCacheList = specialize TSpineList<TSpineBoneList>;
 
   TSpineSkeleton = class (TSpineClass)
   private
@@ -414,7 +409,7 @@ type
     var _Slots: TSpineSlotlist;
     var _DrawOrder: TSpineSlotList;
     var _IKConstraints: TSpineIKConstraintList;
-    var _BoneCache: specialize TSpineList<TSpineBoneList>;
+    var _BoneCache: TSpineBoneCacheList;
     var _Skin: TSpineSkin;
     var _r: Single;
     var _g: Single;
@@ -558,13 +553,12 @@ type
 
   TSpineAnimationAttachmentTimeline = class (TSpineAnimationTimeline)
   private
-    _SlotInedex: Integer;
     var _SlotIndex: Integer;
     var _Frames: TSpineFloatArray;
     var _AttachmentNames: TSpineStringArray;
     function GetFrameCount: Integer; inline;
   public
-    property SlotIndex: Integer read _SlotInedex write _SlotIndex;
+    property SlotIndex: Integer read _SlotIndex write _SlotIndex;
     property Frames: TSpineFloatArray read _Frames write _Frames;
     property AttachmentNames: TSpineStringArray read _AttachmentNames write _AttachmentNames;
     property FrameCount: Integer read GetFrameCount;
@@ -916,7 +910,9 @@ type
     var _Pages: TSpineAtlasPageList;
     var _Regions: TSpineAtlasRegionList;
   public
-    constructor Crteate(const Path: String);
+    property Pages: TSpineAtlasPageList read _Pages;
+    property Regions: TSpineAtlasRegionList read _Regions;
+    constructor Create(const Path: String);
     destructor Destroy; override;
     procedure Load(const Path: String);
     procedure Clear;
@@ -1098,9 +1094,12 @@ type
     var _Path: String;
     var _Width: Single;
     var _Height: Single;
+    var _Texture: TSpineTexture;
     var _WorldVertices: TSpineFloatArray;
+    var _RenderVertices: array of TSpineVertexData;
     function GetBonesPtr: PSpineIntArray; inline;
     function GetWeightsPtr: PSpineFloatArray; inline;
+    procedure SetTexture(const Value: TSpineTexture);
   public
     property HullLength: Integer read _HullLength write _HullLength;
     property Bones: TSpineIntArray read _Bones write _Bones;
@@ -1129,7 +1128,9 @@ type
     property RegionOriginalHeight: Single read _RegionOriginalHeight write _RegionOriginalHeight;
     property Width: Single read _Width write _Width;
     property Height: Single read _Height write _Height;
+    property Texture: TSpineTexture read _Texture write SetTexture;
     constructor Create(const AName: String); override;
+    destructor Destroy; override;
     procedure UpdateUV;
     procedure ComputeWorldVertices(const Slot: TSpineSlot; var WorldVertices: TSpineFloatArray);
     procedure Draw(const Render: TSpineRender; const Slot: TSpineSlot); override;
@@ -1146,12 +1147,16 @@ type
   TSpineAtlasAttachmentLoader = class (TSpineAttachmentLoader)
   private
     var _AtlasList: TSpineAtlasList;
+    procedure SetAtlasList(const Value: TSpineAtlasList);
   public
+    property AtlasList: TSpineAtlasList read _AtlasList write SetAtlasList;
+    constructor Create;
     constructor Create(const AAtlasList: TSpineAtlasList);
-    function NewRegionAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineRegionAttachment;
-    function NewMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineMeshAttachment;
-    function NewSkinnedMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineSkinnedMeshAttachment;
-    function NewBoundingBoxAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineBoundingBoxAttachment;
+    destructor Destroy; override;
+    function NewRegionAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineRegionAttachment; override;
+    function NewMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineMeshAttachment; override;
+    function NewSkinnedMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineSkinnedMeshAttachment; override;
+    function NewBoundingBoxAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineBoundingBoxAttachment; override;
     function FindRegion(const Name: String): TSpineAtlasRegion;
   end;
 
@@ -1469,10 +1474,21 @@ end;
 //TSpineBone BEGIN
 constructor TSpineBone.Create(const AData: TSpineBoneData; const ASkeleton: TSpineSkeleton; const AParent: TSpineBone);
 begin
+  _Children := TSpineBoneList.Create;
   _Data := AData;
+  _Data.RefInc;
   _Skeleton := ASkeleton;
+  _Skeleton.RefInc;
   _Parent := AParent;
   SetToSetupPose;
+end;
+
+destructor TSpineBone.Destroy;
+begin
+  _Data.RefDec;
+  _Skeleton.RefDec;
+  _Children.Free;
+  inherited Destroy;
 end;
 
 procedure TSpineBone.UpdateWorldTransform;
@@ -1601,8 +1617,17 @@ end;
 constructor TSpineSlot.Create(const AData: TSpineSlotData; const ABone: TSpineBone);
 begin
   _Data := AData;
+  _Data.RefInc;
   _Bone := ABone;
+  _Bone.RefInc;
   SetToSetupPose;
+end;
+
+destructor TSpineSlot.Destroy;
+begin
+  _Bone.RefDec;
+  _Data.RefDec;
+  inherited Destroy;
 end;
 
 procedure TSpineSlot.SetToSetupPose(const SlotIndex: Integer);
@@ -1677,8 +1702,10 @@ constructor TSpineSkeleton.Create(const AData: TSpineSkeletonData);
   var IKConstraintData: TSpineIKConstraintData;
   var IKConstraint: TSpineIKConstraint;
 begin
-  _Data := AData;
+  _BoneCache := TSpineBoneCacheList.Create;
   _Bones := TSpineBoneList.Create;
+  _Data := AData;
+  _Data.RefInc;
   for i := 0 to _Data.Bones.Count - 1 do
   begin
     BoneData := _Data.Bones[i];
@@ -1688,10 +1715,7 @@ begin
     Parent := nil;
     Bone := TSpineBone.Create(BoneData, Self, Parent);
     if Assigned(Parent) then
-    begin
-      Parent.Children.Add(Bone);
-      Bone.RefInc;
-    end;
+    Parent.Children.Add(Bone);
     _Bones.Add(Bone);
   end;
   _Slots := TSpineSlotList.Create;
@@ -1716,18 +1740,17 @@ end;
 
 destructor TSpineSkeleton.Destroy;
 begin
-  _Bones.FreeItems;
+  _BoneCache.Free;
   _Bones.Free;
-  _Slots.FreeItems;
   _Slots.Free;
-  _IKConstraints.FreeItems;
   _IKConstraints.Free;
+  _Data.RefDec;
   inherited Destroy;
 end;
 
 procedure TSpineSkeleton.UpdateCache;
   var i, j, ArrayCount: Integer;
-  var NonIKBones: TSpineBoneList;
+  var List, NonIKBones: TSpineBoneList;
   var Bone, CurBone, Parent, Child: TSpineBone;
   var Constraint: TSpineIKConstraint;
   var Done: Boolean;
@@ -1736,13 +1759,18 @@ begin
   if _BoneCache.Count > ArrayCount then
   for i := _BoneCache.Count - 1 downto ArrayCount do
   begin
-    _BoneCache[i].Free;
     _BoneCache.Delete(i);
   end;
   for i := 0 to _BoneCache.Count - 1 do
-  _BoneCache[i].Clear;
+  begin
+    _BoneCache[i].FreeItems;
+  end;
   while _BoneCache.Count < ArrayCount do
-  _BoneCache.Add(TSpineBoneList.Create);
+  begin
+    List := TSpineBoneList.Create;
+    _BoneCache.Add(List);
+    List.Free;
+  end;
   NonIKBones := _BoneCache[0];
   Done := False;
   for i := 0 to _Bones.Count - 1 do
@@ -1753,7 +1781,7 @@ begin
       for j := 0 to _IKConstraints.Count - 1 do
       begin
         Constraint := _IKConstraints[j];
-        Parent := Constraint.Bones[0];
+        Parent := Constraint.Bones.First;
         Child := Constraint.Bones.Last;
         while True do
         begin
@@ -1768,9 +1796,9 @@ begin
           Child := Child.Parent;
         end;
         if Done then Break;
-        CurBone := CurBone.Parent;
       end;
       if Done then Break;
+      CurBone := CurBone.Parent;
     until CurBone = nil;
     NonIKBones.Add(Bone);
   end;
@@ -1783,7 +1811,7 @@ begin
   for i := 0 to _Bones.Count - 1 do
   _Bones[i].RotationIK := _Bones[i].Rotation;
   i := 0;
-  last := _BoneCache.Count;
+  last := _IKConstraints.Count;
   while True do
   begin
     UpdateBones := _BoneCache[i];
@@ -2060,7 +2088,7 @@ procedure TSpineAnimationRotateTimeline.Apply(const Skeleton: TSpineSkeleton; co
   var FrameIndex: Integer;
 begin
   if Time < _Frames[0] then Exit;
-  Bone := Skeleton.Bones[BoneIndex];
+  Bone := Skeleton.Bones[_BoneIndex];
   if (Time >= _Frames[Length(_Frames) - 2]) then
   begin
     Amount := Bone.Data.Rotation + _Frames[Length(_Frames) - 1] - Bone.Rotation;
@@ -2265,7 +2293,7 @@ begin
     tl := -1;
   end;
   if Time >= _Frames[High(_Frames)] then
-  FrameIndex := Length(_Frames)
+  FrameIndex := High(_Frames)
   else
   FrameIndex := TSpineAnimation.BinarySearch(_Frames, Time) - 1;
   if (_Frames[FrameIndex] < tl) then Exit;
@@ -2591,7 +2619,7 @@ begin
     if (Values[(c + 1) * Step] <= Target) then l := c + 1
     else h := c;
     if (l = h) then Exit((l + 1) * Step);
-    c := l + h shr 1;
+    c := (l + h) shr 1;
   end;
 end;
 
@@ -2649,12 +2677,27 @@ end;
 
 constructor TSpineAnimationTrackEntry.Create(const AState: TSpineAnimationState; const AAnimation: TSpineAnimation);
 begin
+  _Prev := nil;
+  _Next := nil;
   _State := AState;
+  _State.RefInc;
   _Animation := AAnimation;
+  _Animation.RefInc;
+  _Loop := False;
+  _Delay := 0;
+  _Time := 0;
+  _EndTime := 0;
+  _LastTime := -1;
+  _TimeScale := 1;
+  _Mix := 1;
+  _MixTime := 0;
+  _MixDuration := 0;
 end;
 
 destructor TSpineAnimationTrackEntry.Destroy;
 begin
+  _Animation.RefDec;
+  _State.RefDec;
   inherited Destroy;
 end;
 //TSpineAnimationTrackEntry END
@@ -2675,7 +2718,7 @@ begin
   begin
     Prev := Track.Prev;
     Track.Prev := nil;
-    Track.OnEnd(Self, Index);
+    Track.ProcEnd(Self, Index);
     if Assigned(_OnEnd) then _OnEnd(Self, Index);
     Entry.MixDuration := _Data.GetMix(Track.Animation, Entry.Animation);
     if Entry.MixDuration > 0 then
@@ -2688,17 +2731,23 @@ begin
     end;
   end;
   _Tracks[Index] := Entry;
-  Entry.OnStart(Self, Index);
+  Entry.ProcStart(Self, Index);
   if Assigned(_OnStart) then _OnStart(Self, Index);
 end;
 
 constructor TSpineAnimationState.Create(const AData: TSpineAnimationStateData);
 begin
+  _Tracks := TSpineAnimationTrackEntryList.Create;
+  _Events := TSpineEventList.Create;
   _Data := AData;
+  _Data.RefInc;
 end;
 
 destructor TSpineAnimationState.Destroy;
 begin
+  _Data.RefDec;
+  _Events.Free;
+  _Tracks.Free;
   inherited Destroy;
 end;
 
@@ -2715,7 +2764,7 @@ begin
     tdt := Track.TimeScale;
     t := Track.Time + tdt;
     te := Track.EndTime;
-    Track.Time := Time;
+    Track.Time := t;
     if (Track.Prev <> nil) then
     begin
       Track.Prev.Time := Track.Prev.Time + tdt;
@@ -2724,11 +2773,11 @@ begin
     if (
       Track.Loop and (SpineModFloat(Track.LastTime, te) > SpineModFloat(t, te))
     ) or (
-      Track.Loop and (Track.LastTime < te) and (t >= te)
+      not Track.Loop and (Track.LastTime < te) and (t >= te)
     ) then
     begin
       n := Trunc(t / te);
-      Track.OnComplete(Self, i, n);
+      Track.ProcComplete(Self, i, n);
       if Assigned(_OnComplete) then _OnComplete(Self, i, n);
     end;
     if Track.Next <> nil then
@@ -2777,7 +2826,7 @@ begin
     end;
     for j := 0 to _Events.Count - 1 do
     begin
-      Track.OnEvent(Self, i, _Events[j]);
+      Track.ProcEvent(Self, i, _Events[j]);
       if Assigned(_OnEvent) then _OnEvent(Self, i, _Events[j]);
     end;
     Track.LastTime := Track.Time;
@@ -2797,7 +2846,7 @@ begin
   if (TrackIndex >= _Tracks.Count) then Exit;
   Track := _Tracks.Items[TrackIndex];
   if (Track = nil) then Exit;
-  Track.OnEnd(Self, TrackIndex);
+  Track.ProcEnd(Self, TrackIndex);
   if Assigned(_OnEnd) then _OnEnd(Self, TrackIndex);
   _Tracks[TrackIndex] := nil;
 end;
@@ -2875,6 +2924,7 @@ end;
 constructor TSpineAnimationStateData.Create(const ASkeletonData: TSpineSkeletonData);
 begin
   _SkeletonData := ASkeletonData;
+  _SkeletonData.RefInc;
   _MixTime := TSpineAnimationMix0List.Create;
 end;
 
@@ -2891,6 +2941,7 @@ begin
     _MixTime[i].Free;
   end;
   _MixTime.Free;
+  _SkeletonData.RefDec;
   inherited Destroy;
 end;
 
@@ -2990,9 +3041,7 @@ end;
 
 destructor TSpineSkeletonBounds.Destroy;
 begin
-  _Polygons.FreeItems;
   _Polygons.Free;
-  _PolygonPool.FreeItems;
   _PolygonPool.Free;
   _BoundingBoxes.Free;
   inherited Destroy;
@@ -3015,7 +3064,15 @@ begin
     BoundingBox := TSpineBoundingBoxAttachment(Slot.Attachment);
     _BoundingBoxes.Add(BoundingBox);
     Polygon := nil;
-    if _PolygonPool.Count > 0 then Polygon := _PolygonPool.Pop else Polygon := TSpinePolygon.Create;
+    if _PolygonPool.Count > 0 then
+    begin
+      Polygon := _PolygonPool.Last;
+      _PolygonPool.Delete(_PolygonPool.Count - 1);
+    end
+    else
+    begin
+      Polygon := TSpinePolygon.Create;
+    end;
     _Polygons.Add(Polygon);
     Polygon.Count := Length(BoundingBox.Vertices);
     if Length(Polygon.Vertices) < Polygon.Count then
@@ -3265,7 +3322,6 @@ end;
 
 destructor TSpineSkin.Destroy;
 begin
-  _Attachments.FreeItems;
   _Attachments.Free;
   inherited Destroy;
 end;
@@ -3316,13 +3372,17 @@ end;
 //TSpineSkin END
 
 //TSpineAtlas BEGIN
-constructor TSpineAtlas.Crteate(const Path: String);
+constructor TSpineAtlas.Create(const Path: String);
 begin
+  _Pages := TSpineAtlasPageList.Create;
+  _Regions := TSpineAtlasRegionList.Create;
   Load(Path);
 end;
 
 destructor TSpineAtlas.Destroy;
 begin
+  _Regions.Free;
+  _Pages.Free;
   inherited Destroy;
 end;
 
@@ -3367,16 +3427,23 @@ procedure TSpineAtlas.Load(const Path: String);
       and (AnsiChar(Provider.Data^[i]) <> #$D)
       and (AnsiChar(Provider.Data^[i]) <> #$A)
     ) do Inc(i);
-    if i = Provider.Size then Exit('');
-    n := i - 1;
+    n := i;
     if (
       (AnsiChar(Provider.Data^[i]) = #$D)
       and (i + 1 < Provider.Size)
       and (AnsiChar(Provider.Data^[i + 1]) = #$A)
     ) then Inc(i);
+    Inc(i);
     n := n - Provider.Pos;
-    SetLength(Result, n);
-    if n > 0 then Provider.Read(@Result[1], n);
+    if n > 0 then
+    begin
+      SetLength(Result, n);
+      if n > 0 then Provider.Read(@Result[1], n);
+    end
+    else
+    begin
+      Result := '';
+    end;
     Provider.Pos := i;
   end;
   procedure ReadValue;
@@ -3403,6 +3470,13 @@ procedure TSpineAtlas.Load(const Path: String);
       p := i + 1;
       Inc(vn);
     end;
+    n := Length(Line) - p + 1;
+    if (n > 0) and (Length(Param) > 0) then
+    begin
+      Value[vn] := Trim(Copy(Line, p, n));
+      Inc(vn);
+    end;
+    if Length(Param) = 0 then Param := Trim(Line);
   end;
   var Page: TSpineAtlasPage;
   var Region: TSpineAtlasRegion;
@@ -3430,6 +3504,7 @@ begin
         Page.Name := Param;
         Page.Texture := SpineDataProvider.FetchTexture(Dir + Param);
         _Pages.Add(Page);
+        Page.Free;
       end
       else if vn = 0 then
       begin
@@ -3437,6 +3512,7 @@ begin
         Region.Name := Param;
         Region.Page := Page;
         _Regions.Add(Region);
+        Region.Free;
       end
       else if Assigned(Region) then
       begin
@@ -3899,6 +3975,14 @@ begin
   Result := @_Weights;
 end;
 
+procedure TSpineSkinnedMeshAttachment.SetTexture(const Value: TSpineTexture);
+begin
+  if _Texture = Value then Exit;
+  if Assigned(_Texture) then _Texture.RefDec;
+  _Texture := Value;
+  if Assigned(_Texture) then _Texture.RefInc;
+end;
+
 function TSpineSkinnedMeshAttachment.GetBonesPtr: PSpineIntArray;
 begin
   Result := @_Bones;
@@ -3907,6 +3991,13 @@ end;
 constructor TSpineSkinnedMeshAttachment.Create(const AName: String);
 begin
   inherited Create(AName);
+  _Texture := nil;
+end;
+
+destructor TSpineSkinnedMeshAttachment.Destroy;
+begin
+  Texture := nil;
+  inherited Destroy;
 end;
 
 procedure TSpineSkinnedMeshAttachment.UpdateUV;
@@ -4003,9 +4094,9 @@ procedure TSpineSkinnedMeshAttachment.Draw(const Render: TSpineRender; const Slo
   var v: TSpineRegionVertices;
   var i, n: Integer;
 begin
-  if Length(_WorldVertices) < Length(_Vertices) then
-  SetLength(_WorldVertices, Length(_Vertices));
-  n := Length(_Vertices) shr 1;
+  if Length(_WorldVertices) < Length(_Bones) * 2 then
+  SetLength(_WorldVertices, Length(_Bones) * 2);
+  n := Length(_Bones);
   if Length(_RenderVertices) < n then
   SetLength(_RenderVertices, n);
   ComputeWorldVertices(Slot, _WorldVertices);
@@ -4025,11 +4116,29 @@ end;
 //TSpineSkinnedMeshAttachment END
 
 //TSpineAtlasAttachmentLoader BEGIN
+procedure TSpineAtlasAttachmentLoader.SetAtlasList(const Value: TSpineAtlasList);
+begin
+  if _AtlasList = Value then Exit;
+  if Assigned(_AtlasList) then _AtlasList.RefDec;
+  _AtlasList := Value;
+  if Assigned(_AtlasList) then _AtlasList.RefInc;
+end;
+
+constructor TSpineAtlasAttachmentLoader.Create;
+begin
+  _AtlasList := TSpineAtlasList.Create;
+end;
+
 constructor TSpineAtlasAttachmentLoader.Create(const AAtlasList: TSpineAtlasList);
 begin
-  inherited Create;
-  _AtlasList := AAtlasList;
-  _AtlasList.RefInc;
+  _AtlasList := nil;
+  AtlasList := AAtlasList;
+end;
+
+destructor TSpineAtlasAttachmentLoader.Destroy;
+begin
+  _AtlasList.Free;
+  inherited Destroy;
 end;
 
 function TSpineAtlasAttachmentLoader.NewRegionAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineRegionAttachment;
@@ -4363,7 +4472,7 @@ begin
 	  Skinned.Bones[bi] := Round(ReadFloat(Provider)); Inc(bi);
 	  Skinned.Weights[wi] := ReadFloat(Provider) * _Scale; Inc(wi);
 	  Skinned.Weights[wi] := ReadFloat(Provider) * _Scale; Inc(wi);
-	  Skinned.Weights[wi] := ReadFloat(Provider);
+	  Skinned.Weights[wi] := ReadFloat(Provider); Inc(wi);
           Inc(i, 4);
 	end;
         Inc(i);
@@ -4488,14 +4597,14 @@ begin
         TIMELINE_TRANSLATE,
         TIMELINE_SCALE:
         begin
-	  TimelineScale := 1;
 	  if TimelineType = TIMELINE_SCALE then
           begin
-            TranslateTimeline := TSpineAnimationScaleTimeline(FrameCount);
+            TranslateTimeline := TSpineAnimationScaleTimeline.Create(FrameCount);
+            TimelineScale := 1;
           end
 	  else
           begin
-	    TranslateTimeline := TSpineAnimationTranslateTimeline(FrameCount);
+	    TranslateTimeline := TSpineAnimationTranslateTimeline.Create(FrameCount);
 	    TimelineScale := _Scale;
 	  end;
 	  TranslateTimeline.BoneIndex := BoneIndex;
@@ -4685,18 +4794,19 @@ end;
 constructor TSpineSkeletonBinary.Create(const AtlasList: TSpineAtlasList);
 begin
   _AttachmentLoader := TSpineAtlasAttachmentLoader.Create(AtlasList);
-  Scale := 1;
+  _Scale := 1;
 end;
 
 constructor TSpineSkeletonBinary.Create(const AttachmentLoader: TSpineAttachmentLoader);
 begin
   _AttachmentLoader := AttachmentLoader;
-  Scale := 1;
+  _AttachmentLoader.RefInc;
+  _Scale := 1;
 end;
 
 destructor TSpineSkeletonBinary.Destroy;
 begin
-  _AttachmentLoader.Free;
+  _AttachmentLoader.RefDec;
   inherited Destroy;
 end;
 
@@ -4834,12 +4944,10 @@ end;
 {$Hints off}
 procedure TSpineList.SetItem(const Index: Integer; const Value: T);
 begin
+  if _Items[Index] = Value then Exit;
+  if _Items[Index] <> nil then _Items[Index].RefDec;
   _Items[Index] := Value;
-end;
-
-function TSpineList.GetItemPtr(const Index: Integer): TItemPtr;
-begin
-  Result := @_Items[Index];
+  if _Items[Index] <> nil then _Items[Index].RefInc;
 end;
 
 function TSpineList.GetItem(const Index: Integer): T;
@@ -4875,6 +4983,11 @@ begin
   Result := nil;
 end;
 
+function TSpineList.GetItemPtr(const Index: Integer): TItemPtr;
+begin
+  Result := @_Items[Index];
+end;
+
 constructor TSpineList.Create;
 begin
   inherited Create;
@@ -4883,7 +4996,7 @@ end;
 
 destructor TSpineList.Destroy;
 begin
-  Clear;
+  FreeItems;
   inherited Destroy;
 end;
 
@@ -4905,18 +5018,8 @@ begin
   SetLength(_Items, Length(_Items) + 256);
   _Items[_ItemCount] := Item;
   Result := _ItemCount;
+  if Item <> nil then Item.RefInc;
   Inc(_ItemCount);
-end;
-
-function TSpineList.Pop: T;
-begin
-  if _ItemCount > 0 then Result := Extract(_ItemCount - 1);
-end;
-
-function TSpineList.Extract(const Index: Integer): T;
-begin
-  Result := _Items[Index];
-  Delete(Index);
 end;
 
 function TSpineList.Insert(const Index: Integer; const Item: T): Integer;
@@ -4936,12 +5039,15 @@ begin
     _Items[_ItemCount] := Item;
     Result := _ItemCount;
   end;
+  if Item <> nil then Item.RefInc;
   Inc(_ItemCount);
 end;
 
 procedure TSpineList.Delete(const Index: Integer; const ItemCount: Integer);
   var i: Integer;
 begin
+  for i := Index to Index + ItemCount - 1 do
+  if _Items[i] <> nil then _Items[i].RefDec;
   for i := Index to _ItemCount - (1 + ItemCount) do
   _Items[i] := _Items[i + ItemCount];
   Dec(_ItemCount, ItemCount);
@@ -4960,106 +5066,12 @@ procedure TSpineList.FreeItems;
 begin
   for i := 0 to _ItemCount - 1 do
   _Items[i].Free;
+  Clear;
 end;
 
 procedure TSpineList.Clear;
 begin
   _ItemCount := 0;
-end;
-
-function TSpineList.Search(const CmpFunc: TCmpFunc; const Item: T): Integer;
-  var l, h, m, r: Integer;
-begin
-  l := 0;
-  h := _ItemCount - 1;
-  while l <= h do
-  begin
-    m := (l + h) shr 1;
-    r := CmpFunc(_Items[m], Item);
-    if r = 0 then Exit(m)
-    else if r < 0 then l := m + 1
-    else h := m - 1;
-  end;
-  if (l < _ItemCount) and (CmpFunc(_Items[l], Item) = 0) then Exit(l) else Exit(-1);
-end;
-
-function TSpineList.Search(const CmpFunc: TCmpFuncObj; const Item: T): Integer;
-  var l, h, m, r: Integer;
-begin
-  l := 0;
-  h := _ItemCount - 1;
-  while l <= h do
-  begin
-    m := (l + h) shr 1;
-    r := CmpFunc(_Items[m], Item);
-    if r = 0 then Exit(m)
-    else if r < 0 then l := m + 1
-    else h := m - 1;
-  end;
-  if (l < _ItemCount) and (CmpFunc(_Items[l], Item) = 0) then Exit(l) else Exit(-1);
-end;
-
-procedure TSpineList.Sort(
-  const CmpFunc: TCmpFunc;
-  RangeStart, RangeEnd: Integer
-);
-  var i, j : LongInt;
-  var tmp, pivot: T;
-begin
-  if RangeEnd < RangeStart then Exit;
-  i := RangeStart;
-  j := RangeEnd;
-  pivot := _Items[(RangeStart + RangeEnd) shr 1];
-  repeat
-    while CmpFunc(pivot, _Items[i]) > 0 do i := i + 1;
-    while CmpFunc(pivot, _Items[j]) < 0 do j := j - 1;
-    if i <= j then
-    begin
-      tmp := _Items[i];
-      _Items[i] := _Items[j];
-      _Items[j] := tmp;
-      j := j - 1;
-      i := i + 1;
-    end;
-  until i > j;
-  if RangeStart < j then Sort(CmpFunc, RangeStart, j);
-  if i < RangeEnd then Sort(CmpFunc, i, RangeEnd);
-end;
-
-procedure TSpineList.Sort(
-  const CmpFunc: TCmpFuncObj;
-  RangeStart, RangeEnd: Integer
-);
-  var i, j : LongInt;
-  var tmp, pivot: T;
-begin
-  i := RangeStart;
-  j := RangeEnd;
-  pivot := _Items[(RangeStart + RangeEnd) shr 1];
-  repeat
-    while CmpFunc(pivot, _Items[i]) > 0 do i := i + 1;
-    while CmpFunc(pivot, _Items[j]) < 0 do j := j - 1;
-    if i <= j then
-    begin
-      tmp := _Items[i];
-      _Items[i] := _Items[j];
-      _Items[j] := tmp;
-      j := j - 1;
-      i := i + 1;
-    end;
-  until i > j;
-  if RangeStart < j then Sort(CmpFunc, RangeStart, j);
-  if i < RangeEnd then Sort(CmpFunc, i, RangeEnd);
-end;
-
-procedure TSpineList.Sort(const CmpFunc: TCmpFunc);
-begin
-  Sort(CmpFunc, 0, _ItemCount - 1);
-end;
-
-procedure TSpineList.Sort(const CmpFunc: TCmpFuncObj);
-begin
-  Sort(CmpFunc, 0, _ItemCount - 1);
 end;
 {$Hints on}
 //TSpineList END

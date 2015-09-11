@@ -29,18 +29,22 @@ type
   end;
 
   TG2SpineRender = class (TSpineRender)
+  private
+    var _Display: TG2Display2D;
   public
+    property Display: TG2Display2D read _Display write _Display;
+    constructor Create;
     procedure RenderQuad(const Texture: TSpineTexture; const Vertices: PSpineVertexArray); override;
     procedure RenderPoly(const Texture: TSpineTexture; const Vertices: PSpineVertexArray; const Triangles: PIntegerArray; const TriangleCount: Integer); override;
   end;
 
   TGame = class
   protected
-    TextureAtlas: TSpineTextureAtlas;
-    Skeleton: TSpineSkeleton;
-    Animation: TSpineAnimation;
+    Display: TG2Display2D;
     SpineRender: TG2SpineRender;
     Time: Single;
+    Skeleton: TSpineSkeleton;
+    State: TSpineAnimationState;
   public
     constructor Create;
     destructor Destroy; override;
@@ -102,39 +106,75 @@ begin
 end;
 //TG2SpineTexture END
 
-//TG2SpineTextureLoader BEGIN
-function TG2SpineTextureLoader.LoadTexture(const TextureName: AnsiString): TSpineTexture;
-begin
-  Result := TG2SpineTexture.Create(TextureName);
-end;
-//TG2SpineTextureLoader END
-
 //TG2SpineRender BEGIN
-procedure TG2SpineRender.Render(const Texture: TSpineTexture; const Vertices: PSpineVertexArray);
+constructor TG2SpineRender.Create;
+begin
+  _Display := nil;
+end;
+
+procedure TG2SpineRender.RenderQuad(const Texture: TSpineTexture; const Vertices: PSpineVertexArray);
   var pv: PSpineVertexArray absolute Vertices;
 begin
-  g2.PicQuadCol(
-    pv^[0].x, pv^[0].y, pv^[1].x, pv^[1].y,
-    pv^[3].x, pv^[3].y, pv^[2].x, pv^[2].y,
-    pv^[0].u, pv^[0].v, pv^[1].u, pv^[1].v,
-    pv^[3].u, pv^[3].v, pv^[2].u, pv^[2].v,
-    G2Color(Round(pv^[0].r * $ff), Round(pv^[0].g * $ff), Round(pv^[0].b * $ff), Round(pv^[0].a * $ff)),
-    G2Color(Round(pv^[1].r * $ff), Round(pv^[1].g * $ff), Round(pv^[1].b * $ff), Round(pv^[1].a * $ff)),
-    G2Color(Round(pv^[3].r * $ff), Round(pv^[3].g * $ff), Round(pv^[3].b * $ff), Round(pv^[3].a * $ff)),
-    G2Color(Round(pv^[2].r * $ff), Round(pv^[2].g * $ff), Round(pv^[2].b * $ff), Round(pv^[2].a * $ff)),
-    TG2SpineTexture(Texture).Texture, bmNormal, tfLinear
-  );
-end;
-
-procedure TG2SpineRender.RenderQuad(const Texture: TSpineTexture;
-  const Vertices: PSpineVertexArray);
-begin
-
+  if Assigned(_Display) then
+  begin
+    _Display.PicQuadCol(
+      pv^[0].x, pv^[0].y, pv^[1].x, pv^[1].y,
+      pv^[3].x, pv^[3].y, pv^[2].x, pv^[2].y,
+      pv^[0].u, pv^[0].v, pv^[1].u, pv^[1].v,
+      pv^[3].u, pv^[3].v, pv^[2].u, pv^[2].v,
+      G2Color(Round(pv^[0].r * $ff), Round(pv^[0].g * $ff), Round(pv^[0].b * $ff), Round(pv^[0].a * $ff)),
+      G2Color(Round(pv^[1].r * $ff), Round(pv^[1].g * $ff), Round(pv^[1].b * $ff), Round(pv^[1].a * $ff)),
+      G2Color(Round(pv^[3].r * $ff), Round(pv^[3].g * $ff), Round(pv^[3].b * $ff), Round(pv^[3].a * $ff)),
+      G2Color(Round(pv^[2].r * $ff), Round(pv^[2].g * $ff), Round(pv^[2].b * $ff), Round(pv^[2].a * $ff)),
+      TG2SpineTexture(Texture).Texture, bmNormal, tfLinear
+    );
+  end
+  else
+  begin
+    g2.PicQuadCol(
+      pv^[0].x, pv^[0].y, pv^[1].x, pv^[1].y,
+      pv^[3].x, pv^[3].y, pv^[2].x, pv^[2].y,
+      pv^[0].u, pv^[0].v, pv^[1].u, pv^[1].v,
+      pv^[3].u, pv^[3].v, pv^[2].u, pv^[2].v,
+      G2Color(Round(pv^[0].r * $ff), Round(pv^[0].g * $ff), Round(pv^[0].b * $ff), Round(pv^[0].a * $ff)),
+      G2Color(Round(pv^[1].r * $ff), Round(pv^[1].g * $ff), Round(pv^[1].b * $ff), Round(pv^[1].a * $ff)),
+      G2Color(Round(pv^[3].r * $ff), Round(pv^[3].g * $ff), Round(pv^[3].b * $ff), Round(pv^[3].a * $ff)),
+      G2Color(Round(pv^[2].r * $ff), Round(pv^[2].g * $ff), Round(pv^[2].b * $ff), Round(pv^[2].a * $ff)),
+      TG2SpineTexture(Texture).Texture, bmNormal, tfLinear
+    );
+  end;
 end;
 
 procedure TG2SpineRender.RenderPoly(const Texture: TSpineTexture; const Vertices: PSpineVertexArray; const Triangles: PIntegerArray; const TriangleCount: Integer);
+  var i: Integer;
+  var v: PSpineVertexData;
 begin
-
+  if Assigned(_Display) then
+  begin
+    _Display.PolyBegin(ptTriangles, TG2SpineTexture(Texture).Texture, bmNormal, tfLinear);
+    for i := 0 to TriangleCount * 3 - 1 do
+    begin
+      v := @Vertices^[Triangles^[i]];
+      _Display.PolyAdd(
+        v^.x, v^.y, v^.u, v^.v,
+        G2Color(Round(v^.r * $ff), Round(v^.g * $ff), Round(v^.b * $ff), Round(v^.a * $ff))
+      );
+    end;
+    _Display.PolyEnd;
+  end
+  else
+  begin
+    g2.PolyBegin(ptTriangles, TG2SpineTexture(Texture).Texture, bmNormal, tfLinear);
+    for i := 0 to TriangleCount * 3 - 1 do
+    begin
+      v := @Vertices^[Triangles^[i]];
+      g2.PolyAdd(
+        v^.x, v^.y, v^.u, v^.v,
+        G2Color(Round(v^.r * $ff), Round(v^.g * $ff), Round(v^.b * $ff), Round(v^.a * $ff))
+      );
+    end;
+    g2.PolyEnd;
+  end;
 end;
 //TG2SpineRender END
 
@@ -173,58 +213,57 @@ begin
 end;
 
 procedure TGame.Initialize;
-  var tl: TG2SpineTextureLoader;
+  const CharacterName = 'spineboy';
   var sb: TSpineSkeletonBinary;
   var sd: TSpineSkeletonData;
-  var b: TSpineBone;
-  const CharacterName = 'spineboy';
+  var al: TSpineAtlasList;
+  var ad: TSpineAnimationStateData;
+  var Atlas: TSpineAtlas;
 begin
-  tl := TG2SpineTextureLoader.Create;
-  TextureAtlas := TSpineTextureAtlas.Create('../assets/' + CharacterName + '.atlas', tl);
-  tl.Free;
-
-  sb := TSpineSkeletonBinary.Create(TextureAtlas);
-  sd := sb.ReadSkeletonData('../assets/' + CharacterName + '.skel');
-  sb.Free;
-  Skeleton := TSpineSkeleton.Create(sd);
-  Animation := sd.FindAnimation('walk');
-  sd.Free;
-  Skeleton.SetSkin('spineboy');
-  Skeleton.SetToBindPose;
-
-  b := Skeleton.GetRootBone;
-  b.x := g2.Params.Width * 0.5;
-  b.y := 500;
-  b.ScaleX := 1;
-  b.ScaleY := 1;
-  Skeleton.UpdateWorldTransform;
-
+  Display := TG2Display2D.Create;
+  SpineDataProvider := TG2SpineDataProvider;
   SpineRender := TG2SpineRender.Create;
+  Atlas := TSpineAtlas.Create(CharacterName + '.atlas');
+  al := TSpineAtlasList.Create;
+  al.Add(Atlas);
+  sb := TSpineSkeletonBinary.Create(al);
+  sd := sb.ReadSkeletonData(CharacterName + '.skel');
+  Skeleton := TSpineSkeleton.Create(sd);
+  Skeleton.x := 400;
+  Skeleton.y := 400;
+  ad := TSpineAnimationStateData.Create(sd);
+  ad.SetMix('run', 'jump', 0.2);
+  ad.SetMix('jump', 'run', 0.2);
+  State := TSpineAnimationState.Create(ad);
+  State.TimeScale := 0.5;
+  State.SetAnimation(0, 'run', True);
+  State.AddAnimation(0, 'jump', False, 2);
+  State.AddAnimation(0, 'run', True, 0);
+  ad.Free;
+  sd.Free;
+  sb.Free;
+  al.Free;
+  Atlas.Free;
   Time := 0;
 end;
 
 procedure TGame.Finalize;
 begin
+  State.Free;
+  Skeleton.Free;
   SpineRender.Free;
-  TextureAtlas.Free;
+  Display.Free;
 end;
 
 procedure TGame.Update;
 begin
-  Time := Time + g2.DeltaTimeMs;
-  Animation.Apply(Skeleton, Time, True);
-  Skeleton.UpdateWorldTransform;
-  Skeleton.Time := Time;
+  State.Update(g2.DeltaTimeSec);
 end;
 
 procedure TGame.Render;
 begin
-  g2.PicRect(
-    0, 0,
-    TG2SpineTexture(TSpineAtlasPage(TextureAtlas.Pages[0]).Texture).Texture.Width,
-    TG2SpineTexture(TSpineAtlasPage(TextureAtlas.Pages[0]).Texture).Texture.Height,
-    $ffffffff, TG2SpineTexture(TSpineAtlasPage(TextureAtlas.Pages[0]).Texture).Texture
-  );
+  State.Apply(Skeleton);
+  Skeleton.UpdateWorldTransform;
   Skeleton.Draw(SpineRender);
 end;
 
