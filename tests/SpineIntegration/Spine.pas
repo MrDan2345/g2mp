@@ -366,7 +366,6 @@ type
 
   TSpineSlot = class (TSpineClass)
   private
-    _AttachemntVertices: TSpineFloatArray;
     var _Data: TSpineSlotData;
     var _Bone: TSpineBone;
     var _r: Single;
@@ -377,7 +376,7 @@ type
     var _AttachmentTime: Single;
     var _AttachmentVertices: TSpineFloatArray;
     var _AttachmentVertexCount: Integer;
-    function GetAttachemntVerticesPtr: PSpineFloatArray; inline;
+    function GetAttachmentVerticesPtr: PSpineFloatArray; inline;
     function GetSkeleton: TSpineSkeleton; inline;
     procedure SetAttachment(const Value: TSpineAttachment); inline;
     function GetAttachmentTime: Single; inline;
@@ -391,7 +390,7 @@ type
     property b: Single read _b write _b;
     property a: Single read _a write _a;
     property AttachmentVertices: TSpineFloatArray read _AttachmentVertices write _AttachmentVertices;
-    property AttachmentVerticesPtr: PSpineFloatArray read GetAttachemntVerticesPtr;
+    property AttachmentVerticesPtr: PSpineFloatArray read GetAttachmentVerticesPtr;
     property AttachmentVertexCount: Integer read _AttachmentVertexCount write _AttachmentVertexCount;
     property Attachment: TSpineAttachment read _Attachment write SetAttachment;
     property AttachmentTime: Single read GetAttachmentTime write SetAttachmentTime;
@@ -598,17 +597,16 @@ type
 
   TSpineAnimationFFDTimeline = class (TSpineAnimationCurveTimeline)
   private
-    _FrameVertices: TSpineFloatTable;
     var _SlotIndex: Integer;
     var _Frames: TSpineFloatArray;
-    var _FrameVerices: TSpineFloatTable;
+    var _FrameVertices: TSpineFloatTable;
     var _Attachment: TSpineAttachment;
   public
     property SlotIndex: Integer read _SlotIndex write _SlotIndex;
     property Frames: TSpineFloatArray read _Frames write _Frames;
     property Vertices: TSpineFloatTable read _FrameVertices write _FrameVertices;
     property Attachment: TSpineAttachment read _Attachment write _Attachment;
-    constructor Create(const AFrameCount: Integer);
+    constructor Create(const AFrameCount: Integer); override;
     procedure SetFrame(const FrameIndex: Integer; const Time: Single; const AVertices: TSpineFloatArray);
     procedure Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single); override;
   end;
@@ -631,9 +629,8 @@ type
 
   TSpineAnimationFlipXTimeline = class (TSpineAnimationTimeline)
   private
-    _Frames: TSpineFloatArray;
     var _BoneIndex: Integer;
-    var _Frame: TSpineFloatArray;
+    var _Frames: TSpineFloatArray;
     function GetFrameCount: Integer; inline;
     procedure SetFlip(const Bone: TSpineBone; const Flip: Boolean); virtual;
   public
@@ -698,7 +695,7 @@ type
     procedure ProcComplete(const State: TSpineAnimationState; const Index, LoopCount: Integer);
   protected
     property Prev: TSpineAnimationTrackEntry read _Prev write _Prev;
-    property Next: TSpineAnimationTrackEntry read _Next write _Prev;
+    property Next: TSpineAnimationTrackEntry read _Next write _Next;
   public
     property Animation: TSpineAnimation read _Animation;
     property Delay: Single read _Delay write _Delay;
@@ -1598,9 +1595,9 @@ begin
   Result := _Bone.Skeleton;
 end;
 
-function TSpineSlot.GetAttachemntVerticesPtr: PSpineFloatArray;
+function TSpineSlot.GetAttachmentVerticesPtr: PSpineFloatArray;
 begin
-  Result := @_AttachemntVertices;
+  Result := @_AttachmentVertices;
 end;
 
 procedure TSpineSlot.SetAttachment(const Value: TSpineAttachment);
@@ -2606,7 +2603,9 @@ begin
     tl := SpineModFloat(tl, _Duration);
   end;
   for i := 0 to _Timelines.Count - 1 do
-  _Timelines[i].Apply(Skeleton, tl, t, Events, 1);
+  begin
+    _Timelines[i].Apply(Skeleton, tl, t, Events, 1);
+  end;
 end;
 
 procedure TSpineAnimation.Mix(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Loop: Boolean; const Events: TSpineEventList; const Alpha: Single);
@@ -2654,7 +2653,7 @@ begin
     else
     h := c;
     if l = h then Exit(l + 1);
-    c := l + h shr 1;
+    c := (l + h) shr 1;
   end;
 end;
 
@@ -3984,7 +3983,7 @@ begin
     _RenderVertices[i].b := _b;
     _RenderVertices[i].a := _a;
   end;
-  Render.RenderPoly(_Texture, @_RenderVertices, @_Triangles[0], Length(_Triangles) div 3);
+  Render.RenderPoly(_Texture, @_RenderVertices[0], @_Triangles[0], Length(_Triangles) div 3);
 end;
 //TSpineMeshAttachment END
 
@@ -4053,6 +4052,66 @@ end;
 
 procedure TSpineSkinnedMeshAttachment.ComputeWorldVertices(const Slot: TSpineSlot; var WorldVertices: TSpineFloatArray);
   var Skeleton: TSpineSkeleton;
+  var x, y, wx, wy, vx, vy, wt: Single;
+  var wi, vi, bi, fi, n, nn: Integer;
+  var Bone: TSpineBone;
+begin
+  Skeleton := Slot.Skeleton;
+  x := Skeleton.x;
+  y := Skeleton.y;
+  if Slot.AttachmentVertexCount = 0 then
+  begin
+    wi := 0; vi := 0; bi := 0; n := Length(_Bones);
+    while vi < n do
+    begin
+      wx := 0;
+      wy := 0;
+      nn := _Bones[vi]; Inc(vi); nn += vi;
+      while vi < nn do
+      begin
+	Bone := Skeleton.Bones[_Bones[vi]];
+	vx := _Weights[bi];
+        vy := _Weights[bi + 1];
+        wt := _Weights[bi + 2];
+	wx += (vx * Bone.m00 + vy * Bone.m01 + Bone.WorldX) * wt;
+	wy += (vx * Bone.m10 + vy * Bone.m11 + Bone.WorldY) * wt;
+        Inc(vi);
+        Inc(bi, 3);
+      end;
+      WorldVertices[wi] := wx + x;
+      WorldVertices[wi + 1] := wy + y;
+      Inc(wi, 2);
+    end;
+  end
+  else
+  begin
+    wi := 0; vi := 0; bi := 0; fi := 0; n := Length(_Bones);
+    while vi < n do
+    begin
+      wx := 0;
+      wy := 0;
+      nn := _Bones[vi]; Inc(vi); nn += vi;
+      while vi < nn do
+      begin
+	Bone := Skeleton.Bones[_Bones[vi]];
+	vx := _Weights[bi] + Slot.AttachmentVertices[fi];
+        vy := _Weights[bi + 1] + Slot.AttachmentVertices[fi + 1];
+        wt := _Weights[bi + 2];
+	wx += (vx * Bone.m00 + vy * Bone.m01 + Bone.WorldX) * wt;
+	wy += (vx * Bone.m10 + vy * Bone.m11 + Bone.WorldY) * wt;
+        Inc(vi);
+        Inc(bi, 3);
+        Inc(fi, 2);
+      end;
+      WorldVertices[wi] := wx + x;
+      WorldVertices[wi + 1] := wy + y;
+      Inc(wi, 2);
+    end;
+  end;
+end;
+
+{
+  var Skeleton: TSpineSkeleton;
   var Bone: TSpineBone;
   var x, y, wx, wy, vx, vy, Weight: Single;
   var w, v, bi, f, n: Integer;
@@ -4060,7 +4119,7 @@ begin
   Skeleton := Slot.Bone.Skeleton;
   x := Skeleton.x;
   y := Skeleton.y;
-  if Length(Slot.AttachmentVertices) = 0 then
+  if Slot.AttachmentVertexCount = 0 then
   begin
     w := 0; v := 0; bi := 0;
     while v < Length(_Bones) do
@@ -4108,6 +4167,7 @@ begin
     end;
   end;
 end;
+}
 
 procedure TSpineSkinnedMeshAttachment.Draw(const Render: TSpineRender; const Slot: TSpineSlot);
   var v: TSpineRegionVertices;
@@ -4130,7 +4190,7 @@ begin
     _RenderVertices[i].b := _b;
     _RenderVertices[i].a := _a;
   end;
-  Render.RenderPoly(_Texture, @_RenderVertices, @_Triangles[0], Length(_Triangles) div 3);
+  Render.RenderPoly(_Texture, @_RenderVertices[0], @_Triangles[0], Length(_Triangles) div 3);
 end;
 //TSpineSkinnedMeshAttachment END
 
@@ -4198,7 +4258,7 @@ function TSpineAtlasAttachmentLoader.NewSkinnedMeshAttachment(const Skin: TSpine
   var Region: TSpineAtlasRegion;
 begin
   Region := FindRegion(Path);
-  Result := TSpineSkinnedMeshAttachment(Name);
+  Result := TSpineSkinnedMeshAttachment.Create(Name);
   Result.Texture := Region.Page.Texture;
   Result.RegionU := Region.u;
   Result.RegionV := Region.v;
@@ -4355,7 +4415,7 @@ begin
     case (b shr 4) of
       0, 1, 2, 3, 4, 5, 6, 7: _Chars[CharIndex] := AnsiChar(b);
       12, 13: _Chars[CharIndex] := AnsiChar(((b and $1F) shl 6) or (Provider.ReadByte and $3F));
-      14: _Chars[CharIndex] := AnsiChar(((b and $0F) shl 12) or ((Provider.ReadByte and $3F) shl 6) or (Provider.ReadByte and $3F));
+      14: _Chars[CharIndex] := AnsiChar(((LongWord(b) and $0F) shl 12) or ((Provider.ReadByte and $3F) shl 6) or (Provider.ReadByte and $3F));
     end;
     Inc(CharIndex);
     if CharIndex >= CharCount then Break;

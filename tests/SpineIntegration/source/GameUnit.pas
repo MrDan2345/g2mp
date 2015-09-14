@@ -147,7 +147,7 @@ end;
 
 procedure TG2SpineRender.RenderPoly(const Texture: TSpineTexture; const Vertices: PSpineVertexArray; const Triangles: PIntegerArray; const TriangleCount: Integer);
   var i: Integer;
-  var v: PSpineVertexData;
+  var v, v1, v2, v3: PSpineVertexData;
 begin
   if Assigned(_Display) then
   begin
@@ -174,6 +174,15 @@ begin
       );
     end;
     g2.PolyEnd;
+    for i := 0 to TriangleCount - 1 do
+    begin
+      v1 := @Vertices^[Triangles^[i * 3 + 0]];
+      v2 := @Vertices^[Triangles^[i * 3 + 1]];
+      v3 := @Vertices^[Triangles^[i * 3 + 2]];
+      g2.PrimLine(v1^.x, v1^.y, v2^.x, v2^.y, $ffff0000, bmNormal);
+      g2.PrimLine(v2^.x, v2^.y, v3^.x, v3^.y, $ffff0000, bmNormal);
+      g2.PrimLine(v3^.x, v3^.y, v1^.x, v1^.y, $ffff0000, bmNormal);
+    end;
   end;
 end;
 //TG2SpineRender END
@@ -213,7 +222,8 @@ begin
 end;
 
 procedure TGame.Initialize;
-  const CharacterName = 'spineboy';
+  //const CharacterName = 'spineboy';
+  const CharacterName = 'raptor';
   var sb: TSpineSkeletonBinary;
   var sd: TSpineSkeletonData;
   var al: TSpineAtlasList;
@@ -230,16 +240,17 @@ begin
   sb.Scale := 0.5;
   sd := sb.ReadSkeletonData(CharacterName + '.skel');
   Skeleton := TSpineSkeleton.Create(sd);
-  Skeleton.x := 400;
-  Skeleton.y := 400;
+  Skeleton.x := 600;
+  Skeleton.y := 600;
   ad := TSpineAnimationStateData.Create(sd);
-  ad.SetMix('run', 'jump', 0.2);
-  ad.SetMix('jump', 'run', 0.2);
+  //ad.SetMix('run', 'jump', 0.2);
+  //ad.SetMix('jump', 'run', 0.2);
   State := TSpineAnimationState.Create(ad);
   State.TimeScale := 1;
+  State.SetAnimation(0, 'walk', True);
+  //State.AddAnimation(0, 'run', False, 0);
+  //State.AddAnimation(0, 'jump', False, 1);
   //State.SetAnimation(0, 'run', True);
-  //State.SetAnimation(0, 'jump', False);
-  State.SetAnimation(0, 'run', True);
   ad.Free;
   sd.Free;
   sb.Free;
