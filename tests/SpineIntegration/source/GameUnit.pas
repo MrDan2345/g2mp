@@ -174,15 +174,6 @@ begin
       );
     end;
     g2.PolyEnd;
-    for i := 0 to TriangleCount - 1 do
-    begin
-      v1 := @Vertices^[Triangles^[i * 3 + 0]];
-      v2 := @Vertices^[Triangles^[i * 3 + 1]];
-      v3 := @Vertices^[Triangles^[i * 3 + 2]];
-      g2.PrimLine(v1^.x, v1^.y, v2^.x, v2^.y, $ffff0000, bmNormal);
-      g2.PrimLine(v2^.x, v2^.y, v3^.x, v3^.y, $ffff0000, bmNormal);
-      g2.PrimLine(v3^.x, v3^.y, v1^.x, v1^.y, $ffff0000, bmNormal);
-    end;
   end;
 end;
 //TG2SpineRender END
@@ -240,8 +231,10 @@ begin
   sb.Scale := 0.5;
   sd := sb.ReadSkeletonData(CharacterName + '.skel');
   Skeleton := TSpineSkeleton.Create(sd);
-  Skeleton.x := 600;
-  Skeleton.y := 600;
+  Skeleton.x := 800;
+  Skeleton.y := 800;
+  Skeleton.ScaleX := 2;
+  Skeleton.ScaleY := 2;
   ad := TSpineAnimationStateData.Create(sd);
   //ad.SetMix('run', 'jump', 0.2);
   //ad.SetMix('jump', 'run', 0.2);
@@ -264,6 +257,7 @@ begin
   State.Free;
   Skeleton.Free;
   SpineRender.Free;
+  TSpineClass.Report('SpineReport.txt');
   Display.Free;
 end;
 

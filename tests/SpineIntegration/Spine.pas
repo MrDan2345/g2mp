@@ -31,9 +31,15 @@ type
 
   TSpineClass = class
   private
+    class var ClassInstances: TSpineClass;
+    var NextInstance: TSpineClass;
+    var PrevInstance: TSpineClass;
     var _Ref: Integer;
   public
+    class constructor CreateClass;
+    class procedure Report(const FileName: String);
     procedure AfterConstruction; override;
+    procedure BeforeDestruction; override;
     procedure RefInc;
     procedure RefDec;
     procedure Free; reintroduce;
@@ -420,6 +426,8 @@ type
     var _FlipY: Boolean;
     var _x: Single;
     var _y: Single;
+    var _ScaleX: Single;
+    var _ScaleY: Single;
     procedure SetIKConstraints(const Value: TSpineIKConstraintList); inline;
     procedure SetSkin(const Value: TSpineSkin); inline;
     function GetRootBone: TSpineBone; inline;
@@ -437,6 +445,8 @@ type
     property Time: Single read _Time write _Time;
     property x: Single read _x write _x;
     property y: Single read _y write _y;
+    property ScaleX: Single read _ScaleX write _ScaleX;
+    property ScaleY: Single read _ScaleY write _ScaleY;
     property FlipX: Boolean read _FlipX write _FlipX;
     property FlipY: Boolean read _FlipY write _FlipY;
     property RootBone: TSpineBone read GetRootBone;
@@ -1515,8 +1525,8 @@ begin
     _WorldRotation := _Parent.WorldRotation + _RotationIK
     else
     _WorldRotation := _RotationIK;
-    _WorldFlipX := _Parent.WorldFlipX <> FlipX;
-    _WorldFlipY := _Parent.WorldFlipY <> FlipY;
+    _WorldFlipX := _Parent.WorldFlipX xor FlipX;
+    _WorldFlipY := _Parent.WorldFlipY xor FlipY;
   end
   else
   begin
@@ -1525,8 +1535,8 @@ begin
     _WorldScaleX := _ScaleX;
     _WorldScaleY := _ScaleY;
     _WorldRotation := _RotationIK;
-    _WorldFlipX := _Skeleton.FlipX <> _FlipX;
-    _WorldFlipY := _Skeleton.FlipY <> _FlipY;
+    _WorldFlipX := _Skeleton.FlipX xor _FlipX;
+    _WorldFlipY := _Skeleton.FlipY xor _FlipY;
   end;
   Radians := _WorldRotation * SP_DEG_TO_RAD;
   c := Cos(Radians);
@@ -1702,9 +1712,12 @@ constructor TSpineSkeleton.Create(const AData: TSpineSkeletonData);
   var Bone, Parent: TSpineBone;
   var SlotData: TSpineSlotData;
   var Slot: TSpineSlot;
-  var IKConstraintData: TSpineIKConstraintData;
   var IKConstraint: TSpineIKConstraint;
 begin
+  _x := 0;
+  _y := 0;
+  _ScaleX := 1;
+  _ScaleY := 1;
   _BoneCache := TSpineBoneCacheList.Create;
   _Bones := TSpineBoneList.Create;
   _Data := AData;
@@ -1720,6 +1733,7 @@ begin
     if Assigned(Parent) then
     Parent.Children.Add(Bone);
     _Bones.Add(Bone);
+    Bone.RefDec;
   end;
   _Slots := TSpineSlotList.Create;
   _DrawOrder := TSpineSlotList.Create;
@@ -1729,20 +1743,22 @@ begin
     Bone := _Bones[_Data.Bones.Find(SlotData.BoneData)];
     Slot := TSpineSlot.Create(SlotData, Bone);
     _Slots.Add(Slot);
+    Slot.RefDec;
     _DrawOrder.Add(Slot);
   end;
   _IKConstraints := TSpineIKConstraintList.Create;
   for i := 0 to _Data.IKConstraints.Count - 1 do
   begin
-    IKConstraintData := _Data.IKConstraints[i];
-    IKConstraint := TSpineIKConstraint.Create(IKConstraintData, Self);
+    IKConstraint := TSpineIKConstraint.Create(_Data.IKConstraints[i], Self);
     _IKConstraints.Add(IKConstraint);
+    IKConstraint.RefDec;
   end;
   UpdateCache;
 end;
 
 destructor TSpineSkeleton.Destroy;
 begin
+  _DrawOrder.Free;
   _BoneCache.Free;
   _Bones.Free;
   _Slots.Free;
@@ -1764,10 +1780,6 @@ begin
   begin
     _BoneCache.Delete(i);
   end;
-  for i := 0 to _BoneCache.Count - 1 do
-  begin
-    _BoneCache[i].FreeItems;
-  end;
   while _BoneCache.Count < ArrayCount do
   begin
     List := TSpineBoneList.Create;
@@ -1775,11 +1787,11 @@ begin
     List.Free;
   end;
   NonIKBones := _BoneCache[0];
-  Done := False;
   for i := 0 to _Bones.Count - 1 do
   begin
     Bone := _Bones[i];
     CurBone := Bone;
+    Done := False;
     repeat
       for j := 0 to _IKConstraints.Count - 1 do
       begin
@@ -2696,9 +2708,7 @@ begin
   _Prev := nil;
   _Next := nil;
   _State := AState;
-  _State.RefInc;
   _Animation := AAnimation;
-  _Animation.RefInc;
   _Loop := False;
   _Delay := 0;
   _Time := 0;
@@ -2712,8 +2722,6 @@ end;
 
 destructor TSpineAnimationTrackEntry.Destroy;
 begin
-  _Animation.RefDec;
-  _State.RefDec;
   inherited Destroy;
 end;
 //TSpineAnimationTrackEntry END
@@ -2838,6 +2846,7 @@ begin
       if a >= 1 then
       begin
         a := 1;
+        Track.Prev.RefDec;
         Track.Prev := nil;
       end;
       Track.Animation.Mix(Skeleton, Track.LastTime, t, Track.Loop, _Events, a);
@@ -2888,6 +2897,7 @@ begin
   Entry.Time := 0;
   Entry.EndTime := Animation.Duration;
   SetCurrent(TrackIndex, Entry);
+  Entry.RefDec;
   Result := Entry;
 end;
 
@@ -2917,7 +2927,10 @@ begin
     Last.Next := Entry;
   end
   else
-  _Tracks[TrackIndex] := Entry;
+  begin
+    _Tracks[TrackIndex] := Entry;
+    Entry.RefDec;
+  end;
   d := Delay;
   if (d <= 0) then
   begin
@@ -2935,7 +2948,6 @@ begin
   if TrackIndex >= _Tracks.Count then Exit(nil);
   Result := _Tracks[TrackIndex];
 end;
-
 //TSpineAnimationState END
 
 //TSpineAnimationStateData BEGIN
@@ -3269,13 +3281,13 @@ begin
     Child.RotationIK := Child.Rotation + (SpineArcTan2(TargetY, TargetX) * SP_RAD_TO_DEG - Parent.Rotation - Child.Rotation) * Alpha;
     Exit;
   end;
-  c := (TargetX * TargetX + TargetY * TargetY - Len1 * Len1 - Len2 * Len2) / CosDenom;
+  c := (NewTargetX * NewTargetX + NewTargetY * NewTargetY - Len1 * Len1 - Len2 * Len2) / CosDenom;
   if c < -1 then c := -1
   else if c > 1 then c := 1;
   ChildAngle := SpineArcCos(c) * ABendDirection;
   Adjacent := Len1 + Len2 * c;
   Opposite := Len2 * Sin(ChildAngle);
-  ParentAngle := SpineArcTan2(TargetY * Adjacent - TargetX * Opposite, TargetX * Adjacent + TargetY * Opposite);
+  ParentAngle := SpineArcTan2(NewTargetY * Adjacent - NewTargetX * Opposite, NewTargetX * Adjacent + NewTargetY * Opposite);
   Rotation := (ParentAngle - Offset) * SP_RAD_TO_DEG - Parent.Rotation;
   if Rotation > 180 then Rotation -= 360
   else if Rotation < -180 then Rotation += 360;
@@ -3302,6 +3314,7 @@ end;
 destructor TSpineIKConstraint.Destroy;
 begin
   _Bones.Free;
+  _Data.RefDec;
   inherited Destroy;
 end;
 
@@ -3662,6 +3675,7 @@ begin
     Region.w := Abs(Region.w);
     Region.h := Abs(Region.h);
   end;
+  Provider.Free;
 end;
 
 procedure TSpineAtlas.Clear;
@@ -3813,22 +3827,23 @@ begin
 end;
 
 procedure TSpineRegionAttachment.ComputeWorldVertices(const Bone: TSpineBone; var OutWorldVertices: TSpineRegionVertices);
-  var bx, by: Single;
+  var tx, ty, sx, sy: Single;
   var m00, m01, m10, m11: Single;
 begin
-  bx := Bone.Skeleton.x + Bone.WorldX; by := Bone.Skeleton.y + Bone.WorldY;
+  tx := Bone.Skeleton.x; ty := Bone.Skeleton.y;
+  sx := Bone.Skeleton.ScaleX; sy := Bone.Skeleton.ScaleY;
   m00 := Bone.m00;
   m01 := Bone.m01;
   m10 := Bone.m10;
   m11 := Bone.m11;
-  OutWorldVertices[SP_VERTEX_X1] := _Offset[SP_VERTEX_X1] * m00 + _Offset[SP_VERTEX_Y1] * m01 + bx;
-  OutWorldVertices[SP_VERTEX_Y1] := _Offset[SP_VERTEX_X1] * m10 + _Offset[SP_VERTEX_Y1] * m11 + by;
-  OutWorldVertices[SP_VERTEX_X2] := _Offset[SP_VERTEX_X2] * m00 + _Offset[SP_VERTEX_Y2] * m01 + bx;
-  OutWorldVertices[SP_VERTEX_Y2] := _Offset[SP_VERTEX_X2] * m10 + _Offset[SP_VERTEX_Y2] * m11 + by;
-  OutWorldVertices[SP_VERTEX_X3] := _Offset[SP_VERTEX_X3] * m00 + _Offset[SP_VERTEX_Y3] * m01 + bx;
-  OutWorldVertices[SP_VERTEX_Y3] := _Offset[SP_VERTEX_X3] * m10 + _Offset[SP_VERTEX_Y3] * m11 + by;
-  OutWorldVertices[SP_VERTEX_X4] := _Offset[SP_VERTEX_X4] * m00 + _Offset[SP_VERTEX_Y4] * m01 + bx;
-  OutWorldVertices[SP_VERTEX_Y4] := _Offset[SP_VERTEX_X4] * m10 + _Offset[SP_VERTEX_Y4] * m11 + by;
+  OutWorldVertices[SP_VERTEX_X1] := (_Offset[SP_VERTEX_X1] * m00 + _Offset[SP_VERTEX_Y1] * m01 + Bone.WorldX) * sx + tx;
+  OutWorldVertices[SP_VERTEX_Y1] := (_Offset[SP_VERTEX_X1] * m10 + _Offset[SP_VERTEX_Y1] * m11 + Bone.WorldY) * sy + ty;
+  OutWorldVertices[SP_VERTEX_X2] := (_Offset[SP_VERTEX_X2] * m00 + _Offset[SP_VERTEX_Y2] * m01 + Bone.WorldX) * sx + tx;
+  OutWorldVertices[SP_VERTEX_Y2] := (_Offset[SP_VERTEX_X2] * m10 + _Offset[SP_VERTEX_Y2] * m11 + Bone.WorldY) * sy + ty;
+  OutWorldVertices[SP_VERTEX_X3] := (_Offset[SP_VERTEX_X3] * m00 + _Offset[SP_VERTEX_Y3] * m01 + Bone.WorldX) * sx + tx;
+  OutWorldVertices[SP_VERTEX_Y3] := (_Offset[SP_VERTEX_X3] * m10 + _Offset[SP_VERTEX_Y3] * m11 + Bone.WorldY) * sy + ty;
+  OutWorldVertices[SP_VERTEX_X4] := (_Offset[SP_VERTEX_X4] * m00 + _Offset[SP_VERTEX_Y4] * m01 + Bone.WorldX) * sx + tx;
+  OutWorldVertices[SP_VERTEX_Y4] := (_Offset[SP_VERTEX_X4] * m10 + _Offset[SP_VERTEX_Y4] * m11 + Bone.WorldY) * sy + ty;
 end;
 
 procedure TSpineRegionAttachment.Draw(const Render: TSpineRender; const Slot: TSpineSlot);
@@ -3859,13 +3874,15 @@ begin
 end;
 
 procedure TSpineBoundingBoxAttachment.ComputeWorldVertices(const Bone: TSpineBone; var WorldVertices: TSpineFloatArray);
-  var x, y, m00, m01, m10, m11, px, py: Single;
+  var x, y, m00, m01, m10, m11, px, py, sx, sy: Single;
   var i: Integer;
 begin
   if Length(WorldVertices) <> Length(_Vertices) then
   SetLength(WorldVertices, Length(_Vertices));
-  x := Bone.Skeleton.x + Bone.WorldX;
-  y := Bone.Skeleton.y + Bone.WorldY;
+  x := Bone.Skeleton.x;
+  y := Bone.Skeleton.y;
+  sx := Bone.Skeleton.ScaleX;
+  sy := Bone.Skeleton.ScaleY;
   m00 := Bone.m00;
   m01 := Bone.m01;
   m10 := Bone.m10;
@@ -3875,8 +3892,8 @@ begin
   begin
     px := _Vertices[i];
     py := _Vertices[i + 1];
-    WorldVertices[i] := px * m00 + py * m01 + x;
-    WorldVertices[i + 1] := px * m10 + py * m11 + y;
+    WorldVertices[i] := (px * m00 + py * m01 + Bone.WorldX) * sx + x;
+    WorldVertices[i + 1] := (px * m10 + py * m11 + Bone.WorldY) * sx + x;
     Inc(i, 2);
   end;
 end;
@@ -3937,13 +3954,15 @@ end;
 
 procedure TSpineMeshAttachment.ComputeWorldVertices(const Slot: TSpineSlot; var WorldVertices: TSpineFloatArray);
   var Bone: TSpineBone;
-  var x, y, m00, m01, m10, m11, vx, vy: Single;
+  var x, y, m00, m01, m10, m11, vx, vy, sx, sy: Single;
   var v: PSpineFloatArray;
   var i: Integer;
 begin
   Bone := Slot.Bone;
-  x := Bone.Skeleton.x + Bone.WorldX;
-  y := Bone.Skeleton.y + Bone.WorldY;
+  x := Bone.Skeleton.x;
+  y := Bone.Skeleton.y;
+  sx := Bone.Skeleton.ScaleX;
+  sy := Bone.Skeleton.ScaleY;
   m00 := Bone.m00;
   m01 := Bone.m01;
   m10 := Bone.m10;
@@ -3956,8 +3975,8 @@ begin
   begin
     vx := v^[i];
     vy := v^[i + 1];
-    WorldVertices[i] := vx * m00 + vy * m01 + x;
-    WorldVertices[i + 1] := vx * m10 + vy * m11 + y;
+    WorldVertices[i] := (vx * m00 + vy * m01 + Bone.WorldX) * sx + x;
+    WorldVertices[i + 1] := (vx * m10 + vy * m11 + Bone.WorldY) * sy + y;
     Inc(i, 2);
   end;
 end;
@@ -4052,13 +4071,15 @@ end;
 
 procedure TSpineSkinnedMeshAttachment.ComputeWorldVertices(const Slot: TSpineSlot; var WorldVertices: TSpineFloatArray);
   var Skeleton: TSpineSkeleton;
-  var x, y, wx, wy, vx, vy, wt: Single;
+  var x, y, wx, wy, vx, vy, wt, sx, sy: Single;
   var wi, vi, bi, fi, n, nn: Integer;
   var Bone: TSpineBone;
 begin
   Skeleton := Slot.Skeleton;
   x := Skeleton.x;
   y := Skeleton.y;
+  sx := Skeleton.ScaleX;
+  sy := Skeleton.ScaleY;
   if Slot.AttachmentVertexCount = 0 then
   begin
     wi := 0; vi := 0; bi := 0; n := Length(_Bones);
@@ -4078,8 +4099,8 @@ begin
         Inc(vi);
         Inc(bi, 3);
       end;
-      WorldVertices[wi] := wx + x;
-      WorldVertices[wi + 1] := wy + y;
+      WorldVertices[wi] := wx * sx + x;
+      WorldVertices[wi + 1] := wy * sy + y;
       Inc(wi, 2);
     end;
   end
@@ -4103,8 +4124,8 @@ begin
         Inc(bi, 3);
         Inc(fi, 2);
       end;
-      WorldVertices[wi] := wx + x;
-      WorldVertices[wi + 1] := wy + y;
+      WorldVertices[wi] := wx * sx + x;
+      WorldVertices[wi + 1] := wy * sy + y;
       Inc(wi, 2);
     end;
   end;
@@ -4996,9 +5017,45 @@ end;
 //TSpineSkeletonBinary END
 
 //TSpineClass BEGIN
+class constructor TSpineClass.CreateClass;
+begin
+  ClassInstances := nil;
+end;
+
+class procedure TSpineClass.Report(const FileName: String);
+  var f: TextFile;
+  var s: String;
+  var n: Integer;
+  var c: TSpineClass;
+begin
+  Assign(f, FileName);
+  Rewrite(f);
+  n := 0;
+  c := ClassInstances;
+  while c <> nil do
+  begin
+    s := 'Allocated object[' + IntToStr(n) + ']: ' + c.ClassName + '; Ref = ' + IntToStr(c._Ref);
+    WriteLn(f, s);
+    c := c.NextInstance;
+    Inc(n);
+  end;
+  Close(f);
+end;
+
 procedure TSpineClass.AfterConstruction;
 begin
   _Ref := 1;
+  PrevInstance := nil;
+  NextInstance := ClassInstances;
+  if ClassInstances <> nil then ClassInstances.PrevInstance := Self;
+  ClassInstances := Self;
+end;
+
+procedure TSpineClass.BeforeDestruction;
+begin
+  if PrevInstance <> nil then PrevInstance.NextInstance := NextInstance;
+  if NextInstance <> nil then NextInstance.PrevInstance := PrevInstance;
+  if ClassInstances = Self then ClassInstances := NextInstance;
 end;
 
 procedure TSpineClass.RefInc;
