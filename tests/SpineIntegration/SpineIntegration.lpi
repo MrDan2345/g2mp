@@ -37,7 +37,7 @@
       <Unit0>
         <Filename Value="SpineIntegration.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="26"/>
+        <UsageCount Value="35"/>
         <Loaded Value="True"/>
       </Unit0>
     </Units>
@@ -50,7 +50,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="D:\other\g2mp\source\;D:\other\g2mp\source\box2d\;source\"/>
+      <OtherUnitFiles Value="D:\other\g2mp\source\;D:\other\g2mp\source\box2d\;source"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>
@@ -62,15 +62,6 @@
     </Linking>
   </CompilerOptions>
   <Debugging>
-    <BreakPoints Count="1">
-      <Item1>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="Spine.pas"/>
-        <Line Value="1763"/>
-      </Item1>
-    </BreakPoints>
     <Exceptions Count="3">
       <Item1>
         <Name Value="EAbort"/>

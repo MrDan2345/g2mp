@@ -18,8 +18,6 @@ type
     Texture: TG2Texture2D;
     constructor Create(const TextureName: AnsiString);
     destructor Destroy; override;
-    function GetWidth: Integer; override;
-    function GetHeight: Integer; override;
   end;
 
   TG2SpineDataProvider = class (TSpineDataProvider)
@@ -93,16 +91,6 @@ destructor TG2SpineTexture.Destroy;
 begin
   Texture.RefDec;
   inherited Destroy;
-end;
-
-function TG2SpineTexture.GetWidth: Integer;
-begin
-  Result := Texture.RealWidth;
-end;
-
-function TG2SpineTexture.GetHeight: Integer;
-begin
-  Result := Texture.RealHeight;
 end;
 //TG2SpineTexture END
 
@@ -233,17 +221,24 @@ begin
   Skeleton := TSpineSkeleton.Create(sd);
   Skeleton.x := 800;
   Skeleton.y := 800;
-  Skeleton.ScaleX := 2;
-  Skeleton.ScaleY := 2;
+  Skeleton.ScaleX := 1;
+  Skeleton.ScaleY := 1;
   ad := TSpineAnimationStateData.Create(sd);
-  //ad.SetMix('run', 'jump', 0.2);
-  //ad.SetMix('jump', 'run', 0.2);
+  ad.SetMix('run', 'jump', 0.2);
+  ad.SetMix('jump', 'run', 0.2);
   State := TSpineAnimationState.Create(ad);
   State.TimeScale := 1;
   State.SetAnimation(0, 'walk', True);
+  //State.SetAnimation(0, 'run', False);
+  //State.AddAnimation(0, 'jump', False, 0);
   //State.AddAnimation(0, 'run', False, 0);
-  //State.AddAnimation(0, 'jump', False, 1);
-  //State.SetAnimation(0, 'run', True);
+  //State.AddAnimation(0, 'run', False, 0);
+  //State.AddAnimation(0, 'jump', False, 0);
+  //State.AddAnimation(0, 'run', False, 0);
+  //State.AddAnimation(0, 'run', False, 0);
+  //State.AddAnimation(0, 'jump', False, 0);
+  //State.AddAnimation(0, 'run', False, 0);
+  //State.AddAnimation(0, 'run', True, 0);
   ad.Free;
   sd.Free;
   sb.Free;
@@ -265,13 +260,13 @@ procedure TGame.Update;
 begin
   State.TimeScale := (Sin(G2PiTime()) + 1) * 0.25 + 0.5;
   State.Update(g2.DeltaTimeSec);
+  State.Apply(Skeleton);
+  Skeleton.UpdateWorldTransform;
 end;
 
 procedure TGame.Render;
 begin
   g2.Clear($ff80c0c0);
-  State.Apply(Skeleton);
-  Skeleton.UpdateWorldTransform;
   Skeleton.Draw(SpineRender);
 end;
 
