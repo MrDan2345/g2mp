@@ -21895,6 +21895,7 @@ begin
   AddUnit(g2.AppPath + '\fpc\i386-win32\paszlib');
   AddUnit(g2.AppPath + '..\..\source');//g2mp
   AddUnit(g2.AppPath + '..\..\source\box2d');
+  AddUnit(g2.AppPath + '..\..\source\spine');
   for i := 0 to High(_ProjectIncludeSource) do
   AddUnit(G2StrReplace(_ProjectIncludeSource[i], '$(project_root)', _FilePath));
   CommandLine := CommandLine + ' "' + _FilePath + 'build' + G2PathSep + _FileName + '"';
@@ -22082,7 +22083,7 @@ end;
 procedure TProject.CreateLPR;
   var cf: TCodeFile;
   var sl: TStringList;
-  var G2mpPath, Box2DPath, IncludePath: String;
+  var G2mpPath, Box2DPath, SpinePath, IncludePath: String;
   var StrArr: TG2StrArrA;
   var i: Integer;
 begin
@@ -22093,7 +22094,8 @@ begin
   G2mpPath += StrArr[i] + G2PathSep;
   G2mpPath += 'source';
   Box2DPath := G2mpPath + G2PathSep + 'box2d';
-  IncludePath := G2mpPath + ';' + Box2DPath;
+  SpinePath := G2mpPath + G2PathSep + 'spine';
+  IncludePath := G2mpPath + ';' + Box2DPath + ';' + SpinePath;
   for i := 0 to High(_ProjectIncludeSource) do
   IncludePath += ';' + G2StrReplace(_ProjectIncludeSource[i], '$(project_root)', _FilePath);
   cf.Initialize;

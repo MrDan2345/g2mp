@@ -37,7 +37,7 @@
       <Unit0>
         <Filename Value="SpineIntegration.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="35"/>
+        <UsageCount Value="36"/>
         <Loaded Value="True"/>
       </Unit0>
     </Units>
@@ -50,7 +50,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="D:\other\g2mp\source\;D:\other\g2mp\source\box2d\;source"/>
+      <OtherUnitFiles Value="D:\other\g2mp\source\;D:\other\g2mp\source\box2d\;D:\other\g2mp\source\spine\;source\"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>

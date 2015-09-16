@@ -11,7 +11,9 @@ uses
   Gen2MP,
   G2DataManager,
   G2Math,
-  box2d;
+  box2d,
+  Spine,
+  G2Spine;
 
 type
   TG2Scene2DComponent = class;
@@ -410,6 +412,30 @@ type
     property FlipY: Boolean read _FlipY write _FlipY;
     property Filter: TG2Filter read _Filter write _Filter;
     property BlendMode: TG2BlendMode read _BlendMode write _BlendMode;
+    procedure Save(const Stream: TStream); override;
+    procedure Load(const Stream: TStream); override;
+  end;
+
+  TG2Scene2DComponentSpineAnimation = class (TG2Scene2DComponent)
+  private
+    var _RenderHook: TG2Scene2DRenderHook;
+    var _SpineRender: TG2SpineRender;
+    var _Atlas: TSpineAtlas;
+    var _Skeleton: TSpineSkeleton;
+    var _State: TSpineAnimationState;
+    procedure SetSkeleton(const Value: TSpineSkeleton);
+  protected
+    procedure OnInitialize; override;
+    procedure OnFinalize; override;
+    procedure OnAttach; override;
+    procedure OnDetach; override;
+    procedure OnRender(const Display: TG2Display2D);
+    procedure OnUpdate;
+  public
+    class constructor CreateClass;
+    class function GetName: String; override;
+    class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
+    property Skeleton: TSpineSkeleton read _Skeleton write SetSkeleton;
     procedure Save(const Stream: TStream); override;
     procedure Load(const Stream: TStream); override;
   end;
@@ -2662,6 +2688,81 @@ begin
   Stream.Read(_BlendMode, SizeOf(_BlendMode));
 end;
 //TG2Scene2DComponentBackground END
+
+//TG2Scene2DComponentSpineAnimation BEGIN
+procedure TG2Scene2DComponentSpineAnimation.SetSkeleton(const Value: TSpineSkeleton);
+begin
+  if _Skeleton = Value then Exit;
+  _Skeleton := Value;
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.OnInitialize;
+begin
+  inherited OnInitialize;
+  _SpineRender := TG2SpineRender.Create;
+  _Atlas := nil;
+  _Skeleton := nil;
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.OnFinalize;
+begin
+  Skeleton := nil;
+  _SpineRender.Free;
+  inherited OnFinalize;
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.OnAttach;
+begin
+  _RenderHook := Scene.RenderHookAdd(@OnRender, 0);
+  g2.CallbackUpdateAdd(@OnUpdate);
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.OnDetach;
+begin
+  Scene.RenderHookRemove(_RenderHook);
+  g2.CallbackUpdateRemove(@OnUpdate);
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.OnRender(const Display: TG2Display2D);
+begin
+  if not Assigned(Owner) then Exit;
+  _SpineRender.Display := Display;
+  _Skeleton.x := Owner.Transform.p.x;
+  _Skeleton.y := Owner.Transform.p.y;
+  _Skeleton.Draw(_SpineRender);
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.OnUpdate;
+begin
+
+end;
+
+class constructor TG2Scene2DComponentSpineAnimation.CreateClass;
+begin
+  SetLength(ComponentList, Length(ComponentList) + 1);
+  ComponentList[High(ComponentList)] := CG2Scene2DComponent(ClassType);
+end;
+
+class function TG2Scene2DComponentSpineAnimation.GetName: String;
+begin
+  Result := 'Spine Animation';
+end;
+
+class function TG2Scene2DComponentSpineAnimation.CanAttach(const Node: TG2Scene2DEntity): Boolean;
+begin
+  Result := True;
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.Save(const Stream: TStream);
+begin
+  inherited Save(Stream);
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.Load(const Stream: TStream);
+begin
+  inherited Load(Stream);
+end;
+//TG2Scene2DComponentSpineAnimation END
 
 //TG2Scene2DComponentRigidBody BEGIN
 procedure TG2Scene2DComponentRigidBody.SetEnabled(const Value: Boolean);
