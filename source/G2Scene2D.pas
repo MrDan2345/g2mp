@@ -2693,7 +2693,9 @@ end;
 procedure TG2Scene2DComponentSpineAnimation.SetSkeleton(const Value: TSpineSkeleton);
 begin
   if _Skeleton = Value then Exit;
+  if Assigned(_Skeleton) then _Skeleton.RefDec;
   _Skeleton := Value;
+  if Assigned(_Skeleton) then _Skeleton.RefInc;
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.OnInitialize;
