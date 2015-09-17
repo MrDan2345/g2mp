@@ -39,7 +39,7 @@ class function TG2SpineDataProvider.FetchData(const DataName: String): TSpineDat
   var dm: TG2DataManager;
 begin
   dm := TG2DataManager.Create(DataName, dmAsset);
-  Result := TSpineDataProvider.Create(dm.Size);
+  Result := TSpineDataProvider.Create(DataName, dm.Size);
   dm.ReadBuffer(Result.Data, dm.Size);
   dm.Free;
 end;

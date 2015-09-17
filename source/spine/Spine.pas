@@ -427,7 +427,11 @@ type
     var _y: Single;
     var _ScaleX: Single;
     var _ScaleY: Single;
+    var _Rotation: Single;
+    var _RotX: Single;
+    var _RotY: Single;
     procedure SetIKConstraints(const Value: TSpineIKConstraintList); inline;
+    procedure SetRotation(const Value: Single);
     procedure SetSkin(const Value: TSpineSkin); inline;
     function GetRootBone: TSpineBone; inline;
   public
@@ -446,6 +450,7 @@ type
     property y: Single read _y write _y;
     property ScaleX: Single read _ScaleX write _ScaleX;
     property ScaleY: Single read _ScaleY write _ScaleY;
+    property Rotation: Single read _Rotation write SetRotation;
     property FlipX: Boolean read _FlipX write _FlipX;
     property FlipY: Boolean read _FlipY write _FlipY;
     property RootBone: TSpineBone read GetRootBone;
@@ -1681,6 +1686,14 @@ begin
   if Assigned(_IKConstraints) then _IKConstraints.RefInc;
 end;
 
+procedure TSpineSkeleton.SetRotation(const Value: Single);
+begin
+  if _Rotation = Value then Exit;
+  _Rotation := Value;
+  _RotX := Cos(SP_DEG_TO_RAD * _Rotation);
+  _RotY := -Sin(SP_DEG_TO_RAD * _Rotation);
+end;
+
 procedure TSpineSkeleton.SetSkin(const Value: TSpineSkin);
   var PrevSkin: TSpineSkin;
   var i: Integer;
@@ -1730,6 +1743,9 @@ begin
   _y := 0;
   _ScaleX := 1;
   _ScaleY := 1;
+  _Rotation := 0;
+  _RotX := 1;
+  _RotY := 0;
   _BoneCache := TSpineBoneCacheList.Create;
   _Bones := TSpineBoneList.Create;
   _Data := AData;
@@ -2804,6 +2820,7 @@ begin
   _Events := TSpineEventList.Create;
   _Data := AData;
   _Data.RefInc;
+  _TimeScale := 1;
 end;
 
 destructor TSpineAnimationState.Destroy;
@@ -3918,23 +3935,34 @@ begin
 end;
 
 procedure TSpineRegionAttachment.ComputeWorldVertices(const Bone: TSpineBone; var OutWorldVertices: TSpineRegionVertices);
-  var tx, ty, sx, sy: Single;
+  var tx, ty, sx, sy, rx0, ry0, rx1, ry1: Single;
   var m00, m01, m10, m11: Single;
+  var v: TSpineRegionVertices;
 begin
   tx := Bone.Skeleton.x; ty := Bone.Skeleton.y;
   sx := Bone.Skeleton.ScaleX; sy := Bone.Skeleton.ScaleY;
+  rx0 := Bone.Skeleton._RotX; ry0 := Bone.Skeleton._RotY;
+  rx1 := -Bone.Skeleton._RotY; ry1 := Bone.Skeleton._RotX;
   m00 := Bone.m00;
   m01 := Bone.m01;
   m10 := Bone.m10;
   m11 := Bone.m11;
-  OutWorldVertices[SP_VERTEX_X1] := (_Offset[SP_VERTEX_X1] * m00 + _Offset[SP_VERTEX_Y1] * m01 + Bone.WorldX) * sx + tx;
-  OutWorldVertices[SP_VERTEX_Y1] := (_Offset[SP_VERTEX_X1] * m10 + _Offset[SP_VERTEX_Y1] * m11 + Bone.WorldY) * sy + ty;
-  OutWorldVertices[SP_VERTEX_X2] := (_Offset[SP_VERTEX_X2] * m00 + _Offset[SP_VERTEX_Y2] * m01 + Bone.WorldX) * sx + tx;
-  OutWorldVertices[SP_VERTEX_Y2] := (_Offset[SP_VERTEX_X2] * m10 + _Offset[SP_VERTEX_Y2] * m11 + Bone.WorldY) * sy + ty;
-  OutWorldVertices[SP_VERTEX_X3] := (_Offset[SP_VERTEX_X3] * m00 + _Offset[SP_VERTEX_Y3] * m01 + Bone.WorldX) * sx + tx;
-  OutWorldVertices[SP_VERTEX_Y3] := (_Offset[SP_VERTEX_X3] * m10 + _Offset[SP_VERTEX_Y3] * m11 + Bone.WorldY) * sy + ty;
-  OutWorldVertices[SP_VERTEX_X4] := (_Offset[SP_VERTEX_X4] * m00 + _Offset[SP_VERTEX_Y4] * m01 + Bone.WorldX) * sx + tx;
-  OutWorldVertices[SP_VERTEX_Y4] := (_Offset[SP_VERTEX_X4] * m10 + _Offset[SP_VERTEX_Y4] * m11 + Bone.WorldY) * sy + ty;
+  v[SP_VERTEX_X1] := (_Offset[SP_VERTEX_X1] * m00 + _Offset[SP_VERTEX_Y1] * m01 + Bone.WorldX) * sx;
+  v[SP_VERTEX_Y1] := (_Offset[SP_VERTEX_X1] * m10 + _Offset[SP_VERTEX_Y1] * m11 + Bone.WorldY) * sy;
+  v[SP_VERTEX_X2] := (_Offset[SP_VERTEX_X2] * m00 + _Offset[SP_VERTEX_Y2] * m01 + Bone.WorldX) * sx;
+  v[SP_VERTEX_Y2] := (_Offset[SP_VERTEX_X2] * m10 + _Offset[SP_VERTEX_Y2] * m11 + Bone.WorldY) * sy;
+  v[SP_VERTEX_X3] := (_Offset[SP_VERTEX_X3] * m00 + _Offset[SP_VERTEX_Y3] * m01 + Bone.WorldX) * sx;
+  v[SP_VERTEX_Y3] := (_Offset[SP_VERTEX_X3] * m10 + _Offset[SP_VERTEX_Y3] * m11 + Bone.WorldY) * sy;
+  v[SP_VERTEX_X4] := (_Offset[SP_VERTEX_X4] * m00 + _Offset[SP_VERTEX_Y4] * m01 + Bone.WorldX) * sx;
+  v[SP_VERTEX_Y4] := (_Offset[SP_VERTEX_X4] * m10 + _Offset[SP_VERTEX_Y4] * m11 + Bone.WorldY) * sy;
+  OutWorldVertices[SP_VERTEX_X1] := v[SP_VERTEX_X1] * rx0 + v[SP_VERTEX_Y1] * ry0 + tx;
+  OutWorldVertices[SP_VERTEX_Y1] := v[SP_VERTEX_X1] * rx1 + v[SP_VERTEX_Y1] * ry1 + ty;
+  OutWorldVertices[SP_VERTEX_X2] := v[SP_VERTEX_X2] * rx0 + v[SP_VERTEX_Y2] * ry0 + tx;
+  OutWorldVertices[SP_VERTEX_Y2] := v[SP_VERTEX_X2] * rx1 + v[SP_VERTEX_Y2] * ry1 + ty;
+  OutWorldVertices[SP_VERTEX_X3] := v[SP_VERTEX_X3] * rx0 + v[SP_VERTEX_Y3] * ry0 + tx;
+  OutWorldVertices[SP_VERTEX_Y3] := v[SP_VERTEX_X3] * rx1 + v[SP_VERTEX_Y3] * ry1 + ty;
+  OutWorldVertices[SP_VERTEX_X4] := v[SP_VERTEX_X4] * rx0 + v[SP_VERTEX_Y4] * ry0 + tx;
+  OutWorldVertices[SP_VERTEX_Y4] := v[SP_VERTEX_X4] * rx1 + v[SP_VERTEX_Y4] * ry1 + ty;
 end;
 
 procedure TSpineRegionAttachment.Draw(const Render: TSpineRender; const Slot: TSpineSlot);
@@ -4045,7 +4073,7 @@ end;
 
 procedure TSpineMeshAttachment.ComputeWorldVertices(const Slot: TSpineSlot; var WorldVertices: TSpineFloatArray);
   var Bone: TSpineBone;
-  var x, y, m00, m01, m10, m11, vx, vy, sx, sy: Single;
+  var x, y, m00, m01, m10, m11, vx, vy, wx, wy, sx, sy, rx0, ry0, rx1, ry1: Single;
   var v: PSpineFloatArray;
   var i: Integer;
 begin
@@ -4054,6 +4082,8 @@ begin
   y := Bone.Skeleton.y;
   sx := Bone.Skeleton.ScaleX;
   sy := Bone.Skeleton.ScaleY;
+  rx0 := Bone.Skeleton._RotX; ry0 := Bone.Skeleton._RotY;
+  rx1 := -Bone.Skeleton._RotY; ry1 := Bone.Skeleton._RotX;
   m00 := Bone.m00;
   m01 := Bone.m01;
   m10 := Bone.m10;
@@ -4066,8 +4096,10 @@ begin
   begin
     vx := v^[i];
     vy := v^[i + 1];
-    WorldVertices[i] := (vx * m00 + vy * m01 + Bone.WorldX) * sx + x;
-    WorldVertices[i + 1] := (vx * m10 + vy * m11 + Bone.WorldY) * sy + y;
+    wx := (vx * m00 + vy * m01 + Bone.WorldX) * sx;
+    wy := (vx * m10 + vy * m11 + Bone.WorldY) * sy;
+    WorldVertices[i] := wx * rx0 + wy * ry0 + x;
+    WorldVertices[i + 1] := wx * rx1 + wy * ry1 + y;
     Inc(i, 2);
   end;
 end;
@@ -4162,7 +4194,7 @@ end;
 
 procedure TSpineSkinnedMeshAttachment.ComputeWorldVertices(const Slot: TSpineSlot; var WorldVertices: TSpineFloatArray);
   var Skeleton: TSpineSkeleton;
-  var x, y, wx, wy, vx, vy, wt, sx, sy: Single;
+  var x, y, wx, wy, vx, vy, wt, sx, sy, rx0, ry0, rx1, ry1: Single;
   var wi, vi, bi, fi, n, nn: Integer;
   var Bone: TSpineBone;
 begin
@@ -4171,6 +4203,8 @@ begin
   y := Skeleton.y;
   sx := Skeleton.ScaleX;
   sy := Skeleton.ScaleY;
+  rx0 := Skeleton._RotX; ry0 := Skeleton._RotY;
+  rx1 := -Skeleton._RotY; ry1 := Skeleton._RotX;
   if Slot.AttachmentVertexCount = 0 then
   begin
     wi := 0; vi := 0; bi := 0; n := Length(_Bones);
@@ -4190,8 +4224,9 @@ begin
         Inc(vi);
         Inc(bi, 3);
       end;
-      WorldVertices[wi] := wx * sx + x;
-      WorldVertices[wi + 1] := wy * sy + y;
+      wx *= sx; wy *= sy;
+      WorldVertices[wi] := wx * rx0 + wy * ry0 + x;
+      WorldVertices[wi + 1] := wx * rx1 + wy * ry1 + y;
       Inc(wi, 2);
     end;
   end
@@ -4215,8 +4250,9 @@ begin
         Inc(bi, 3);
         Inc(fi, 2);
       end;
-      WorldVertices[wi] := wx * sx + x;
-      WorldVertices[wi + 1] := wy * sy + y;
+      wx *= sx; wy *= sy;
+      WorldVertices[wi] := wx * rx0 + wy * ry0 + x;
+      WorldVertices[wi + 1] := wx * rx1 + wy * ry1 + y;
       Inc(wi, 2);
     end;
   end;

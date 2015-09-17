@@ -27,7 +27,9 @@ uses
   UTF8Process,
   FileUtil,
   res,
-  box2d;
+  box2d,
+  Spine,
+  G2Spine;
 
 type
   TUIWorkspace = class;
@@ -530,11 +532,12 @@ type
     public
       property ValuePtr: Pointer read _ValuePtr write _ValuePtr;
       property ValueCount: Integer read GetValueCount;
-      property Values[const Index: Integer]: TValueType read GetValue;
+      property Values[const Index: Integer]: TValueType read GetValue; default;
       property Selection: Integer read _Selection write _Selection;
       constructor Create; override;
       procedure AddValue(const ValueName: String; const Value: Byte);
       procedure SetValue(const Value: Byte);
+      procedure Clear;
     end;
     type TPropertyBlendMode = class (TProperty)
     protected
@@ -3499,6 +3502,35 @@ type
   end;
 //TScene2DComponentDataSprite END
 
+//TScene2DComponentDataSpineAnimation BEGIN
+  TScene2DComponentDataSpineAnimation = class (TScene2DComponentData)
+  private
+    var SkeletonPath: String;
+    var Layer: Integer;
+    var Offset: TG2Vec2;
+    var Scale: TG2Vec2;
+    var AnimIndex: Byte;
+    var AnimList: TPropertySet.TPropertyEnum;
+    var Loop: Boolean;
+    var TimeScale: TG2Float;
+    procedure UpdateAnimList;
+  public
+    var Component: TG2Scene2DComponentSpineAnimation;
+    class function GetName: String; override;
+    destructor Destroy; override;
+    function PickLayer: Integer; override;
+    function Pick(const x, y: TG2Float): Boolean; override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
+    procedure OnSkeletonPathChange(const Sender: Pointer);
+    procedure OnLayerChange(const Sender: Pointer);
+    procedure OnOffsetChange(const Sender: Pointer);
+    procedure OnScaleChange(const Sender: Pointer);
+    procedure OnAnimationChange(const Sender: Pointer);
+    procedure OnLoopChange(const Sender: Pointer);
+    procedure OnTimeScaleChange(const Sender: Pointer);
+  end;
+//TScene2DComponentDataSpineAnimation END
+
 //TScene2DComponentDataBackground BEIGN
   TScene2DComponentDataBackground = class (TScene2DComponentData)
   private
@@ -3850,18 +3882,22 @@ type
 
   TScene2DData = object
   private
+    var _PropGravity: TG2Vec2;
     var _SavedStream: TMemoryStream;
     var _Scene: TG2Scene2D;
     var _PropertySet: TPropertySet;
     var _ComponentSet: TPropertySet;
     var _Editor: TScene2DEditor;
+    procedure UpdateProperties;
     procedure AddComponentTypePair(const ComponentClass: CG2Scene2DComponent; const ComponentDataClass: CScene2DComponentData; const AddProc: TG2ProcObj);
     procedure SetEditor(const Value: TScene2DEditor); inline;
+    procedure OnGravityChange(const Sender: Pointer);
   public
     var ComponentList: TComponentList;
     var Selection: TG2Scene2DEntityList;
     var SelectJoint: TScene2DJointData;
     var SelPos: TG2Vec2;
+    var SceneProperties: TPropertySet;
     property PropertySet: TPropertySet read _PropertySet write _PropertySet;
     property Scene: TG2Scene2D read _Scene write _Scene;
     property Editor: TScene2DEditor read _Editor write SetEditor;
@@ -3877,6 +3913,7 @@ type
     procedure DeleteJoint(var Joint: TG2Scene2DJoint);
     function CreateComponentSprite: TG2Scene2DComponentSprite;
     function CreateComponentBackground: TG2Scene2DComponentBackground;
+    function CreateComponentSpineAnimation: TG2Scene2DComponentSpineAnimation;
     function CreateComponentEffect: TG2Scene2DComponentEffect;
     function CreateComponentRigidBody: TG2Scene2DComponentRigidBody;
     function CreateComponentCharacter: TG2Scene2DComponentCharacter;
@@ -3894,6 +3931,7 @@ type
     procedure BtnAddComponent;
     procedure BtnComponentSprite;
     procedure BtnComponentBackground;
+    procedure BtnComponentSpineAnimation;
     procedure BtnComponentEffect;
     procedure BtnComponentRigidBody;
     procedure BtnComponentCharacter;
@@ -6255,6 +6293,11 @@ begin
     _Selection := i;
     Exit;
   end;
+end;
+
+procedure TPropertySet.TPropertyEnum.Clear;
+begin
+  SetLength(_Values, 0);
 end;
 
 procedure TPropertySet.TPropertyBlendMode.ComponentChangeProc(const Ptr: Pointer);
@@ -27053,6 +27096,134 @@ begin
 end;
 //TScene2DComponentData END
 
+//TScene2DComponentDataSpineAnimation BEGIN
+procedure TScene2DComponentDataSpineAnimation.UpdateAnimList;
+  var i: Integer;
+  var Anim: TSpineAnimation;
+begin
+  AnimList.Clear;
+  AnimList.AddValue('None', 0);
+  if Assigned(Component.Skeleton) then
+  begin
+    for i := 0 to Component.Skeleton.Data.Animations.Count - 1 do
+    begin
+      Anim := Component.Skeleton.Data.Animations[i];
+      AnimList.AddValue(Anim.Name, i + 1);
+    end;
+  end;
+end;
+
+class function TScene2DComponentDataSpineAnimation.GetName: String;
+begin
+  Result := 'Spine Animation';
+end;
+
+destructor TScene2DComponentDataSpineAnimation.Destroy;
+begin
+  inherited Destroy;
+end;
+
+function TScene2DComponentDataSpineAnimation.PickLayer: Integer;
+begin
+  Result := Component.Layer;
+end;
+
+function TScene2DComponentDataSpineAnimation.Pick(const x, y: TG2Float): Boolean;
+begin
+  Result := False;
+end;
+
+procedure TScene2DComponentDataSpineAnimation.AddToProperties(const PropertySet: TPropertySet);
+  var Group: TPropertySet.TPropertyComponent;
+  var i: Integer;
+  var Anim: TSpineAnimation;
+begin
+  Group := PropertySet.PropComponent('Spine Animation', Component);
+  Layer := Component.Layer;
+  Offset := Component.Offset;
+  Scale := Component.Scale;
+  Loop := Component.Loop;
+  TimeScale := Component.TimeScale;
+  AnimIndex := 0;
+  SkeletonPath := '';
+  if Assigned(Component.Skeleton) then
+  begin
+    SkeletonPath := Component.Skeleton.Data.Name;
+    for i := 0 to Component.Skeleton.Data.Animations.Count - 1 do
+    begin
+      Anim := Component.Skeleton.Data.Animations[i];
+      if Anim.Name = Component.Animation then
+      begin
+        AnimIndex := i + 1;
+        Break;
+      end;
+    end;
+  end;
+  PropertySet.PropPath('Skeleton', @SkeletonPath, TAssetAny, Group, @OnSkeletonPathChange);
+  PropertySet.PropInt('Layer', @Layer, Group, @OnLayerChange);
+  PropertySet.PropVec2('Offset', @Offset, Group, @OnOffsetChange);
+  PropertySet.PropVec2('Scale', @Scale, Group, @OnScaleChange);
+  AnimList := PropertySet.PropEnum('Animation', @AnimIndex, Group, @OnAnimationChange);
+  PropertySet.PropBool('Loop', @Loop, Group, @OnLoopChange);
+  PropertySet.PropFloat('Speed', @TimeScale, Group, @OnTimeScaleChange);
+  UpdateAnimList;
+end;
+
+procedure TScene2DComponentDataSpineAnimation.OnSkeletonPathChange(const Sender: Pointer);
+  var AtlasPath: String;
+  var Atlas: TSpineAtlas;
+  var Skeleton: TSpineSkeleton;
+  var sb: TSpineSkeletonBinary;
+  var sd: TSpineSkeletonData;
+  var al: TSpineAtlasList;
+begin
+  AtlasPath := G2PathNoExt(SkeletonPath) + '.atlas';
+  Atlas := TSpineAtlas.Create(AtlasPath);
+  al := TSpineAtlasList.Create;
+  al.Add(Atlas);
+  sb := TSpineSkeletonBinary.Create(al);
+  sd := sb.ReadSkeletonData(SkeletonPath);
+  Skeleton := TSpineSkeleton.Create(sd);
+  Component.Skeleton := Skeleton;
+  Skeleton.Free;
+  sd.Free;
+  sb.Free;
+  al.Free;
+  Atlas.Free;
+  UpdateAnimList;
+end;
+
+procedure TScene2DComponentDataSpineAnimation.OnLayerChange(const Sender: Pointer);
+begin
+  Component.Layer := Layer;
+end;
+
+procedure TScene2DComponentDataSpineAnimation.OnOffsetChange(const Sender: Pointer);
+begin
+  Component.Offset := Offset;
+end;
+
+procedure TScene2DComponentDataSpineAnimation.OnScaleChange(const Sender: Pointer);
+begin
+  Component.Scale := Scale;
+end;
+
+procedure TScene2DComponentDataSpineAnimation.OnAnimationChange(const Sender: Pointer);
+begin
+  Component.Animation := AnimList[AnimIndex].Name;
+end;
+
+procedure TScene2DComponentDataSpineAnimation.OnLoopChange(const Sender: Pointer);
+begin
+  Component.Loop := Loop;
+end;
+
+procedure TScene2DComponentDataSpineAnimation.OnTimeScaleChange(const Sender: Pointer);
+begin
+  Component.TimeScale := TimeScale;
+end;
+//TScene2DComponentDataSpineAnimation END
+
 //TScene2DComponentDataSprite BIEGIN
 class function TScene2DComponentDataSprite.GetName: String;
 begin
@@ -28788,6 +28959,11 @@ end;
 //TScene2DJointDataRevolute END
 
 //TScene2DData BEIGN
+procedure TScene2DData.UpdateProperties;
+begin
+  _PropGravity := Scene.Gravity;
+end;
+
 procedure TScene2DData.AddComponentTypePair(
   const ComponentClass: CG2Scene2DComponent;
   const ComponentDataClass: CScene2DComponentData;
@@ -28810,6 +28986,11 @@ begin
   _Editor := Value;
   if _Editor <> nil then
   _Editor.Initialize;
+end;
+
+procedure TScene2DData.OnGravityChange(const Sender: Pointer);
+begin
+  Scene.Gravity := _PropGravity;
 end;
 
 function TScene2DData.FindEntity(const Name: AnsiString; const IgnoreEntity: TG2Scene2DEntity): TG2Scene2DEntity;
@@ -28997,6 +29178,12 @@ begin
       Component.UserData := ComponentData;
       TScene2DComponentDataBackground(ComponentData).Component := TG2Scene2DComponentBackground(Component);
     end
+    else if Component is TG2Scene2DComponentSpineAnimation then
+    begin
+      ComponentData := TScene2DComponentDataSpineAnimation.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataSpineAnimation(ComponentData).Component := TG2Scene2DComponentSpineAnimation(Component);
+    end
     else if Component is TG2Scene2DComponentEffect then
     begin
       ComponentData := TScene2DComponentDataEffect.Create;
@@ -29132,6 +29319,14 @@ begin
   TScene2DComponentDataBackground(Result.UserData).Component := Result;
 end;
 
+function TScene2DData.CreateComponentSpineAnimation: TG2Scene2DComponentSpineAnimation;
+begin
+  Result := TG2Scene2DComponentSpineAnimation.Create(_Scene);
+  Result.UserData := TScene2DComponentDataSpineAnimation.Create;
+  TScene2DComponentDataSpineAnimation(Result.UserData).Component := Result;
+  Result.Scale := G2Vec2(0.002, 0.002);
+end;
+
 function TScene2DData.CreateComponentEffect: TG2Scene2DComponentEffect;
 begin
   Result := TG2Scene2DComponentEffect.Create(_Scene);
@@ -29255,7 +29450,10 @@ begin
     PropertySet := PScene2DEntityData(Selection[0].UserData)^.Properties;
   end
   else
-  PropertySet := nil;
+  begin
+    UpdateProperties;
+    PropertySet := SceneProperties;
+  end;
 end;
 
 procedure TScene2DData.UpdateSelectionPos;
@@ -29299,6 +29497,18 @@ begin
   if Selection.Count = 1 then
   begin
     Component := CreateComponentBackground;
+    Component.Attach(Selection[0]);
+    SelectionUpdateStart;
+    SelectionUpdateEnd;
+  end;
+end;
+
+procedure TScene2DData.BtnComponentSpineAnimation;
+  var Component: TG2Scene2DComponentSpineAnimation;
+begin
+  if Selection.Count = 1 then
+  begin
+    Component := CreateComponentSpineAnimation;
     Component.Attach(Selection[0]);
     SelectionUpdateStart;
     SelectionUpdateEnd;
@@ -29508,6 +29718,7 @@ begin
       TScene2DJointDataRevolute(JointData).Joint := TG2Scene2DRevoluteJoint(Joint);
     end;
   end;
+  UpdateProperties;
 end;
 
 procedure TScene2DData.Initialize;
@@ -29516,14 +29727,15 @@ begin
   Selection.Clear;
   SelectJoint := nil;
   _SavedStream := TMemoryStream.Create;
-  _PropertySet := nil;
   _Scene := TG2Scene2D.Create;
   _ComponentSet := TPropertySet.Create;
   ComponentList.Clear;
   _Editor := nil;
   AddComponentTypePair(TG2Scene2DComponentSprite, TScene2DComponentDataSprite, @BtnComponentSprite);
   AddComponentTypePair(TG2Scene2DComponentBackground, TScene2DComponentDataBackground, @BtnComponentBackground);
+  AddComponentTypePair(TG2Scene2DComponentSpineAnimation, TScene2DComponentDataSpineAnimation, @BtnComponentSpineAnimation);
   AddComponentTypePair(TG2Scene2DComponentEffect, TScene2DComponentDataEffect, @BtnComponentEffect);
+  AddComponentTypePair(TG2Scene2DComponentPoly, TScene2DComponentDataPoly, @BtnComponentPoly);
   AddComponentTypePair(TG2Scene2DComponentRigidBody, TScene2DComponentDataRigidBody, @BtnComponentRigidBody);
   AddComponentTypePair(TG2Scene2DComponentCharacter, TScene2DComponentDataCharacter, @BtnComponentCharacter);
   AddComponentTypePair(TG2Scene2DComponentCollisionShapePoly, TScene2DComponentDataShapePoly, @BtnComponentShapePoly);
@@ -29531,12 +29743,16 @@ begin
   AddComponentTypePair(TG2Scene2DComponentCollisionShapeCircle, TScene2DComponentDataShapeCircle, @BtnComponentShapeCircle);
   AddComponentTypePair(TG2Scene2DComponentCollisionShapeEdge, TScene2DComponentDataShapeEdge, @BtnComponentShapeEdge);
   AddComponentTypePair(TG2Scene2DComponentCollisionShapeChain, TScene2DComponentDataShapeChain, @BtnComponentShapeChain);
-  AddComponentTypePair(TG2Scene2DComponentPoly, TScene2DComponentDataPoly, @BtnComponentPoly);
+  SceneProperties := TPropertySet.Create;
+  SceneProperties.PropVec2('Gravity', @_PropGravity, nil, @OnGravityChange);
+  _PropertySet := SceneProperties;
 end;
 
 procedure TScene2DData.Finalize;
   var i: Integer;
 begin
+  _PropertySet := nil;
+  SceneProperties.Free;
   ClearScene;
   for i := 0 to ComponentList.Count - 1 do
   Dispose(ComponentList[i]);
