@@ -23,6 +23,7 @@ type
     Scene: TG2Scene2D;
     Display: TG2Display2D;
     PlayerEntity: TG2Scene2DEntity;
+    BackgroundEntity: TG2Scene2DEntity;
     Wheel0: TG2Scene2DEntity;
     Wheel1: TG2Scene2DEntity;
     rt: TG2Texture2DRT;
@@ -94,10 +95,11 @@ begin
   Display.Zoom := 0.5;
   Scene := TG2Scene2D.Create;
   Scene.Load('../assets/scene.g2s2d');
-  Scene.Gravity := G2Vec2(0, 9.8);
+  //Scene.Gravity := G2Vec2(0, 9.8);
   Scene.Simulate := True;
   Scene.EnablePhysics;
   PlayerEntity := Scene.FindEntityByName('Player');
+  BackgroundEntity := Scene.FindEntityByName('Background');
   //Character := TG2Scene2DComponentCharacter.Create(Scene);
   //Character.Attach(PlayerEntity);
   //Character.Enabled := True;
@@ -125,6 +127,10 @@ procedure TGame.Update;
   var Animation: TG2Scene2DComponentSpineAnimation;
   var Sprite: TG2Scene2DComponentSprite;
 begin
+  if Assigned(BackgroundEntity) then
+  begin
+    BackgroundEntity.Transform.p := Display.Position;
+  end;
   if PlayerEntity <> nil then
   begin
     Display.Position := G2LerpVec2(Display.Position, PlayerEntity.Transform.p, 0.1);

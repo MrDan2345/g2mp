@@ -3882,18 +3882,22 @@ type
 
   TScene2DData = object
   private
+    var _PropGravity: TG2Vec2;
     var _SavedStream: TMemoryStream;
     var _Scene: TG2Scene2D;
     var _PropertySet: TPropertySet;
     var _ComponentSet: TPropertySet;
     var _Editor: TScene2DEditor;
+    procedure UpdateProperties;
     procedure AddComponentTypePair(const ComponentClass: CG2Scene2DComponent; const ComponentDataClass: CScene2DComponentData; const AddProc: TG2ProcObj);
     procedure SetEditor(const Value: TScene2DEditor); inline;
+    procedure OnGravityChange(const Sender: Pointer);
   public
     var ComponentList: TComponentList;
     var Selection: TG2Scene2DEntityList;
     var SelectJoint: TScene2DJointData;
     var SelPos: TG2Vec2;
+    var SceneProperties: TPropertySet;
     property PropertySet: TPropertySet read _PropertySet write _PropertySet;
     property Scene: TG2Scene2D read _Scene write _Scene;
     property Editor: TScene2DEditor read _Editor write SetEditor;
@@ -28955,6 +28959,11 @@ end;
 //TScene2DJointDataRevolute END
 
 //TScene2DData BEIGN
+procedure TScene2DData.UpdateProperties;
+begin
+  _PropGravity := Scene.Gravity;
+end;
+
 procedure TScene2DData.AddComponentTypePair(
   const ComponentClass: CG2Scene2DComponent;
   const ComponentDataClass: CScene2DComponentData;
@@ -28977,6 +28986,11 @@ begin
   _Editor := Value;
   if _Editor <> nil then
   _Editor.Initialize;
+end;
+
+procedure TScene2DData.OnGravityChange(const Sender: Pointer);
+begin
+  Scene.Gravity := _PropGravity;
 end;
 
 function TScene2DData.FindEntity(const Name: AnsiString; const IgnoreEntity: TG2Scene2DEntity): TG2Scene2DEntity;
@@ -29168,7 +29182,7 @@ begin
     begin
       ComponentData := TScene2DComponentDataSpineAnimation.Create;
       Component.UserData := ComponentData;
-      TScene2DComponentDataSpineAnimation(ComponentData).Component := TG2Scene2DComponentBackground(Component);
+      TScene2DComponentDataSpineAnimation(ComponentData).Component := TG2Scene2DComponentSpineAnimation(Component);
     end
     else if Component is TG2Scene2DComponentEffect then
     begin
@@ -29436,7 +29450,10 @@ begin
     PropertySet := PScene2DEntityData(Selection[0].UserData)^.Properties;
   end
   else
-  PropertySet := nil;
+  begin
+    UpdateProperties;
+    PropertySet := SceneProperties;
+  end;
 end;
 
 procedure TScene2DData.UpdateSelectionPos;
@@ -29709,7 +29726,6 @@ begin
   Selection.Clear;
   SelectJoint := nil;
   _SavedStream := TMemoryStream.Create;
-  _PropertySet := nil;
   _Scene := TG2Scene2D.Create;
   _ComponentSet := TPropertySet.Create;
   ComponentList.Clear;
@@ -29726,11 +29742,16 @@ begin
   AddComponentTypePair(TG2Scene2DComponentCollisionShapeCircle, TScene2DComponentDataShapeCircle, @BtnComponentShapeCircle);
   AddComponentTypePair(TG2Scene2DComponentCollisionShapeEdge, TScene2DComponentDataShapeEdge, @BtnComponentShapeEdge);
   AddComponentTypePair(TG2Scene2DComponentCollisionShapeChain, TScene2DComponentDataShapeChain, @BtnComponentShapeChain);
+  SceneProperties := TPropertySet.Create;
+  SceneProperties.PropVec2('Gravity', @_PropGravity, nil, @OnGravityChange);
+  _PropertySet := SceneProperties;
 end;
 
 procedure TScene2DData.Finalize;
   var i: Integer;
 begin
+  _PropertySet := nil;
+  SceneProperties.Free;
   ClearScene;
   for i := 0 to ComponentList.Count - 1 do
   Dispose(ComponentList[i]);

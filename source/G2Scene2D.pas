@@ -258,13 +258,14 @@ type
     procedure JointRemove(const Joint: TG2Scene2DJoint); inline;
     procedure SortRenderHooks; inline;
     function CompRenderHooks(const Item0, Item1: TG2Scene2DRenderHook): TG2IntS32;
+    function GetGravity: TG2Vec2; inline;
     procedure SetGravity(const Value: TG2Vec2); inline;
   public
     property Entities[const Index: TG2IntS32]: TG2Scene2DEntity read GetEntity;
     property EntityCount: TG2IntS32 read GetEntityCount;
     property Joints[const Index: TG2IntS32]: TG2Scene2DJoint read GetJoint;
     property JointCount: TG2IntS32 read GetJointCount;
-    property Gravity: TG2Vec2 read _Gravity write SetGravity;
+    property Gravity: TG2Vec2 read GetGravity write SetGravity;
     property Simulate: Boolean read _Simulate write _Simulate;
     property PhysWorld: tb2_world read _PhysWorld;
     constructor Create;
@@ -1949,6 +1950,11 @@ begin
   if Result = 0 then Result := PtrInt(Item0) - PtrInt(Item1);
 end;
 
+function TG2Scene2D.GetGravity: TG2Vec2;
+begin
+  Result := _Gravity;
+end;
+
 procedure TG2Scene2D.SetGravity(const Value: TG2Vec2);
 begin
   _Gravity := Value;
@@ -2079,6 +2085,7 @@ procedure TG2Scene2D.Save(const Stream: TStream);
   var i, p, n: TG2IntS32;
 begin
   Stream.Write(Header, SizeOf(Header));
+  Stream.Write(_Gravity, SizeOf(_Gravity));
   n := 0;
   for i := 0 to EntityCount - 1 do
   if Entities[i].Parent = nil then Inc(n);
@@ -2100,6 +2107,8 @@ procedure TG2Scene2D.Load(const Stream: TStream);
 begin
   Stream.Read(Header, SizeOf(Header));
   if Header <> 'G2S2' then Exit;
+  Stream.Read(_Gravity, SizeOf(_Gravity));
+  _PhysWorld.set_gravity(_Gravity);
   Stream.Read(n, SizeOf(n));
   for i := 0 to n - 1 do
   TG2Scene2DEntity.Create(Self).Load(Stream);
@@ -2865,7 +2874,7 @@ begin
     SetLength(SkeletonPath, n);
     Stream.Read(SkeletonPath[1], n);
   end;
-  Stream.Read(_Layer, SizeOf(_Layer));
+  Stream.Read(n, SizeOf(n)); Layer := n;
   Stream.Read(_Offset, SizeOf(_Offset));
   Stream.Read(_Scale, SizeOf(_Scale));
   Stream.Read(_Loop, SizeOf(_Loop));
