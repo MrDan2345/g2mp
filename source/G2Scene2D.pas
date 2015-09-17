@@ -418,12 +418,22 @@ type
 
   TG2Scene2DComponentSpineAnimation = class (TG2Scene2DComponent)
   private
+    var _Layer: TG2IntS32;
     var _RenderHook: TG2Scene2DRenderHook;
     var _SpineRender: TG2SpineRender;
-    var _Atlas: TSpineAtlas;
     var _Skeleton: TSpineSkeleton;
     var _State: TSpineAnimationState;
+    var _Offset: TG2Vec2;
+    var _Scale: TG2Vec2;
+    var _Animation: String;
+    var _Loop: Boolean;
+    var _TimeScale: TG2Float;
+    procedure SetAnimation(const Value: String);
+    procedure SetLayer(const Value: TG2IntS32);
+    procedure SetLoop(const Value: Boolean);
+    procedure SetScale(const Value: TG2Vec2);
     procedure SetSkeleton(const Value: TSpineSkeleton);
+    procedure SetTimeScale(const Value: TG2Float);
   protected
     procedure OnInitialize; override;
     procedure OnFinalize; override;
@@ -436,6 +446,12 @@ type
     class function GetName: String; override;
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
     property Skeleton: TSpineSkeleton read _Skeleton write SetSkeleton;
+    property Layer: TG2IntS32 read _Layer write SetLayer;
+    property Offset: TG2Vec2 read _Offset write _Offset;
+    property Scale: TG2Vec2 read _Scale write SetScale;
+    property Animation: String read _Animation write SetAnimation;
+    property Loop: Boolean read _Loop write SetLoop;
+    property TimeScale: TG2Float read _TimeScale write SetTimeScale;
     procedure Save(const Stream: TStream); override;
     procedure Load(const Stream: TStream); override;
   end;
@@ -2691,21 +2707,80 @@ end;
 
 //TG2Scene2DComponentSpineAnimation BEGIN
 procedure TG2Scene2DComponentSpineAnimation.SetSkeleton(const Value: TSpineSkeleton);
+  var asd: TSpineAnimationStateData;
 begin
   if _Skeleton = Value then Exit;
+  if Assigned(_Skeleton) then _Skeleton.RefDec;
   _Skeleton := Value;
+  if Assigned(_Skeleton) then _Skeleton.RefInc;
+  if Assigned(_State) then _State.Free;
+  _State := nil;
+  if Assigned(_Skeleton) then
+  begin
+    asd := TSpineAnimationStateData.Create(_Skeleton.Data);
+    _State := TSpineAnimationState.Create(asd);
+    asd.Free;
+    _State.TimeScale := _TimeScale;
+    if Length(_Animation) > 0 then _State.SetAnimation(0, _Animation, _Loop);
+    _Skeleton.ScaleX := _Scale.x;
+    _Skeleton.ScaleY := _Scale.y;
+  end;
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.SetTimeScale(const Value: TG2Float);
+begin
+  if _TimeScale = Value then Exit;
+  _TimeScale := Value;
+  if Assigned(_State) then _State.TimeScale := _TimeScale;
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.SetLayer(const Value: TG2IntS32);
+begin
+  if _Layer = Value then Exit;
+  _Layer := Value;
+  if Assigned(_RenderHook) then _RenderHook.Layer := _Layer;
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.SetAnimation(const Value: String);
+begin
+  if _Animation = Value then Exit;
+  _Animation := Value;
+  _State.SetAnimation(0, _Animation, _Loop);
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.SetLoop(const Value: Boolean);
+begin
+  if _Loop = Value then Exit;
+  _Loop := Value;
+  _State.SetAnimation(0, _Animation, _Loop);
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.SetScale(const Value: TG2Vec2);
+begin
+  _Scale := Value;
+  if Assigned(_Skeleton) then
+  begin
+    _Skeleton.ScaleX := _Scale.x;
+    _Skeleton.ScaleY := _Scale.y;
+  end;
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.OnInitialize;
 begin
   inherited OnInitialize;
   _SpineRender := TG2SpineRender.Create;
-  _Atlas := nil;
   _Skeleton := nil;
+  _Offset := G2Vec2;
+  _Scale := G2Vec2(1, 1);
+  _Animation := '';
+  _Loop := True;
+  _TimeScale := 1;
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.OnFinalize;
 begin
+  if Assigned(_State) then _State.Free;
+  _State := nil;
   Skeleton := nil;
   _SpineRender.Free;
   inherited OnFinalize;
@@ -2725,16 +2800,19 @@ end;
 
 procedure TG2Scene2DComponentSpineAnimation.OnRender(const Display: TG2Display2D);
 begin
-  if not Assigned(Owner) then Exit;
+  if not Assigned(Owner) or not Assigned(_Skeleton) then Exit;
   _SpineRender.Display := Display;
-  _Skeleton.x := Owner.Transform.p.x;
-  _Skeleton.y := Owner.Transform.p.y;
   _Skeleton.Draw(_SpineRender);
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.OnUpdate;
 begin
-
+  if not Assigned(Owner) or not Assigned(_Skeleton) then Exit;
+  _Skeleton.x := Owner.Transform.p.x + _Offset.x;
+  _Skeleton.y := Owner.Transform.p.y + _Offset.y;
+  _State.Update(g2.DeltaTimeSec);
+  _State.Apply(_Skeleton);
+  _Skeleton.UpdateWorldTransform;
 end;
 
 class constructor TG2Scene2DComponentSpineAnimation.CreateClass;
@@ -2754,13 +2832,66 @@ begin
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.Save(const Stream: TStream);
+  var n: TG2IntS32;
 begin
-  inherited Save(Stream);
+  SaveClassType(Stream);
+  if Assigned(_Skeleton) then n := Length(_Skeleton.Data.Name) else n := 0;
+  Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_Skeleton.Data.Name[1], n);
+  Stream.Write(_Layer, SizeOf(_Layer));
+  Stream.Write(_Offset, SizeOf(_Offset));
+  Stream.Write(_Scale, SizeOf(_Scale));
+  Stream.Write(_Loop, SizeOf(_Loop));
+  Stream.Write(_TimeScale, SizeOf(_TimeScale));
+  n := Length(_Animation);
+  Stream.Write(n, SizeOf(n));
+  if n > 0 then Stream.Write(_Animation[1], n);
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.Load(const Stream: TStream);
+  var n: TG2IntS32;
+  var SkeletonPath: String;
+  var AtlasPath: String;
+  var Atlas: TSpineAtlas;
+  var Skel: TSpineSkeleton;
+  var sb: TSpineSkeletonBinary;
+  var sd: TSpineSkeletonData;
+  var al: TSpineAtlasList;
 begin
   inherited Load(Stream);
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then
+  begin
+    SetLength(SkeletonPath, n);
+    Stream.Read(SkeletonPath[1], n);
+  end;
+  Stream.Read(_Layer, SizeOf(_Layer));
+  Stream.Read(_Offset, SizeOf(_Offset));
+  Stream.Read(_Scale, SizeOf(_Scale));
+  Stream.Read(_Loop, SizeOf(_Loop));
+  Stream.Read(_TimeScale, SizeOf(_TimeScale));
+  Stream.Read(n, SizeOf(n));
+  if n > 0 then
+  begin
+    SetLength(_Animation, n);
+    Stream.Read(_Animation[1], n);
+  end;
+  if Length(SkeletonPath) > 0 then
+  begin
+    AtlasPath := G2PathNoExt(SkeletonPath) + '.atlas';
+    Atlas := TSpineAtlas.Create(AtlasPath);
+    al := TSpineAtlasList.Create;
+    al.Add(Atlas);
+    sb := TSpineSkeletonBinary.Create(al);
+    sd := sb.ReadSkeletonData(SkeletonPath);
+    Skel := TSpineSkeleton.Create(sd);
+    Skeleton := Skel;
+    Skel.Free;
+    sd.Free;
+    sb.Free;
+    al.Free;
+    Atlas.Free;
+  end;
 end;
 //TG2Scene2DComponentSpineAnimation END
 

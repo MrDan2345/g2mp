@@ -2804,6 +2804,7 @@ begin
   _Events := TSpineEventList.Create;
   _Data := AData;
   _Data.RefInc;
+  _TimeScale := 1;
 end;
 
 destructor TSpineAnimationState.Destroy;

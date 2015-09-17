@@ -327,7 +327,7 @@ type
 
   function G2FileSearch(const Path: String; const Attribs: TG2IntS32): TG2QuickListAnsiString;
   function G2PathRelative(const Origin: String; const Target: String): String;
-  function G2FilePathNoExt(const Path: String): String;
+  function G2PathNoExt(const Path: String): String;
   function G2PathClean(const Path: String): String;
   function G2RemoveDir(const DirPath: String): Boolean;
 
@@ -2056,13 +2056,15 @@ begin
   if Length(Result) = 0 then Result := '.' + G2PathSep;
 end;
 
-function G2FilePathNoExt(const Path: String): String;
-  var i: Integer;
+function G2PathNoExt(const Path: String): String;
+  var i, n: Integer;
 begin
   for i := Length(Path) downto 1 do
   if Path[i] = '.' then
   begin
-    Set
+    n := i - 1;
+    SetLength(Result, n);
+    if n > 0 then Move(Path[1], Result[1], n);
     Exit;
   end;
   Result := Path;
