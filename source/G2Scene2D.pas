@@ -2815,10 +2815,13 @@ begin
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.OnUpdate;
+  var lt: TG2Vec2;
 begin
   if not Assigned(Owner) or not Assigned(_Skeleton) then Exit;
-  _Skeleton.x := Owner.Transform.p.x + _Offset.x;
-  _Skeleton.y := Owner.Transform.p.y + _Offset.y;
+  _Skeleton.Rotation := Owner.Transform.r.Angle * G2RadToDeg;
+  lt := Owner.Transform.r.Transform(_Offset);
+  _Skeleton.x := Owner.Transform.p.x + lt.x;
+  _Skeleton.y := Owner.Transform.p.y + lt.y;
   _State.Update(g2.DeltaTimeSec);
   _State.Apply(_Skeleton);
   _Skeleton.UpdateWorldTransform;
