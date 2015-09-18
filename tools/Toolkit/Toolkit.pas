@@ -27360,6 +27360,8 @@ begin
   PropertySet.PropVec2('ScrollSpeed', @Component.ScrollSpeed, Group);
   PropertySet.PropBool('Flip X', @Component.FlipX, Group);
   PropertySet.PropBool('Flip Y', @Component.FlipY, Group);
+  PropertySet.PropBool('Repeat X', @Component.RepeatX, Group);
+  PropertySet.PropBool('Repeat Y', @Component.RepeatY, Group);
   Enum := PropertySet.PropEnum('Filter', @Component.Filter, Group);
   Enum.AddValue('Point', Byte(tfPoint));
   Enum.AddValue('Linear', Byte(tfLinear));

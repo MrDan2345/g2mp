@@ -381,6 +381,7 @@ type
 
   TG2Scene2DComponentBackground = class (TG2Scene2DComponent)
   private
+    var _Layer: TG2IntS32;
     var _Texture: TG2Texture2DBase;
     var _RenderHook: TG2Scene2DRenderHook;
     var _Scale: TG2Vec2;
@@ -388,10 +389,11 @@ type
     var _ScrollPos: TG2Vec2;
     var _FlipX: Boolean;
     var _FlipY: Boolean;
+    var _RepeatX: Boolean;
+    var _RepeatY: Boolean;
     var _Filter: TG2Filter;
     var _BlendMode: TG2BlendMode;
     var _RefTexture: Boolean;
-    function GetLayer: TG2IntS32; inline;
     procedure SetLayer(const Value: TG2IntS32); inline;
     procedure SetTexture(const Value: TG2Texture2DBase); inline;
   protected
@@ -405,12 +407,14 @@ type
     class constructor CreateClass;
     class function GetName: String; override;
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
-    property Layer: TG2IntS32 read GetLayer write SetLayer;
+    property Layer: TG2IntS32 read _Layer write SetLayer;
     property Texture: TG2Texture2DBase read _Texture write SetTexture;
     property Scale: TG2Vec2 read _Scale write _Scale;
     property ScrollSpeed: TG2Vec2 read _ScrollSpeed write _ScrollSpeed;
     property FlipX: Boolean read _FlipX write _FlipX;
     property FlipY: Boolean read _FlipY write _FlipY;
+    property RepeatX: Boolean read _RepeatX write _RepeatX;
+    property RepeatY: Boolean read _RepeatY write _RepeatY;
     property Filter: TG2Filter read _Filter write _Filter;
     property BlendMode: TG2BlendMode read _BlendMode write _BlendMode;
     procedure Save(const Stream: TStream); override;
@@ -2546,14 +2550,10 @@ end;
 //TG2Scene2DComponentEffect END
 
 //TG2Scene2DComponentBackground BEGIN
-function TG2Scene2DComponentBackground.GetLayer: TG2IntS32;
-begin
-  if _RenderHook <> nil then Exit(_RenderHook.Layer);
-  Result := 0;
-end;
-
 procedure TG2Scene2DComponentBackground.SetLayer(const Value: TG2IntS32);
 begin
+  if _Layer = Value then Exit;
+  _Layer := Value;
   if _RenderHook <> nil then _RenderHook.Layer := Value;
 end;
 
@@ -2575,6 +2575,11 @@ begin
   _Filter := tfLinear;
   _BlendMode := bmNormal;
   _RefTexture := False;
+  _FlipX := False;
+  _FlipY := False;
+  _RepeatX := True;
+  _RepeatY := True;
+  _Layer := 0;
 end;
 
 procedure TG2Scene2DComponentBackground.OnFinalize;
@@ -2595,12 +2600,58 @@ begin
 end;
 
 procedure TG2Scene2DComponentBackground.OnRender(const Display: TG2Display2D);
+  function IntersectScreenGrid(const lv0, lv1: TG2Vec2; const r: TG2Rect; var xp0, xp1: TG2Vec2): Boolean;
+    var tn, tf, d, t, t0, t1: TG2Float;
+    var v: TG2Vec2;
+    var i, j: TG2IntS32;
+  begin
+    tn := -1E+16;
+    tf := 1E+16;
+    v := lv1 - lv0;
+    for i := 0 to 1 do
+    if Abs(v[i]) < G2EPS then
+    begin
+      j := (i + 1) mod 2;
+      xp0[i] := lv0[i];
+      xp0[j] := r.br[j];
+      xp1[i] := lv0[i];
+      xp1[j] := r.tl[j];
+      Exit(True);
+    end;
+    for i := 0 to 1 do
+    begin
+      d := 1 / v[i];
+      t0 := (r.tl[i] - lv0[i]) * d;
+      t1 := (r.br[i] - lv0[i]) * d;
+      if t0 > t1 then
+      begin
+        t := t1;
+        t1 := t0;
+        t0 := t;
+      end;
+      if i = 0 then
+      begin
+        tn := t0;
+        tf := t1;
+      end
+      else
+      begin
+        if t0 < tn then tn := t0;
+        if t1 > tf then tf := t1;
+      end;
+      //if t0 > tn then tn := t0;
+      //if t1 < tf then tf := t1;
+    end;
+    xp0 := lv0 + v * tn;
+    xp1 := lv0 + v * tf;
+    Result := True;
+  end;
   var r: TG2Rect;
   var v, t: array[0..3] of TG2Vec2;
   var i: Integer;
   var xf: TG2Transform2;
-  var pvx, pvy: TG2Vec2;
-  var ox, oy: TG2Float;
+  var pvx, pvy, xp0, xp1, dv0, dv1, dv: TG2Vec2;
+  var ox, oy, ss, dn, df, d: TG2Float;
 begin
   if (_Texture = nil)
   or (_Owner = nil) then
@@ -2612,10 +2663,52 @@ begin
   ox := pvx.Dot(xf.p);
   oy := pvy.Dot(xf.p);
   r := Display.ScreenBounds;
-  v[0].SetValue(r.l, r.t);
-  v[1].SetValue(r.r, r.t);
-  v[2].SetValue(r.l, r.b);
-  v[3].SetValue(r.r, r.b);
+  if _RepeatX and _RepeatY then
+  begin
+    v[0].SetValue(r.l, r.t);
+    v[1].SetValue(r.r, r.t);
+    v[2].SetValue(r.l, r.b);
+    v[3].SetValue(r.r, r.b);
+  end
+  else
+  begin
+    v[0] := xf.p - xf.r.AxisX * (_Scale.x * 0.5) - xf.r.AxisY * (_Scale.y * 0.5);
+    v[1] := xf.p + xf.r.AxisX * (_Scale.x * 0.5) - xf.r.AxisY * (_Scale.y * 0.5);
+    v[2] := xf.p - xf.r.AxisX * (_Scale.x * 0.5) + xf.r.AxisY * (_Scale.y * 0.5);
+    v[3] := xf.p + xf.r.AxisX * (_Scale.x * 0.5) + xf.r.AxisY * (_Scale.y * 0.5);
+    ss := G2Max(_Scale.x, _Scale.y);
+    if _RepeatX then
+    begin
+      d := xf.r.AxisX.Dot(r.tl);
+      dn := d;
+      df := d;
+      d := xf.r.AxisX.Dot(r.tr);
+      if d < dn then dn := d else if d > df then df := d;
+      d := xf.r.AxisX.Dot(r.bl);
+      if d < dn then dn := d else if d > df then df := d;
+      d := xf.r.AxisX.Dot(r.br);
+      if d < dn then dn := d else if d > df then df := d;
+      v[0] := v[0] + xf.r.AxisX * (dn - xf.r.AxisX.Dot(v[0]));
+      v[1] := v[1] + xf.r.AxisX * (df - xf.r.AxisX.Dot(v[1]));
+      v[2] := v[2] + xf.r.AxisX * (dn - xf.r.AxisX.Dot(v[2]));
+      v[3] := v[3] + xf.r.AxisX * (df - xf.r.AxisX.Dot(v[3]));
+    end
+    else if _RepeatY then
+    begin
+      d := xf.r.AxisY.Dot(r.tl);
+      dn := d; df := d;
+      d := xf.r.AxisY.Dot(r.tr);
+      if d < dn then dn := d else if d > df then df := d;
+      d := xf.r.AxisY.Dot(r.bl);
+      if d < dn then dn := d else if d > df then df := d;
+      d := xf.r.AxisY.Dot(r.br);
+      if d < dn then dn := d else if d > df then df := d;
+      v[0] := v[0] + xf.r.AxisY * (dn - xf.r.AxisY.Dot(v[0]));
+      v[1] := v[1] + xf.r.AxisY * (dn - xf.r.AxisY.Dot(v[1]));
+      v[2] := v[2] + xf.r.AxisY * (df - xf.r.AxisY.Dot(v[2]));
+      v[3] := v[3] + xf.r.AxisY * (df - xf.r.AxisY.Dot(v[3]));
+    end;
+  end;
   for i := 0 to 3 do
   begin
     t[i].x := pvx.Dot(v[i]) - ox + _ScrollPos.x;

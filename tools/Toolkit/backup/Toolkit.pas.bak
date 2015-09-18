@@ -27360,6 +27360,8 @@ begin
   PropertySet.PropVec2('ScrollSpeed', @Component.ScrollSpeed, Group);
   PropertySet.PropBool('Flip X', @Component.FlipX, Group);
   PropertySet.PropBool('Flip Y', @Component.FlipY, Group);
+  PropertySet.PropBool('Repeat X', @Component.FlipX, Group);
+  PropertySet.PropBool('Repeat Y', @Component.FlipY, Group);
   Enum := PropertySet.PropEnum('Filter', @Component.Filter, Group);
   Enum.AddValue('Point', Byte(tfPoint));
   Enum.AddValue('Linear', Byte(tfLinear));
@@ -29718,6 +29720,7 @@ begin
       TScene2DJointDataRevolute(JointData).Joint := TG2Scene2DRevoluteJoint(Joint);
     end;
   end;
+  UpdateProperties;
 end;
 
 procedure TScene2DData.Initialize;
