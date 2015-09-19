@@ -6065,10 +6065,7 @@ begin
 end;
 
 procedure TG2Window.OnResize(const Mode, NewWidth, NewHeight: TG2IntS32);
-  var PrevWidth, PrevHeight, NextWidth, NextHeight: TG2IntS32;
-  var PrevScreenMode, NextScreenMode: TG2ScreenMode;
   var R: TRect;
-  var WndStyle: TG2IntU32;
 begin
   if not _ProcessResize then Exit;
   GetClientRect(_Handle, R);
@@ -6819,6 +6816,7 @@ begin
   CurRenderControl.RenderEnd;
 end;
 
+{$Hints off}
 procedure TG2Gfx.Resize(const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32);
 begin
   if _RenderTarget = nil then
@@ -6827,6 +6825,7 @@ begin
     SizeRT.y := NewHeight;
   end;
 end;
+{$Hints on}
 
 procedure TG2Gfx.Initialize;
 begin
@@ -8960,7 +8959,6 @@ procedure TG2Atlas.Load(const DataManager: TG2DataManager);
   var g2ml: TG2ML;
   var FileData: AnsiString;
   var Root: PG2MLObject;
-  var fs: TG2DataManager;
   var i0, i1, i2, i3, i: Integer;
   var n0, n1, n2, n3: PG2MLObject;
   var Page: TG2AtlasPage;
@@ -9624,10 +9622,12 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 procedure TG2Effect2DModOpacityGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Color.a := Round(Particle.ColorInit.a * Graph.GetYAt(t));
 end;
+{$Hints on}
 
 procedure TG2Effect2DModOpacityGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -9658,10 +9658,12 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 procedure TG2Effect2DModScaleGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Scale := Particle.ScaleInit * Graph.GetYAt(t);
 end;
+{$Hints on}
 
 procedure TG2Effect2DModScaleGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -9690,6 +9692,7 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 procedure TG2Effect2DModColorGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
   var i, n: Integer;
   var c: TG2Color;
@@ -9716,6 +9719,7 @@ begin
   Particle.Color.g := Round(Particle.ColorInit.g * G2Rcp255 * c.g);
   Particle.Color.b := Round(Particle.ColorInit.b * G2Rcp255 * c.b);
 end;
+{$Hints on}
 
 procedure TG2Effect2DModColorGraph.LoadG2ML(const g2ml: PG2MLObject);
   var i: TG2IntS32;
@@ -9761,10 +9765,12 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 procedure TG2Effect2DModWidthGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Width := Particle.WidthInit * Graph.GetYAt(t);
 end;
+{$Hints on}
 
 procedure TG2Effect2DModWidthGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -9795,10 +9801,12 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 procedure TG2Effect2DModHeightGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Height := Particle.HeightInit * Graph.GetYAt(t);
 end;
+{$Hints on}
 
 procedure TG2Effect2DModHeightGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -9829,10 +9837,12 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 procedure TG2Effect2DModRotationGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Rotation := Particle.RotationInit + Graph.GetYAt(t);
 end;
+{$Hints on}
 
 procedure TG2Effect2DModRotationGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -9863,10 +9873,12 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 procedure TG2Effect2DModOrientationGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.xf.r.Angle := Particle.RotationInit + Graph.GetYAt(t);
 end;
+{$Hints on}
 
 procedure TG2Effect2DModOrientationGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -9897,10 +9909,12 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 procedure TG2Effect2DModVelocityGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Velocity := Particle.VelocityInit * Graph.GetYAt(t);
 end;
+{$Hints on}
 
 procedure TG2Effect2DModVelocityGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -9933,6 +9947,7 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 procedure TG2Effect2DModAcceleration.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
   var r: TG2Rotation2;
   var a, v: TG2Vec2;
@@ -9948,6 +9963,7 @@ begin
   if Abs(vl) > G2EPS then
   Particle.xf.r.AxisX := v.Norm;
 end;
+{$Hints on}
 
 procedure TG2Effect2DModAcceleration.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -9980,10 +9996,12 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 procedure TG2Effect2DModEmitterOrientationGraph.OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Emitter.Orientation := Emitter.Data.Orientation + Graph.GetYAt(t);
 end;
+{$Hints on}
 
 procedure TG2Effect2DModEmitterOrientationGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -10014,6 +10032,7 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 procedure TG2Effect2DModEmitterScaleGraph.OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
   var d: TG2Float;
 begin
@@ -10025,6 +10044,7 @@ begin
   Emitter.Radius0 := Emitter.Data.ShapeRadius0 * d;
   Emitter.Radius1 := Emitter.Data.ShapeRadius1 * d;
 end;
+{$Hints on}
 
 procedure TG2Effect2DModEmitterScaleGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -10245,8 +10265,7 @@ end;
 
 procedure TG2Effect2D.Load(const DataManager: TG2DataManager);
   var g2ml: TG2ML;
-  var dm: TG2DataManager;
-  var FileData, mod_guid: AnsiString;
+  var FileData: AnsiString;
   var Root, n0, n1, n2, n3, n4: PG2MLObject;
   var i, i0, i1, i2, i3, i4: TG2IntS32;
   var Page: TG2AtlasPage;
@@ -13473,6 +13492,7 @@ begin
 end;
 {$endif}
 
+{$Hints off}
 procedure TG2ShaderGroup.Sampler(const Name: AnsiString; const Texture: TG2TextureBase; const Stage: TG2IntS32 = 0);
 {$if defined(G2Gfx_D3D9)}
   var psid: TG2IntS32;
@@ -13499,6 +13519,7 @@ begin
   end;
 end;
 {$endif}
+{$Hints on}
 
 {$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
 function TG2ShaderGroup.Attribute(const Name: AnsiString): GLInt;
@@ -14797,7 +14818,7 @@ begin
 end;
 
 procedure TG2RenderControlPrim3D.RenderBegin;
-{$if defined(G2Gfx_D3D9)}
+{$if defined(G2Gfx_D3D9) and defined(G2Gfx_FF)}
   var m: TG2Mat;
 {$endif}
 {$if defined(G2RM_SM2)}
@@ -15438,7 +15459,7 @@ begin
 end;
 
 procedure TG2RenderControlPoly3D.RenderBegin;
-{$if defined(G2Gfx_D3D9)}
+{$if defined(G2Gfx_D3D9) and defined(G2Gfx_FF)}
   var m: TG2Mat;
 {$endif}
 {$if defined(G2RM_SM2)}
@@ -19270,9 +19291,7 @@ end;
 
 procedure G2RegisterSerializable(const SerializableClass: TClass);
   var i: TG2IntS32;
-  var Intf: IG2Serializable;
 begin
-  //if not (SerializableClass.GetInterfaceByStr(IG2SerializableGUID, Intf)) then Exit;
   for i := 0 to High(G2Serializable) do
   if G2Serializable[i] = SerializableClass then
   Exit;
@@ -19298,12 +19317,13 @@ function G2SerializeFromStream(const Stream: TStream): TObject;
   var InitPos: TG2IntS64;
   var n: TG2IntU8;
   var ClassName: AnsiString;
-  var ObjClass: TClass;
   var Intf: IG2Serializable;
 begin
   InitPos := Stream.Position;
   if Stream.Position > Stream.Size - 1 then Exit(nil);
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   if Stream.Position > Stream.Size - n then
   begin
     Stream.Position := InitPos;

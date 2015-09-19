@@ -3,13 +3,11 @@ unit G2Scene2D;
 interface
 
 uses
-  Types,
   Classes,
   SysUtils,
   G2Types,
   G2Utils,
   Gen2MP,
-  G2DataManager,
   G2Math,
   box2d,
   Spine,
@@ -648,6 +646,7 @@ type
     procedure Load(const Stream: TStream); override;
   end;
 
+  {$Notes off}
   TG2Scene2DComponentCollisionShapeBox = class (TG2Scene2DComponentCollisionShapePoly)
   private
     var _Width: TG2Float;
@@ -675,6 +674,7 @@ type
     procedure Save(const Stream: TStream); override;
     procedure Load(const Stream: TStream); override;
   end;
+  {$Notes on}
 
   TG2Scene2DComponentCollisionShapeCircle = class (TG2Scene2DComponentCollisionShape)
   private
@@ -995,10 +995,12 @@ begin
   Result := 'Component';
 end;
 
+{$Hints off}
 class function TG2Scene2DComponent.CanAttach(const Node: TG2Scene2DEntity): Boolean;
 begin
   Result := False;
 end;
+{$Hints on}
 
 constructor TG2Scene2DComponent.Create(const OwnerScene: TG2Scene2D);
 begin
@@ -1050,15 +1052,19 @@ begin
   end;
 end;
 
+{$Hints off}
 procedure TG2Scene2DComponent.Save(const Stream: TStream);
 begin
 
 end;
+{$Hints on}
 
+{$Hints off}
 procedure TG2Scene2DComponent.Load(const Stream: TStream);
 begin
 
 end;
+{$Hints on}
 //TG2Scene2DComponent END
 
 //TG2Scene2DEntity BEGIN
@@ -1168,10 +1174,12 @@ begin
   Display.PrimLine(_Transform.p, _Transform.p + _Transform.r.AxisY, $ff0000ff);
 end;
 
+{$Hints off}
 procedure TG2Scene2DEntity.OnRender(const Display: TG2Display2D);
 begin
 
 end;
+{$Hints on}
 
 constructor TG2Scene2DEntity.Create(const OwnerScene: TG2Scene2D);
 begin
@@ -1186,7 +1194,6 @@ begin
 end;
 
 destructor TG2Scene2DEntity.Destroy;
-  var i: TG2IntS32;
   var n: TG2Scene2DEntity;
   var c: TG2Scene2DComponent;
 begin
@@ -1282,20 +1289,26 @@ procedure TG2Scene2DEntity.Load(const Stream: TStream);
   var CName: String;
 begin
   Stream.Read(_Transform, SizeOf(_Transform));
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   SetLength(_Name, n);
   Stream.Read(_Name[1], n);
   Stream.Read(n, SizeOf(n));
   SetLength(_GUID, n);
   Stream.Read(_GUID[1], n);
+  {$Hints off}
   Stream.Read(ec, SizeOf(ec));
+  {$Hints on}
   for i := 0 to ec - 1 do
   begin
     e := TG2Scene2DEntity.Create(Scene);
     e.Parent := Self;
     e.Load(Stream);
   end;
+  {$Hints off}
   Stream.Read(cc, SizeOf(cc));
+  {$Hints on}
   for i := 0 to cc - 1 do
   begin
     Stream.Read(n, SizeOf(n));
@@ -1351,15 +1364,19 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 procedure TG2Scene2DJoint.Save(const Stream: TStream);
 begin
 
 end;
+{$Hints on}
 
+{$Hints off}
 procedure TG2Scene2DJoint.Load(const Stream: TStream);
 begin
 
 end;
+{$Hints on}
 //TG2Scene2DJoint END
 
 //TG2Scene2DDistanceJoint BEIGN
@@ -1463,7 +1480,9 @@ procedure TG2Scene2DDistanceJoint.Load(const Stream: TStream);
   var b: Boolean;
   var e: TG2Scene2DEntity;
 begin
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   if n > 0 then
   begin
     SetLength(GUID, n);
@@ -1492,7 +1511,9 @@ begin
   Stream.Read(_AnchorA, SizeOf(_AnchorA));
   Stream.Read(_AnchorB, SizeOf(_AnchorB));
   Stream.Read(_Distance, SizeOf(_Distance));
+  {$Hints off}
   Stream.Read(b, SizeOf(b));
+  {$Hints on}
   Enabled := b;
 end;
 //TG2Scene2DDistanceJoint END
@@ -1589,7 +1610,9 @@ procedure TG2Scene2DRevoluteJoint.Load(const Stream: TStream);
   var b: Boolean;
   var e: TG2Scene2DEntity;
 begin
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   if n > 0 then
   begin
     SetLength(GUID, n);
@@ -1616,7 +1639,9 @@ begin
   else
   _RigidBodyB := nil;
   Stream.Read(_Anchor, SizeOf(_Anchor));
+  {$Hints off}
   Stream.Read(b, SizeOf(b));
+  {$Hints on}
   Enabled := b;
 end;
 //TG2Scene2DRevoluteJoint END
@@ -1815,6 +1840,7 @@ begin
   end;
 end;
 
+{$Hints off}
 procedure TG2Scene2D.TPhysContactListener.pre_solve(const contact: pb2_contact; const old_manifold: pb2_manifold);
   var Obj0, Obj1: TObject;
   var Shape0, Shape1: TG2Scene2DComponentCollisionShape;
@@ -1855,7 +1881,9 @@ begin
     else if Assigned(Character1) then Character1.OnBeforeContactSolve(Entity0, Shape0, contact^.get_fixture_b, contact);
   end;
 end;
+{$Hints on}
 
+{$Hints off}
 procedure TG2Scene2D.TPhysContactListener.post_solve(const contact: pb2_contact; const impulse: pb2_contact_impulse);
   var Obj0, Obj1: TObject;
   var Shape0, Shape1: TG2Scene2DComponentCollisionShape;
@@ -1896,6 +1924,7 @@ begin
     else if Assigned(Character1) then Character1.OnAfterContactSolve(Entity0, Shape0, contact^.get_fixture_b, contact);
   end;
 end;
+{$Hints on}
 
 procedure TG2Scene2D.Update;
 begin
@@ -2086,7 +2115,7 @@ end;
 
 procedure TG2Scene2D.Save(const Stream: TStream);
   const Header: array[0..3] of AnsiChar = 'G2S2';
-  var i, p, n: TG2IntS32;
+  var i, n: TG2IntS32;
 begin
   Stream.Write(Header, SizeOf(Header));
   Stream.Write(_Gravity, SizeOf(_Gravity));
@@ -2109,17 +2138,23 @@ procedure TG2Scene2D.Load(const Stream: TStream);
   var CName: String;
   var Joint: TG2Scene2DJoint;
 begin
+  {$Hints off}
   Stream.Read(Header, SizeOf(Header));
+  {$Hints on}
   if Header <> 'G2S2' then Exit;
   Stream.Read(_Gravity, SizeOf(_Gravity));
   _PhysWorld.set_gravity(_Gravity);
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   for i := 0 to n - 1 do
   TG2Scene2DEntity.Create(Self).Load(Stream);
   Stream.Read(n, SizeOf(n));
   for i := 0 to n - 1 do
   begin
+    {$Hints off}
     Stream.Read(cn, SizeOf(n));
+    {$Hints on}
     SetLength(CName, cn);
     Stream.Read(CName[1], cn);
     for j := 0 to High(TG2Scene2DJoint.JointList) do
@@ -2213,18 +2248,18 @@ begin
   Exit;
   hw := _Width * _Scale * 0.5;
   hh := _Height * _Scale * 0.5;
-  v[0].SetValue(-hw, -hh);
-  v[1].SetValue(hw, -hh);
-  v[2].SetValue(-hw, hh);
-  v[3].SetValue(hw, hh);
+  v[0] := G2Vec2(-hw, -hh);
+  v[1] := G2Vec2(hw, -hh);
+  v[2] := G2Vec2(-hw, hh);
+  v[3] := G2Vec2(hw, hh);
   if not _FlipX then begin tx0 := _Picture.TexCoords.l; tx1 := _Picture.TexCoords.r; end
   else begin tx0 := _Picture.TexCoords.r; tx1 := _Picture.TexCoords.l; end;
   if not _FlipY then begin ty0 := _Picture.TexCoords.t; ty1 := _Picture.TexCoords.b; end
   else begin ty0 := _Picture.TexCoords.b; ty1 := _Picture.TexCoords.t; end;
-  t[0].SetValue(tx0, ty0);
-  t[1].SetValue(tx1, ty0);
-  t[2].SetValue(tx0, ty1);
-  t[3].SetValue(tx1, ty1);
+  t[0] := G2Vec2(tx0, ty0);
+  t[1] := G2Vec2(tx1, ty0);
+  t[2] := G2Vec2(tx0, ty1);
+  t[3] := G2Vec2(tx1, ty1);
   xf := _Owner.Transform;
   G2Transform2Mul(@xf, @_Transform, @xf);
   for i := 0 to High(v) do
@@ -2247,12 +2282,14 @@ begin
   Result := 'Sprite';
 end;
 
+{$Hints off}
 class function TG2Scene2DComponentSprite.CanAttach(
   const Node: TG2Scene2DEntity
 ): Boolean;
 begin
   Result := True;
 end;
+{$Hints on}
 
 procedure TG2Scene2DComponentSprite.Save(const Stream: TStream);
   var n: TG2IntS32;
@@ -2292,12 +2329,16 @@ procedure TG2Scene2DComponentSprite.Load(const Stream: TStream);
   var Usage: TG2TextureUsage;
   var TexFile: String;
 begin
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   if n > 0 then
   begin
     SetLength(TexFile, n);
     Stream.Read(TexFile[1], n);
+    {$Hints off}
     Stream.Read(Usage, SizeOf(Usage));
+    {$Hints on}
     Picture := TG2Picture.SharedAsset(TexFile, Usage);
   end;
   Stream.Read(_Width, SizeOf(_Width));
@@ -2314,10 +2355,12 @@ end;
 //TG2Scene2DComponentSprite END
 
 //TG2Scene2DComponentEffect BEGIN
+{$Hints off}
 procedure TG2Scene2DComponentEffect.OnEffectFinish(const Inst: Pointer);
 begin
   if _AutoDestruct and (Owner <> nil) then Owner.Free;
 end;
+{$Hints on}
 
 function TG2Scene2DComponentEffect.GetEffect: TG2Effect2D;
 begin
@@ -2472,10 +2515,12 @@ begin
   Result := 'Effect';
 end;
 
+{$Hints off}
 class function TG2Scene2DComponentEffect.CanAttach(const Node: TG2Scene2DEntity): Boolean;
 begin
   Result := True;
 end;
+{$Hints on}
 
 procedure TG2Scene2DComponentEffect.Play;
 begin
@@ -2527,7 +2572,9 @@ procedure TG2Scene2DComponentEffect.Load(const Stream: TStream);
   var b: Boolean;
   var EffectFile: String;
 begin
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   if n > 0 then
   begin
     SetLength(EffectFile, n);
@@ -2536,11 +2583,15 @@ begin
   end;
   Stream.Read(n, SizeOf(n));
   Layer := n;
+  {$Hints off}
   Stream.Read(s, SizeOf(s));
+  {$Hints on}
   if Assigned(_EffectInst) then _EffectInst.Scale := s;
   Stream.Read(s, SizeOf(s));
   if Assigned(_EffectInst) then _EffectInst.Speed := s;
+  {$Hints off}
   Stream.Read(b, SizeOf(b));
+  {$Hints on}
   if Assigned(_EffectInst) then _EffectInst.Repeating := b;
   Stream.Read(_LocalSpace, SizeOf(_LocalSpace));
   if Assigned(_EffectInst) then _EffectInst.LocalSpace := _LocalSpace;
@@ -2650,8 +2701,8 @@ procedure TG2Scene2DComponentBackground.OnRender(const Display: TG2Display2D);
   var v, t: array[0..3] of TG2Vec2;
   var i: Integer;
   var xf: TG2Transform2;
-  var pvx, pvy, xp0, xp1, dv0, dv1, dv: TG2Vec2;
-  var ox, oy, ss, dn, df, d: TG2Float;
+  var pvx, pvy: TG2Vec2;
+  var ox, oy, dn, df, d: TG2Float;
 begin
   if (_Texture = nil)
   or (_Owner = nil) then
@@ -2665,10 +2716,10 @@ begin
   r := Display.ScreenBounds;
   if _RepeatX and _RepeatY then
   begin
-    v[0].SetValue(r.l, r.t);
-    v[1].SetValue(r.r, r.t);
-    v[2].SetValue(r.l, r.b);
-    v[3].SetValue(r.r, r.b);
+    v[0] := G2Vec2(r.l, r.t);
+    v[1] := G2Vec2(r.r, r.t);
+    v[2] := G2Vec2(r.l, r.b);
+    v[3] := G2Vec2(r.r, r.b);
   end
   else
   begin
@@ -2676,7 +2727,6 @@ begin
     v[1] := xf.p + xf.r.AxisX * (_Scale.x * 0.5) - xf.r.AxisY * (_Scale.y * 0.5);
     v[2] := xf.p - xf.r.AxisX * (_Scale.x * 0.5) + xf.r.AxisY * (_Scale.y * 0.5);
     v[3] := xf.p + xf.r.AxisX * (_Scale.x * 0.5) + xf.r.AxisY * (_Scale.y * 0.5);
-    ss := G2Max(_Scale.x, _Scale.y);
     if _RepeatX then
     begin
       d := xf.r.AxisX.Dot(r.tl);
@@ -2711,8 +2761,8 @@ begin
   end;
   for i := 0 to 3 do
   begin
-    t[i].x := pvx.Dot(v[i]) - ox + _ScrollPos.x;
-    t[i].y := pvy.Dot(v[i]) - oy + _ScrollPos.y;
+    t[i].x := pvx.Dot(v[i]) - ox + _ScrollPos.x - 0.5;
+    t[i].y := pvy.Dot(v[i]) - oy + _ScrollPos.y - 0.5;
   end;
   Display.PicQuad(
     v[0], v[1], v[2], v[3],
@@ -2723,7 +2773,6 @@ begin
 end;
 
 procedure TG2Scene2DComponentBackground.OnUpdate;
-  var f: TG2Float;
 begin
   if _FlipX then
   _ScrollPos.x += _ScrollSpeed.x * (1 / g2.Params.TargetUPS)
@@ -2750,12 +2799,14 @@ begin
   Result := 'Background';
 end;
 
+{$Hints off}
 class function TG2Scene2DComponentBackground.CanAttach(
   const Node: TG2Scene2DEntity
 ): Boolean;
 begin
   Result := True;
 end;
+{$Hints on}
 
 procedure TG2Scene2DComponentBackground.Save(const Stream: TStream);
   var n: TG2IntS32;
@@ -2779,6 +2830,8 @@ begin
   Stream.Write(_ScrollSpeed, SizeOf(_ScrollSpeed));
   Stream.Write(_FlipX, SizeOf(_FlipX));
   Stream.Write(_FlipY, SizeOf(_FlipY));
+  Stream.Write(_RepeatX, SizeOf(_RepeatX));
+  Stream.Write(_RepeatY, SizeOf(_RepeatY));
   Stream.Write(_Filter, SizeOf(_Filter));
   n := Layer;
   Stream.Write(n, SizeOf(n));
@@ -2789,7 +2842,9 @@ procedure TG2Scene2DComponentBackground.Load(const Stream: TStream);
   var n: TG2IntS32;
   var TexFile: String;
 begin
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   if n > 0 then
   begin
     SetLength(TexFile, n);
@@ -2800,6 +2855,8 @@ begin
   Stream.Read(_ScrollSpeed, SizeOf(_ScrollSpeed));
   Stream.Read(_FlipX, SizeOf(_FlipX));
   Stream.Read(_FlipY, SizeOf(_FlipY));
+  Stream.Read(_RepeatX, SizeOf(_RepeatX));
+  Stream.Read(_RepeatY, SizeOf(_RepeatY));
   Stream.Read(_Filter, SizeOf(_Filter));
   Stream.Read(n, SizeOf(n));
   Layer := n;
@@ -2931,10 +2988,12 @@ begin
   Result := 'Spine Animation';
 end;
 
+{$Hints off}
 class function TG2Scene2DComponentSpineAnimation.CanAttach(const Node: TG2Scene2DEntity): Boolean;
 begin
   Result := True;
 end;
+{$Hints on}
 
 procedure TG2Scene2DComponentSpineAnimation.Save(const Stream: TStream);
   var n: TG2IntS32;
@@ -2964,7 +3023,9 @@ procedure TG2Scene2DComponentSpineAnimation.Load(const Stream: TStream);
   var al: TSpineAtlasList;
 begin
   inherited Load(Stream);
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   if n > 0 then
   begin
     SetLength(SkeletonPath, n);
@@ -3216,9 +3277,13 @@ procedure TG2Scene2DComponentRigidBody.Load(const Stream: TStream);
   var b: Boolean;
   var xf: TG2Transform2;
 begin
+  {$Hints off}
   Stream.Read(xf, SizeOf(xf));
+  {$Hints on}
   Stream.Read(_BodyDef, SizeOf(_BodyDef));
+  {$Hints off}
   Stream.Read(b, SizeOf(b));
+  {$Hints on}
   Enabled := b;
   Transform := xf;
 end;
@@ -3342,6 +3407,7 @@ begin
   if _Fixture <> nil then _Fixture^.set_sensor(Value);
 end;
 
+{$Hints off}
 procedure TG2Scene2DComponentCollisionShape.OnBeginContact(
   const OtherEntity: TG2Scene2DEntity;
   const OtherShape: TG2Scene2DComponentCollisionShape;
@@ -3353,7 +3419,9 @@ begin
   _EventBeginContactData.PhysContact := Contact;
   _EventBeginContact.DispatchEvent(_EventBeginContactData);
 end;
+{$Hints on}
 
+{$Hints off}
 procedure TG2Scene2DComponentCollisionShape.OnEndContact(
   const OtherEntity: TG2Scene2DEntity;
   const OtherShape: TG2Scene2DComponentCollisionShape;
@@ -3365,7 +3433,9 @@ begin
   _EventEndContactData.PhysContact := Contact;
   _EventEndContact.DispatchEvent(_EventEndContactData);
 end;
+{$Hints on}
 
+{$Hints off}
 procedure TG2Scene2DComponentCollisionShape.OnBeforeContactSolve(
   const OtherEntity: TG2Scene2DEntity;
   const OtherShape: TG2Scene2DComponentCollisionShape;
@@ -3377,7 +3447,9 @@ begin
   _EventBeforeContactSolveData.PhysContact := Contact;
   _EventBeforeContactSolve.DispatchEvent(_EventBeforeContactSolveData);
 end;
+{$Hints on}
 
+{$Hints off}
 procedure TG2Scene2DComponentCollisionShape.OnAfterContactSolve(
   const OtherEntity: TG2Scene2DEntity;
   const OtherShape: TG2Scene2DComponentCollisionShape;
@@ -3389,6 +3461,7 @@ begin
   _EventAfterContactSolveData.PhysContact := Contact;
   _EventAfterContactSolve.DispatchEvent(_EventAfterContactSolveData);
 end;
+{$Hints on}
 
 class constructor TG2Scene2DComponentCollisionShape.CreateClass;
 begin
@@ -3401,12 +3474,14 @@ begin
   Result := 'Collision Shape';
 end;
 
+{$Hints off}
 class function TG2Scene2DComponentCollisionShape.CanAttach(
   const Node: TG2Scene2DEntity
 ): Boolean;
 begin
   Result := True;
 end;
+{$Hints on}
 //TG2Scene2DComponentCollisionShape END
 
 //TG2Scene2DComponentCollisionShapeEdge BEGIN
@@ -3532,7 +3607,9 @@ begin
   Stream.Read(_EdgeShape.vertex3, SizeOf(_EdgeShape.vertex3));
   Stream.Read(_EdgeShape.has_vertex0, SizeOf(_EdgeShape.has_vertex0));
   Stream.Read(_EdgeShape.has_vertex3, SizeOf(_EdgeShape.has_vertex3));
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
   Stream.Read(n, SizeOf(n));
   if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
@@ -3632,7 +3709,9 @@ begin
   Stream.Read(_PolyShape.vertices, SizeOf(_PolyShape.vertices));
   Stream.Read(_PolyShape.normals, SizeOf(_PolyShape.normals));
   Stream.Read(_PolyShape.centroid, SizeOf(_PolyShape.centroid));
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
   Stream.Read(n, SizeOf(n));
   if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
@@ -3750,7 +3829,9 @@ begin
   Stream.Read(_Height, SizeOf(_Height));
   Stream.Read(_Offset, SizeOf(_Offset));
   Stream.Read(_Angle, SizeOf(_Angle));
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
   Stream.Read(n, SizeOf(n));
   if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
@@ -3845,7 +3926,9 @@ begin
   _FixtureDef.shape := @_CircleShape;
   Stream.Read(_CircleShape.center, SizeOf(_CircleShape.center));
   Stream.Read(_CircleShape.radius, SizeOf(_CircleShape.radius));
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
   Stream.Read(n, SizeOf(n));
   if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
@@ -3962,7 +4045,9 @@ begin
   Stream.Read(_ChainShape.prev_vertex, SizeOf(_ChainShape.prev_vertex))
   else
   _ChainShape.prev_vertex.set_zero;
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
   Stream.Read(n, SizeOf(n));
   if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
@@ -4082,8 +4167,6 @@ procedure TG2Scene2DComponentCharacter.SetEnabled(const Value: Boolean);
   var bd: tb2_body_def;
   var fd: tb2_fixture_def;
   var jd: tb2_revolute_joint_def;
-  var md: tb2_mass_data;
-  var PrevDuck: TG2Float;
 begin
   if Value = _Enabled then Exit;
   if not Value then
@@ -4165,6 +4248,7 @@ begin
   end;
 end;
 
+{$Hints off}
 procedure TG2Scene2DComponentCharacter.OnBeginContact(
   const OtherEntity: TG2Scene2DEntity;
   const OtherShape: TG2Scene2DComponentCollisionShape;
@@ -4177,7 +4261,9 @@ begin
   else if SelfFixture = _FixtureDuckCheck then
   Inc(_DuckCheckContacts);
 end;
+{$Hints on}
 
+{$Hints off}
 procedure TG2Scene2DComponentCharacter.OnEndContact(
   const OtherEntity: TG2Scene2DEntity;
   const OtherShape: TG2Scene2DComponentCollisionShape;
@@ -4190,7 +4276,9 @@ begin
   else if SelfFixture = _FixtureDuckCheck then
   Dec(_DuckCheckContacts);
 end;
+{$Hints on}
 
+{$Hints off}
 procedure TG2Scene2DComponentCharacter.OnBeforeContactSolve(
   const OtherEntity: TG2Scene2DEntity;
   const OtherShape: TG2Scene2DComponentCollisionShape;
@@ -4198,7 +4286,9 @@ procedure TG2Scene2DComponentCharacter.OnBeforeContactSolve(
 begin
 
 end;
+{$Hints on}
 
+{$Hints off}
 procedure TG2Scene2DComponentCharacter.OnAfterContactSolve(
   const OtherEntity: TG2Scene2DEntity;
   const OtherShape: TG2Scene2DComponentCollisionShape;
@@ -4206,6 +4296,7 @@ procedure TG2Scene2DComponentCharacter.OnAfterContactSolve(
 begin
 
 end;
+{$Hints on}
 
 class constructor TG2Scene2DComponentCharacter.CreateClass;
 begin
@@ -4253,7 +4344,9 @@ procedure TG2Scene2DComponentCharacter.Load(const Stream: TStream);
   var b: Boolean;
   var xf: TG2Transform2;
 begin
+  {$Hints off}
   Stream.Read(xf, SizeOf(xf));
+  {$Hints on}
   Stream.Read(_Width, SizeOf(_Width));
   Stream.Read(_Height, SizeOf(_Height));
   Stream.Read(_BodyDef, SizeOf(_BodyDef));
@@ -4261,7 +4354,9 @@ begin
   Stream.Read(_FixtureBodyDef, SizeOf(_FixtureBodyDef));
   Stream.Read(_FixtureFeetDef, SizeOf(_FixtureFeetDef));
   Stream.Read(_MaxGlideSpeed, SizeOf(_MaxGlideSpeed));
+  {$Hints off}
   Stream.Read(b, SizeOf(b));
+  {$Hints on}
   _FixtureBodyDef.user_data := Self;
   _FixtureFeetDef.user_data := Self;
   SetupShapes;
@@ -4489,10 +4584,12 @@ begin
   Display.PrimEnd;
 end;
 
+{$Hints off}
 procedure TG2Scene2DComponentPoly.OnRender(const Display: TG2Display2D);
 begin
 
 end;
+{$Hints on}
 
 class constructor TG2Scene2DComponentPoly.CreateClass;
 begin
@@ -4500,10 +4597,12 @@ begin
   ComponentList[High(ComponentList)] := CG2Scene2DComponent(ClassType);
 end;
 
+{$Hints off}
 class function TG2Scene2DComponentPoly.CanAttach(const Node: TG2Scene2DEntity): Boolean;
 begin
   Result := True;
 end;
+{$Hints on}
 
 class function TG2Scene2DComponentPoly.GetName: String;
 begin
@@ -4534,7 +4633,7 @@ procedure TG2Scene2DComponentPoly.SetUp(const Triangles: PG2Vec2Arr; const Trian
     _Faces[fc][2] := AddVertex(v2);
     Inc(fc);
   end;
-  var i, j: Integer;
+  var i: Integer;
 begin
   SetLength(_Vertices, TriangleCount * 3);
   SetLength(_Faces, TriangleCount);
@@ -4621,7 +4720,9 @@ procedure TG2Scene2DComponentPoly.Load(const Stream: TStream);
   var b: Boolean;
   var TexFile: String;
 begin
+  {$Hints off}
   Stream.Read(n, SizeOf(n));
+  {$Hints on}
   SetLength(_Vertices, n);
   Stream.Read(_Vertices[0], SizeOf(TG2Scene2DComponentPolyVertex) * Length(_Vertices));
   Stream.Read(n, SizeOf(n));
@@ -4643,7 +4744,9 @@ begin
     end;
     Stream.Read(n, SizeOf(n));
     _Layers[i].Layer := n;
+    {$Hints off}
     Stream.Read(b, SizeOf(b));
+    {$Hints on}
     _Layers[i].Visible := b;
   end;
 end;

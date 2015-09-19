@@ -1447,7 +1447,7 @@ begin
   AppPath := G2GetAppPath;
   AddPath(AppPath);
   AddPath(AppPath + 'assets');
-  AddPath(AppPath + '..' + G2PathSep + 'assets');
+  AddPath(AppPath + '../assets');
 end;
 
 procedure TG2AssetSourceFile.ClearPaths;

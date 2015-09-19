@@ -120,7 +120,7 @@ begin
   end;
 end;
 
-procedure TG2Audio.Load(const FileName: FileString);
+procedure TG2Audio.Load(const FileName: String);
   var dm: TG2DataManager;
 begin
   dm := TG2DataManager.Create(FileName, dmAsset);

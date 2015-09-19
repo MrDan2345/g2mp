@@ -1141,7 +1141,6 @@ end;
 
 constructor TG2DataManager.Create(const FileName: String; const Mode: TG2DataMode = dmAsset);
   var fs: String;
-  var i: TG2IntS32;
   var Buffer: Pointer;
   var BufferSize: TG2IntU32;
 begin

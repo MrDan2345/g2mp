@@ -54,7 +54,7 @@ type
   TVec2List = specialize TG2QuickListG<TG2Vec2>;
   TVec3List = specialize TG2QuickListG<TG2Vec3>;
 
-//TSCrollBox BEGIN
+//TScrollBox BEGIN
   TScrollBoxOrientation = (sbVertical, sbHorizontal);
   TScrollBox = object
   private
@@ -3856,8 +3856,8 @@ type
     procedure SetRigidBodyB(const Value: TScene2DComponentDataRigidBody);
     function GetAnchor: TG2Vec2; inline;
     procedure SetAnchor(const Value: TG2Vec2); inline;
-    procedure SetPosition(const Value: TG2Vec2); override;
   protected
+    procedure SetPosition(const Value: TG2Vec2); override;
     function GetEditor: TScene2DEditor; override;
   public
     property Joint: TG2Scene2DRevoluteJoint read GetJoint write SetJoint;
@@ -3993,7 +3993,7 @@ type
 
 //TAssetTexture BEGIN
   TAssetTexture = class (TAsset)
-  protected
+  public
     class function GetAssetName: String; override;
     class function CheckExtension(const Ext: String): Boolean; override;
     class function ProcessFile(const FilePath: String): TG2QuickListString; override;
@@ -4011,7 +4011,7 @@ type
 
 //TAssetEffect2D BEGIN
   TAssetEffect2D = class (TAsset)
-  protected
+  public
     class function GetAssetName: String; override;
     class function CheckExtension(const Ext: String): Boolean; override;
     class function ProcessFile(const FilePath: String): TG2QuickListString; override;

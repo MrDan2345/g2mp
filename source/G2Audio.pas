@@ -4,7 +4,6 @@ interface
 
 uses
   Classes,
-  G2Types,
   G2DataManager;
 
 type

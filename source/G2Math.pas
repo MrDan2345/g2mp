@@ -1370,10 +1370,12 @@ begin
   Result := G2ArcTan2(s, c);
 end;
 
+{$Warnings off}
 function TG2Rotation2.GetAxisX: TG2Vec2;
 begin
   Result.SetValue(c, s);
 end;
+{$Warnings on}
 
 procedure TG2Rotation2.SetAxisX(const Value: TG2Vec2);
 begin
@@ -1381,10 +1383,12 @@ begin
   c := Value.x;
 end;
 
+{$Warnings off}
 function TG2Rotation2.GetAxisY: TG2Vec2;
 begin
   Result.SetValue(-s, c);
 end;
+{$Warnings on}
 
 procedure TG2Rotation2.SetAxisY(const Value: TG2Vec2);
 begin
@@ -2573,7 +2577,7 @@ function G2Project2DPointToLine(const lv0, lv1, v: TG2Vec2; var InSegment: Boole
   var u: TG2Float;
 begin
   u := ((v.x - lv0.x) * (lv1.x - lv0.x) + (v.y - lv0.y) * (lv1.y - lv0.y)) / (Sqr(lv1.x - lv0.x) + Sqr(lv1.y - lv0.y));
-  Result.SetValue(lv0.x + u * (lv1.x - lv0.x), lv0.y + u * (lv1.y - lv0.y));
+  Result := G2Vec2(lv0.x + u * (lv1.x - lv0.x), lv0.y + u * (lv1.y - lv0.y));
   InSegment := (u >= 0) and (u <= 1);
 end;
 
@@ -2584,7 +2588,7 @@ begin
     ((v.x - lv0.x) * (lv1.x - lv0.x) + (v.y - lv0.y) * (lv1.y - lv0.y) + (v.z - lv0.z) * (lv1.z - lv0.z)) /
     (Sqr(lv1.x - lv0.x) + Sqr(lv1.y - lv0.y) + Sqr(lv1.z - lv0.z))
   );
-  Result.SetValue(lv0.x + u * (lv1.x - lv0.x), lv0.y + u * (lv1.y - lv0.y), lv0.z + u * (lv1.z - lv0.z));
+  Result := G2Vec3(lv0.x + u * (lv1.x - lv0.x), lv0.y + u * (lv1.y - lv0.y), lv0.z + u * (lv1.z - lv0.z));
   InSegment := (u >= 0) and (u <= 1);
 end;
 
@@ -3544,10 +3548,9 @@ begin
 end;
 
 function G2RectVsTri(const r: TG2Rect; const Tri: PG2Vec2): Boolean;
-  var i, j: TG2IntS32;
+  var i: TG2IntS32;
   var n: array[0..2] of TG2Vec2;
   var d: array[0..2] of TG2Float;
-  var v: array[0..3] of TG2Vec2;
   var vmin: TG2Vec2;
   var xmin, xmax, ymin, ymax: Boolean;
   var TriArr: PG2Vec2Arr absolute Tri;

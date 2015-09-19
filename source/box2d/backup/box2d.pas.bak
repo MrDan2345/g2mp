@@ -4991,7 +4991,7 @@ end;
 
 function tb2_broad_phase.query_callback(const proxy_id: tb2_int32): boolean;
   var old_buffer: pb2_pair_arr;
-  var l, h, m, i: tb2_int32;
+  var h, m, i: tb2_int32;
 begin
   if proxy_id = _query_proxy_id then
   begin

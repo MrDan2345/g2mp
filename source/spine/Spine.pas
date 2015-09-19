@@ -182,7 +182,6 @@ type
 
   TSpineBoneData = class (TSpineClass)
   private
-    var _Length: Single;
     var _Parent: TSpineBoneData;
     var _Name: String;
     var _BoneLength: Single;
@@ -198,7 +197,7 @@ type
   public
     property Parent: TSpineBoneData read _Parent;
     property Name: String read _Name;
-    property BoneLength: Single read _Length write _Length;
+    property BoneLength: Single read _BoneLength write _BoneLength;
     property x: Single read _x write _x;
     property y: Single read _y write _y;
     property Rotation: Single read _Rotation write _Rotation;
@@ -1195,7 +1194,7 @@ type
     const TIMELINE_COLOR = 4;
     const TIMELINE_FLIPX = 5;
     const TIMELINE_FLIPY = 6;
-    const CURVE_LINEAR = 0;
+    //const CURVE_LINEAR = 0;
     const CURVE_STEPPED = 1;
     const CURVE_BEZIER = 2;
     var _AttachmentLoader: TSpineAttachmentLoader;
@@ -1327,10 +1326,12 @@ begin
   end;
 end;
 
+{$Hints off}
 class function TSpineDataProvider.FetchTexture(const TextureName: String): TSpineTexture;
 begin
   Result := nil;
 end;
+{$Hints on}
 //TSpineDataProvider END
 
 //TSpineBoneData BEGIN
@@ -2128,6 +2129,7 @@ begin
   _Frames[i + 1] := Angle;
 end;
 
+{$Hints off}
 procedure TSpineAnimationRotateTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
   var Bone: TSpineBone;
   var Amount, PrevFrameValue, FrameTime, Percent, dv: Single;
@@ -2158,6 +2160,7 @@ begin
   while Amount < -180 do Amount += 360;
   Bone.Rotation := Bone.Rotation + (Amount * Alpha);
 end;
+{$Hints on}
 //TSpineAnimationRotateTimeline END
 
 //TSpineAnimationTranslateTimeline BEGIN
@@ -2176,6 +2179,7 @@ begin
   _Frames[i + 2] := y;
 end;
 
+{$Hints off}
 procedure TSpineAnimationTranslateTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
   var Bone: TSpineBone;
   var FrameIndex: Integer;
@@ -2204,6 +2208,7 @@ begin
   Bone.x := Bone.x + ((Bone.Data.x + PrevFrameX + (_Frames[FrameIndex + FRAME_X] - PrevFrameX) * Percent - Bone.x) * Alpha);
   Bone.y := Bone.y + ((Bone.Data.y + PrevFrameY + (_Frames[FrameIndex + FRAME_Y] - PrevFrameY) * Percent - Bone.y) * Alpha);
 end;
+{$Hints on}
 //TSpineAnimationTranslateTimeline END
 
 //TSpineAnimationScaleTimeline BEGIN
@@ -2212,6 +2217,7 @@ begin
   inherited Create(AFrameCount);
 end;
 
+{$Hints off}
 procedure TSpineAnimationScaleTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
   var Bone: TSpineBone;
   var FrameIndex: Integer;
@@ -2240,6 +2246,7 @@ begin
   Bone.ScaleX := Bone.ScaleX + ((Bone.Data.ScaleX * (PrevFrameX + (_Frames[FrameIndex + FRAME_X] - PrevFrameX) * Percent) - Bone.ScaleX) * Alpha);
   Bone.ScaleY := Bone.ScaleY + ((Bone.Data.ScaleY * (PrevFrameY + (_Frames[FrameIndex + FRAME_Y] - PrevFrameY) * Percent) - Bone.ScaleY) * Alpha);
 end;
+{$Hints on}
 //TSpineAnimationScaleTimeline END
 
 //TSpineAnimationColorTimeline BEGIN
@@ -2260,6 +2267,7 @@ begin
   _Frames[i + 4] := a;
 end;
 
+{$Hints off}
 procedure TSpineAnimationColorTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
   var r, g, b, a: Single;
   var PrevFrameR, PrevFrameG, PrevFrameB, PrevFrameA: Single;
@@ -2309,6 +2317,7 @@ begin
     Slot.a := a;
   end;
 end;
+{$Hints on}
 //TSpineAnimationColorTimeline END
 
 //TSpineAnimationAttachmentTimeline BEGIN
@@ -2329,6 +2338,7 @@ begin
   _AttachmentNames[FrameIndex] := AttachmentName;
 end;
 
+{$Hints off}
 procedure TSpineAnimationAttachmentTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
   var FrameIndex: Integer;
   var AttachmentName: String;
@@ -2355,6 +2365,7 @@ begin
   else
   Skeleton.Slots[SlotIndex].Attachment := nil;
 end;
+{$Hints on}
 //TSpineAnimationAttachmentTimeline END
 
 //TSpineAnimationEventTimeline BEGIN
@@ -2439,6 +2450,7 @@ begin
   Move(ADrawOrder[0], _DrawOrder[FrameIndex][0], Length(ADrawOrder) * SizeOf(Integer));
 end;
 
+{$Hints off}
 procedure TSpineAnimationDrawOrderTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
   var i, FrameIndex: Integer;
 begin
@@ -2457,6 +2469,7 @@ begin
     Skeleton.DrawOrder[i] := Skeleton.Slots[_DrawOrder[FrameIndex][i]];
   end;
 end;
+{$Hints on}
 //TSpineAnimationDrawOrderTimeline END
 
 //TSpineAnimationFFDTimeline BEGIN
@@ -2474,10 +2487,11 @@ begin
   Move(AVertices[0], _FrameVertices[FrameIndex][0], Length(AVertices) * SizeOf(Single));
 end;
 
+{$Hints off}
 procedure TSpineAnimationFFDTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
   var Slot: TSpineSlot;
   var i, VertexCount, FrameIndex: Integer;
-  var a, f, FrameTime, Percent, pv, v, dv: Single;
+  var a, FrameTime, Percent, pv, v, dv: Single;
   var LastVertices, PrevVertices, NextVertices: PSpineFloatArray;
 begin
   Slot := Skeleton.Slots[SlotIndex];
@@ -2532,6 +2546,7 @@ begin
     end;
   end;
 end;
+{$Hints on}
 //TSpineAnimationFFDTimeline END
 
 //TSpineAnimationIKConstraintTimeline BEGIN
@@ -2550,6 +2565,7 @@ begin
   _Frames[i + 2] := PSingle(@BendDirection)^;
 end;
 
+{$Hints off}
 procedure TSpineAnimationIKConstraintTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
   var Constraint: TSpineIKConstraint;
   var FrameIndex: Integer;
@@ -2574,6 +2590,7 @@ begin
   Constraint.Mix := Constraint.Mix + ((Mix - Constraint.Mix) * Alpha);
   Constraint.BendDirection := PInteger(@_Frames[FrameIndex + PREV_FRAME_BEND_DIRECTION])^;
 end;
+{$Hints on}
 //TSpineAnimationIKConstraintTimeline END
 
 //TSpineAnimationFlipXTimeline BEGIN
@@ -2594,7 +2611,6 @@ end;
 
 procedure TSpineAnimationFlipXTimeline.SetFrame(const FrameIndex: Integer; const Time: Single; const Flip: Boolean);
   var i: Integer;
-  var fb: Single;
 begin
   i := FrameIndex * 2;
   _Frames[i] := Time;
@@ -2602,6 +2618,7 @@ begin
   else _Frames[i + 1] := 0;
 end;
 
+{$Hints off}
 procedure TSpineAnimationFlipXTimeline.Apply(const Skeleton: TSpineSkeleton; const LastTime, Time: Single; const Events: TSpineEventList; const Alpha: Single);
   var tl: Single;
   var FrameIndex: Integer;
@@ -2623,6 +2640,7 @@ begin
   if _Frames[FrameIndex] < tl then Exit;
   SetFlip(Skeleton.Bones[BoneIndex], _Frames[FrameIndex + 1] > 0.5);
 end;
+{$Hints on}
 //TSpineAnimationFlipXTimeline END
 
 //TSpineAnimationFlipYTimeline BEGIN
@@ -3315,7 +3333,9 @@ begin
   end;
   if Assigned(Parent.Parent) then
   begin
+    {$Hints off}
     Parent.Parent.WorldToLocal(TargetX, TargetY, PositionX, PositionY);
+    {$Hints on}
     NewTargetX := (PositionX - Parent.x) * Parent.Parent.WorldScaleX;
     NewTargetY := (PositionY - Parent.y) * Parent.Parent.WorldScaleY;
   end
@@ -3827,10 +3847,11 @@ begin
   _Name := AName;
 end;
 
+{$Hints off}
 procedure TSpineAttachment.Draw(const Render: TSpineRender; const Slot: TSpineSlot);
 begin
-
 end;
+{$Hints on}
 //TSpineAttachment END
 
 //TSpineRegionAttachment BEGIN
@@ -3970,7 +3991,9 @@ procedure TSpineRegionAttachment.Draw(const Render: TSpineRender; const Slot: TS
   var rv: array[0..3] of TSpineVertexData;
   var i: Integer;
 begin
+  {$Hints off}
   ComputeWorldVertices(Slot.Bone, v);
+  {$Hints on}
   for i := 0 to 3 do
   begin
     rv[i].x := v[i * 2 + 0];
@@ -3993,7 +4016,7 @@ begin
 end;
 
 procedure TSpineBoundingBoxAttachment.ComputeWorldVertices(const Bone: TSpineBone; var WorldVertices: TSpineFloatArray);
-  var x, y, m00, m01, m10, m11, px, py, sx, sy: Single;
+  var x, y, m00, m01, m10, m11, px, py, sx, sy, rx0, ry0, rx1, ry1, wx, wy: Single;
   var i: Integer;
 begin
   if Length(WorldVertices) <> Length(_Vertices) then
@@ -4002,6 +4025,8 @@ begin
   y := Bone.Skeleton.y;
   sx := Bone.Skeleton.ScaleX;
   sy := Bone.Skeleton.ScaleY;
+  rx0 := Bone.Skeleton._RotX; ry0 := Bone.Skeleton._RotY;
+  rx1 := -Bone.Skeleton._RotY; ry1 := Bone.Skeleton._RotX;
   m00 := Bone.m00;
   m01 := Bone.m01;
   m10 := Bone.m10;
@@ -4011,8 +4036,10 @@ begin
   begin
     px := _Vertices[i];
     py := _Vertices[i + 1];
-    WorldVertices[i] := (px * m00 + py * m01 + Bone.WorldX) * sx + x;
-    WorldVertices[i + 1] := (px * m10 + py * m11 + Bone.WorldY) * sx + x;
+    wx := (px * m00 + py * m01 + Bone.WorldX) * sx;
+    wy := (px * m10 + py * m11 + Bone.WorldY) * sy;
+    WorldVertices[i] := wx * rx0 + wy * ry0 + x;
+    WorldVertices[i + 1] := wx * rx1 + wy * ry1 + y;
     Inc(i, 2);
   end;
 end;
@@ -4105,7 +4132,6 @@ begin
 end;
 
 procedure TSpineMeshAttachment.Draw(const Render: TSpineRender; const Slot: TSpineSlot);
-  var v: TSpineRegionVertices;
   var i, n: Integer;
 begin
   if Length(_WorldVertices) < Length(_Vertices) then
@@ -4258,67 +4284,7 @@ begin
   end;
 end;
 
-{
-  var Skeleton: TSpineSkeleton;
-  var Bone: TSpineBone;
-  var x, y, wx, wy, vx, vy, Weight: Single;
-  var w, v, bi, f, n: Integer;
-begin
-  Skeleton := Slot.Bone.Skeleton;
-  x := Skeleton.x;
-  y := Skeleton.y;
-  if Slot.AttachmentVertexCount = 0 then
-  begin
-    w := 0; v := 0; bi := 0;
-    while v < Length(_Bones) do
-    begin
-      wx := 0; wy := 0;
-      n := _Bones[v]; Inc(v); n += v;
-      while (v < n) do
-      begin
-	Bone := Skeleton.Bones[_Bones[v]];
-	vx := _Weights[bi];
-        vy := _Weights[bi + 1];
-        Weight := _Weights[bi + 2];
-	wx += (vx * Bone.m00 + vy * Bone.m01 + Bone.WorldX) * Weight;
-	wy += (vx * Bone.m10 + vy * Bone.m11 + Bone.WorldY) * Weight;
-        Inc(v);
-        Inc(bi, 3);
-      end;
-      WorldVertices[w] := wx + x;
-      WorldVertices[w + 1] := wy + y;
-      Inc(w, 2);
-    end;
-  end
-  else
-  begin
-    w := 0; v := 0; bi := 0; f := 0;
-    while (v < Length(_Bones)) do
-    begin
-      wx := 0; wy := 0;
-      n := _Bones[v]; Inc(v); n += v;
-      while v < n do
-      begin
-	Bone := Skeleton.Bones[_Bones[v]];
-	vx := _Weights[bi] + Slot.AttachmentVertices[f];
-        vy := _Weights[bi + 1] + Slot.AttachmentVertices[f + 1];
-        Weight := _Weights[bi + 2];
-	wx += (vx * Bone.m00 + vy * Bone.m01 + Bone.WorldX) * Weight;
-	wy += (vx * Bone.m10 + vy * Bone.m11 + Bone.WorldY) * Weight;
-        Inc(v);
-        Inc(bi, 3);
-        Inc(f, 2);
-      end;
-      WorldVertices[w] := wx + x;
-      WorldVertices[w + 1] := wy + y;
-      Inc(w, 2);
-    end;
-  end;
-end;
-}
-
 procedure TSpineSkinnedMeshAttachment.Draw(const Render: TSpineRender; const Slot: TSpineSlot);
-  var v: TSpineRegionVertices;
   var i, n: Integer;
 begin
   if Length(_WorldVertices) < Length(_Bones) * 2 then
@@ -4368,6 +4334,7 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 function TSpineAtlasAttachmentLoader.NewRegionAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineRegionAttachment;
   var Region: TSpineAtlasRegion;
 begin
@@ -4382,7 +4349,9 @@ begin
   Result.RegionOriginalWidth := Region.OriginalWidth;
   Result.RegionOriginalHeight := Region.OriginalHeight;
 end;
+{$Hints on}
 
+{$Hints off}
 function TSpineAtlasAttachmentLoader.NewMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineMeshAttachment;
   var Region: TSpineAtlasRegion;
 begin
@@ -4401,7 +4370,9 @@ begin
   Result.RegionOriginalWidth := Region.OriginalWidth;
   Result.RegionOriginalHeight := Region.OriginalHeight;
 end;
+{$Hints on}
 
+{$Hints off}
 function TSpineAtlasAttachmentLoader.NewSkinnedMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineSkinnedMeshAttachment;
   var Region: TSpineAtlasRegion;
 begin
@@ -4420,11 +4391,14 @@ begin
   Result.regionOriginalWidth := Region.OriginalWidth;
   Result.regionOriginalHeight := Region.OriginalHeight;
 end;
+{$Hints on}
 
+{$Hints off}
 function TSpineAtlasAttachmentLoader.NewBoundingBoxAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineBoundingBoxAttachment;
 begin
   Result := TSpineBoundingBoxAttachment.Create(Name);
 end;
+{$Hints on}
 
 function TSpineAtlasAttachmentLoader.FindRegion(const Name: String): TSpineAtlasRegion;
   var i: Integer;
@@ -4617,9 +4591,6 @@ function TSpineSkeletonBinary.ReadAttachment(const Provider: TSpineDataProvider;
   var Mesh: TSpineMeshAttachment absolute Result;
   var Skinned: TSpineSkinnedMeshAttachment absolute Result;
   var Color, VertexCount, BoneCount, bi, wi, i, j: Integer;
-  var f: Single;
-  var uvs: TSpineFloatArray;
-  var Triangles: TSpineIntArray;
 begin
   Name := ReadString(Provider);
   if Length(Name) = 0 then Name := AttachmentName;

@@ -239,8 +239,8 @@ type
     procedure RefInc; //inline;
     procedure RefDec; //inline;
     property RefCount: TG2IntS32 read _Ref;
-    constructor Create; virtual;
-    destructor Destroy; override;
+    procedure AfterConstruction; override;
+    procedure BeforeDestruction; override;
     function IsReferenced: Boolean; inline;
   end;
 
@@ -255,8 +255,8 @@ type
   public
     class constructor CreateClass;
     class procedure CleanUp;
-    constructor Create; override;
-    destructor Destroy; override;
+    procedure AfterConstruction; override;
+    procedure BeforeDestruction; override;
   end;
 
   TG2Asset = class (TG2Res)
@@ -271,7 +271,7 @@ type
     property AssetName: String read _AssetName write _AssetName;
     class constructor CreateClass;
     class procedure UnlockQueue(const Queue: TG2IntU8);
-    constructor Create; override;
+    constructor Create;
     destructor Destroy; override;
     function IsShared: Boolean; inline;
     procedure Lock(const Queue: TG2IntU8);
@@ -352,15 +352,15 @@ begin
   if Self is TG2Asset then TG2Asset(Self).Free else Free;
 end;
 
-constructor TG2Ref.Create;
+procedure TG2Ref.AfterConstruction;
 begin
-  inherited Create;
+  inherited AfterConstruction;
   _Ref := 0;
 end;
 
-destructor TG2Ref.Destroy;
+procedure TG2Ref.BeforeDestruction;
 begin
-  inherited Destroy;
+  inherited BeforeDestruction;
 end;
 
 function TG2Ref.IsReferenced: Boolean;
@@ -396,9 +396,9 @@ begin
   end;
 end;
 
-constructor TG2Res.Create;
+procedure TG2Res.AfterConstruction;
 begin
-  inherited Create;
+  inherited AfterConstruction;
   Prev := nil;
   Next := List;
   if List <> nil then List.Prev := Self;
@@ -406,13 +406,13 @@ begin
   Initialize;
 end;
 
-destructor TG2Res.Destroy;
+procedure TG2Res.BeforeDestruction;
 begin
   Finalize;
   if Prev <> nil then Prev.Next := Next;
   if Next <> nil then Next.Prev := Prev;
   if List = Self then List := Next;
-  inherited Destroy;
+  inherited BeforeDestruction;
 end;
 //TG2Res END
 

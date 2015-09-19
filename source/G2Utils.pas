@@ -1401,7 +1401,6 @@ function TG2ML.Read(const Data: AnsiString): PG2MLObject;
   var tt: TG2TokenType;
   var CurObject: PG2MLObject;
   var NewObject: PG2MLObject;
-  var DataPos, DataSize: Integer;
 begin
   _Parser.Parse(Data);
   New(Result);
