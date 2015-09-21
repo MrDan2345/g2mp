@@ -3460,8 +3460,8 @@ type
     procedure OnPositionChange(const Sender: Pointer);
     procedure OnRotationChange(const Sender: Pointer);
     procedure UpdateProperties;
-    procedure Save(const Stream: TStream);
-    procedure Load(const Stream: TStream);
+    procedure Save(const dm: TG2DataManager);
+    procedure Load(const dn: TG2DataManager);
   end;
   PScene2DEntityData = ^TScene2DEntityData;
 //TScene2DEntityData END
@@ -3898,6 +3898,7 @@ type
     var SelectJoint: TScene2DJointData;
     var SelPos: TG2Vec2;
     var SceneProperties: TPropertySet;
+    var ScenePath: String;
     property PropertySet: TPropertySet read _PropertySet write _PropertySet;
     property Scene: TG2Scene2D read _Scene write _Scene;
     property Editor: TScene2DEditor read _Editor write SetEditor;
@@ -3942,6 +3943,7 @@ type
     procedure BtnComponentShapeChain;
     procedure BtnComponentPoly;
     procedure BtnComponentCancel;
+    procedure LoadScene(const SceneName: String);
     procedure ClearScene;
     procedure Simulate;
     procedure OnLoad;
@@ -4011,7 +4013,16 @@ type
 
 //TAssetEffect2D BEGIN
   TAssetEffect2D = class (TAsset)
-  protected
+  public
+    class function GetAssetName: String; override;
+    class function CheckExtension(const Ext: String): Boolean; override;
+    class function ProcessFile(const FilePath: String): TG2QuickListString; override;
+  end;
+//TAssetEffect2D END
+
+//TAssetScene2D BEGIN
+  TAssetScene2D = class (TAsset)
+  public
     class function GetAssetName: String; override;
     class function CheckExtension(const Ext: String): Boolean; override;
     class function ProcessFile(const FilePath: String): TG2QuickListString; override;
@@ -5003,6 +5014,7 @@ begin
   AddAssetType(TAssetImage);
   AddAssetType(TAssetTexture);
   AddAssetType(TAssetEffect2D);
+  AddAssetType(TAssetScene2D);
   _ItemSize := App.UI.Font1.TextHeight('A') + 4;
 end;
 
@@ -14364,44 +14376,63 @@ end;
 
 procedure TUIWorkspaceScene2DStructure.BtnSaveScene;
   var sd: TSaveDialog;
-  var fs: TFileStream;
+  var dm: TG2DataManager;
+  var ScenePath: String;
 begin
-  sd := TSaveDialog.Create(nil);
-  try
-    if sd.Execute then
-    begin
-      fs := TFileStream.Create(sd.FileName, fmCreate);
-      try
-        App.Scene2DData.Scene.Save(fs);
-      finally
-        fs.Free;
-      end;
+  if not App.Project.Open
+  or App.Scene2DData.Scene.Simulate then Exit;
+  ScenePath := App.Project.FilePath + G2PathSep + 'assets' + G2PathSep + App.Scene2DData.ScenePath;
+  if (Length(App.Scene2DData.ScenePath) > 0)
+  and FileExists(ScenePath) then
+  begin
+    dm := TG2DataManager.Create(ScenePath, dmWrite);
+    try
+      App.Scene2DData.Scene.Save(dm);
+    finally
+      dm.Free;
     end;
-  finally
-    sd.Free;
+  end
+  else
+  begin
+    sd := TSaveDialog.Create(nil);
+    try
+      if sd.Execute then
+      begin
+        dm := TG2DataManager.Create(sd.FileName, dmWrite);
+        try
+          App.Scene2DData.ScenePath := ExtractFileName(sd.FileName);
+          App.Scene2DData.Scene.Save(dm);
+        finally
+          dm.Free;
+        end;
+      end;
+    finally
+      sd.Free;
+    end;
   end;
 end;
 
 procedure TUIWorkspaceScene2DStructure.BtnLoadScene;
   var od: TOpenDialog;
-  var fs: TFileStream;
+  var dm: TG2DataManager;
 begin
-  od := TOpenDialog.Create(nil);
-  try
-    if od.Execute then
-    begin
-      fs := TFileStream.Create(od.FileName, fmOpenRead);
-      try
-        App.Scene2DData.ClearScene;
-        App.Scene2DData.Scene.Load(fs);
-        App.Scene2DData.OnLoad;
-      finally
-        fs.Free;
-      end;
-    end;
-  finally
-    od.Free;
-  end;
+  App.UI.OverlayAssetSelect.Open(TAssetScene2D, @App.Scene2DData.LoadScene);
+  //od := TOpenDialog.Create(nil);
+  //try
+  //  if od.Execute then
+  //  begin
+  //    dm := TG2DataManager.Create(od.FileName, dmRead);
+  //    try
+  //      App.Scene2DData.ClearScene;
+  //      App.Scene2DData.Scene.Load(dm);
+  //      App.Scene2DData.OnLoad;
+  //    finally
+  //      dm.Free;
+  //    end;
+  //  end;
+  //finally
+  //  od.Free;
+  //end;
 end;
 
 procedure TUIWorkspaceScene2DStructure.BtnClearScene;
@@ -27036,19 +27067,18 @@ begin
   Properties.PropButton('Add Component', @App.Scene2DData.BtnAddComponent);
 end;
 
-procedure TScene2DEntityData.Save(const Stream: TStream);
+procedure TScene2DEntityData.Save(const dm: TG2DataManager);
   var i: Integer;
 begin
-  Entity.Save(Stream);
-  i := Entity.ChildCount;
-  Stream.Write(i, SizeOf(i));
+  Entity.Save(dm);
+  dm.WriteIntS32(Entity.ChildCount);
   for i := 0 to Entity.ChildCount - 1 do
   begin
-    PScene2DEntityData(Entity.Children[i])^.Save(Stream);
+    PScene2DEntityData(Entity.Children[i])^.Save(dm);
   end;
 end;
 
-procedure TScene2DEntityData.Load(const Stream: TStream);
+procedure TScene2DEntityData.Load(const dn: TG2DataManager);
 begin
 
 end;
@@ -27850,6 +27880,7 @@ begin
   PropertySet.PropBool('Repeat', @Repeating, Group, @OnChangeRepeating);
   PropertySet.PropBool('Local Space', @LocalSpace, Group, @OnChangeLocalSpace);
   PropertySet.PropBool('Fixed Orientation', @FixedOrientation, Group, @OnChangeFixedOrientation);
+  PropertySet.PropBool('Auto Play', @Component.AutoPlay, Group);
   PropertySet.PropButton('Play', @OnPlay, Group);
   PropertySet.PropButton('Stop', @OnStop, Group);
 end;
@@ -29098,7 +29129,7 @@ begin
     dm := TG2DataManager.Create(CopyStream, dmWrite);
     dm.WriteIntS32(TopEntities.Count);
     for i := 0 to TopEntities.Count - 1 do
-    TopEntities[i].Save(CopyStream);
+    TopEntities[i].Save(dm);
     dm.Free;
     Clipboard.SetFormat(App.cbf_scene2d_object, CopyStream);
   finally
@@ -29136,10 +29167,9 @@ begin
   for i := 0 to n - 1 do
   begin
     Entity := TG2Scene2DEntity.Create(_Scene);
-    Entity.Load(PasteStream);
+    Entity.Load(dm);
     CreateNewEntityData(Entity);
   end;
-  dm.Free;
   if NewEntities.Count > 0 then
   begin
     v := NewEntities[0].Transform.p;
@@ -29149,6 +29179,7 @@ begin
     for i := 0 to NewEntities.Count - 1 do
     NewEntities[i].Transform.p := NewEntities[i].Transform.p + v;
   end;
+  dm.Free;
   PasteStream.Free;
 end;
 
@@ -29631,6 +29662,20 @@ begin
   SelectionUpdateEnd;
 end;
 
+procedure TScene2DData.LoadScene(const SceneName: String);
+  var dm: TG2DataManager;
+begin
+  dm := TG2DataManager.Create(SceneName, dmAsset);
+  try
+    App.Scene2DData.ClearScene;
+    App.Scene2DData.Scene.Load(dm);
+    App.Scene2DData.OnLoad;
+    ScenePath := SceneName;
+  finally
+    dm.Free;
+  end;
+end;
+
 procedure TScene2DData.ClearScene;
   var i: Integer;
   var e: TG2Scene2DEntity;
@@ -29654,19 +29699,25 @@ begin
     e := _Scene.Entities[i];
     DeleteEntity(e);
   end;
+  ScenePath := '';
 end;
 
 procedure TScene2DData.Simulate;
   var i: Integer;
   var rb: TG2Scene2DComponentRigidBody;
+  var dm: TG2DataManager;
+  var PathBackup: String;
 begin
   if _Editor <> nil then _Editor := nil;
+  PathBackup := ScenePath;
   if Scene.Simulate then
   begin
     Scene.Simulate := False;
     ClearScene;
     _SavedStream.Seek(0, soFromBeginning);
-    Scene.Load(_SavedStream);
+    dm := TG2DataManager.Create(_SavedStream, dmRead);
+    Scene.Load(dm);
+    dm.Free;
     OnLoad;
   end
   else
@@ -29676,7 +29727,9 @@ begin
     Selection.Clear;
     SelectionUpdateEnd;
     _SavedStream.Seek(0, soFromBeginning);
-    Scene.Save(_SavedStream);
+    dm := TG2DataManager.Create(_SavedStream, dmWrite);
+    Scene.Save(dm);
+    dm.Free;
     for i := 0 to Scene.EntityCount - 1 do
     begin
       rb := TG2Scene2DComponentRigidBody(Scene.Entities[i].ComponentOfType[TG2Scene2DComponentRigidBody]);
@@ -29688,6 +29741,7 @@ begin
     end;
     Scene.Simulate := True;
   end;
+  ScenePath := PathBackup;
 end;
 
 procedure TScene2DData.OnLoad;
@@ -29733,6 +29787,7 @@ begin
   _ComponentSet := TPropertySet.Create;
   ComponentList.Clear;
   _Editor := nil;
+  ScenePath := '';
   AddComponentTypePair(TG2Scene2DComponentSprite, TScene2DComponentDataSprite, @BtnComponentSprite);
   AddComponentTypePair(TG2Scene2DComponentBackground, TScene2DComponentDataBackground, @BtnComponentBackground);
   AddComponentTypePair(TG2Scene2DComponentSpineAnimation, TScene2DComponentDataSpineAnimation, @BtnComponentSpineAnimation);
@@ -29948,7 +30003,7 @@ class function TAssetTexture.ProcessFile(
   const FilePath: String
 ): TG2QuickListString;
 begin
-  Result.Create;
+  Result.Clear;
   Result.Add(FilePath);
 end;
 //TAssetTexture END
@@ -30024,82 +30079,6 @@ begin
     g2ml.Free;
   end;
 end;
-
-//procedure TAssetImage.OnInitialize;
-//  var PathArr: TG2StrArrA;
-//  var g2ml: TG2ML;
-//  var Root, n0, n1, n2, n3: PG2MLObject;
-//  var i0, i1, i2, i3: Integer;
-//  var fs: TFileStream;
-//  var AtlasFile, ImageName: String;
-//  var ImageWidth, ImageHeight: Integer;
-//begin
-//  PathArr := G2StrExplode(Path, '#');
-//  if Length(PathArr) = 1 then
-//  begin
-//    _Texture := App.AssetManager.GetTexture(Path);
-//    _Texture.RefInc;
-//    _TexCoords := G2Rect(0, 0, _Texture.Texture.SizeTU, _Texture.Texture.SizeTV);
-//  end
-//  else
-//  begin
-//    g2ml := TG2ML.Create;
-//    fs := TFileStream.Create(PathArr[0], fmOpenRead);
-//    try
-//      SetLength(AtlasFile, fs.Size);
-//      fs.Read(AtlasFile[1], fs.Size);
-//      Root := g2ml.Read(AtlasFile);
-//      for i0 := 0 to Root^.Children.Count - 1 do
-//      begin
-//        n0 := Root^.Children[i0];
-//        if n0^.Name = 'g2af' then
-//        begin
-//          for i1 := 0 to n0^.Children.Count - 1 do
-//          begin
-//            n1 := n0^.Children[i1];
-//            if n1^.Name = 'page' then
-//            begin
-//              n2 := n1^.FindNode('image'); if n2 <> nil then ImageName := n2^.AsString else ImageName := '';
-//              n2 := n1^.FindNode('width'); if n2 <> nil then ImageWidth := n2^.AsInt else ImageWidth := 1;
-//              n2 := n1^.FindNode('height'); if n2 <> nil then ImageHeight := n2^.AsInt else ImageHeight := 1;
-//              for i2 := 0 to n1^.Children.Count - 1 do
-//              begin
-//                n2 := n1^.Children[i2];
-//                if n2^.Name = 'frame' then
-//                begin
-//                  n3 := n2^.FindNode('name');
-//                  if (n3 <> nil) and (n3^.AsString = PathArr[1]) then
-//                  begin
-//                    _Texture := App.AssetManager.GetTexture(ExtractFileDir(PathArr[0]) + G2PathSep + ImageName);
-//                    _Texture.RefInc;
-//                    _TexCoords := G2Rect(0, 0, 1, 1);
-//                    n3 := n2^.FindNode('pos_l'); if n3 <> nil then _TexCoords.x := n3^.AsInt / ImageWidth;
-//                    n3 := n2^.FindNode('pos_t'); if n3 <> nil then _TexCoords.y := n3^.AsInt / ImageHeight;
-//                    n3 := n2^.FindNode('width'); if n3 <> nil then _TexCoords.w := n3^.AsInt / ImageWidth;
-//                    n3 := n2^.FindNode('height'); if n3 <> nil then _TexCoords.h := n3^.AsInt / ImageHeight;
-//                    Break;
-//                  end;
-//                end;
-//              end;
-//            end;
-//          end;
-//        end;
-//      end;
-//      g2ml.FreeObject(Root);
-//    finally
-//      fs.Free;
-//    end;
-//  end;
-//end;
-
-//procedure TAssetImage.OnFinalize;
-//begin
-//  if _Texture <> nil then
-//  begin
-//    _Texture.RefDec;
-//    _Texture := nil;
-//  end;
-//end;
 //TAssetImage END
 
 //TAssetEffect2D BEGIN
@@ -30120,11 +30099,35 @@ begin
   Delete(Ext, 1, 1);
   if LowerCase(Ext) = 'g2fx' then
   begin
-    Result.Create;
+    Result.Clear;
     Result.Add(FilePath);
-  end
+  end;
 end;
 //TAssetEffect2D END
+
+//TAssetScene2D BEGIN
+class function TAssetScene2D.GetAssetName: String;
+begin
+  Result := 'Scene 2D';
+end;
+
+class function TAssetScene2D.CheckExtension(const Ext: String): Boolean;
+begin
+  Result := (LowerCase(Ext) = 'g2s2d');
+end;
+
+class function TAssetScene2D.ProcessFile(const FilePath: String): TG2QuickListString;
+  var Ext: String;
+begin
+  Ext := ExtractFileExt(FilePath);
+  Delete(Ext, 1, 1);
+  if LowerCase(Ext) = 'g2s2d' then
+  begin
+    Result.Clear;
+    Result.Add(FilePath);
+  end;
+end;
+//TAssetScene2D END
 
 //TAssetManager BEIGN
 function TAssetManager.VerifyPath(const Path: String): String;

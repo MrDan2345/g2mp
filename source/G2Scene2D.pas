@@ -9,6 +9,7 @@ uses
   G2Utils,
   Gen2MP,
   G2Math,
+  G2DataManager,
   box2d,
   Spine,
   G2Spine;
@@ -63,7 +64,7 @@ type
     procedure OnFinalize; virtual;
     procedure OnAttach; virtual;
     procedure OnDetach; virtual;
-    procedure SaveClassType(const Stream: TStream);
+    procedure SaveClassType(const dm: TG2DataManager);
   public
     class constructor CreateClass;
     class function GetName: String; virtual;
@@ -80,8 +81,8 @@ type
     procedure Detach;
     procedure AddEvent(const EventName: String; const Event: TG2Scene2DEvent);
     procedure RemoveEvent(const EventName: String; const Event: TG2Scene2DEvent);
-    procedure Save(const Stream: TStream); virtual;
-    procedure Load(const Stream: TStream); virtual;
+    procedure Save(const dm: TG2DataManager); virtual;
+    procedure Load(const dm: TG2DataManager); virtual;
   end;
 
   TG2Scene2DComponentList = specialize TG2QuickListG<TG2Scene2DComponent>;
@@ -132,8 +133,8 @@ type
     procedure Render(const Display: TG2Display2D);
     procedure AddEvent(const EventName: String; const Event: TG2Scene2DEvent);
     procedure RemoveEvent(const EventName: String; const Event: TG2Scene2DEvent);
-    procedure Save(const Stream: TStream); virtual;
-    procedure Load(const Stream: TStream); virtual;
+    procedure Save(const dm: TG2DataManager); virtual;
+    procedure Load(const dm: TG2DataManager); virtual;
   end;
 
   TG2Scene2DJointList = specialize TG2QuickListG<TG2Scene2DJoint>;
@@ -149,7 +150,7 @@ type
     procedure SetEnabled(const Value: Boolean); virtual;
   protected
     var _Joint: pb2_joint;
-    procedure SaveClassType(const Stream: TStream);
+    procedure SaveClassType(const dm: TG2DataManager);
   public
     property UserData: Pointer read _UserData write _UserData;
     property Scene: TG2Scene2D read _Scene;
@@ -157,8 +158,8 @@ type
     class constructor ClassCreate;
     constructor Create(const OwnerScene: TG2Scene2D); virtual;
     destructor Destroy; override;
-    procedure Save(const Stream: TStream); virtual;
-    procedure Load(const Stream: TStream); virtual;
+    procedure Save(const dm: TG2DataManager); virtual;
+    procedure Load(const dm: TG2DataManager); virtual;
   end;
 
   TG2Scene2DDistanceJoint = class (TG2Scene2DJoint)
@@ -179,8 +180,8 @@ type
     class constructor CreateClass;
     constructor Create(const OwnerScene: TG2Scene2D); override;
     destructor Destroy; override;
-    procedure Save(const Stream: TStream); override;
-    procedure Load(const Stream: TStream); override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
   end;
 
   TG2Scene2DRevoluteJoint = class (TG2Scene2DJoint)
@@ -197,8 +198,8 @@ type
     class constructor CreateClass;
     constructor Create(const OwnerScene: TG2Scene2D); override;
     destructor Destroy; override;
-    procedure Save(const Stream: TStream); override;
-    procedure Load(const Stream: TStream); override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
   end;
 
   TG2Scene2DRenderHookProc = procedure (const Display: TG2Display2D) of object;
@@ -276,8 +277,8 @@ type
     procedure RenderHookRemove(var Hook: TG2Scene2DRenderHook);
     function FindEntity(const GUID: String): TG2Scene2DEntity;
     function FindEntityByName(const EntityName: String): TG2Scene2DEntity;
-    procedure Save(const Stream: TStream);
-    procedure Load(const Stream: TStream);
+    procedure Save(const dm: TG2DataManager);
+    procedure Load(const dm: TG2DataManager);
     procedure Load(const FileName: String);
   end;
 
@@ -321,8 +322,8 @@ type
     property BlendMode: TG2BlendMode read _BlendMode write _BlendMode;
     property Visible: Boolean read _Visible write _Visible;
     property Transform: TG2Transform2 read _Transform write _Transform;
-    procedure Save(const Stream: TStream); override;
-    procedure Load(const Stream: TStream); override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
   end;
 
   TG2Scene2DComponentEffect = class (TG2Scene2DComponent)
@@ -333,12 +334,13 @@ type
     var _Scale: TG2Float;
     var _Speed: TG2Float;
     var _Repeating: Boolean;
+    var _AutoPlay: Boolean;
     var _AutoDestruct: Boolean;
     var _LocalSpace: Boolean;
     var _FixedOrientation: Boolean;
     procedure OnEffectFinish(const Inst: Pointer);
     function GetEffect: TG2Effect2D; inline;
-    procedure SetEffect(const Value: TG2Effect2D); inline;
+    procedure SetEffect(const Value: TG2Effect2D);
     procedure SetLayer(const Value: TG2IntS32); inline;
     procedure SetScale(const Value: TG2Float); inline;
     function GetScale: TG2Float; inline;
@@ -365,6 +367,7 @@ type
     property Speed: TG2Float read GetSpeed write SetSpeed;
     property Repeating: Boolean read GetRepeating write SetRepeating;
     property Playing: Boolean read GetPlaying;
+    property AutoPlay: Boolean read _AutoPlay write _AutoPlay;
     property AutoDestruct: Boolean read _AutoDestruct write _AutoDestruct;
     property LocalSpace: Boolean read GetLocalSpace write SetLocalSpace;
     property FixedOrientation: Boolean read GetFixedOrientation write SetFixedOrientation;
@@ -373,8 +376,8 @@ type
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
     procedure Play;
     procedure Stop;
-    procedure Save(const Stream: TStream); override;
-    procedure Load(const Stream: TStream); override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
   end;
 
   TG2Scene2DComponentBackground = class (TG2Scene2DComponent)
@@ -415,8 +418,8 @@ type
     property RepeatY: Boolean read _RepeatY write _RepeatY;
     property Filter: TG2Filter read _Filter write _Filter;
     property BlendMode: TG2BlendMode read _BlendMode write _BlendMode;
-    procedure Save(const Stream: TStream); override;
-    procedure Load(const Stream: TStream); override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
   end;
 
   TG2Scene2DComponentSpineAnimation = class (TG2Scene2DComponent)
@@ -455,8 +458,8 @@ type
     property Animation: String read _Animation write SetAnimation;
     property Loop: Boolean read _Loop write SetLoop;
     property TimeScale: TG2Float read _TimeScale write SetTimeScale;
-    procedure Save(const Stream: TStream); override;
-    procedure Load(const Stream: TStream); override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
   end;
 
   type TG2Scene2DComponentRigidBodyType = (
@@ -503,8 +506,8 @@ type
     procedure MakeStatic; inline;
     procedure MakeKinematic; inline;
     procedure MakeDynamic; inline;
-    procedure Save(const Stream: TStream); override;
-    procedure Load(const Stream: TStream); override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
   end;
 
   TG2Scene2DEventBeginContactData = class (TG2Scene2DEventData)
@@ -622,8 +625,8 @@ type
     property HasVertex0: Boolean read GetHasVertex0 write SetHasVertex0;
     property HasVertex3: Boolean read GetHasVertex3 write SetHasVertex3;
     procedure SetUp(const v0, v1: TG2Vec2);
-    procedure Save(const Stream: TStream); override;
-    procedure Load(const Stream: TStream); override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
   end;
 
   TG2Scene2DComponentCollisionShapePoly = class (TG2Scene2DComponentCollisionShape)
@@ -642,8 +645,8 @@ type
     procedure SetUpBox(const w, h: TG2Float); overload; virtual;
     procedure SetUpBox(const w, h: TG2Float; const c: TG2Vec2; const r: TG2Float); overload; virtual;
     procedure SetUp(const v: PG2Vec2Arr; const vc: TG2IntS32); virtual;
-    procedure Save(const Stream: TStream); override;
-    procedure Load(const Stream: TStream); override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
   end;
 
   {$Notes off}
@@ -671,8 +674,8 @@ type
     property Angle: TG2Float read _Angle write SetAngle;
     procedure SetUpBox(const w, h: TG2Float); overload; override;
     procedure SetUpBox(const w, h: TG2Float; const c: TG2Vec2; const r: TG2Float); overload; override;
-    procedure Save(const Stream: TStream); override;
-    procedure Load(const Stream: TStream); override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
   end;
   {$Notes on}
 
@@ -692,8 +695,8 @@ type
     property Center: TG2Vec2 read GetCenter write SetCenter;
     property Radius: TG2Float read GetRadius write SetRadius;
     procedure SetUp(const c: TG2Vec2; const r: TG2Float);
-    procedure Save(const Stream: TStream); override;
-    procedure Load(const Stream: TStream); override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
   end;
 
   TG2Scene2DComponentCollisionShapeChain = class (TG2Scene2DComponentCollisionShape)
@@ -718,8 +721,8 @@ type
     property HasVertexPrev: Boolean read _ChainShape.has_prev_vertex write _ChainShape.has_prev_vertex;
     property HasVertexNext: Boolean read _ChainShape.has_next_vertex write _ChainShape.has_next_vertex;
     procedure SetUp(const v: PG2Vec2Arr; const vc: TG2IntS32);
-    procedure Save(const Stream: TStream); override;
-    procedure Load(const Stream: TStream); override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
   end;
 
   TG2Scene2DComponentCharacter = class (TG2Scene2DComponentRigidBody)
@@ -732,11 +735,14 @@ type
     var _ShapeBody: tb2_polygon_shape;
     var _BodyFeetDef: tb2_body_def;
     var _BodyFeet: pb2_body;
+    var _ShapeGroundCheck: tb2_polygon_shape;
+    var _FixtureGroundCheck: pb2_fixture;
     var _ShapeDuckCheck: tb2_polygon_shape;
     var _FixtureDuckCheck: pb2_fixture;
     var _Joint: pb2_joint;
     var _BodyMassData: tb2_mass_data;
     var _BodyVerts: array[0..6] of tb2_vec2;
+    var _GroundCheckVerts: array[0..3] of tb2_vec2;
     var _DuckCheckVerts: array[0..3] of tb2_vec2;
     var _DuckCheckContacts: TG2IntS32;
     var _Width: TG2Float;
@@ -791,8 +797,8 @@ type
     procedure Walk(const Speed: TG2Float);
     procedure Jump(const Speed: TG2Vec2);
     procedure Glide(const Speed: TG2Vec2);
-    procedure Save(const Stream: TStream); override;
-    procedure Load(const Stream: TStream); override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
   end;
 
   TG2Scene2DComponentPoly = class (TG2Scene2DComponent)
@@ -867,8 +873,8 @@ type
       const NewVertices: PG2Vec2; const NewVertexCount, VertexStride: TG2IntS32;
       const NewIndices: PG2IntU16; const NewIndexCount, IndexStride: TG2IntS32
     ); overload;
-    procedure Save(const Stream: TStream); override;
-    procedure Load(const Stream: TStream); override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
   end;
 
   operator := (v: tb2_vec2): TG2Vec2; inline;
@@ -974,14 +980,9 @@ begin
 
 end;
 
-procedure TG2Scene2DComponent.SaveClassType(const Stream: TStream);
-  var n: TG2IntS32;
-  var str: String;
+procedure TG2Scene2DComponent.SaveClassType(const dm: TG2DataManager);
 begin
-  str := ClassName;
-  n := Length(ClassName);
-  Stream.Write(n, SizeOf(n));
-  Stream.Write(str[1], n);
+  dm.WriteStringA(ClassName);
 end;
 
 class constructor TG2Scene2DComponent.CreateClass;
@@ -1053,14 +1054,14 @@ begin
 end;
 
 {$Hints off}
-procedure TG2Scene2DComponent.Save(const Stream: TStream);
+procedure TG2Scene2DComponent.Save(const dm: TG2DataManager);
 begin
 
 end;
 {$Hints on}
 
 {$Hints off}
-procedure TG2Scene2DComponent.Load(const Stream: TStream);
+procedure TG2Scene2DComponent.Load(const dm: TG2DataManager);
 begin
 
 end;
@@ -1262,64 +1263,50 @@ begin
   _Components[i].RemoveEvent(EventName, Event);
 end;
 
-procedure TG2Scene2DEntity.Save(const Stream: TStream);
+procedure TG2Scene2DEntity.Save(const dm: TG2DataManager);
   var i, n: TG2IntS32;
 begin
-  Stream.Write(_Transform, SizeOf(_Transform));
-  n := Length(_Name);
-  Stream.Write(n, SizeOf(n));
-  Stream.Write(_Name[1], n);
-  n := Length(_GUID);
-  Stream.Write(n, SizeOf(n));
-  Stream.Write(_GUID[1], n);
-  n := _Children.Count;
-  Stream.Write(n, SizeOf(n));
+  dm.WriteBuffer(@_Transform, SizeOf(_Transform));
+  dm.WriteStringA(_Name);
+  dm.WriteStringA(_GUID);
+  dm.WriteIntS32(_Children.Count);
   for i := 0 to _Children.Count - 1 do
-  _Children[i].Save(Stream);
-  n := _Components.Count;
-  Stream.Write(n, SizeOf(n));
+  begin
+    _Children[i].Save(dm);
+  end;
+  dm.WriteIntS32(_Components.Count);
   for i := 0 to _Components.Count - 1 do
-  _Components[i].Save(Stream);
+  begin
+    _Components[i].Save(dm);
+  end;
 end;
 
-procedure TG2Scene2DEntity.Load(const Stream: TStream);
+procedure TG2Scene2DEntity.Load(const dm: TG2DataManager);
   var i, j, n, ec, cc: TG2IntS32;
   var e: TG2Scene2DEntity;
   var c: TG2Scene2DComponent;
   var CName: String;
 begin
-  Stream.Read(_Transform, SizeOf(_Transform));
-  {$Hints off}
-  Stream.Read(n, SizeOf(n));
-  {$Hints on}
-  SetLength(_Name, n);
-  Stream.Read(_Name[1], n);
-  Stream.Read(n, SizeOf(n));
-  SetLength(_GUID, n);
-  Stream.Read(_GUID[1], n);
-  {$Hints off}
-  Stream.Read(ec, SizeOf(ec));
-  {$Hints on}
+  dm.ReadBuffer(@_Transform, SizeOf(_Transform));
+  _Name := dm.ReadStringA;
+  _GUID := dm.ReadStringA;
+  ec := dm.ReadIntS32;
   for i := 0 to ec - 1 do
   begin
     e := TG2Scene2DEntity.Create(Scene);
     e.Parent := Self;
-    e.Load(Stream);
+    e.Load(dm);
   end;
-  {$Hints off}
-  Stream.Read(cc, SizeOf(cc));
-  {$Hints on}
+  cc := dm.ReadIntS32;
   for i := 0 to cc - 1 do
   begin
-    Stream.Read(n, SizeOf(n));
-    SetLength(CName, n);
-    Stream.Read(CName[1], n);
+    CName := dm.ReadStringA;
     for j := 0 to High(TG2Scene2DComponent.ComponentList) do
     if TG2Scene2DComponent.ComponentList[j].ClassName = CName then
     begin
       c := TG2Scene2DComponent.ComponentList[j].Create(Scene);
       c.Attach(Self);
-      c.Load(Stream);
+      c.Load(dm);
       Break;
     end;
   end;
@@ -1332,12 +1319,9 @@ begin
   _Enabled := Value;
 end;
 
-procedure TG2Scene2DJoint.SaveClassType(const Stream: TStream);
-  var n: TG2IntS32;
+procedure TG2Scene2DJoint.SaveClassType(const dm: TG2DataManager);
 begin
-  n := Length(ClassName);
-  Stream.Write(n, SizeOf(n));
-  Stream.Write(ClassName[1], n);
+  dm.WriteStringA(ClassName);
 end;
 
 class constructor TG2Scene2DJoint.ClassCreate;
@@ -1365,14 +1349,14 @@ begin
 end;
 
 {$Hints off}
-procedure TG2Scene2DJoint.Save(const Stream: TStream);
+procedure TG2Scene2DJoint.Save(const dm: TG2DataManager);
 begin
 
 end;
 {$Hints on}
 
 {$Hints off}
-procedure TG2Scene2DJoint.Load(const Stream: TStream);
+procedure TG2Scene2DJoint.Load(const dm: TG2DataManager);
 begin
 
 end;
@@ -1442,79 +1426,53 @@ begin
   inherited Destroy;
 end;
 
-procedure TG2Scene2DDistanceJoint.Save(const Stream: TStream);
+procedure TG2Scene2DDistanceJoint.Save(const dm: TG2DataManager);
   var n: Integer;
 begin
-  SaveClassType(Stream);
+  SaveClassType(dm);
   if _RigidBodyA = nil then
   begin
-    n := 0;
-    Stream.Write(n, SizeOf(n));
+    dm.WriteIntS32(0);
   end
   else
   begin
-    n := Length(_RigidBodyA.Owner.GUID);
-    Stream.Write(n, SizeOf(n));
-    Stream.Write(_RigidBodyA.Owner.GUID[1], n);
+    dm.WriteStringA(_RigidBodyA.Owner.GUID);
   end;
   if _RigidBodyB = nil then
   begin
-    n := 0;
-    Stream.Write(n, SizeOf(n));
+    dm.WriteIntS32(0);
   end
   else
   begin
-    n := Length(_RigidBodyB.Owner.GUID);
-    Stream.Write(n, SizeOf(n));
-    Stream.Write(_RigidBodyB.Owner.GUID[1], n);
+    dm.WriteStringA(_RigidBodyB.Owner.GUID);
   end;
-  Stream.Write(_AnchorA, SizeOf(_AnchorA));
-  Stream.Write(_AnchorB, SizeOf(_AnchorB));
-  Stream.Write(_Distance, SizeOf(_Distance));
-  Stream.Write(_Enabled, SizeOf(_Enabled));
+  dm.WriteBuffer(@_AnchorA, SizeOf(_AnchorA));
+  dm.WriteBuffer(@_AnchorB, SizeOf(_AnchorB));
+  dm.WriteFloat(_Distance);
+  dm.WriteBool(_Enabled);
 end;
 
-procedure TG2Scene2DDistanceJoint.Load(const Stream: TStream);
+procedure TG2Scene2DDistanceJoint.Load(const dm: TG2DataManager);
   var n: Integer;
   var GUID: String;
-  var b: Boolean;
   var e: TG2Scene2DEntity;
 begin
-  {$Hints off}
-  Stream.Read(n, SizeOf(n));
-  {$Hints on}
-  if n > 0 then
-  begin
-    SetLength(GUID, n);
-    Stream.Read(GUID[1], n);
-    e := _Scene.FindEntity(GUID);
-    if e <> nil then
-    _RigidBodyA := TG2Scene2DComponentRigidBody(e.ComponentOfType[TG2Scene2DComponentRigidBody])
-    else
-    _RigidBodyA := nil;
-  end
+  GUID := dm.ReadStringA;
+  e := _Scene.FindEntity(GUID);
+  if e <> nil then
+  _RigidBodyA := TG2Scene2DComponentRigidBody(e.ComponentOfType[TG2Scene2DComponentRigidBody])
   else
   _RigidBodyA := nil;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then
-  begin
-    SetLength(GUID, n);
-    Stream.Read(GUID[1], n);
-    e := _Scene.FindEntity(GUID);
-    if e <> nil then
-    _RigidBodyB := TG2Scene2DComponentRigidBody(e.ComponentOfType[TG2Scene2DComponentRigidBody])
-    else
-    _RigidBodyB := nil;
-  end
+  GUID := dm.ReadStringA;
+  e := _Scene.FindEntity(GUID);
+  if e <> nil then
+  _RigidBodyB := TG2Scene2DComponentRigidBody(e.ComponentOfType[TG2Scene2DComponentRigidBody])
   else
   _RigidBodyB := nil;
-  Stream.Read(_AnchorA, SizeOf(_AnchorA));
-  Stream.Read(_AnchorB, SizeOf(_AnchorB));
-  Stream.Read(_Distance, SizeOf(_Distance));
-  {$Hints off}
-  Stream.Read(b, SizeOf(b));
-  {$Hints on}
-  Enabled := b;
+  dm.ReadBuffer(@_AnchorA, SizeOf(_AnchorA));
+  dm.ReadBuffer(@_AnchorB, SizeOf(_AnchorB));
+  _Distance := dm.ReadFloat;
+  Enabled := dm.ReadBool;
 end;
 //TG2Scene2DDistanceJoint END
 
@@ -1574,75 +1532,50 @@ begin
   inherited Destroy;
 end;
 
-procedure TG2Scene2DRevoluteJoint.Save(const Stream: TStream);
+procedure TG2Scene2DRevoluteJoint.Save(const dm: TG2DataManager);
   var n: Integer;
 begin
-  SaveClassType(Stream);
+  SaveClassType(dm);
   if _RigidBodyA = nil then
   begin
-    n := 0;
-    Stream.Write(n, SizeOf(n));
+    dm.WriteIntS32(0);
   end
   else
   begin
-    n := Length(_RigidBodyA.Owner.GUID);
-    Stream.Write(n, SizeOf(n));
-    Stream.Write(_RigidBodyA.Owner.GUID[1], n);
+    dm.WriteStringA(_RigidBodyA.Owner.GUID);
   end;
   if _RigidBodyB = nil then
   begin
-    n := 0;
-    Stream.Write(n, SizeOf(n));
+    dm.WriteIntS32(0);
   end
   else
   begin
-    n := Length(_RigidBodyB.Owner.GUID);
-    Stream.Write(n, SizeOf(n));
-    Stream.Write(_RigidBodyB.Owner.GUID[1], n);
+    dm.WriteStringA(_RigidBodyB.Owner.GUID);
   end;
-  Stream.Write(_Anchor, SizeOf(_Anchor));
-  Stream.Write(_Enabled, SizeOf(_Enabled));
+  dm.WriteVec2(_Anchor);
+  dm.WriteBool(_Enabled);
 end;
 
-procedure TG2Scene2DRevoluteJoint.Load(const Stream: TStream);
+procedure TG2Scene2DRevoluteJoint.Load(const dm: TG2DataManager);
   var n: Integer;
   var GUID: String;
   var b: Boolean;
   var e: TG2Scene2DEntity;
 begin
-  {$Hints off}
-  Stream.Read(n, SizeOf(n));
-  {$Hints on}
-  if n > 0 then
-  begin
-    SetLength(GUID, n);
-    Stream.Read(GUID[1], n);
-    e := _Scene.FindEntity(GUID);
-    if e <> nil then
-    _RigidBodyA := TG2Scene2DComponentRigidBody(e.ComponentOfType[TG2Scene2DComponentRigidBody])
-    else
-    _RigidBodyA := nil;
-  end
+  GUID := dm.ReadStringA;
+  e := _Scene.FindEntity(GUID);
+  if e <> nil then
+  _RigidBodyA := TG2Scene2DComponentRigidBody(e.ComponentOfType[TG2Scene2DComponentRigidBody])
   else
   _RigidBodyA := nil;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then
-  begin
-    SetLength(GUID, n);
-    Stream.Read(GUID[1], n);
-    e := _Scene.FindEntity(GUID);
-    if e <> nil then
-    _RigidBodyB := TG2Scene2DComponentRigidBody(e.ComponentOfType[TG2Scene2DComponentRigidBody])
-    else
-    _RigidBodyB := nil;
-  end
+  GUID := dm.ReadStringA;
+  e := _Scene.FindEntity(GUID);
+  if e <> nil then
+  _RigidBodyB := TG2Scene2DComponentRigidBody(e.ComponentOfType[TG2Scene2DComponentRigidBody])
   else
   _RigidBodyB := nil;
-  Stream.Read(_Anchor, SizeOf(_Anchor));
-  {$Hints off}
-  Stream.Read(b, SizeOf(b));
-  {$Hints on}
-  Enabled := b;
+  _Anchor := dm.ReadVec2;
+  Enabled := dm.ReadBool;
 end;
 //TG2Scene2DRevoluteJoint END
 
@@ -2113,68 +2046,63 @@ begin
   Result := nil;
 end;
 
-procedure TG2Scene2D.Save(const Stream: TStream);
+procedure TG2Scene2D.Save(const dm: TG2DataManager);
   const Header: array[0..3] of AnsiChar = 'G2S2';
   var i, n: TG2IntS32;
 begin
-  Stream.Write(Header, SizeOf(Header));
-  Stream.Write(_Gravity, SizeOf(_Gravity));
+  dm.WriteBuffer(@Header, SizeOf(Header));
+  dm.WriteVec2(_Gravity);
   n := 0;
   for i := 0 to EntityCount - 1 do
   if Entities[i].Parent = nil then Inc(n);
-  Stream.Write(n, SizeOf(n));
+  dm.WriteIntS32(n);
   for i := 0 to EntityCount - 1 do
   if Entities[i].Parent = nil then
-  Entities[i].Save(Stream);
-  n := JointCount;
-  Stream.Write(n, SizeOf(n));
+  Entities[i].Save(dm);
+  dm.WriteIntS32(JointCount);
   for i := 0 to JointCount - 1 do
-  Joints[i].Save(Stream);
+  Joints[i].Save(dm);
 end;
 
-procedure TG2Scene2D.Load(const Stream: TStream);
+procedure TG2Scene2D.Load(const dm: TG2DataManager);
   var Header: array[0..3] of AnsiChar;
   var i, j, n, cn: TG2IntS32;
   var CName: String;
   var Joint: TG2Scene2DJoint;
 begin
   {$Hints off}
-  Stream.Read(Header, SizeOf(Header));
+  dm.ReadBuffer(@Header, SizeOf(Header));
   {$Hints on}
   if Header <> 'G2S2' then Exit;
-  Stream.Read(_Gravity, SizeOf(_Gravity));
+  _Gravity := dm.ReadVec2;
   _PhysWorld.set_gravity(_Gravity);
   {$Hints off}
-  Stream.Read(n, SizeOf(n));
+  n := dm.ReadIntS32;
   {$Hints on}
   for i := 0 to n - 1 do
-  TG2Scene2DEntity.Create(Self).Load(Stream);
-  Stream.Read(n, SizeOf(n));
+  TG2Scene2DEntity.Create(Self).Load(dm);
+  n := dm.ReadIntS32;
   for i := 0 to n - 1 do
   begin
-    {$Hints off}
-    Stream.Read(cn, SizeOf(n));
-    {$Hints on}
-    SetLength(CName, cn);
-    Stream.Read(CName[1], cn);
+    CName := dm.ReadStringA;
     for j := 0 to High(TG2Scene2DJoint.JointList) do
     if CName = TG2Scene2DJoint.JointList[j].ClassName then
     begin
       Joint := TG2Scene2DJoint.JointList[j].Create(Self);
-      Joint.Load(Stream);
+      Joint.Load(dm);
       Break;
     end;
   end;
 end;
 
 procedure TG2Scene2D.Load(const FileName: String);
-  var fs: TFileStream;
+  var dm: TG2DataManager;
 begin
-  fs := TFileStream.Create(FileName, fmOpenRead);
+  dm := TG2DataManager.Create(FileName, dmAsset);
   try
-    Load(fs);
+    Load(dm);
   finally
-    fs.Free;
+    dm.Free;
   end;
 end;
 
@@ -2291,66 +2219,50 @@ begin
 end;
 {$Hints on}
 
-procedure TG2Scene2DComponentSprite.Save(const Stream: TStream);
-  var n: TG2IntS32;
-  var TexFile: String;
+procedure TG2Scene2DComponentSprite.Save(const dm: TG2DataManager);
 begin
-  SaveClassType(Stream);
+  SaveClassType(dm);
   if Assigned(_Picture)
   and (_Picture.IsShared) then
   begin
-    TexFile := _Picture.AssetName;
-    n := Length(TexFile);
+    dm.WriteStringA(_Picture.AssetName);
+    dm.WriteBuffer(@_Picture.Texture.Usage, SizeOf(_Picture.Texture.Usage));
   end
   else
   begin
-    n := 0;
+    dm.WriteIntS32(0);
   end;
-  Stream.Write(n, SizeOf(n));
-  if n > 0 then
-  begin
-    Stream.Write(TexFile[1], n);
-    Stream.Write(_Picture.Texture.Usage, SizeOf(_Picture.Texture.Usage));
-  end;
-  Stream.Write(_Width, SizeOf(_Width));
-  Stream.Write(_Height, SizeOf(_Height));
-  Stream.Write(_Scale, SizeOf(_Scale));
-  Stream.Write(_FlipX, SizeOf(_FlipX));
-  Stream.Write(_FlipY, SizeOf(_FlipY));
-  Stream.Write(_Transform, SizeOf(_Transform));
-  Stream.Write(_Filter, SizeOf(_Filter));
-  Stream.Write(_BlendMode, SizeOf(_BlendMode));
-  n := Layer;
-  Stream.Write(n, SizeOf(n));
+  dm.WriteFloat(_Width);
+  dm.WriteFloat(_Height);
+  dm.WriteFloat(_Scale);
+  dm.WriteBool(_FlipX);
+  dm.WriteBool(_FlipY);
+  dm.WriteBuffer(@_Transform, SizeOf(_Transform));
+  dm.WriteBuffer(@_Filter, SizeOf(_Filter));
+  dm.WriteBuffer(@_BlendMode, SizeOf(_BlendMode));
+  dm.WriteIntS32(_Layer);
 end;
 
-procedure TG2Scene2DComponentSprite.Load(const Stream: TStream);
+procedure TG2Scene2DComponentSprite.Load(const dm: TG2DataManager);
   var n: TG2IntS32;
   var Usage: TG2TextureUsage;
   var TexFile: String;
 begin
-  {$Hints off}
-  Stream.Read(n, SizeOf(n));
-  {$Hints on}
-  if n > 0 then
+  TexFile := dm.ReadStringA;
+  if Length(TexFile) > 0 then
   begin
-    SetLength(TexFile, n);
-    Stream.Read(TexFile[1], n);
-    {$Hints off}
-    Stream.Read(Usage, SizeOf(Usage));
-    {$Hints on}
+    dm.ReadBuffer(@Usage, SizeOf(Usage));
     Picture := TG2Picture.SharedAsset(TexFile, Usage);
   end;
-  Stream.Read(_Width, SizeOf(_Width));
-  Stream.Read(_Height, SizeOf(_Height));
-  Stream.Read(_Scale, SizeOf(_Scale));
-  Stream.Read(_FlipX, SizeOf(_FlipX));
-  Stream.Read(_FlipY, SizeOf(_FlipY));
-  Stream.Read(_Transform, SizeOf(_Transform));
-  Stream.Read(_Filter, SizeOf(_Filter));
-  Stream.Read(_BlendMode, SizeOf(_BlendMode));
-  Stream.Read(n, SizeOf(n));
-  Layer := n;
+  _Width := dm.ReadFloat;
+  _Height := dm.ReadFloat;
+  _Scale := dm.ReadFloat;
+  _FlipX := dm.ReadBool;
+  _FlipY := dm.ReadBool;
+  dm.ReadBuffer(@_Transform, SizeOf(_Transform));
+  dm.ReadBuffer(@_Filter, SizeOf(_Filter));
+  dm.ReadBuffer(@_BlendMode, SizeOf(_BlendMode));
+  Layer := dm.ReadIntS32;
 end;
 //TG2Scene2DComponentSprite END
 
@@ -2377,6 +2289,7 @@ begin
     _EffectInst.Effect.RefDec;
     _EffectInst.RefDec;
   end;
+  _EffectInst := nil;
   if Assigned(Value) then
   begin
     _EffectInst := Value.CreateInstance;
@@ -2389,10 +2302,6 @@ begin
     _FixedOrientation := _EffectInst.FixedOrientation;
     _EffectInst.Transform := @Owner.Transform;
     _EffectInst.OnFinish := @OnEffectFinish;
-  end
-  else
-  begin
-    _EffectInst := nil;
   end;
 end;
 
@@ -2476,6 +2385,7 @@ begin
   _Scale := 1;
   _Speed := 1;
   _Repeating := False;
+  _AutoPlay := True;
   _AutoDestruct := False;
   _LocalSpace := True;
   _FixedOrientation := False;
@@ -2532,71 +2442,60 @@ begin
   if Assigned(_EffectInst) then _EffectInst.Stop;
 end;
 
-procedure TG2Scene2DComponentEffect.Save(const Stream: TStream);
-  var n: TG2IntS32;
+procedure TG2Scene2DComponentEffect.Save(const dm: TG2DataManager);
   var s: TG2Float;
   var b: Boolean;
-  var EffectFile: String;
 begin
-  SaveClassType(Stream);
+  SaveClassType(dm);
   if Assigned(_EffectInst)
   and _EffectInst.Effect.IsShared then
   begin
-    EffectFile := _EffectInst.Effect.AssetName;
-    n := Length(EffectFile);
+    dm.WriteStringA(_EffectInst.Effect.AssetName);
   end
   else
   begin
-    n := 0;
+    dm.WriteIntS32(0);
   end;
-  Stream.Write(n, SizeOf(n));
-  if n > 0 then
-  Stream.Write(EffectFile[1], n);
-  n := Layer;
-  Stream.Write(n, SizeOf(n));
-  if Assigned(_EffectInst) then s := _EffectInst.Scale else s := 1;
-  Stream.Write(s, SizeOf(s));
-  if Assigned(_EffectInst) then s := _EffectInst.Speed else s := 1;
-  Stream.Write(s, SizeOf(s));
-  if Assigned(_EffectInst) then b := _EffectInst.Repeating else b := False;
-  Stream.Write(b, SizeOf(b));
-  if Assigned(_EffectInst) then b := _EffectInst.LocalSpace else b := True;
-  Stream.Write(b, SizeOf(b));
-  if Assigned(_EffectInst) then b := _EffectInst.FixedOrientation else b := False;
-  Stream.Write(b, SizeOf(b));
+  dm.WriteIntS32(_Layer);
+  if Assigned(_EffectInst) then s := _EffectInst.Scale else s := _Scale;
+  dm.WriteFloat(s);
+  if Assigned(_EffectInst) then s := _EffectInst.Speed else s := _Speed;
+  dm.WriteFloat(s);
+  if Assigned(_EffectInst) then b := _EffectInst.Repeating else b := _Repeating;
+  dm.WriteBool(b);
+  if Assigned(_EffectInst) then b := _EffectInst.LocalSpace else b := _LocalSpace;
+  dm.WriteBool(b);
+  if Assigned(_EffectInst) then b := _EffectInst.FixedOrientation else b := _FixedOrientation;
+  dm.WriteBool(b);
+  dm.WriteBool(_AutoPlay);
+  dm.WriteBool(_AutoDestruct);
 end;
 
-procedure TG2Scene2DComponentEffect.Load(const Stream: TStream);
-  var n: TG2IntS32;
-  var s: TG2Float;
-  var b: Boolean;
+procedure TG2Scene2DComponentEffect.Load(const dm: TG2DataManager);
   var EffectFile: String;
 begin
-  {$Hints off}
-  Stream.Read(n, SizeOf(n));
-  {$Hints on}
-  if n > 0 then
+  EffectFile := dm.ReadStringA;
+  Layer := dm.ReadIntS32;
+  _Scale := dm.ReadFloat;
+  _Speed := dm.ReadFloat;
+  _Repeating := dm.ReadBool;
+  _LocalSpace := dm.ReadBool;
+  _FixedOrientation := dm.ReadBool;
+  _AutoPlay := dm.ReadBool;
+  _AutoDestruct := dm.ReadBool;
+  if Length(EffectFile) > 0 then
   begin
-    SetLength(EffectFile, n);
-    Stream.Read(EffectFile[1], n);
     Effect := TG2Effect2D.SharedAsset(EffectFile);
+    if Assigned(_EffectInst) then
+    begin
+      _EffectInst.Scale := _Scale;
+      _EffectInst.Speed := _Speed;
+      _EffectInst.Repeating := _Repeating;
+      _EffectInst.LocalSpace := _LocalSpace;
+      _EffectInst.FixedOrientation := _FixedOrientation;
+      if _AutoPlay then Play;
+    end;
   end;
-  Stream.Read(n, SizeOf(n));
-  Layer := n;
-  {$Hints off}
-  Stream.Read(s, SizeOf(s));
-  {$Hints on}
-  if Assigned(_EffectInst) then _EffectInst.Scale := s;
-  Stream.Read(s, SizeOf(s));
-  if Assigned(_EffectInst) then _EffectInst.Speed := s;
-  {$Hints off}
-  Stream.Read(b, SizeOf(b));
-  {$Hints on}
-  if Assigned(_EffectInst) then _EffectInst.Repeating := b;
-  Stream.Read(_LocalSpace, SizeOf(_LocalSpace));
-  if Assigned(_EffectInst) then _EffectInst.LocalSpace := _LocalSpace;
-  Stream.Read(_FixedOrientation, SizeOf(_FixedOrientation));
-  if Assigned(_EffectInst) then _EffectInst.FixedOrientation := _FixedOrientation;
 end;
 //TG2Scene2DComponentEffect END
 
@@ -2808,59 +2707,47 @@ begin
 end;
 {$Hints on}
 
-procedure TG2Scene2DComponentBackground.Save(const Stream: TStream);
-  var n: TG2IntS32;
-  var TexFile: String;
+procedure TG2Scene2DComponentBackground.Save(const dm: TG2DataManager);
 begin
-  SaveClassType(Stream);
+  SaveClassType(dm);
   if Assigned(_Texture)
   and _Texture.IsShared then
   begin
-    TexFile := _Texture.AssetName;
-    n := Length(TexFile);
+    dm.WriteStringA(_Texture.AssetName);
   end
   else
   begin
-    n := 0;
+    dm.WriteIntS32(0);
   end;
-  Stream.Write(n, SizeOf(n));
-  if n > 0 then
-  Stream.Write(TexFile[1], n);
-  Stream.Write(_Scale, SizeOf(_Scale));
-  Stream.Write(_ScrollSpeed, SizeOf(_ScrollSpeed));
-  Stream.Write(_FlipX, SizeOf(_FlipX));
-  Stream.Write(_FlipY, SizeOf(_FlipY));
-  Stream.Write(_RepeatX, SizeOf(_RepeatX));
-  Stream.Write(_RepeatY, SizeOf(_RepeatY));
-  Stream.Write(_Filter, SizeOf(_Filter));
-  n := Layer;
-  Stream.Write(n, SizeOf(n));
-  Stream.Write(_BlendMode, SizeOf(_BlendMode));
+  dm.WriteVec2(_Scale);
+  dm.WriteVec2(_ScrollSpeed);
+  dm.WriteBool(_FlipX);
+  dm.WriteBool(_FlipY);
+  dm.WriteBool(_RepeatX);
+  dm.WriteBool(_RepeatY);
+  dm.WriteBuffer(@_Filter, SizeOf(_Filter));
+  dm.WriteIntS32(_Layer);
+  dm.WriteBuffer(@_BlendMode, SizeOf(_BlendMode));
 end;
 
-procedure TG2Scene2DComponentBackground.Load(const Stream: TStream);
+procedure TG2Scene2DComponentBackground.Load(const dm: TG2DataManager);
   var n: TG2IntS32;
   var TexFile: String;
 begin
-  {$Hints off}
-  Stream.Read(n, SizeOf(n));
-  {$Hints on}
-  if n > 0 then
+  TexFile := dm.ReadStringA;
+  if Length(TexFile) > 0 then
   begin
-    SetLength(TexFile, n);
-    Stream.Read(TexFile[1], n);
     Texture := TG2Texture2D.SharedAsset(TexFile);
   end;
-  Stream.Read(_Scale, SizeOf(_Scale));
-  Stream.Read(_ScrollSpeed, SizeOf(_ScrollSpeed));
-  Stream.Read(_FlipX, SizeOf(_FlipX));
-  Stream.Read(_FlipY, SizeOf(_FlipY));
-  Stream.Read(_RepeatX, SizeOf(_RepeatX));
-  Stream.Read(_RepeatY, SizeOf(_RepeatY));
-  Stream.Read(_Filter, SizeOf(_Filter));
-  Stream.Read(n, SizeOf(n));
-  Layer := n;
-  Stream.Read(_BlendMode, SizeOf(_BlendMode));
+  _Scale := dm.ReadVec2;
+  _ScrollSpeed := dm.ReadVec2;
+  _FlipX := dm.ReadBool;
+  _FlipY := dm.ReadBool;
+  _RepeatX := dm.ReadBool;
+  _RepeatY := dm.ReadBool;
+  dm.ReadBuffer(@_Filter, SizeOf(_Filter));
+  Layer := dm.ReadIntS32;
+  dm.ReadBuffer(@_BlendMode, SizeOf(_BlendMode));
 end;
 //TG2Scene2DComponentBackground END
 
@@ -2995,24 +2882,27 @@ begin
 end;
 {$Hints on}
 
-procedure TG2Scene2DComponentSpineAnimation.Save(const Stream: TStream);
+procedure TG2Scene2DComponentSpineAnimation.Save(const dm: TG2DataManager);
   var n: TG2IntS32;
 begin
-  SaveClassType(Stream);
-  if Assigned(_Skeleton) then n := Length(_Skeleton.Data.Name) else n := 0;
-  Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_Skeleton.Data.Name[1], n);
-  Stream.Write(_Layer, SizeOf(_Layer));
-  Stream.Write(_Offset, SizeOf(_Offset));
-  Stream.Write(_Scale, SizeOf(_Scale));
-  Stream.Write(_Loop, SizeOf(_Loop));
-  Stream.Write(_TimeScale, SizeOf(_TimeScale));
-  n := Length(_Animation);
-  Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_Animation[1], n);
+  SaveClassType(dm);
+  if Assigned(_Skeleton) then
+  begin
+    dm.WriteStringA(_Skeleton.Data.Name);
+  end
+  else
+  begin
+    dm.WriteIntS32(0);
+  end;
+  dm.WriteIntS32(_Layer);
+  dm.WriteVec2(_Offset);
+  dm.WriteVec2(_Scale);
+  dm.WriteBool(_Loop);
+  dm.WriteFloat(_TimeScale);
+  dm.WriteStringA(_Animation);
 end;
 
-procedure TG2Scene2DComponentSpineAnimation.Load(const Stream: TStream);
+procedure TG2Scene2DComponentSpineAnimation.Load(const dm: TG2DataManager);
   var n: TG2IntS32;
   var SkeletonPath: String;
   var AtlasPath: String;
@@ -3022,26 +2912,13 @@ procedure TG2Scene2DComponentSpineAnimation.Load(const Stream: TStream);
   var sd: TSpineSkeletonData;
   var al: TSpineAtlasList;
 begin
-  inherited Load(Stream);
-  {$Hints off}
-  Stream.Read(n, SizeOf(n));
-  {$Hints on}
-  if n > 0 then
-  begin
-    SetLength(SkeletonPath, n);
-    Stream.Read(SkeletonPath[1], n);
-  end;
-  Stream.Read(n, SizeOf(n)); Layer := n;
-  Stream.Read(_Offset, SizeOf(_Offset));
-  Stream.Read(_Scale, SizeOf(_Scale));
-  Stream.Read(_Loop, SizeOf(_Loop));
-  Stream.Read(_TimeScale, SizeOf(_TimeScale));
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then
-  begin
-    SetLength(_Animation, n);
-    Stream.Read(_Animation[1], n);
-  end;
+  SkeletonPath := dm.ReadStringA;
+  Layer := dm.ReadIntS32;
+  _Offset := dm.ReadVec2;
+  _Scale := dm.ReadVec2;
+  _Loop := dm.ReadBool;
+  _TimeScale := dm.ReadFloat;
+  _Animation := dm.ReadStringA;
   if Length(SkeletonPath) > 0 then
   begin
     AtlasPath := G2PathNoExt(SkeletonPath) + '.atlas';
@@ -3263,29 +3140,26 @@ begin
   BodyType := g2_s2d_rbt_dynamic_body;
 end;
 
-procedure TG2Scene2DComponentRigidBody.Save(const Stream: TStream);
+procedure TG2Scene2DComponentRigidBody.Save(const dm: TG2DataManager);
   var xf: TG2Transform2;
 begin
-  SaveClassType(Stream);
+  SaveClassType(dm);
   xf := Transform;
-  Stream.Write(xf, SizeOf(xf));
-  Stream.Write(_BodyDef, SizeOf(_BodyDef));
-  Stream.Write(_Enabled, SizeOf(_Enabled));
+  dm.WriteBuffer(@xf, SizeOf(xf));
+  dm.WriteBuffer(@_BodyDef, SizeOf(_BodyDef));
+  dm.WriteBool(_Enabled);
 end;
 
-procedure TG2Scene2DComponentRigidBody.Load(const Stream: TStream);
+procedure TG2Scene2DComponentRigidBody.Load(const dm: TG2DataManager);
   var b: Boolean;
   var xf: TG2Transform2;
 begin
   {$Hints off}
-  Stream.Read(xf, SizeOf(xf));
+  dm.ReadBuffer(@xf, SizeOf(xf));
   {$Hints on}
-  Stream.Read(_BodyDef, SizeOf(_BodyDef));
-  {$Hints off}
-  Stream.Read(b, SizeOf(b));
-  {$Hints on}
-  Enabled := b;
+  dm.ReadBuffer(@_BodyDef, SizeOf(_BodyDef));
   Transform := xf;
+  Enabled := dm.ReadBool;
 end;
 //TG2Scene2DComponentRigidBody END
 
@@ -3574,49 +3448,38 @@ begin
   _EdgeShape.set_edge(v0, v1);
 end;
 
-procedure TG2Scene2DComponentCollisionShapeEdge.Save(const Stream: TStream);
-  var n: TG2IntS32;
+procedure TG2Scene2DComponentCollisionShapeEdge.Save(const dm: TG2DataManager);
 begin
-  SaveClassType(Stream);
-  Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
-  Stream.Write(_EdgeShape.vertex0, SizeOf(_EdgeShape.vertex0));
-  Stream.Write(_EdgeShape.vertex1, SizeOf(_EdgeShape.vertex1));
-  Stream.Write(_EdgeShape.vertex2, SizeOf(_EdgeShape.vertex2));
-  Stream.Write(_EdgeShape.vertex3, SizeOf(_EdgeShape.vertex3));
-  Stream.Write(_EdgeShape.has_vertex0, SizeOf(_EdgeShape.has_vertex0));
-  Stream.Write(_EdgeShape.has_vertex3, SizeOf(_EdgeShape.has_vertex3));
-  n := Length(_EventBeginContact.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventBeginContact.Name[1], n);
-  n := Length(_EventEndContact.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventEndContact.Name[1], n);
-  n := Length(_EventBeforeContactSolve.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventBeforeContactSolve.Name[1], n);
-  n := Length(_EventAfterContactSolve.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventAfterContactSolve.Name[1], n);
+  SaveClassType(dm);
+  dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
+  dm.WriteBuffer(@_EdgeShape.vertex0, SizeOf(_EdgeShape.vertex0));
+  dm.WriteBuffer(@_EdgeShape.vertex1, SizeOf(_EdgeShape.vertex1));
+  dm.WriteBuffer(@_EdgeShape.vertex2, SizeOf(_EdgeShape.vertex2));
+  dm.WriteBuffer(@_EdgeShape.vertex3, SizeOf(_EdgeShape.vertex3));
+  dm.WriteBool(_EdgeShape.has_vertex0);
+  dm.WriteBool(_EdgeShape.has_vertex3);
+  dm.WriteStringA(_EventBeginContact.Name);
+  dm.WriteStringA(_EventEndContact.Name);
+  dm.WriteStringA(_EventBeforeContactSolve.Name);
+  dm.WriteStringA(_EventAfterContactSolve.Name);
 end;
 
-procedure TG2Scene2DComponentCollisionShapeEdge.Load(const Stream: TStream);
+procedure TG2Scene2DComponentCollisionShapeEdge.Load(const dm: TG2DataManager);
   var n: TG2IntS32;
   var EventName: String;
 begin
-  Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
+  dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_EdgeShape;
-  Stream.Read(_EdgeShape.vertex0, SizeOf(_EdgeShape.vertex0));
-  Stream.Read(_EdgeShape.vertex1, SizeOf(_EdgeShape.vertex1));
-  Stream.Read(_EdgeShape.vertex2, SizeOf(_EdgeShape.vertex2));
-  Stream.Read(_EdgeShape.vertex3, SizeOf(_EdgeShape.vertex3));
-  Stream.Read(_EdgeShape.has_vertex0, SizeOf(_EdgeShape.has_vertex0));
-  Stream.Read(_EdgeShape.has_vertex3, SizeOf(_EdgeShape.has_vertex3));
-  {$Hints off}
-  Stream.Read(n, SizeOf(n));
-  {$Hints on}
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeforeContactSolve.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventAfterContactSolve.Name := EventName; end;
+  dm.ReadBuffer(@_EdgeShape.vertex0, SizeOf(_EdgeShape.vertex0));
+  dm.ReadBuffer(@_EdgeShape.vertex1, SizeOf(_EdgeShape.vertex1));
+  dm.ReadBuffer(@_EdgeShape.vertex2, SizeOf(_EdgeShape.vertex2));
+  dm.ReadBuffer(@_EdgeShape.vertex3, SizeOf(_EdgeShape.vertex3));
+  _EdgeShape.has_vertex0 := dm.ReadBool;
+  _EdgeShape.has_vertex3 := dm.ReadBool;
+  _EventBeginContact.Name := dm.ReadStringA;
+  _EventEndContact.Name := dm.ReadStringA;
+  _EventBeforeContactSolve.Name := dm.ReadStringA;
+  _EventAfterContactSolve.Name := dm.ReadStringA;
   Reattach;
 end;
 //TG2Scene2DComponentCollisionShapeEdge END
@@ -3680,45 +3543,34 @@ begin
   Reattach;
 end;
 
-procedure TG2Scene2DComponentCollisionShapePoly.Save(const Stream: TStream);
-  var n: TG2IntS32;
+procedure TG2Scene2DComponentCollisionShapePoly.Save(const dm: TG2DataManager);
 begin
-  SaveClassType(Stream);
-  Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
-  Stream.Write(_PolyShape.count, SizeOf(_PolyShape.count));
-  Stream.Write(_PolyShape.vertices, SizeOf(_PolyShape.vertices));
-  Stream.Write(_PolyShape.normals, SizeOf(_PolyShape.normals));
-  Stream.Write(_PolyShape.centroid, SizeOf(_PolyShape.centroid));
-  n := Length(_EventBeginContact.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventBeginContact.Name[1], n);
-  n := Length(_EventEndContact.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventEndContact.Name[1], n);
-  n := Length(_EventBeforeContactSolve.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventBeforeContactSolve.Name[1], n);
-  n := Length(_EventAfterContactSolve.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventAfterContactSolve.Name[1], n);
+  SaveClassType(dm);
+  dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
+  dm.WriteIntS32(_PolyShape.count);
+  dm.WriteBuffer(@_PolyShape.vertices, SizeOf(_PolyShape.vertices));
+  dm.WriteBuffer(@_PolyShape.normals, SizeOf(_PolyShape.normals));
+  dm.WriteBuffer(@_PolyShape.centroid, SizeOf(_PolyShape.centroid));
+  dm.WriteStringA(_EventBeginContact.Name);
+  dm.WriteStringA(_EventEndContact.Name);
+  dm.WriteStringA(_EventBeforeContactSolve.Name);
+  dm.WriteStringA(_EventAfterContactSolve.Name);
 end;
 
-procedure TG2Scene2DComponentCollisionShapePoly.Load(const Stream: TStream);
+procedure TG2Scene2DComponentCollisionShapePoly.Load(const dm: TG2DataManager);
   var n: TG2IntS32;
   var EventName: String;
 begin
-  Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
+  dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_PolyShape;
-  Stream.Read(_PolyShape.count, SizeOf(_PolyShape.count));
-  Stream.Read(_PolyShape.vertices, SizeOf(_PolyShape.vertices));
-  Stream.Read(_PolyShape.normals, SizeOf(_PolyShape.normals));
-  Stream.Read(_PolyShape.centroid, SizeOf(_PolyShape.centroid));
-  {$Hints off}
-  Stream.Read(n, SizeOf(n));
-  {$Hints on}
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeforeContactSolve.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventAfterContactSolve.Name := EventName; end;
+  _PolyShape.count := dm.ReadIntS32;
+  dm.ReadBuffer(@_PolyShape.vertices, SizeOf(_PolyShape.vertices));
+  dm.ReadBuffer(@_PolyShape.normals, SizeOf(_PolyShape.normals));
+  dm.ReadBuffer(@_PolyShape.centroid, SizeOf(_PolyShape.centroid));
+  _EventBeginContact.Name := dm.ReadStringA;
+  _EventEndContact.Name := dm.ReadStringA;
+  _EventBeforeContactSolve.Name := dm.ReadStringA;
+  _EventAfterContactSolve.Name := dm.ReadStringA;
   Reattach;
 end;
 //TG2Scene2DComponentCollisionShapePoly END
@@ -3800,45 +3652,32 @@ begin
   UpdateProperties;
 end;
 
-procedure TG2Scene2DComponentCollisionShapeBox.Save(const Stream: TStream);
-  var n: TG2IntS32;
+procedure TG2Scene2DComponentCollisionShapeBox.Save(const dm: TG2DataManager);
 begin
-  SaveClassType(Stream);
-  Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
-  Stream.Write(_Width, SizeOf(_Width));
-  Stream.Write(_Height, SizeOf(_Height));
-  Stream.Write(_Offset, SizeOf(_Offset));
-  Stream.Write(_Angle, SizeOf(_Angle));
-  n := Length(_EventBeginContact.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventBeginContact.Name[1], n);
-  n := Length(_EventEndContact.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventEndContact.Name[1], n);
-  n := Length(_EventBeforeContactSolve.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventBeforeContactSolve.Name[1], n);
-  n := Length(_EventAfterContactSolve.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventAfterContactSolve.Name[1], n);
+  SaveClassType(dm);
+  dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
+  dm.WriteFloat(_Width);
+  dm.WriteFloat(_Height);
+  dm.WriteVec2(_Offset);
+  dm.WriteFloat(_Angle);
+  dm.WriteStringA(_EventBeginContact.Name);
+  dm.WriteStringA(_EventEndContact.Name);
+  dm.WriteStringA(_EventBeforeContactSolve.Name);
+  dm.WriteStringA(_EventAfterContactSolve.Name);
 end;
 
-procedure TG2Scene2DComponentCollisionShapeBox.Load(const Stream: TStream);
-  var n: TG2IntS32;
-  var EventName: String;
+procedure TG2Scene2DComponentCollisionShapeBox.Load(const dm: TG2DataManager);
 begin
-  Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
+  dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_PolyShape;
-  Stream.Read(_Width, SizeOf(_Width));
-  Stream.Read(_Height, SizeOf(_Height));
-  Stream.Read(_Offset, SizeOf(_Offset));
-  Stream.Read(_Angle, SizeOf(_Angle));
-  {$Hints off}
-  Stream.Read(n, SizeOf(n));
-  {$Hints on}
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeforeContactSolve.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventAfterContactSolve.Name := EventName; end;
+  _Width := dm.ReadFloat;
+  _Height := dm.ReadFloat;
+  _Offset := dm.ReadVec2;
+  _Angle := dm.ReadFloat;
+  _EventBeginContact.Name := dm.ReadStringA;
+  _EventEndContact.Name := dm.ReadStringA;
+  _EventBeforeContactSolve.Name := dm.ReadStringA;
+  _EventAfterContactSolve.Name := dm.ReadStringA;
   UpdateProperties;
   Reattach;
 end;
@@ -3901,41 +3740,31 @@ begin
   _CircleShape.radius := r;
 end;
 
-procedure TG2Scene2DComponentCollisionShapeCircle.Save(const Stream: TStream);
+procedure TG2Scene2DComponentCollisionShapeCircle.Save(const dm: TG2DataManager);
   var n: TG2IntS32;
 begin
-  SaveClassType(Stream);
-  Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
-  Stream.Write(_CircleShape.center, SizeOf(_CircleShape.center));
-  Stream.Write(_CircleShape.radius, SizeOf(_CircleShape.radius));
-  n := Length(_EventBeginContact.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventBeginContact.Name[1], n);
-  n := Length(_EventEndContact.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventEndContact.Name[1], n);
-  n := Length(_EventBeforeContactSolve.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventBeforeContactSolve.Name[1], n);
-  n := Length(_EventAfterContactSolve.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventAfterContactSolve.Name[1], n);
+  SaveClassType(dm);
+  dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
+  dm.WriteBuffer(@_CircleShape.center, SizeOf(_CircleShape.center));
+  dm.WriteFloat(_CircleShape.radius);
+  dm.WriteStringA(_EventBeginContact.Name);
+  dm.WriteStringA(_EventEndContact.Name);
+  dm.WriteStringA(_EventBeforeContactSolve.Name);
+  dm.WriteStringA(_EventAfterContactSolve.Name);
 end;
 
-procedure TG2Scene2DComponentCollisionShapeCircle.Load(const Stream: TStream);
+procedure TG2Scene2DComponentCollisionShapeCircle.Load(const dm: TG2DataManager);
   var n: TG2IntS32;
   var EventName: String;
 begin
-  Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
+  dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_CircleShape;
-  Stream.Read(_CircleShape.center, SizeOf(_CircleShape.center));
-  Stream.Read(_CircleShape.radius, SizeOf(_CircleShape.radius));
-  {$Hints off}
-  Stream.Read(n, SizeOf(n));
-  {$Hints on}
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeforeContactSolve.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventAfterContactSolve.Name := EventName; end;
+  dm.ReadBuffer(@_CircleShape.center, SizeOf(_CircleShape.center));
+  _CircleShape.radius := dm.ReadFloat;
+  _EventBeginContact.Name := dm.ReadStringA;
+  _EventEndContact.Name := dm.ReadStringA;
+  _EventBeforeContactSolve.Name := dm.ReadStringA;
+  _EventAfterContactSolve.Name := dm.ReadStringA;
   Reattach;
 end;
 //TG2Scene2DComponentCollisionShapeCircle END
@@ -4002,59 +3831,48 @@ begin
   _ChainShape.set_chain(v, vc);
 end;
 
-procedure TG2Scene2DComponentCollisionShapeChain.Save(const Stream: TStream);
-  var n: TG2IntS32;
+procedure TG2Scene2DComponentCollisionShapeChain.Save(const dm: TG2DataManager);
 begin
-  SaveClassType(Stream);
-  Stream.Write(_FixtureDef, SizeOf(_FixtureDef));
-  Stream.Write(_ChainShape.count, SizeOf(_ChainShape.count));
-  Stream.Write(_ChainShape.vertices^, SizeOf(_ChainShape.vertices^[0]) * _ChainShape.count);
-  Stream.Write(_ChainShape.has_next_vertex, SizeOf(_ChainShape.has_next_vertex));
+  SaveClassType(dm);
+  dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
+  dm.WriteIntS32(_ChainShape.count);
+  dm.WriteBuffer(_ChainShape.vertices, SizeOf(_ChainShape.vertices^[0]) * _ChainShape.count);
+  dm.WriteBool(_ChainShape.has_next_vertex);
   if (_ChainShape.has_next_vertex) then
-  Stream.Write(_ChainShape.next_vertex, SizeOf(_ChainShape.next_vertex));
-  Stream.Write(_ChainShape.has_prev_vertex, SizeOf(_ChainShape.has_prev_vertex));
+  dm.WriteBuffer(@_ChainShape.next_vertex, SizeOf(_ChainShape.next_vertex));
+  dm.WriteBool(_ChainShape.has_prev_vertex);
   if (_ChainShape.has_prev_vertex) then
-  Stream.Write(_ChainShape.prev_vertex, SizeOf(_ChainShape.prev_vertex));
-  n := Length(_EventBeginContact.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventBeginContact.Name[1], n);
-  n := Length(_EventEndContact.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventEndContact.Name[1], n);
-  n := Length(_EventBeforeContactSolve.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventBeforeContactSolve.Name[1], n);
-  n := Length(_EventAfterContactSolve.Name); Stream.Write(n, SizeOf(n));
-  if n > 0 then Stream.Write(_EventAfterContactSolve.Name[1], n);
+  dm.WriteBuffer(@_ChainShape.prev_vertex, SizeOf(_ChainShape.prev_vertex));
+  dm.WriteStringA(_EventBeginContact.Name);
+  dm.WriteStringA(_EventEndContact.Name);
+  dm.WriteStringA(_EventBeforeContactSolve.Name);
+  dm.WriteStringA(_EventAfterContactSolve.Name);
 end;
 
-procedure TG2Scene2DComponentCollisionShapeChain.Load(const Stream: TStream);
+procedure TG2Scene2DComponentCollisionShapeChain.Load(const dm: TG2DataManager);
   var n: TG2IntS32;
   var EventName: String;
 begin
-  Stream.Read(_FixtureDef, SizeOf(_FixtureDef));
+  dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_ChainShape;
   _ChainShape.clear;
-  Stream.Read(_ChainShape.count, SizeOf(_ChainShape.count));
+  _ChainShape.count := dm.ReadIntS32;
   _ChainShape.vertices := pb2_vec2_arr(b2_alloc(_ChainShape.count * SizeOf(tb2_vec2)));
-  Stream.Read(_ChainShape.vertices^, _ChainShape.count * SizeOf(tb2_vec2));
-  Stream.Read(_ChainShape.has_next_vertex, SizeOf(_ChainShape.has_next_vertex));
+  dm.ReadBuffer(_ChainShape.vertices, _ChainShape.count * SizeOf(tb2_vec2));
+  _ChainShape.has_next_vertex := dm.ReadBool;
   if (_ChainShape.has_next_vertex) then
-  Stream.Read(_ChainShape.next_vertex, SizeOf(_ChainShape.next_vertex))
+  dm.ReadBuffer(@_ChainShape.next_vertex, SizeOf(_ChainShape.next_vertex))
   else
   _ChainShape.next_vertex.set_zero;
-  Stream.Read(_ChainShape.has_prev_vertex, SizeOf(_ChainShape.has_prev_vertex));
+  _ChainShape.has_prev_vertex := dm.ReadBool;
   if (_ChainShape.has_prev_vertex) then
-  Stream.Read(_ChainShape.prev_vertex, SizeOf(_ChainShape.prev_vertex))
+  dm.ReadBuffer(@_ChainShape.prev_vertex, SizeOf(_ChainShape.prev_vertex))
   else
   _ChainShape.prev_vertex.set_zero;
-  {$Hints off}
-  Stream.Read(n, SizeOf(n));
-  {$Hints on}
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeginContact.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventEndContact.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventBeforeContactSolve.Name := EventName; end;
-  Stream.Read(n, SizeOf(n));
-  if n > 0 then begin SetLength(EventName, n); Stream.Read(EventName[1], n); _EventAfterContactSolve.Name := EventName; end;
+  _EventBeginContact.Name := dm.ReadStringA;
+  _EventEndContact.Name := dm.ReadStringA;
+  _EventBeforeContactSolve.Name := dm.ReadStringA;
+  _EventAfterContactSolve.Name := dm.ReadStringA;
   Reattach;
 end;
 //TG2Scene2DComponentCollisionShapeChain END
@@ -4078,10 +3896,15 @@ begin
   _DuckCheckVerts[1] := b2_vec2(_BodyVerts[2].x, _BodyVerts[2].y);
   _DuckCheckVerts[2] := b2_vec2(_BodyVerts[3].x, _BodyVerts[3].y);
   _DuckCheckVerts[3] := b2_vec2(_BodyVerts[3].x, _BodyVerts[0].y);
+  _GroundCheckVerts[0] := b2_vec2(qw + qw * 0.125, hh * 0.5);
+  _GroundCheckVerts[1] := b2_vec2(-qw - qw * 0.125, hh * 0.5);
+  _GroundCheckVerts[2] := b2_vec2(-qw - qw * 0.125, hh + hh * 0.05);
+  _GroundCheckVerts[3] := b2_vec2(qw + qw * 0.125, hh + hh * 0.05);
   _ShapeBody.set_polygon(@_BodyVerts, 7);
   _ShapeFeet.center := b2_vec2(0, 0);
-  _ShapeFeet.radius := hw;
+  _ShapeFeet.radius := hw * 0.99;
   _ShapeDuckCheck.set_polygon(@_DuckCheckVerts, 4);
+  _ShapeGroundCheck.set_polygon(@_GroundCheckVerts, 4);
 end;
 
 procedure TG2Scene2DComponentCharacter.OnInitialize;
@@ -4092,7 +3915,7 @@ begin
   _BodyFeetDef := b2_body_def;
   _BodyFeetDef.body_type := b2_dynamic_body;
   _FixtureBodyDef := b2_fixture_def;
-  _FixtureBodyDef.friction := 1;
+  _FixtureBodyDef.friction := 0;
   _FixtureBodyDef.density := 1;
   _FixtureBodyDef.user_data := Self;
   _FixtureFeetDef := b2_fixture_def;
@@ -4104,6 +3927,7 @@ begin
   _ShapeFeet.create;
   _FixtureFeetDef.shape := @_ShapeFeet;
   _ShapeDuckCheck.create;
+  _ShapeGroundCheck.create;
   _Width := 0.5;
   _Height := 1;
   _WalkSpeed := 0;
@@ -4120,6 +3944,7 @@ end;
 
 procedure TG2Scene2DComponentCharacter.OnFinalize;
 begin
+  _ShapeGroundCheck.destroy;
   _ShapeDuckCheck.destroy;
   _ShapeFeet.destroy;
   _ShapeBody.destroy;
@@ -4134,6 +3959,8 @@ begin
   _Standing := _FootContactCount > 0;
   if _Standing and (_Body <> nil) and (_JumpDelay <= 0) and (Abs(_JumpSpeed.LenSq) > G2EPS2) then
   begin
+    if _Body^.get_linear_velocity.y < 0 then
+    _Body^.set_linear_velocity(b2_vec2(_Body^.get_linear_velocity.x, 0));
     _Body^.apply_force_to_center(_JumpSpeed, true);
     _JumpDelay := 0.1;
   end;
@@ -4173,6 +4000,7 @@ begin
   begin
     _Duck := 0;
     _Scene.PhysWorld.destroy_joint(_Joint);
+    _Body^.destroy_fixture(_FixtureGroundCheck);
     _Body^.destroy_fixture(_FixtureDuckCheck);
     _BodyFeet^.destroy_fixture(_FixtureFeet);
     _Body^.destroy_fixture(_FixtureBody);
@@ -4200,6 +4028,11 @@ begin
     fd.shape := @_ShapeDuckCheck;
     fd.user_data := Self;
     _FixtureDuckCheck := _Body^.create_fixture(fd);
+    fd := b2_fixture_def;
+    fd.is_sensor := True;
+    fd.shape := @_ShapeGroundCheck;
+    fd.user_data := Self;
+    _FixtureGroundCheck := _Body^.create_fixture(fd);
     jd := b2_revolute_joint_def;
     jd.initialize(_Body, _BodyFeet, bd.position);
     _Joint := _Scene.PhysWorld.create_joint(jd);
@@ -4254,10 +4087,11 @@ procedure TG2Scene2DComponentCharacter.OnBeginContact(
   const OtherShape: TG2Scene2DComponentCollisionShape;
   const SelfFixture: pb2_fixture; const Contact: pb2_contact);
 begin
-  if (OtherShape <> nil)
-  and (_FixtureFeet <> nil)
-  and (SelfFixture = _FixtureFeet) then
-  Inc(_FootContactCount)
+  if SelfFixture = _FixtureGroundCheck then
+  begin
+    if _FootContactCount = 0 then _JumpDelay := 0.1;
+    Inc(_FootContactCount);
+  end
   else if SelfFixture = _FixtureDuckCheck then
   Inc(_DuckCheckContacts);
 end;
@@ -4269,9 +4103,7 @@ procedure TG2Scene2DComponentCharacter.OnEndContact(
   const OtherShape: TG2Scene2DComponentCollisionShape;
   const SelfFixture: pb2_fixture; const Contact: pb2_contact);
 begin
-  if (OtherShape <> nil)
-  and (_FixtureFeet <> nil)
-  and (SelfFixture = _FixtureFeet) then
+  if SelfFixture = _FixtureGroundCheck then
   Dec(_FootContactCount)
   else if SelfFixture = _FixtureDuckCheck then
   Dec(_DuckCheckContacts);
@@ -4324,39 +4156,37 @@ begin
   if not _Standing then _GlideSpeed := Speed;
 end;
 
-procedure TG2Scene2DComponentCharacter.Save(const Stream: TStream);
+procedure TG2Scene2DComponentCharacter.Save(const dm: TG2DataManager);
   var xf: TG2Transform2;
 begin
-  SaveClassType(Stream);
+  SaveClassType(dm);
   xf := Transform;
-  Stream.Write(xf, SizeOf(xf));
-  Stream.Write(_Width, SizeOf(_Width));
-  Stream.Write(_Height, SizeOf(_Height));
-  Stream.Write(_BodyDef, SizeOf(_BodyDef));
-  Stream.Write(_BodyFeetDef, SizeOf(_BodyFeetDef));
-  Stream.Write(_FixtureBodyDef, SizeOf(_FixtureBodyDef));
-  Stream.Write(_FixtureFeetDef, SizeOf(_FixtureFeetDef));
-  Stream.Write(_MaxGlideSpeed, SizeOf(_MaxGlideSpeed));
-  Stream.Write(_Enabled, SizeOf(_Enabled));
+  dm.WriteBuffer(@xf, SizeOf(xf));
+  dm.WriteFloat(_Width);
+  dm.WriteFloat(_Height);
+  dm.WriteBuffer(@_BodyDef, SizeOf(_BodyDef));
+  dm.WriteBuffer(@_BodyFeetDef, SizeOf(_BodyFeetDef));
+  dm.WriteBuffer(@_FixtureBodyDef, SizeOf(_FixtureBodyDef));
+  dm.WriteBuffer(@_FixtureFeetDef, SizeOf(_FixtureFeetDef));
+  dm.WriteFloat(_MaxGlideSpeed);
+  dm.WriteBool(_Enabled);
 end;
 
-procedure TG2Scene2DComponentCharacter.Load(const Stream: TStream);
+procedure TG2Scene2DComponentCharacter.Load(const dm: TG2DataManager);
   var b: Boolean;
   var xf: TG2Transform2;
 begin
   {$Hints off}
-  Stream.Read(xf, SizeOf(xf));
+  dm.ReadBuffer(@xf, SizeOf(xf));
   {$Hints on}
-  Stream.Read(_Width, SizeOf(_Width));
-  Stream.Read(_Height, SizeOf(_Height));
-  Stream.Read(_BodyDef, SizeOf(_BodyDef));
-  Stream.Read(_BodyFeetDef, SizeOf(_BodyFeetDef));
-  Stream.Read(_FixtureBodyDef, SizeOf(_FixtureBodyDef));
-  Stream.Read(_FixtureFeetDef, SizeOf(_FixtureFeetDef));
-  Stream.Read(_MaxGlideSpeed, SizeOf(_MaxGlideSpeed));
-  {$Hints off}
-  Stream.Read(b, SizeOf(b));
-  {$Hints on}
+  _Width := dm.ReadFloat;
+  _Height := dm.ReadFloat;
+  dm.ReadBuffer(@_BodyDef, SizeOf(_BodyDef));
+  dm.ReadBuffer(@_BodyFeetDef, SizeOf(_BodyFeetDef));
+  dm.ReadBuffer(@_FixtureBodyDef, SizeOf(_FixtureBodyDef));
+  dm.ReadBuffer(@_FixtureFeetDef, SizeOf(_FixtureFeetDef));
+  _MaxGlideSpeed := dm.ReadFloat;
+  b := dm.ReadBool;
   _FixtureBodyDef.user_data := Self;
   _FixtureFeetDef.user_data := Self;
   SetupShapes;
@@ -4678,76 +4508,58 @@ begin
   CreateLayers;
 end;
 
-procedure TG2Scene2DComponentPoly.Save(const Stream: TStream);
-  var i, n: TG2IntS32;
-  var b: Boolean;
-  var TexFile: String;
+procedure TG2Scene2DComponentPoly.Save(const dm: TG2DataManager);
+  var i: TG2IntS32;
 begin
-  SaveClassType(Stream);
-  i := Length(_Vertices);
-  Stream.Write(i, SizeOf(i));
-  Stream.Write(_Vertices[0], SizeOf(TG2Scene2DComponentPolyVertex) * Length(_Vertices));
-  i := Length(_Faces);
-  Stream.Write(i, SizeOf(i));
-  Stream.Write(_Faces[0], SizeOf(_Faces[0]) * Length(_Faces));
-  i := Length(_Layers);
-  Stream.Write(i, SizeOf(i));
+  SaveClassType(dm);
+  dm.WriteIntS32(Length(_Vertices));
+  dm.WriteBuffer(@_Vertices[0], SizeOf(TG2Scene2DComponentPolyVertex) * Length(_Vertices));
+  dm.WriteIntS32(Length(_Faces));
+  dm.WriteBuffer(@_Faces[0], SizeOf(_Faces[0]) * Length(_Faces));
+  dm.WriteIntS32(Length(_Layers));
   for i := 0 to High(_Layers) do
   begin
-    Stream.Write(_Layers[i].Opacity[0], SizeOf(TG2Float) * Length(_Vertices));
-    Stream.Write(_Layers[i].Scale, SizeOf(TG2Vec2));
+    dm.WriteBuffer(@_Layers[i].Opacity[0], SizeOf(TG2Float) * Length(_Vertices));
+    dm.WriteVec2(_Layers[i].Scale);
     if Assigned(_Layers[i].Texture)
     and _Layers[i].Texture.IsShared then
     begin
-      TexFile := _Layers[i].Texture.AssetName;
-      n := Length(TexFile);
+      dm.WriteStringA(_Layers[i].Texture.AssetName);
     end
     else
     begin
-      n := 0;
+      dm.WriteIntS32(0);
     end;
-    Stream.Write(n, SizeOf(n));
-    if n > 0 then Stream.Write(TexFile[1], n);
-    n := _Layers[i].Layer;
-    Stream.Write(n, SizeOf(n));
-    b := _Layers[i].Visible;
-    Stream.Write(b, SizeOf(b));
+    dm.WriteIntS32(_Layers[i].Layer);
+    dm.WriteBool(_Layers[i].Visible);
   end;
 end;
 
-procedure TG2Scene2DComponentPoly.Load(const Stream: TStream);
+procedure TG2Scene2DComponentPoly.Load(const dm: TG2DataManager);
   var i, n: TG2IntS32;
   var b: Boolean;
   var TexFile: String;
 begin
-  {$Hints off}
-  Stream.Read(n, SizeOf(n));
-  {$Hints on}
+  n := dm.ReadIntS32;
   SetLength(_Vertices, n);
-  Stream.Read(_Vertices[0], SizeOf(TG2Scene2DComponentPolyVertex) * Length(_Vertices));
-  Stream.Read(n, SizeOf(n));
+  dm.ReadBuffer(@_Vertices[0], SizeOf(TG2Scene2DComponentPolyVertex) * Length(_Vertices));
+  n := dm.ReadIntS32;
   SetLength(_Faces, n);
-  Stream.Read(_Faces[0], SizeOf(_Faces[0]) * Length(_Faces));
-  Stream.Read(n, SizeOf(n));
+  dm.ReadBuffer(@_Faces[0], SizeOf(_Faces[0]) * Length(_Faces));
+  n := dm.ReadIntS32;
   SetLength(_Layers, n);
   CreateLayers;
   for i := 0 to High(_Layers) do
   begin
-    Stream.Read(_Layers[i].Opacity[0], SizeOf(TG2Float) * Length(_Vertices));
-    Stream.Read(_Layers[i].Scale, SizeOf(TG2Vec2));
-    Stream.Read(n, SizeOf(n));
-    if n > 0 then
+    dm.ReadBuffer(@_Layers[i].Opacity[0], SizeOf(TG2Float) * Length(_Vertices));
+    _Layers[i].Scale := dm.ReadVec2;
+    TexFile := dm.ReadStringA;
+    if Length(TexFile) > 0 then
     begin
-      SetLength(TexFile, n);
-      Stream.Read(TexFile[1], n);
       _Layers[i].Texture := TG2Texture2D.SharedAsset(TexFile);
     end;
-    Stream.Read(n, SizeOf(n));
-    _Layers[i].Layer := n;
-    {$Hints off}
-    Stream.Read(b, SizeOf(b));
-    {$Hints on}
-    _Layers[i].Visible := b;
+    _Layers[i].Layer := dm.ReadIntS32;
+    _Layers[i].Visible := dm.ReadBool;
   end;
 end;
 //TG2Scene2DComponentPoly END
