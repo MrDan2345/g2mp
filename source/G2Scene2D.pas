@@ -805,6 +805,7 @@ type
   public
     type TG2Scene2DComponentPolyVertex = record
       x, y: TG2Float;
+      u, v: TG2Float;
       c: TG2Color;
     end;
     type PG2Scene2DComponentPolyVertex = ^TG2Scene2DComponentPolyVertex;
@@ -871,7 +872,8 @@ type
     procedure SetUp(const Triangles: PG2Vec2Arr; const TriangleCount: TG2IntS32); overload;
     procedure SetUp(
       const NewVertices: PG2Vec2; const NewVertexCount, VertexStride: TG2IntS32;
-      const NewIndices: PG2IntU16; const NewIndexCount, IndexStride: TG2IntS32
+      const NewIndices: PG2IntU16; const NewIndexCount, IndexStride: TG2IntS32;
+      const NewTexCoords: PG2Vec2; const TexCoordStride: TG2IntS32
     ); overload;
     procedure Save(const dm: TG2DataManager); override;
     procedure Load(const dm: TG2DataManager); override;
@@ -3912,15 +3914,16 @@ begin
   inherited OnInitialize;
   _BodyDef.fixed_rotation := True;
   _BodyDef.body_type := b2_dynamic_body;
+  _BodyDef.linear_damping := 0.5;
   _BodyFeetDef := b2_body_def;
   _BodyFeetDef.body_type := b2_dynamic_body;
   _FixtureBodyDef := b2_fixture_def;
   _FixtureBodyDef.friction := 0;
-  _FixtureBodyDef.density := 1;
+  _FixtureBodyDef.density := 2;
   _FixtureBodyDef.user_data := Self;
   _FixtureFeetDef := b2_fixture_def;
   _FixtureFeetDef.friction := 4;
-  _FixtureFeetDef.density := 1;
+  _FixtureFeetDef.density := 2;
   _FixtureFeetDef.user_data := Self;
   _ShapeBody.create;
   _FixtureBodyDef.shape := @_ShapeBody;
@@ -3983,7 +3986,7 @@ begin
     if d < _MaxGlideSpeed then
     begin
       d := G2Min(_GlideSpeed.Len, G2Max(_MaxGlideSpeed - d, 0));
-      _Body^.apply_force_to_center(n * d, true);
+      _Body^.set_linear_velocity(_Body^.get_linear_velocity + n * d);
     end;
   end;
   _GlideSpeed.SetZero;
@@ -4342,7 +4345,7 @@ begin
       v := G2Vec2(_Vertices[_Faces[i][j]].x, _Vertices[_Faces[i][j]].y);
       c := _Vertices[_Faces[i][j]].c;
       c.a := Round(c.a * Layer.Opacity[_Faces[i][j]]);
-      t := v * Layer.Scale;
+      t := G2Vec2(v.x + _Vertices[_Faces[i][j]].u, v.y + _Vertices[_Faces[i][j]].v) * Layer.Scale;
       v := Owner.Transform.Transform(v);
       Display.PolyAdd(v, t, c);
     end;
@@ -4453,6 +4456,8 @@ procedure TG2Scene2DComponentPoly.SetUp(const Triangles: PG2Vec2Arr; const Trian
     Result := vc;
     _Vertices[vc].x := v.x;
     _Vertices[vc].y := v.y;
+    _Vertices[vc].u := 0;
+    _Vertices[vc].v := 0;
     _Vertices[vc].c := $ffffffff;
     Inc(vc);
   end;
@@ -4478,20 +4483,26 @@ end;
 
 procedure TG2Scene2DComponentPoly.SetUp(
   const NewVertices: PG2Vec2; const NewVertexCount, VertexStride: TG2IntS32;
-  const NewIndices: PG2IntU16; const NewIndexCount, IndexStride: TG2IntS32
+  const NewIndices: PG2IntU16; const NewIndexCount, IndexStride: TG2IntS32;
+  const NewTexCoords: PG2Vec2; const TexCoordStride: TG2IntS32
 );
   var pv: PG2Vec2;
+  var pt: PG2Vec2;
   var pi: PG2IntU16;
   var i: TG2IntS32;
 begin
   pv := NewVertices;
+  pt := NewTexCoords;
   SetLength(_Vertices, NewVertexCount);
   for i := 0 to NewVertexCount - 1 do
   begin
     _Vertices[i].x := pv^.x;
     _Vertices[i].y := pv^.y;
+    _Vertices[i].u := pt^.x;
+    _Vertices[i].v := pt^.y;
     _Vertices[i].c := $ffffffff;
     pv := PG2Vec2(Pointer(pv) + VertexStride);
+    pt := PG2Vec2(Pointer(pt) + TexCoordStride);
   end;
   pi := NewIndices;
   SetLength(_Faces, NewIndexCount div 3);

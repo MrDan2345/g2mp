@@ -92,7 +92,7 @@ begin
   Display.Width := 10;
   Display.Height := 10;
   Display.Position := G2Vec2(0, 0);
-  Display.Zoom := 0.5;
+  Display.Zoom := 1.3;
   Scene := TG2Scene2D.Create;
   Scene.Load('scene.g2s2d');
   //Scene.Gravity := G2Vec2(0, 9.8);
@@ -103,7 +103,7 @@ begin
   Character := TG2Scene2DComponentCharacter.Create(Scene);
   Character.Attach(PlayerEntity);
   Character.Enabled := True;
-  Character.MaxGlideSpeed := 4;
+  Character.MaxGlideSpeed := 3;
   //Wheel0 := Scene.FindEntityByName('Wheel0');
   //Wheel1 := Scene.FindEntityByName('Wheel1');
   TG2Picture.SharedAsset('atlas.g2atlas#TestCharB.png').RefInc;
@@ -140,7 +140,7 @@ begin
     if g2.KeyDown[G2K_Right] then
     begin
       Character.Walk(15);
-      Character.Glide(G2Vec2(50, 0));
+      Character.Glide(G2Vec2(0.25, 0));
       if Assigned(Animation) then
       begin
         Animation.Animation := 'run';
@@ -150,7 +150,7 @@ begin
     else if g2.KeyDown[G2K_Left] then
     begin
       Character.Walk(-15);
-      Character.Glide(G2Vec2(-50, 0));
+      Character.Glide(G2Vec2(-0.25, 0));
       if Assigned(Animation) then
       begin
         Animation.Animation := 'run';
@@ -166,7 +166,7 @@ begin
     end;
     if g2.KeyDown[G2K_Space] then
     begin
-      Character.Jump(G2Vec2(0, -200));
+      Character.Jump(G2Vec2(0, -400));
     end;
     if g2.KeyDown[G2K_Down] then
     begin

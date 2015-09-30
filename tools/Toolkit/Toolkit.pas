@@ -3301,7 +3301,7 @@ type
 //TScene2DEditorPoly BEGIN
   TScene2DEditorPoly = class (TScene2DEditor)
   public
-    type TEditMode = (em_vertex, em_edge, em_face, em_layer);
+    type TEditMode = (em_vertex, em_tex_coord, em_edge, em_face, em_layer);
   private
     type TSelectList = class (TOverlayObject)
     public
@@ -3353,6 +3353,7 @@ type
     procedure OnModeVertices;
     procedure OnModeEdges;
     procedure OnModeFaces;
+    procedure OnModeTexCoords;
     procedure OnModeClick(const Display: Pointer);
     procedure OnFlipEdgeClick(const Display: Pointer);
     procedure OnCollapseClick(const Display: Pointer);
@@ -3550,6 +3551,7 @@ type
   TScene2DComponentDataPolyVertex = class
   public
     var v: TG2Vec2;
+    var t: TG2Vec2;
     var c: TG2Color;
     var o: TG2QuickListFloat;
     var e: TScene2DComponentDataPolyEdgeList;
@@ -25352,6 +25354,7 @@ procedure TScene2DEditorPoly.StartDrag(const mc: TG2Vec2);
     VertexReplica[i][1] := TScene2DComponentDataPolyVertex.Create;
     VertexReplica[i][1].o.Allocate(Component.Layers.Count);
     VertexReplica[i][1].v := v.v;
+    VertexReplica[i][1].t := v.t;
     VertexReplica[i][1].c := v.c;
     Component.Vertices.Add(VertexReplica[i][1]);
     Result := VertexReplica[i][1];
@@ -25365,7 +25368,8 @@ begin
   _Drag := True;
   _VDrag.Clear;
   case EditMode of
-    em_vertex:
+    em_vertex,
+    em_tex_coord:
     begin
       if Assigned(_MOverVertex) then
       begin
@@ -25439,8 +25443,16 @@ begin
     end;
   end;
   SetLength(_VOffset, _VDrag.Count);
-  for i := 0 to _VDrag.Count - 1 do
-  _VOffset[i] := _VDrag[i].v - mc;
+  if EditMode = em_tex_coord then
+  begin
+    for i := 0 to _VDrag.Count - 1 do
+    _VOffset[i] := _VDrag[i].t - mc;
+  end
+  else
+  begin
+    for i := 0 to _VDrag.Count - 1 do
+    _VOffset[i] := _VDrag[i].v - mc;
+  end;
 end;
 
 procedure TScene2DEditorPoly.SetUpPopUpModes;
@@ -25452,6 +25464,7 @@ begin
   _PopUp.AddItem('Vertices');
   _PopUp.AddItem('Edges');
   _PopUp.AddItem('Triangles');
+  _PopUp.AddItem('TexCoords');
 end;
 
 procedure TScene2DEditorPoly.OnSelectMode(const Index: Integer);
@@ -25468,6 +25481,7 @@ begin
       0: OnModeVertices;
       1: OnModeEdges;
       2: OnModeFaces;
+      3: OnModeTexCoords;
     end;
   end;
 end;
@@ -25491,6 +25505,11 @@ end;
 procedure TScene2DEditorPoly.OnModeFaces;
 begin
   EditMode := em_face;
+end;
+
+procedure TScene2DEditorPoly.OnModeTexCoords;
+begin
+  EditMode := em_tex_coord;
 end;
 
 procedure TScene2DEditorPoly.OnModeClick(const Display: Pointer);
@@ -25631,39 +25650,46 @@ procedure TScene2DEditorPoly.OnSplitClick(const Display: Pointer);
   var e, e0, e1: TScene2DComponentDataPolyEdge;
   var f0, f1: TScene2DComponentDataPolyFace;
   var v, v0: TScene2DComponentDataPolyVertex;
-  var i, j: Integer;
+  var i, j, n: Integer;
+  var EdgesToSplit: array of TScene2DComponentDataPolyEdge;
 begin
   if not (
     (EditMode = em_edge)
-    and (_SelectEdge.Count = 1)
+    and (_SelectEdge.Count > 0)
   ) then Exit;
-  e0 := _SelectEdge[0];
-  v := TScene2DComponentDataPolyVertex.Create;
-  v.o.Allocate(Component.Layers.Count);
-  v.v := (e0.v[0].v + e0.v[1].v) * 0.5;
-  Component.Vertices.Add(v);
-  e1 := TScene2DComponentDataPolyEdge.Create;
-  e1.v[0] := v; e1.v[1] := e0.v[1];
-  Component.Edges.Add(e1);
-  e0.v[1] := v;
-  for i := 0 to 1 do
-  if e0.f[i] <> nil then
+  SetLength(EdgesToSplit, _SelectEdge.Count);
+  for n := 0 to _SelectEdge.Count - 1 do
+  EdgesToSplit[n] := _SelectEdge[n];
+  for n := 0 to High(EdgesToSplit) do
   begin
-    f0 := e0.f[i];
-    v0 := f0.VertexOpposite(e0.v[0], e1.v[1]);
-    for j := 0 to 2 do
-    if f0.v[j] = e1.v[1] then f0.v[j] := v;
-    f1 := TScene2DComponentDataPolyFace.Create;
-    f1.v[0] := v;
-    f1.v[1] := v0;
-    f1.v[2] := e1.v[1];
-    Component.Faces.Add(f1);
-    e := TScene2DComponentDataPolyEdge.Create;
-    e.v[0] := v; e.v[1] := v0;
-    Component.Edges.Add(e);
+    e0 := EdgesToSplit[n];
+    v := TScene2DComponentDataPolyVertex.Create;
+    v.o.Allocate(Component.Layers.Count);
+    v.v := (e0.v[0].v + e0.v[1].v) * 0.5;
+    Component.Vertices.Add(v);
+    e1 := TScene2DComponentDataPolyEdge.Create;
+    e1.v[0] := v; e1.v[1] := e0.v[1];
+    Component.Edges.Add(e1);
+    e0.v[1] := v;
+    for i := 0 to 1 do
+    if e0.f[i] <> nil then
+    begin
+      f0 := e0.f[i];
+      v0 := f0.VertexOpposite(e0.v[0], e1.v[1]);
+      for j := 0 to 2 do
+      if f0.v[j] = e1.v[1] then f0.v[j] := v;
+      f1 := TScene2DComponentDataPolyFace.Create;
+      f1.v[0] := v;
+      f1.v[1] := v0;
+      f1.v[2] := e1.v[1];
+      Component.Faces.Add(f1);
+      e := TScene2DComponentDataPolyEdge.Create;
+      e.v[0] := v; e.v[1] := v0;
+      Component.Edges.Add(e);
+    end;
+    _SelectEdge.Add(e1);
+    Component.CompleteData;
   end;
-  _SelectEdge.Add(e1);
-  Component.CompleteData;
 end;
 
 procedure TScene2DEditorPoly.OnDeleteClick(const Display: Pointer);
@@ -25895,6 +25921,7 @@ begin
     em_vertex: _BtnMode.Name := 'vertices';
     em_edge: _BtnMode.Name := 'edges';
     em_face: _BtnMode.Name := 'triangles';
+    em_tex_coord: _BtnMode.Name := 'tex coord';
   end;
   _BtnFlipEdge.Visible := False;
   if (EditMode = em_face)
@@ -25918,7 +25945,7 @@ begin
   );
   _BtnSplit.Visible := (
     (EditMode = em_edge)
-    and (_SelectEdge.Count = 1)
+    and (_SelectEdge.Count > 0)
   );
   ButtonFrame := G2Rect(8, -48, 160, 40);
   for i := 0 to High(Buttons) do
@@ -25951,29 +25978,39 @@ begin
   else if not _Drag
   and g2.MouseDown[G2MB_Left]
   and TG2Rect(Display.ViewPort).Contains(g2.MouseDownPos[G2MB_Left])
-  and ((G2Vec2(g2.MouseDownPos[G2MB_Left]) - G2Vec2(g2.MousePos)).Len > 4) then
+  and ((G2Vec2(g2.MouseDownPos[G2MB_Left]) - G2Vec2(g2.MousePos)).Len > 2) then
   begin
     StartDrag(mc);
   end;
   if _Drag then
   begin
-    for i := 0 to _VDrag.Count - 1 do
-    _VDrag[i].v := mc + _VOffset[i];
+    if EditMode = em_tex_coord then
+    begin
+      for i := 0 to _VDrag.Count - 1 do
+      _VDrag[i].t := mc + _VOffset[i]
+    end
+    else
+    begin
+      for i := 0 to _VDrag.Count - 1 do
+      _VDrag[i].v := mc + _VOffset[i];
+    end;
   end
   else
   begin
     _MOverEdge := nil;
     _MOverVertex := nil;
     _MOverFace := nil;
-    if EditMode = em_vertex then
+    if (EditMode = em_vertex)
+    or (EditMode = em_tex_coord) then
     for i := 0 to _Component.Vertices.Count - 1 do
     begin
-      v0 := xf.Transform(_Component.Vertices[i].v);
+      v := _Component.Vertices[i].v;
+      if EditMode = em_tex_coord then v := v + _Component.Vertices[i].t;
+      v0 := xf.Transform(v);
       v1 := Display.CoordToScreen(v0);
       v1 := Display.CoordToDisplay(v1 + G2Vec2(4, 4)) - v0;
       if G2Rect(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2).Contains(mc) then
       _MOverVertex := _Component.Vertices[i];
-      Display.PrimRect(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ff0000ff);
     end;
     if EditMode = em_edge then
     for i := 0 to _Component.Edges.Count - 1 do
@@ -25985,7 +26022,6 @@ begin
       v := G2Project2DPointToLine(pv0, pv1, pmc, b);
       if b and ((pmc - v).LenSq <= 4 * 4) then
       _MOverEdge := _Component.Edges[i];
-      Display.PrimLine(v0, v1, $ff0000ff);
     end;
     if EditMode = em_face then
     for i := 0 to _Component.Faces.Count - 1 do
@@ -26032,7 +26068,7 @@ begin
         v := Component.Faces[i].v[j].v;
         c := Component.Faces[i].v[j].c;
         c.a := Round(c.a * Component.Faces[i].v[j].o[Layer.Index]);
-        t := v * Layer.Scale;
+        t := (v + Component.Faces[i].v[j].t) * Layer.Scale;
         v := xf.Transform(v);
         Display.PolyAdd(v, t, c);
       end;
@@ -26055,7 +26091,7 @@ begin
     Display.PrimRect(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ff0000ff);
   end;
   Sel := IsSelecting and SelectRect(Display, r);
-  if (EditMode = em_vertex) then
+  if EditMode = em_vertex then
   begin
     for i := 0 to _SelectVertex.Count - 1 do
     begin
@@ -26076,6 +26112,49 @@ begin
       for i := 0 to _Component.Vertices.Count - 1 do
       begin
         v0 := xf.Transform(_Component.Vertices[i].v);
+        v1 := Display.CoordToScreen(v0);
+        if r.Contains(v1) then
+        begin
+          v1 := Display.CoordToDisplay(v1 + G2Vec2(4, 4)) - v0;
+          Display.PrimRectHollow(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ffff0000);
+        end;
+      end;
+    end;
+  end;
+  if EditMode = em_tex_coord then
+  begin
+    for i := 0 to _Component.Vertices.Count - 1 do
+    begin
+      v0 := xf.Transform(_Component.Vertices[i].v);
+      v1 := xf.Transform(_Component.Vertices[i].v + _Component.Vertices[i].t);
+      Display.PolyBegin(ptLines, App.UI.TexDots);
+      Display.PolyAdd(v0, G2Vec2(0, 0.5), $ff008000);
+      Display.PolyAdd(v1, G2Vec2((Display.CoordToScreen(v1) - Display.CoordToScreen(v0)).Len * 0.125, 0.5), $80008000);
+      Display.PolyEnd;
+      v0 := xf.Transform(_Component.Vertices[i].v + _Component.Vertices[i].t);
+      v1 := Display.CoordToScreen(v0);
+      v1 := Display.CoordToDisplay(v1 + G2Vec2(4, 4)) - v0;
+      Display.PrimRect(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ff008000);
+    end;
+    for i := 0 to _SelectVertex.Count - 1 do
+    begin
+      v0 := xf.Transform(_SelectVertex[i].v + _SelectVertex[i].t);
+      v1 := Display.CoordToScreen(v0);
+      v1 := Display.CoordToDisplay(v1 + G2Vec2(4, 4)) - v0;
+      Display.PrimRect(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ff00ff00);
+    end;
+    if (_MOverVertex <> nil) then
+    begin
+      v0 := xf.Transform(_MOverVertex.v + _MOverVertex.t);
+      v1 := Display.CoordToScreen(v0);
+      v1 := Display.CoordToDisplay(v1 + G2Vec2(4, 4)) - v0;
+      Display.PrimRectHollow(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ffff0000);
+    end;
+    if Sel then
+    begin
+      for i := 0 to _Component.Vertices.Count - 1 do
+      begin
+        v0 := xf.Transform(_Component.Vertices[i].v + _Component.Vertices[i].t);
         v1 := Display.CoordToScreen(v0);
         if r.Contains(v1) then
         begin
@@ -26243,7 +26322,8 @@ begin
       _MdInVertex := _MOverVertex;
       _MdInEdge := _MOverEdge;
       _MdInFace := _MOverFace;
-      if (EditMode = em_vertex) then
+      if (EditMode = em_vertex)
+      or (EditMode = em_tex_coord) then
       begin
         if _MdInVertex <> nil then
         begin
@@ -26346,11 +26426,14 @@ begin
     begin
       xf := _Component.Component.Owner.Transform;
       case EditMode of
-        em_vertex:
+        em_vertex,
+        em_tex_coord:
         begin
           for i := 0 to _Component.Vertices.Count - 1 do
           begin
-            v0 := xf.Transform(_Component.Vertices[i].v);
+            v0 := _Component.Vertices[i].v;
+            if EditMode = em_tex_coord then v0 := v0 + _Component.Vertices[i].t;
+            v0 := xf.Transform(v0);
             v1 := Display.CoordToScreen(v0);
             if r.Contains(v1) then
             begin
@@ -27417,6 +27500,8 @@ begin
   e.Clear;
   f.Clear;
   o.Clear;
+  v := G2Vec2;
+  t := G2Vec2;
   c := $ffffffff;
   ind := 0;
 end;
@@ -27578,14 +27663,17 @@ end;
 
 procedure TScene2DComponentDataPoly.UpdateComponent;
   var i, j: Integer;
-  var VertexData: array of TG2Vec2;
+  var VertexData: array of TG2Vec4;
   var IndexData: array of TG2IntU16;
 begin
   SetLength(VertexData, Vertices.Count);
   for i := 0 to Vertices.Count - 1 do
   begin
     Vertices[i].ind := TG2IntU16(i);
-    VertexData[i] := Vertices[i].v;
+    VertexData[i].x := Vertices[i].v.x;
+    VertexData[i].y := Vertices[i].v.y;
+    VertexData[i].z := Vertices[i].t.x;
+    VertexData[i].w := Vertices[i].t.y;
   end;
   SetLength(IndexData, Faces.Count * 3);
   for i := 0 to Faces.Count - 1 do
@@ -27594,7 +27682,11 @@ begin
     IndexData[i * 3 + 1] := Faces[i].v[1].ind;
     IndexData[i * 3 + 2] := Faces[i].v[2].ind;
   end;
-  Component.SetUp(@VertexData[0], Length(VertexData), SizeOf(TG2Vec2), @IndexData[0], Length(IndexData), SizeOf(TG2IntU16));
+  Component.SetUp(
+    @VertexData[0], Length(VertexData), SizeOf(TG2Vec4),
+    @IndexData[0], Length(IndexData), SizeOf(TG2IntU16),
+    @VertexData[0].z, SizeOf(TG2Vec4)
+  );
   Component.LayerCount := Layers.Count;
   for i := 0 to Layers.Count - 1 do
   begin
@@ -27754,6 +27846,8 @@ begin
     v.c := Component.Vertices[i]^.c;
     v.v.x := Component.Vertices[i]^.x;
     v.v.y := Component.Vertices[i]^.y;
+    v.t.x := Component.Vertices[i]^.u;
+    v.t.y := Component.Vertices[i]^.v;
     v.o.Allocate(Component.LayerCount);
     for j := 0 to Component.LayerCount - 1 do
     v.o[j] := Component.Layers[j].Opacity[i];
