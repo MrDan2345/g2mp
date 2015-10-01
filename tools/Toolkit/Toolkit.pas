@@ -3325,7 +3325,14 @@ type
       var MdInButton: Boolean;
       var Frame: TG2Rect;
     end;
+    type TBtnColor = record
+      MdInButton: Boolean;
+      Frame: TG2Rect;
+      Visible: Boolean;
+    end;
     var Buttons: array of TBtn;
+    var _BtnColor: TBtnColor;
+    var _BrushSizeFrame: TG2Rect;
     var _BtnMode: TBtn;
     var _BtnFlipEdge: TBtn;
     var _BtnCollapse: TBtn;
@@ -3346,6 +3353,9 @@ type
     var _Drag: Boolean;
     var _VDrag: TScene2DComponentDataPolyVertexList;
     var _VOffset: array of TG2Vec2;
+    var _BrushColor: TG2Color;
+    var _BrushSize: TG2Float;
+    var _BrushSizeVisible: Boolean;
     procedure StartDrag(const mc: TG2Vec2);
     procedure SetUpPopUpModes;
     procedure OnSelectMode(const Index: Integer);
@@ -3552,8 +3562,7 @@ type
   public
     var v: TG2Vec2;
     var t: TG2Vec2;
-    var c: TG2Color;
-    var o: TG2QuickListFloat;
+    var c: TG2QuickListColor;
     var e: TScene2DComponentDataPolyEdgeList;
     var f: TScene2DComponentDataPolyFaceList;
     var ind: TG2IntU16;
@@ -4176,6 +4185,19 @@ var App: TG2Toolkit;
 implementation
 
 const FloatPrintFormat = '0.0####';
+
+function G2ColorToSysColor(const c: TG2Color): LongWord;
+begin
+  Result := c.r or (c.g shl 8) or (c.b shl 16);
+end;
+
+function SysColorToG2Color(const c: LongWord): TG2Color;
+begin
+  Result.r := c and $ff;
+  Result.g := (c shr 8) and $ff;
+  Result.b := (c shr 16) and $ff;
+  Result.a := $ff
+end;
 
 //TScrollBox BEGIN
 function TScrollBox.GetSliderRect: TG2Rect;
@@ -25352,10 +25374,9 @@ procedure TScene2DEditorPoly.StartDrag(const mc: TG2Vec2);
     i := High(VertexReplica);
     VertexReplica[i][0] := v;
     VertexReplica[i][1] := TScene2DComponentDataPolyVertex.Create;
-    VertexReplica[i][1].o.Allocate(Component.Layers.Count);
+    VertexReplica[i][1].c.Allocate(Component.Layers.Count);
     VertexReplica[i][1].v := v.v;
     VertexReplica[i][1].t := v.t;
-    VertexReplica[i][1].c := v.c;
     Component.Vertices.Add(VertexReplica[i][1]);
     Result := VertexReplica[i][1];
   end;
@@ -25664,7 +25685,7 @@ begin
   begin
     e0 := EdgesToSplit[n];
     v := TScene2DComponentDataPolyVertex.Create;
-    v.o.Allocate(Component.Layers.Count);
+    v.c.Allocate(Component.Layers.Count);
     v.v := (e0.v[0].v + e0.v[1].v) * 0.5;
     Component.Vertices.Add(v);
     e1 := TScene2DComponentDataPolyEdge.Create;
@@ -25888,6 +25909,10 @@ begin
   _BtnSplit.OnClick := @OnSplitClick;
   _BtnDelete := AddButton('delete');
   _BtnDelete.OnClick := @OnDeleteClick;
+  _BtnColor.Frame := G2Rect(8, -96, 160, 40);
+  _BtnColor.MdInButton := False;
+  _BtnColor.Visible := False;
+  _BrushSizeFrame := G2Rect(8, -120, 160, 20);
 end;
 
 destructor TScene2DEditorPoly.Destroy;
@@ -25934,6 +25959,7 @@ begin
       Break;
     end;
   end;
+  _BtnColor.Visible := EditMode = em_layer;
   _BtnDelete.Visible := (
     ((EditMode = em_vertex) and (_SelectVertex.Count > 0))
     or ((EditMode = em_edge) and (_SelectEdge.Count > 0))
@@ -25968,10 +25994,17 @@ begin
       d := (v - mc).Len;
       if d < 1 then
       begin
+        c := Component.Vertices[i].c[EditLayer];
         if g2.MouseDown[G2MB_Left] then
-        Component.Vertices[i].o[EditLayer] := G2Min(Component.Vertices[i].o[EditLayer] + (1 - d) * g2.DeltaTimeSec * 5, 1)
+        begin
+          c1 := _BrushColor;
+        end
         else
-        Component.Vertices[i].o[EditLayer] := G2Max(Component.Vertices[i].o[EditLayer] - (1 - d) * g2.DeltaTimeSec * 5, 0);
+        begin
+          c1 := c; c1.a := 0;
+        end;
+        c := G2LerpColor(c, c1, 0.1);
+        Component.Vertices[i].c[EditLayer] := c;
       end;
     end;
   end
@@ -26066,8 +26099,7 @@ begin
       for j := 0 to 2 do
       begin
         v := Component.Faces[i].v[j].v;
-        c := Component.Faces[i].v[j].c;
-        c.a := Round(c.a * Component.Faces[i].v[j].o[Layer.Index]);
+        c := Component.Faces[i].v[j].c[Layer.Index];
         t := (v + Component.Faces[i].v[j].t) * Layer.Scale;
         v := xf.Transform(v);
         Display.PolyAdd(v, t, c);
@@ -26264,6 +26296,42 @@ begin
     g2.PolyAdd(sr.Right, sr.Top, tc[4], 0, c);
     g2.PolyEnd;
   end;
+  if _BrushSizeVisible then
+  begin
+    r := _BrushSizeFrame;
+    r.x := Display.ViewPort.Left + r.x;
+    r.y := Display.ViewPort.Bottom + r.y;
+    App.UI.DrawSpotFrame(r, 8, c);
+
+  end;
+  if _BtnColor.Visible then
+  begin
+    r := _BtnColor.Frame;
+    r.x := Display.ViewPort.Left + r.x;
+    r.y := Display.ViewPort.Bottom + r.y;
+    if r.Contains(g2.MousePos)
+    and (App.UI.Overlay = nil) then
+    begin
+      if _BtnColor.MdInButton then
+      begin
+        c := $ff404040;
+        c1 := $ffffffff;
+      end
+      else
+      begin
+        c := $ffa0a0a0;
+        c1 := $ff000000;
+      end;
+    end
+    else
+    begin
+      c := $ff808080;
+      c1 := $ffe0e0e0;
+    end;
+    App.UI.DrawSpotFrame(r, 8, c);
+    r := r.Expand(-8, -8);
+    g2.PrimRect(r.x, r.y, r.w, r.h, _BrushColor);
+  end;
   for i := 0 to High(Buttons) do
   if Buttons[i].Visible then
   begin
@@ -26317,6 +26385,11 @@ begin
       Buttons[i].MdInButton := r.Contains(x, y);
       MdInButton := MdInButton or Buttons[i].MdInButton;
     end;
+    r := _BtnColor.Frame;
+    r.x := Display.ViewPort.Left + r.x;
+    r.y := Display.ViewPort.Bottom + r.y;
+    _BtnColor.MdInButton := r.Contains(x, y);
+    MdInButton := MdInButton or _BtnColor.MdInButton;
     if not MdInButton then
     begin
       _MdInVertex := _MOverVertex;
@@ -26391,11 +26464,29 @@ procedure TScene2DEditorPoly.MouseUp(const Display: TG2Display2D; const Button, 
   var v0, v1, xp0, xp1: TG2Vec2;
   var varr: array[0..2] of TG2Vec2;
   var AddSelection: Boolean;
+  var cd: TColorDialog;
 begin
   if Button = G2MB_Left then
   begin
     if not _Drag then
     begin
+      if _BtnColor.Visible
+      and _BtnColor.MdInButton then
+      begin
+        r := _BtnColor.Frame;
+        r.x := Display.ViewPort.Left + r.x;
+        r.y := Display.ViewPort.Bottom + r.y;
+        if r.Contains(x, y) then
+        begin
+          cd := TColorDialog.Create(nil);
+          cd.Color := G2ColorToSysColor(_BrushColor);
+          if cd.Execute then
+          begin
+            _BrushColor := SysColorToG2Color(cd.Color);
+          end;
+          cd.Free;
+        end;
+      end;
       for i := 0 to High(Buttons) do
       if Buttons[i].Visible
       and Buttons[i].MdInButton
@@ -26516,10 +26607,12 @@ begin
   _MdInEdge := nil;
   _MdInFace := nil;
   _SelectVertex.Clear;
-  _SelectFace.Clear;
+  _SelectEdge.Clear;
   _SelectFace.Clear;
   _VDrag.Clear;
   _Drag := False;
+  _BrushColor := $ffffffff;
+  _BrushSize := 1;
   _PrevDebugRender := Component.Component.DebugRender;
   Component.Component.DebugRender := False;
   Component.Component.Visible := False;
@@ -27499,10 +27592,9 @@ begin
   inherited Create;
   e.Clear;
   f.Clear;
-  o.Clear;
+  c.Clear;
   v := G2Vec2;
   t := G2Vec2;
-  c := $ffffffff;
   ind := 0;
 end;
 
@@ -27692,7 +27784,7 @@ begin
   begin
     Component.Layers[i].Texture := Layers[i].Texture;
     for j := 0 to Vertices.Count - 1 do
-    Component.Layers[i].Opacity[j] := Vertices[j].o[i];
+    Component.Layers[i].Color[j] := Vertices[j].c[i];
     Component.Layers[i].Scale := Layers[i].Scale;
     Component.Layers[i].Layer := Layers[i].Layer;
     Component.Layers[i].Visible := True;
@@ -27721,7 +27813,6 @@ begin
   for i := 0 to 3 do
   begin
     v[i] := TScene2DComponentDataPolyVertex.Create;
-    v[i].c := $ffffffff;
     Vertices.Add(v[i]);
   end;
   for i := 0 to 4 do
@@ -27795,7 +27886,7 @@ begin
   Layer := TScene2DComponentDataPolyLayer.Create;
   Layers.Add(Layer);
   for i := 0 to Vertices.Count - 1 do
-  Vertices[i].o.Add(0);
+  Vertices[i].c.Add($00ffffff);
   for i := 0 to Layers.Count - 1 do
   Layers[i].Index := i;
   UpdateComponent;
@@ -27843,14 +27934,13 @@ begin
   for i := 0 to Component.VertexCount - 1 do
   begin
     v := TScene2DComponentDataPolyVertex.Create;
-    v.c := Component.Vertices[i]^.c;
     v.v.x := Component.Vertices[i]^.x;
     v.v.y := Component.Vertices[i]^.y;
     v.t.x := Component.Vertices[i]^.u;
     v.t.y := Component.Vertices[i]^.v;
-    v.o.Allocate(Component.LayerCount);
+    v.c.Allocate(Component.LayerCount);
     for j := 0 to Component.LayerCount - 1 do
-    v.o[j] := Component.Layers[j].Opacity[i];
+    v.c[j] := Component.Layers[j].Color[i];
     Vertices.Add(v);
   end;
   for i := 0 to Component.FaceCount - 1 do

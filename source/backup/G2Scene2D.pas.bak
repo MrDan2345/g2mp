@@ -806,7 +806,6 @@ type
     type TG2Scene2DComponentPolyVertex = record
       x, y: TG2Float;
       u, v: TG2Float;
-      c: TG2Color;
     end;
     type PG2Scene2DComponentPolyVertex = ^TG2Scene2DComponentPolyVertex;
     type TG2Scene2DComponentPolyLayer = class
@@ -821,7 +820,7 @@ type
       procedure OnRender(const Display: TG2Display2D);
       procedure SetTexture(const Value: TG2Texture2DBase);
     public
-      Opacity: array of TG2Float;
+      Color: array of TG2Color;
       Scale: TG2Vec2;
       property Texture: TG2Texture2DBase read _Texture write SetTexture;
       property Visible: Boolean read GetVisible write SetVisible;
@@ -3922,7 +3921,7 @@ begin
   _FixtureBodyDef.density := 2;
   _FixtureBodyDef.user_data := Self;
   _FixtureFeetDef := b2_fixture_def;
-  _FixtureFeetDef.friction := 5;
+  _FixtureFeetDef.friction := 4;
   _FixtureFeetDef.density := 2;
   _FixtureFeetDef.user_data := Self;
   _ShapeBody.create;
@@ -4239,8 +4238,8 @@ constructor TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.Create(const Co
 begin
   inherited Create;
   _Owner := Component;
-  SetLength(Opacity, Length(_Owner._Vertices));
-  FillChar(Opacity[0], SizeOf(TG2Float) * Length(Opacity), 0);
+  SetLength(Color, Length(_Owner._Vertices));
+  FillChar(Color[0], SizeOf(TG2Color) * Length(Color), $ff);
   Scale := G2Vec2(1, 1);
   _Texture := nil;
   _Hook := nil;
@@ -4343,8 +4342,7 @@ begin
     for j := 0 to 2 do
     begin
       v := G2Vec2(_Vertices[_Faces[i][j]].x, _Vertices[_Faces[i][j]].y);
-      c := _Vertices[_Faces[i][j]].c;
-      c.a := Round(c.a * Layer.Opacity[_Faces[i][j]]);
+      c := Layer.Color[_Faces[i][j]];
       t := G2Vec2(v.x + _Vertices[_Faces[i][j]].u, v.y + _Vertices[_Faces[i][j]].v) * Layer.Scale;
       v := Owner.Transform.Transform(v);
       Display.PolyAdd(v, t, c);
@@ -4458,7 +4456,6 @@ procedure TG2Scene2DComponentPoly.SetUp(const Triangles: PG2Vec2Arr; const Trian
     _Vertices[vc].y := v.y;
     _Vertices[vc].u := 0;
     _Vertices[vc].v := 0;
-    _Vertices[vc].c := $ffffffff;
     Inc(vc);
   end;
   procedure AddTri(const v0, v1, v2: TG2Vec2);
@@ -4500,7 +4497,6 @@ begin
     _Vertices[i].y := pv^.y;
     _Vertices[i].u := pt^.x;
     _Vertices[i].v := pt^.y;
-    _Vertices[i].c := $ffffffff;
     pv := PG2Vec2(Pointer(pv) + VertexStride);
     pt := PG2Vec2(Pointer(pt) + TexCoordStride);
   end;
@@ -4530,7 +4526,7 @@ begin
   dm.WriteIntS32(Length(_Layers));
   for i := 0 to High(_Layers) do
   begin
-    dm.WriteBuffer(@_Layers[i].Opacity[0], SizeOf(TG2Float) * Length(_Vertices));
+    dm.WriteBuffer(@_Layers[i].Color[0], SizeOf(TG2Color) * Length(_Vertices));
     dm.WriteVec2(_Layers[i].Scale);
     if Assigned(_Layers[i].Texture)
     and _Layers[i].Texture.IsShared then
@@ -4562,7 +4558,7 @@ begin
   CreateLayers;
   for i := 0 to High(_Layers) do
   begin
-    dm.ReadBuffer(@_Layers[i].Opacity[0], SizeOf(TG2Float) * Length(_Vertices));
+    dm.ReadBuffer(@_Layers[i].Color[0], SizeOf(TG2Float) * Length(_Vertices));
     _Layers[i].Scale := dm.ReadVec2;
     TexFile := dm.ReadStringA;
     if Length(TexFile) > 0 then
