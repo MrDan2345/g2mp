@@ -3356,6 +3356,8 @@ type
     var _BrushColor: TG2Color;
     var _BrushSize: TG2Float;
     var _BrushSizeVisible: Boolean;
+    var _BrushSizeMd: Boolean;
+    var _MdInButton: Boolean;
     procedure StartDrag(const mc: TG2Vec2);
     procedure SetUpPopUpModes;
     procedure OnSelectMode(const Index: Integer);
@@ -20530,8 +20532,8 @@ begin
   Overlay.Update;
   if TextEdit.Enabled then
   TextEdit.Update;
-  Views.Update;
   ProcessMessages;
+  Views.Update;
   Hint.Update;
   g2.Window.Cursor := Cursor;
 end;
@@ -25362,7 +25364,7 @@ procedure TScene2DEditorPoly.StartDrag(const mc: TG2Vec2);
   type TVertexReplica = array[0..1] of TScene2DComponentDataPolyVertex;
   var VertexReplica: array of TVertexReplica;
   function ReplicateVertex(const v: TScene2DComponentDataPolyVertex): TScene2DComponentDataPolyVertex;
-    var i: Integer;
+    var i, j: Integer;
   begin
     for i := 0 to High(VertexReplica) do
     if VertexReplica[i][0] = v then
@@ -25375,6 +25377,8 @@ procedure TScene2DEditorPoly.StartDrag(const mc: TG2Vec2);
     VertexReplica[i][0] := v;
     VertexReplica[i][1] := TScene2DComponentDataPolyVertex.Create;
     VertexReplica[i][1].c.Allocate(Component.Layers.Count);
+    for j := 0 to Component.Layers.Count - 1 do
+    VertexReplica[i][1].c[j] := v.c[j];
     VertexReplica[i][1].v := v.v;
     VertexReplica[i][1].t := v.t;
     Component.Vertices.Add(VertexReplica[i][1]);
@@ -25574,6 +25578,10 @@ begin
 end;
 
 procedure TScene2DEditorPoly.OnCollapseClick(const Display: Pointer);
+  type trgba = record
+    r, g, b, a: Integer;
+  end;
+  var carr: array of trgba;
   var i, j, n: Integer;
   var f: TScene2DComponentDataPolyFace;
   var v: TScene2DComponentDataPolyVertex;
@@ -25620,11 +25628,38 @@ begin
       DeleteEdge(e);
     end;
   end;
+  SetLength(carr, _SelectVertex[0].c.Count);
   vp := _SelectVertex[0].v;
+  if Length(carr) > 0 then
+  for i := 0 to High(carr) do
+  begin
+    carr[i].r := _SelectVertex[0].c[i].r;
+    carr[i].g := _SelectVertex[0].c[i].g;
+    carr[i].b := _SelectVertex[0].c[i].b;
+    carr[i].a := _SelectVertex[0].c[i].a;
+  end;
   for i := 1 to _SelectVertex.Count - 1 do
-  vp := vp + _SelectVertex[i].v;
+  begin
+    vp := vp + _SelectVertex[i].v;
+    for j := 0 to High(carr) do
+    begin
+      carr[i].r := carr[i].r + _SelectVertex[i].c[i].r;
+      carr[i].g := carr[i].g + _SelectVertex[i].c[i].g;
+      carr[i].b := carr[i].b + _SelectVertex[i].c[i].b;
+      carr[i].a := carr[i].a + _SelectVertex[i].c[i].a;
+    end;
+  end;
   vp := vp * (1 / _SelectVertex.Count);
   CheckFaces;
+  for i := 0 to High(carr) do
+  begin
+    _SelectVertex[0].c[i] := G2Color(
+      carr[i].r div _SelectVertex.Count,
+      carr[i].g div _SelectVertex.Count,
+      carr[i].b div _SelectVertex.Count,
+      carr[i].a div _SelectVertex.Count
+    );
+  end;
   _SelectVertex[0].v := vp;
   for i := _SelectVertex.Count - 1 downto 1 do
   begin
@@ -25687,6 +25722,15 @@ begin
     v := TScene2DComponentDataPolyVertex.Create;
     v.c.Allocate(Component.Layers.Count);
     v.v := (e0.v[0].v + e0.v[1].v) * 0.5;
+    for i := 0 to Component.Layers.Count - 1 do
+    begin
+      v.c[i] := G2Color(
+        (e0.v[0].c[i].r + e0.v[1].c[i].r) shr 1,
+        (e0.v[0].c[i].g + e0.v[1].c[i].g) shr 1,
+        (e0.v[0].c[i].b + e0.v[1].c[i].b) shr 1,
+        (e0.v[0].c[i].a + e0.v[1].c[i].a) shr 1
+      );
+    end;
     Component.Vertices.Add(v);
     e1 := TScene2DComponentDataPolyEdge.Create;
     e1.v[0] := v; e1.v[1] := e0.v[1];
@@ -25912,7 +25956,7 @@ begin
   _BtnColor.Frame := G2Rect(8, -96, 160, 40);
   _BtnColor.MdInButton := False;
   _BtnColor.Visible := False;
-  _BrushSizeFrame := G2Rect(8, -120, 160, 20);
+  _BrushSizeFrame := G2Rect(8, -144, 160, 40);
 end;
 
 destructor TScene2DEditorPoly.Destroy;
@@ -25932,7 +25976,7 @@ end;
 
 procedure TScene2DEditorPoly.Update(const Display: TG2Display2D);
   var i: Integer;
-  var d: TG2Float;
+  var d, bs_min, bs_max: TG2Float;
   var varr: array[0..2] of TG2Vec2;
   var v, v0, v1, pv0, pv1, mc, pmc, pn, n: TG2Vec2;
   var xf: TG2Transform2;
@@ -25960,6 +26004,7 @@ begin
     end;
   end;
   _BtnColor.Visible := EditMode = em_layer;
+  _BrushSizeVisible := EditMode = em_layer;
   _BtnDelete.Visible := (
     ((EditMode = em_vertex) and (_SelectVertex.Count > 0))
     or ((EditMode = em_edge) and (_SelectEdge.Count > 0))
@@ -25984,15 +26029,19 @@ begin
   if not TG2Rect(Display.ViewPort).Contains(pmc) then Exit;
   mc := Display.CoordToDisplay(pmc);
   xf := _Component.Component.Owner.Transform;
-  if EditMode = em_layer then
+  if (EditMode = em_layer)
+  and (App.UI.Overlay = nil) then
   begin
-    if g2.MouseDown[G2MB_Left]
-    or g2.MouseDown[G2MB_Right] then
+    if not _MdInButton
+    and (
+      g2.MouseDown[G2MB_Left]
+      or g2.MouseDown[G2MB_Right]
+    ) then
     for i := 0 to Component.Vertices.Count - 1 do
     begin
       v := xf.Transform(Component.Vertices[i].v);
       d := (v - mc).Len;
-      if d < 1 then
+      if d < _BrushSize then
       begin
         c := Component.Vertices[i].c[EditLayer];
         if g2.MouseDown[G2MB_Left] then
@@ -26003,12 +26052,29 @@ begin
         begin
           c1 := c; c1.a := 0;
         end;
-        c := G2LerpColor(c, c1, 0.1);
+        c := G2LerpColor(c, c1, 0.2 * (1 - d / _BrushSize));
         Component.Vertices[i].c[EditLayer] := c;
       end;
     end;
+    if g2.MouseDown[G2MB_Left] then
+    begin
+      if _BrushSizeMd then
+      begin
+        r := _BrushSizeFrame;
+        r.x := Display.ViewPort.Left + r.x;
+        r.y := Display.ViewPort.Bottom + r.y;
+        r.l := r.l + 12; r.r := r.r - 12;
+        bs_min := 0.1 / Display.Zoom;
+        bs_max := 10 / Display.Zoom;
+        d := bs_max - bs_min;
+        _BrushSize := (g2.MousePos.x - r.x) / r.w * d + bs_min;
+      end;
+    end
+    else
+    _BrushSizeMd := False;
   end
   else if not _Drag
+  and not _MdInButton
   and g2.MouseDown[G2MB_Left]
   and TG2Rect(Display.ViewPort).Contains(g2.MouseDownPos[G2MB_Left])
   and ((G2Vec2(g2.MouseDownPos[G2MB_Left]) - G2Vec2(g2.MousePos)).Len > 2) then
@@ -26078,7 +26144,7 @@ procedure TScene2DEditorPoly.Render(const Display: TG2Display2D);
   var r: TG2Rect;
   var sr: TRect;
   var tc: array[0..4] of TG2Float;
-  var d: TG2Float;
+  var d, bs_min, bs_max: TG2Float;
   var str: AnsiString;
   var bm: TG2BlendMode;
   var LayersSorted: TG2QuickSortList;
@@ -26267,7 +26333,7 @@ begin
   end;
   if (EditMode = em_layer) then
   begin
-    Display.PrimCircleHollow(mc, 1, $ffff0000, 32);
+    Display.PrimCircleHollow(mc, _BrushSize, $ffff0000, 32);
   end;
   if IsSelecting then
   begin
@@ -26301,8 +26367,35 @@ begin
     r := _BrushSizeFrame;
     r.x := Display.ViewPort.Left + r.x;
     r.y := Display.ViewPort.Bottom + r.y;
+    if r.Contains(g2.MousePos)
+    and (App.UI.Overlay = nil) then
+    begin
+      c := $ffa0a0a0;
+    end
+    else
+    begin
+      c := $ff808080;
+    end;
     App.UI.DrawSpotFrame(r, 8, c);
-
+    str := 'brush size';
+    App.UI.Font1.Print(
+      Round(r.x + (r.w - App.UI.Font1.TextWidth(str)) * 0.5),
+      Round(r.y + 4),
+      1, 1, $ff000000, str, bmNormal, tfPoint
+    );
+    c := $ff404040;
+    r.h := 8; r.y := r.y + 24; r.l := r.l + 8; r.r := r.r - 8;
+    App.UI.DrawSpotFrame(r, 4, c);
+    bs_min := 0.1 / Display.Zoom;
+    bs_max := 10 / Display.Zoom;
+    d := G2SmoothStep(_BrushSize, bs_min, bs_max);
+    r.x := r.x + (r.w - r.h) * d;
+    r.w := r.h;
+    if (_BrushSize < bs_min) or (_BrushSize > bs_max) then
+    c := G2LerpColor($ffc0c0c0, $ffff8080, Abs(Sin(G2PiTime(200))))
+    else
+    c := $ffc0c0c0;
+    App.UI.DrawSpotFrame(r, 4, c);
   end;
   if _BtnColor.Visible then
   begin
@@ -26315,18 +26408,15 @@ begin
       if _BtnColor.MdInButton then
       begin
         c := $ff404040;
-        c1 := $ffffffff;
       end
       else
       begin
         c := $ffa0a0a0;
-        c1 := $ff000000;
       end;
     end
     else
     begin
       c := $ff808080;
-      c1 := $ffe0e0e0;
     end;
     App.UI.DrawSpotFrame(r, 8, c);
     r := r.Expand(-8, -8);
@@ -26371,11 +26461,10 @@ procedure TScene2DEditorPoly.MouseDown(const Display: TG2Display2D; const Button
   var i: Integer;
   var r: TG2Rect;
   var mc: TG2Vec2;
-  var MdInButton: Boolean;
 begin
   if Button = G2MB_Left then
   begin
-    MdInButton := False;
+    _MdInButton := False;
     for i := 0 to High(Buttons) do
     if Buttons[i].Visible then
     begin
@@ -26383,14 +26472,19 @@ begin
       r.x := Display.ViewPort.Left + r.x;
       r.y := Display.ViewPort.Bottom + r.y;
       Buttons[i].MdInButton := r.Contains(x, y);
-      MdInButton := MdInButton or Buttons[i].MdInButton;
+      _MdInButton := _MdInButton or Buttons[i].MdInButton;
     end;
     r := _BtnColor.Frame;
     r.x := Display.ViewPort.Left + r.x;
     r.y := Display.ViewPort.Bottom + r.y;
     _BtnColor.MdInButton := r.Contains(x, y);
-    MdInButton := MdInButton or _BtnColor.MdInButton;
-    if not MdInButton then
+    _MdInButton := _MdInButton or _BtnColor.MdInButton;
+    r := _BrushSizeFrame;
+    r.x := Display.ViewPort.Left + r.x;
+    r.y := Display.ViewPort.Bottom + r.y;
+    _BrushSizeMd := r.Contains(x, y);
+    _MdInButton := _MdInButton or _BrushSizeMd;
+    if not _MdInButton then
     begin
       _MdInVertex := _MOverVertex;
       _MdInEdge := _MOverEdge;
@@ -26468,6 +26562,7 @@ procedure TScene2DEditorPoly.MouseUp(const Display: TG2Display2D; const Button, 
 begin
   if Button = G2MB_Left then
   begin
+    _MdInButton := False;
     if not _Drag then
     begin
       if _BtnColor.Visible
@@ -26613,6 +26708,7 @@ begin
   _Drag := False;
   _BrushColor := $ffffffff;
   _BrushSize := 1;
+  _BrushSizeMd := False;
   _PrevDebugRender := Component.Component.DebugRender;
   Component.Component.DebugRender := False;
   Component.Component.Visible := False;

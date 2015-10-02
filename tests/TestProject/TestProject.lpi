@@ -37,7 +37,7 @@
       <Unit0>
         <Filename Value="TestProject.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit0>
     </Units>
@@ -50,7 +50,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="D:\other\g2mp\source\;D:\other\g2mp\source\box2d\;D:\other\g2mp\source\spine\;source"/>
+      <OtherUnitFiles Value="G:\[SDK]\g2mp\source\;G:\[SDK]\g2mp\source\box2d\;G:\[SDK]\g2mp\source\spine\;source\"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>
