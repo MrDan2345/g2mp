@@ -3961,9 +3961,12 @@ begin
   _Standing := _FootContactCount > 0;
   if _Standing and (_Body <> nil) and (_JumpDelay <= 0) and (Abs(_JumpSpeed.LenSq) > G2EPS2) then
   begin
-    if _Body^.get_linear_velocity.y < 0 then
-    _Body^.set_linear_velocity(b2_vec2(_Body^.get_linear_velocity.x, 0));
-    _Body^.apply_force_to_center(_JumpSpeed, true);
+    n := _JumpSpeed.Norm;
+    d := n.Dot(_Body^.get_linear_velocity);
+    if d < 0 then
+    _Body^.set_linear_velocity(_Body^.get_linear_velocity + n * Abs(d) + _JumpSpeed)
+    else
+    _Body^.set_linear_velocity(_Body^.get_linear_velocity + _JumpSpeed);
     _JumpDelay := 0.1;
   end;
   _JumpSpeed.SetZero;

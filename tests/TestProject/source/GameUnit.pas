@@ -166,7 +166,7 @@ begin
     end;
     if g2.KeyDown[G2K_Space] then
     begin
-      Character.Jump(G2Vec2(0, -400));
+      Character.Jump(G2Vec2(0, -10));
     end;
     if g2.KeyDown[G2K_Down] then
     begin
