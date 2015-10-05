@@ -433,10 +433,14 @@ type
     var _Scale: TG2Vec2;
     var _Animation: String;
     var _Loop: Boolean;
+    var _FlipX: Boolean;
+    var _FlipY: Boolean;
     var _TimeScale: TG2Float;
     procedure SetAnimation(const Value: String);
     procedure SetLayer(const Value: TG2IntS32);
     procedure SetLoop(const Value: Boolean);
+    procedure SetFlipX(const Value: Boolean);
+    procedure SetFlipY(const Value: Boolean);
     procedure SetScale(const Value: TG2Vec2);
     procedure SetSkeleton(const Value: TSpineSkeleton);
     procedure SetTimeScale(const Value: TG2Float);
@@ -456,7 +460,10 @@ type
     property Offset: TG2Vec2 read _Offset write _Offset;
     property Scale: TG2Vec2 read _Scale write SetScale;
     property Animation: String read _Animation write SetAnimation;
+    property AnimationState: TSpineAnimationState read _State;
     property Loop: Boolean read _Loop write SetLoop;
+    property FlipX: Boolean read _FlipX write SetFlipX;
+    property FlipY: Boolean read _FlipY write SetFlipY;
     property TimeScale: TG2Float read _TimeScale write SetTimeScale;
     procedure Save(const dm: TG2DataManager); override;
     procedure Load(const dm: TG2DataManager); override;
@@ -793,6 +800,7 @@ type
     property Width: TG2Float read _Width write SetWidth;
     property Height: TG2Float read _Height write SetHeight;
     property Duck: TG2Float read _Duck write SetDuck;
+    property Standing: Boolean read _Standing;
     property MaxGlideSpeed: TG2Float read _MaxGlideSpeed write _MaxGlideSpeed;
     procedure Walk(const Speed: TG2Float);
     procedure Jump(const Speed: TG2Vec2);
@@ -2771,6 +2779,8 @@ begin
     if Length(_Animation) > 0 then _State.SetAnimation(0, _Animation, _Loop);
     _Skeleton.ScaleX := _Scale.x;
     _Skeleton.ScaleY := _Scale.y;
+    _Skeleton.FlipX := _FlipX;
+
   end;
 end;
 
@@ -2792,14 +2802,28 @@ procedure TG2Scene2DComponentSpineAnimation.SetAnimation(const Value: String);
 begin
   if _Animation = Value then Exit;
   _Animation := Value;
-  _State.SetAnimation(0, _Animation, _Loop);
+  if Assigned(_State) then _State.SetAnimation(0, _Animation, _Loop);
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.SetLoop(const Value: Boolean);
 begin
   if _Loop = Value then Exit;
   _Loop := Value;
-  _State.SetAnimation(0, _Animation, _Loop);
+  if Assigned(_State) then _State.SetAnimation(0, _Animation, _Loop);
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.SetFlipX(const Value: Boolean);
+begin
+  if _FlipX = Value then Exit;
+  _FlipX := Value;
+  if Assigned(_Skeleton) then _Skeleton.FlipX := _FlipX;
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.SetFlipY(const Value: Boolean);
+begin
+  if _FlipY = Value then Exit;
+  _FlipY := Value;
+  if Assigned(_Skeleton) then _Skeleton.FlipY := _FlipY;
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.SetScale(const Value: TG2Vec2);
@@ -2819,6 +2843,8 @@ begin
   _Skeleton := nil;
   _Offset := G2Vec2;
   _Scale := G2Vec2(1, 1);
+  _FlipX := False;
+  _FlipY := False;
   _Animation := '';
   _Loop := True;
   _TimeScale := 1;
@@ -2884,7 +2910,6 @@ end;
 {$Hints on}
 
 procedure TG2Scene2DComponentSpineAnimation.Save(const dm: TG2DataManager);
-  var n: TG2IntS32;
 begin
   SaveClassType(dm);
   if Assigned(_Skeleton) then
@@ -2899,6 +2924,8 @@ begin
   dm.WriteVec2(_Offset);
   dm.WriteVec2(_Scale);
   dm.WriteBool(_Loop);
+  dm.WriteBool(_FlipX);
+  dm.WriteBool(_FlipY);
   dm.WriteFloat(_TimeScale);
   dm.WriteStringA(_Animation);
 end;
@@ -2918,6 +2945,8 @@ begin
   _Offset := dm.ReadVec2;
   _Scale := dm.ReadVec2;
   _Loop := dm.ReadBool;
+  _FlipX := dm.ReadBool;
+  _FlipY := dm.ReadBool;
   _TimeScale := dm.ReadFloat;
   _Animation := dm.ReadStringA;
   if Length(SkeletonPath) > 0 then
@@ -3897,10 +3926,10 @@ begin
   _DuckCheckVerts[1] := b2_vec2(_BodyVerts[2].x, _BodyVerts[2].y);
   _DuckCheckVerts[2] := b2_vec2(_BodyVerts[3].x, _BodyVerts[3].y);
   _DuckCheckVerts[3] := b2_vec2(_BodyVerts[3].x, _BodyVerts[0].y);
-  _GroundCheckVerts[0] := b2_vec2(qw + qw * 0.125, hh * 0.5);
-  _GroundCheckVerts[1] := b2_vec2(-qw - qw * 0.125, hh * 0.5);
-  _GroundCheckVerts[2] := b2_vec2(-qw - qw * 0.125, hh + hh * 0.05);
-  _GroundCheckVerts[3] := b2_vec2(qw + qw * 0.125, hh + hh * 0.05);
+  _GroundCheckVerts[0] := b2_vec2(qw + qw * 0.18, hh * 0.5);
+  _GroundCheckVerts[1] := b2_vec2(-qw - qw * 0.18, hh * 0.5);
+  _GroundCheckVerts[2] := b2_vec2(-qw - qw * 0.18, hh + hh * 0.1);
+  _GroundCheckVerts[3] := b2_vec2(qw + qw * 0.18, hh + hh * 0.1);
   _ShapeBody.set_polygon(@_BodyVerts, 7);
   _ShapeFeet.center := b2_vec2(0, 0);
   _ShapeFeet.radius := hw * 0.99;
@@ -3955,10 +3984,25 @@ end;
 
 procedure TG2Scene2DComponentCharacter.OnUpdate;
   var n: TG2Vec2;
-  var d, vl: TG2Float;
+  var d, f: TG2Float;
+  var c: pb2_contact_edge;
 begin
   if _JumpDelay > 0 then _JumpDelay -= g2.DeltaTimeSec;
   _Standing := _FootContactCount > 0;
+  if (_FixtureFeet <> nil) then
+  begin
+    if _Standing then f := 4 else f := 0;
+    if Abs(_FixtureFeet^.get_friction - f) > G2EPS then
+    begin
+      _FixtureFeet^.set_friction(f);
+      c := _BodyFeet^.get_contact_list;
+      while c <> nil do
+      begin
+        c^.contact^.reset_friction;
+        c := c^.next;
+      end;
+    end;
+  end;
   if _Standing and (_Body <> nil) and (_JumpDelay <= 0) and (Abs(_JumpSpeed.LenSq) > G2EPS2) then
   begin
     n := _JumpSpeed.Norm;

@@ -137,44 +137,65 @@ begin
     Display.Position := G2LerpVec2(Display.Position, PlayerEntity.Transform.p, 0.1);
     Character := TG2Scene2DComponentCharacter(PlayerEntity.ComponentOfType[TG2Scene2DComponentCharacter]);
     Animation := TG2Scene2DComponentSpineAnimation(PlayerEntity.ComponentOfType[TG2Scene2DComponentSpineAnimation]);
-    if g2.KeyDown[G2K_Right] then
+    if Character.Standing then
     begin
-      Character.Walk(15);
-      Character.Glide(G2Vec2(0.25, 0));
-      if Assigned(Animation) then
+      if g2.KeyDown[G2K_Right] then
       begin
-        Animation.Animation := 'run';
-        Animation.Scale := G2Vec2(0.0016, 0.0016);
+        Character.Walk(15);
+        if Assigned(Animation) then
+        begin
+          Animation.Animation := 'run';
+          Animation.FlipX := False;
+          //Animation.Scale := G2Vec2(0.0016, 0.0016);
+        end;
+      end
+      else if g2.KeyDown[G2K_Left] then
+      begin
+        Character.Walk(-15);
+        if Assigned(Animation) then
+        begin
+          Animation.Animation := 'run';
+          Animation.FlipX := True;
+          //Animation.Scale := G2Vec2(-0.0016, 0.0016);
+        end;
+      end
+      else
+      begin
+        if Assigned(Animation) then
+        begin
+          Animation.Animation := 'idle';
+        end;
       end;
-    end
-    else if g2.KeyDown[G2K_Left] then
-    begin
-      Character.Walk(-15);
-      Character.Glide(G2Vec2(-0.25, 0));
-      if Assigned(Animation) then
+      if g2.KeyDown[G2K_Space] then
       begin
-        Animation.Animation := 'run';
-        Animation.Scale := G2Vec2(-0.0016, 0.0016);
+        Character.Jump(G2Vec2(0, -10));
+        if Assigned(Animation) then
+        begin
+          Animation.Animation := '';
+          Animation.AnimationState.SetAnimation(0, 'jump', False).EndTime := 1;
+        end;
       end;
     end
     else
     begin
-      if Assigned(Animation) then
+      if g2.KeyDown[G2K_Right] then
       begin
-        Animation.Animation := 'idle';
+        Character.Glide(G2Vec2(0.25, 0));
+      end
+      else if g2.KeyDown[G2K_Left] then
+      begin
+        Character.Glide(G2Vec2(-0.25, 0));
       end;
-    end;
-    if g2.KeyDown[G2K_Space] then
-    begin
-      Character.Jump(G2Vec2(0, -10));
-    end;
-    if g2.KeyDown[G2K_Down] then
-    begin
-      Character.Duck := 1;
-    end
-    else
-    begin
-      Character.Duck := 0;
+      if Assigned(Animation)
+      and (Animation.Animation <> '') then
+      begin
+        Animation.Animation := '';
+        with Animation.AnimationState.SetAnimation(0, 'jump', False) do
+        begin
+          Time := 0.5;
+          EndTime := 1;
+        end;
+      end;
     end;
   end;
 end;
