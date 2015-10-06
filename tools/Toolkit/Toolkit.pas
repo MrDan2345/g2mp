@@ -3395,6 +3395,7 @@ type
     procedure Render(const Display: TG2Display2D); override;
     procedure MouseDown(const Display: TG2Display2D; const Button, x, y: Integer); override;
     procedure MouseUp(const Display: TG2Display2D; const Button, x, y: Integer); override;
+    procedure KeyDown(const Key: Integer); override;
     procedure Initialize; override;
     procedure Finalize; override;
   end;
@@ -26689,6 +26690,13 @@ begin
     _MdInEdge := nil;
     _MdInFace := nil;
   end;
+end;
+
+procedure TScene2DEditorPoly.KeyDown(const Key: Integer);
+begin
+  if (Key = G2K_Delete)
+  and (_BtnDelete.Visible) then
+  OnDeleteClick(nil);
 end;
 
 procedure TScene2DEditorPoly.Initialize;

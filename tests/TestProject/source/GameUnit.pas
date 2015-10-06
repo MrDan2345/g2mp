@@ -11,12 +11,24 @@ uses
   G2DataManager,
   G2Scene2D,
   box2d,
+  Spine,
   Types,
   SysUtils,
   Classes,
   Windows;
 
 type
+  TShotComponent = class (TG2Scene2DComponent)
+  private
+    var _Dead: Boolean;
+  public
+    property Dead: Boolean read _Dead write _Dead;
+    procedure OnInitialize; override;
+    procedure OnAttach; override;
+    procedure OnDetach; override;
+    procedure OnUpdate;
+  end;
+
   TGame = class
   public
     Font: TG2Font;
@@ -27,6 +39,7 @@ type
     Wheel0: TG2Scene2DEntity;
     Wheel1: TG2Scene2DEntity;
     rt: TG2Texture2DRT;
+    ShotDelay: TG2Float;
     constructor Create;
     destructor Destroy; override;
     procedure Initialize;
@@ -39,6 +52,7 @@ type
     procedure MouseUp(const Button, x, y: Integer);
     procedure Scroll(const y: Integer);
     procedure Print(const c: AnsiChar);
+    procedure OnBulletHit(const Data: TG2Scene2DEventData);
   end;
 
 var
@@ -47,6 +61,31 @@ var
  const EnginePower = 5;
 
 implementation
+
+//TShotComponent BEGIN
+procedure TShotComponent.OnInitialize;
+begin
+  inherited OnInitialize;
+  _Dead := False;
+end;
+
+procedure TShotComponent.OnAttach;
+begin
+  inherited OnAttach;
+  g2.CallbackUpdateAdd(@OnUpdate);
+end;
+
+procedure TShotComponent.OnDetach;
+begin
+  g2.CallbackUpdateRemove(@OnUpdate);
+  inherited OnDetach;
+end;
+
+procedure TShotComponent.OnUpdate;
+begin
+  if Dead then Owner.Free;
+end;
+//TShotComponent END
 
 //TGame BEGIN
 constructor TGame.Create;
@@ -110,6 +149,7 @@ begin
   TG2Picture.SharedAsset('atlas.g2atlas#TestCharC.png').RefInc;
   rt := TG2Texture2DRT.Create;
   rt.Make(64, 64);
+  ShotDelay := 0;
 end;
 
 procedure TGame.Finalize;
@@ -127,6 +167,11 @@ procedure TGame.Update;
   var Character: TG2Scene2DComponentCharacter;
   var Animation: TG2Scene2DComponentSpineAnimation;
   var Sprite: TG2Scene2DComponentSprite;
+  var GunBone: TSpineBone;
+  var gxf: TG2Transform2;
+  var Shot: TG2Scene2DEntity;
+  var sc: TG2Scene2DComponentCollisionShapeCircle;
+  var ShotComponent: TShotComponent;
 begin
   if Assigned(BackgroundEntity) then
   begin
@@ -139,7 +184,7 @@ begin
     Animation := TG2Scene2DComponentSpineAnimation(PlayerEntity.ComponentOfType[TG2Scene2DComponentSpineAnimation]);
     if Character.Standing then
     begin
-      if g2.KeyDown[G2K_Right] then
+      if g2.KeyDown[G2K_D] then
       begin
         Character.Walk(15);
         if Assigned(Animation) then
@@ -149,7 +194,7 @@ begin
           //Animation.Scale := G2Vec2(0.0016, 0.0016);
         end;
       end
-      else if g2.KeyDown[G2K_Left] then
+      else if g2.KeyDown[G2K_A] then
       begin
         Character.Walk(-15);
         if Assigned(Animation) then
@@ -178,11 +223,11 @@ begin
     end
     else
     begin
-      if g2.KeyDown[G2K_Right] then
+      if g2.KeyDown[G2K_D] then
       begin
         Character.Glide(G2Vec2(0.25, 0));
       end
-      else if g2.KeyDown[G2K_Left] then
+      else if g2.KeyDown[G2K_A] then
       begin
         Character.Glide(G2Vec2(-0.25, 0));
       end;
@@ -196,6 +241,43 @@ begin
           EndTime := 1;
         end;
       end;
+    end;
+    if ShotDelay > 0 then ShotDelay -= g2.DeltaTimeSec;
+    if g2.KeyDown[G2K_Ctrl] and (ShotDelay <= 0) then
+    begin
+      ShotDelay := 0.1;
+      Animation.AnimationState.SetAnimation(1, 'shoot', False).TimeScale := 2;
+      Animation.AnimationState.Update(0);
+      Animation.AnimationState.Apply(Animation.Skeleton);
+      Animation.Skeleton.UpdateWorldTransform;
+      GunBone := Animation.Skeleton.FindBone('gun');
+      gxf := Animation.BoneTransform[GunBone];
+      if Animation.FlipX then
+      gxf.r.Angle := gxf.r.Angle - 0.6
+      else
+      gxf.r.Angle := gxf.r.Angle + 0.6;
+      gxf.p := gxf.p + gxf.r.AxisX * 0.25;
+      Shot := TG2Scene2DEntity.Create(Scene);
+      Sprite := TG2Scene2DComponentSprite.Create(Scene);
+      Sprite.Layer := 20;
+      Sprite.Attach(Shot);
+      Sprite.Picture := TG2Picture.SharedAsset('bullet.png', tu2D);
+      Sprite.Height := 0.5;
+      Shot.Transform := gxf;
+      rb := TG2Scene2DComponentRigidBody.Create(Scene);
+      rb.Attach(Shot);
+      sc := TG2Scene2DComponentCollisionShapeCircle.Create(Scene);
+      sc.Radius := 0.2;
+      sc.IsSensor := True;
+      sc.EventBeginContact.AddEvent(@OnBulletHit);
+      sc.Attach(Shot);
+      rb.BodyType := g2_s2d_rbt_dynamic_body;
+      rb.FixedRotation := True;
+      rb.GravityScale := 0;
+      rb.Enabled := True;
+      rb.PhysBody^.set_linear_velocity(Shot.Transform.r.AxisX * 10);
+      ShotComponent := TShotComponent.Create(Scene);
+      ShotComponent.Attach(Shot);
     end;
   end;
 end;
@@ -250,6 +332,38 @@ end;
 procedure TGame.Print(const c: AnsiChar);
 begin
 
+end;
+
+procedure TGame.OnBulletHit(const Data: TG2Scene2DEventData);
+  var EventData: TG2Scene2DEventBeginContactData absolute Data;
+  var Shot: TShotComponent;
+  var Effect: TG2Scene2DComponentEffect;
+  var e: TG2Scene2DEntity;
+  var rb: TG2Scene2DComponentRigidBody;
+begin
+  if EventData.Shapes[1] <> nil then
+  begin
+    Shot := TShotComponent(EventData.Shapes[0].Owner.ComponentOfType[TShotComponent]);
+    if Assigned(Shot) then
+    begin
+      Shot.Dead := True;
+      e := TG2Scene2DEntity.Create(Scene);
+      e.Transform := Shot.Owner.Transform;
+      Effect := TG2Scene2DComponentEffect.Create(Scene);
+      Effect.Attach(e);
+      Effect.Layer := 20;
+      Effect.Effect := TG2Effect2D.SharedAsset('Damage.g2fx');
+      Effect.Scale := 0.5;
+      Effect.Speed := 2;
+      Effect.AutoDestruct := True;
+      Effect.Play;
+      rb := TG2Scene2DComponentRigidBody(EventData.Shapes[1].Owner.ComponentOfType[TG2Scene2DComponentRigidBody]);
+      if Assigned(rb) then
+      begin
+        rb.PhysBody^.apply_force(e.Transform.r.AxisX * 100, e.Transform.p, True);
+      end;
+    end;
+  end;
 end;
 //TGame END
 

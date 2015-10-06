@@ -450,6 +450,8 @@ type
     property ScaleX: Single read _ScaleX write _ScaleX;
     property ScaleY: Single read _ScaleY write _ScaleY;
     property Rotation: Single read _Rotation write SetRotation;
+    property rx: Single read _RotX;
+    property ry: Single read _RotY;
     property FlipX: Boolean read _FlipX write _FlipX;
     property FlipY: Boolean read _FlipY write _FlipY;
     property RootBone: TSpineBone read GetRootBone;
