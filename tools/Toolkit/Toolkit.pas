@@ -177,6 +177,7 @@ type
     property Position: TG2Vec2 read GetPosition;
     constructor Create; override;
     destructor Destroy; override;
+    function IsEmpty: Boolean;
     procedure Show(const Pos: TG2Vec2);
     procedure AddButton(const Path: String; const Callback: TG2ProcObj);
     procedure Clear;
@@ -1950,6 +1951,7 @@ type
     var _Menu: TUIWorkspaceCustom;
     var _BtnSimulate: TUIWorkspaceCustomButton;
     var _ItemHeight: TG2Float;
+    var _PopUp: TOverlayPopUp;
     function PtInItem(const pt: TG2Vec2; var InExpand: Boolean): TG2Scene2DEntity;
     function ItemOpen(const Item: TG2Scene2DEntity): Boolean;
     function GetContentSize: TG2Float;
@@ -1957,6 +1959,10 @@ type
     procedure BtnLoadScene;
     procedure BtnClearScene;
     procedure BtnSimulate;
+    procedure UpdatePopUp;
+    procedure OnCopyEntity;
+    procedure OnDeleteEntity;
+    procedure OnCreatePrefab;
   protected
     procedure OnInitialize; override;
     procedure OnFinalize; override;
@@ -3526,6 +3532,8 @@ type
     var AnimIndex: Byte;
     var AnimList: TPropertySet.TPropertyEnum;
     var Loop: Boolean;
+    var FlipX: Boolean;
+    var FlipY: Boolean;
     var TimeScale: TG2Float;
     procedure UpdateAnimList;
   public
@@ -3541,6 +3549,8 @@ type
     procedure OnScaleChange(const Sender: Pointer);
     procedure OnAnimationChange(const Sender: Pointer);
     procedure OnLoopChange(const Sender: Pointer);
+    procedure OnFlipXChange(const Sender: Pointer);
+    procedure OnFlipYChange(const Sender: Pointer);
     procedure OnTimeScaleChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataSpineAnimation END
@@ -3818,9 +3828,10 @@ type
     var _Joint: TG2Scene2DJoint;
     var _Position: TG2Vec2;
     function GetEditor: TScene2DEditor; virtual;
+    function GetPosition: TG2Vec2; virtual;
     procedure SetPosition(const Value: TG2Vec2); virtual;
   public
-    property Position: TG2Vec2 read _Position write SetPosition;
+    property Position: TG2Vec2 read GetPosition write SetPosition;
     property Editor: TScene2DEditor read GetEditor;
     constructor Create; virtual;
     destructor Destroy; override;
@@ -3871,6 +3882,7 @@ type
     function GetAnchor: TG2Vec2; inline;
     procedure SetAnchor(const Value: TG2Vec2); inline;
   protected
+    function GetPosition: TG2Vec2; override;
     procedure SetPosition(const Value: TG2Vec2); override;
     function GetEditor: TScene2DEditor; override;
   public
@@ -3921,6 +3933,7 @@ type
     procedure DeleteEntity(var Entity: TG2Scene2DEntity);
     procedure CopySelectedEntity;
     procedure PasteEntity(const Pos: TG2Vec2);
+    procedure CreatePrefab;
     procedure CreateEntityData(const Entity: TG2Scene2DEntity);
     procedure VerifyEntityName(const Entity: TG2Scene2DEntity);
     function CreateJointDistance(const Position: TG2Vec2): TG2Scene2DDistanceJoint;
@@ -4790,6 +4803,11 @@ destructor TOverlayPopUp.Destroy;
 begin
   Clear;
   _Root.Free;
+end;
+
+function TOverlayPopUp.IsEmpty: Boolean;
+begin
+  Result := _Root.ItemList.Count = 0;
 end;
 
 procedure TOverlayPopUp.Show(const Pos: TG2Vec2);
@@ -14476,6 +14494,39 @@ begin
   _BtnSimulate.Icon := App.UI.TexPlay;
 end;
 
+procedure TUIWorkspaceScene2DStructure.UpdatePopUp;
+begin
+  _PopUp.Clear;
+  if App.Scene2DData.Selection.Count > 0 then
+  begin
+    if App.Scene2DData.Selection.Count = 1 then
+    _PopUp.AddButton('Create Prefab', @OnCreatePrefab);
+    _PopUp.AddButton('Copy', @OnCopyEntity);
+    _PopUp.AddButton('Delete', @OnDeleteEntity);
+  end;
+end;
+
+procedure TUIWorkspaceScene2DStructure.OnCopyEntity;
+begin
+  App.Scene2DData.CopySelectedEntity;
+end;
+
+procedure TUIWorkspaceScene2DStructure.OnDeleteEntity;
+  var i: Integer;
+  var e: TG2Scene2DEntity;
+begin
+  for i := App.Scene2DData.Selection.Count - 1 downto 0 do
+  begin
+    e := App.Scene2DData.Selection[i];
+    App.Scene2DData.DeleteEntity(e);
+  end;
+end;
+
+procedure TUIWorkspaceScene2DStructure.OnCreatePrefab;
+begin
+  App.Scene2DData.CreatePrefab;
+end;
+
 procedure TUIWorkspaceScene2DStructure.OnInitialize;
   var p: TUIWorkspaceCustomPanel;
   var sm: TUIWorkspaceFixedSplitterMulti;
@@ -14527,11 +14578,14 @@ begin
   b.Hint := 'Simulate';
   b.OnClick := @BtnSimulate;
   _BtnSimulate := b;
+
+  _PopUp := TOverlayPopUp.Create;
 end;
 
 procedure TUIWorkspaceScene2DStructure.OnFinalize;
   var i: Integer;
 begin
+  _PopUp.Free;
   if App.Scene2DData.Scene <> nil then
   for i := 0 to App.Scene2DData.Scene.EntityCount - 1 do
   PScene2DEntityData(App.Scene2DData.Scene.Entities[i].UserData)^.OpenStructure.Remove(Self);
@@ -14782,6 +14836,21 @@ begin
         App.Scene2DData.Selection.Clear;
         App.Scene2DData.Selection.Add(Item);
         App.Scene2DData.SelectionUpdateEnd;
+      end;
+    end;
+    G2MB_Right:
+    begin
+      Item := PtInItem(G2Vec2(x, y), InExpand);
+      ItemPrev := PtInItem(g2.MouseDownPos[Button], InExpandPrev);
+      if (Item <> nil)
+      and (Item = ItemPrev)
+      and (not InExpand)
+      and (InExpand = InExpandPrev)
+      and (App.Scene2DData.Selection.Count > 0)
+      then
+      begin
+        UpdatePopUp;
+        _PopUp.Show(G2Vec2(x, y));
       end;
     end;
   end;
@@ -27475,6 +27544,8 @@ begin
   PropertySet.PropVec2('Scale', @Scale, Group, @OnScaleChange);
   AnimList := PropertySet.PropEnum('Animation', @AnimIndex, Group, @OnAnimationChange);
   PropertySet.PropBool('Loop', @Loop, Group, @OnLoopChange);
+  PropertySet.PropBool('Flip X', @FlipX, Group, @OnFlipXChange);
+  PropertySet.PropBool('Flip Y', @FlipY, Group, @OnFlipYChange);
   PropertySet.PropFloat('Speed', @TimeScale, Group, @OnTimeScaleChange);
   UpdateAnimList;
 end;
@@ -27526,6 +27597,16 @@ end;
 procedure TScene2DComponentDataSpineAnimation.OnLoopChange(const Sender: Pointer);
 begin
   Component.Loop := Loop;
+end;
+
+procedure TScene2DComponentDataSpineAnimation.OnFlipXChange(const Sender: Pointer);
+begin
+  Component.FlipX := FlipX;
+end;
+
+procedure TScene2DComponentDataSpineAnimation.OnFlipYChange(const Sender: Pointer);
+begin
+  Component.FlipY := FlipY;
 end;
 
 procedure TScene2DComponentDataSpineAnimation.OnTimeScaleChange(const Sender: Pointer);
@@ -28870,6 +28951,11 @@ begin
   Result := nil;
 end;
 
+function TScene2DJointData.GetPosition: TG2Vec2;
+begin
+  Result := _Position;
+end;
+
 procedure TScene2DJointData.SetPosition(const Value: TG2Vec2);
 begin
   _Position := Value;
@@ -29198,6 +29284,14 @@ begin
   Joint.Anchor := Value;
 end;
 
+function TScene2DJointDataRevolute.GetPosition: TG2Vec2;
+begin
+  if Joint <> nil then
+  Result := Joint.Anchor
+  else
+  Result := _Position;
+end;
+
 procedure TScene2DJointDataRevolute.SetPosition(const Value: TG2Vec2);
 begin
   _Position := Value;
@@ -29236,7 +29330,7 @@ procedure TScene2DJointDataRevolute.DebugDraw(const Display: TG2Display2D);
   var Str: String;
   var c: TG2Color;
 begin
-  v := Display.CoordToScreen(_Position);
+  v := Display.CoordToScreen(Position);
   if App.Scene2DData.SelectJoint = Self then
   begin
     Str := 'rev';
@@ -29468,6 +29562,25 @@ begin
   end;
   dm.Free;
   PasteStream.Free;
+end;
+
+procedure TScene2DData.CreatePrefab;
+  var sd: TSaveDialog;
+  var dm: TG2DataManager;
+begin
+  if Selection.Count <> 1 then Exit;
+  sd := TSaveDialog.Create(nil);
+  sd.DefaultExt := '.g2prefab2d';
+  if sd.Execute then
+  begin
+    dm := TG2DataManager.Create(sd.FileName, dmWrite);
+    try
+      Selection[0].Save(dm);
+    finally
+      dm.Free;
+    end;
+  end;
+  sd.Free;
 end;
 
 procedure TScene2DData.CreateEntityData(const Entity: TG2Scene2DEntity);

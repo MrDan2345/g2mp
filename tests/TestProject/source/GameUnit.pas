@@ -275,7 +275,7 @@ begin
       rb.FixedRotation := True;
       rb.GravityScale := 0;
       rb.Enabled := True;
-      rb.PhysBody^.set_linear_velocity(Shot.Transform.r.AxisX * 10);
+      rb.PhysBody^.set_linear_velocity(Shot.Transform.r.AxisX * 15);
       ShotComponent := TShotComponent.Create(Scene);
       ShotComponent.Attach(Shot);
     end;

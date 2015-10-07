@@ -189,12 +189,16 @@ type
     var _RigidBodyA: TG2Scene2DComponentRigidBody;
     var _RigidBodyB: TG2Scene2DComponentRigidBody;
     var _Anchor: TG2Vec2;
+    var _OffsetA: TG2Vec2;
+    var _OffsetB: TG2Vec2;
     procedure SetEnabled(const Value: Boolean); override;
     function Valid: Boolean; inline;
+    function GetAnchor: TG2Vec2;
+    procedure SetAnchor(const Value: TG2Vec2);
   public
     property RigidBodyA: TG2Scene2DComponentRigidBody read _RigidBodyA write _RigidBodyA;
     property RigidBodyB: TG2Scene2DComponentRigidBody read _RigidBodyB write _RigidBodyB;
-    property Anchor: TG2Vec2 read _Anchor write _Anchor;
+    property Anchor: TG2Vec2 read GetAnchor write SetAnchor;
     class constructor CreateClass;
     constructor Create(const OwnerScene: TG2Scene2D); override;
     destructor Destroy; override;
@@ -1507,7 +1511,7 @@ begin
     def.initialize(
       _RigidBodyA.PhysBody,
       _RigidBodyB.PhysBody,
-      _Anchor
+      Anchor
     );
     _Joint := _Scene.PhysWorld.create_joint(def);
   end
@@ -1524,6 +1528,22 @@ begin
     (_RigidBodyA <> nil)
     and (_RigidBodyB <> nil)
   );
+end;
+
+function TG2Scene2DRevoluteJoint.GetAnchor: TG2Vec2;
+begin
+  if Valid then Result := (_RigidBodyA.Owner.Transform.p + _OffsetA + _RigidBodyB.Owner.Transform.p + _OffsetB) * 0.5
+  else Result := _Anchor;
+end;
+
+procedure TG2Scene2DRevoluteJoint.SetAnchor(const Value: TG2Vec2);
+begin
+  _Anchor := Value;
+  if Valid then
+  begin
+    _OffsetA := _Anchor - _RigidBodyA.Owner.Transform.p;
+    _OffsetB := _Anchor - _RigidBodyB.Owner.Transform.p;
+  end;
 end;
 
 class constructor TG2Scene2DRevoluteJoint.CreateClass;
@@ -1566,7 +1586,7 @@ begin
   begin
     dm.WriteStringA(_RigidBodyB.Owner.GUID);
   end;
-  dm.WriteVec2(_Anchor);
+  dm.WriteVec2(Anchor);
   dm.WriteBool(_Enabled);
 end;
 
@@ -1589,6 +1609,7 @@ begin
   else
   _RigidBodyB := nil;
   _Anchor := dm.ReadVec2;
+  SetAnchor(_Anchor);
   Enabled := dm.ReadBool;
 end;
 //TG2Scene2DRevoluteJoint END
