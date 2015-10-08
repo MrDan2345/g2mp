@@ -57,7 +57,6 @@ type
     property First: T read GetFirst;
     property Last: T read GetLast;
     property Data: TItemPtr read GetData;
-    constructor Create;
     function Find(const Item: T): TG2IntS32;
     function Add(const Item: T): TG2IntS32;
     function Pop: T;
@@ -422,11 +421,6 @@ begin
   Result := @_Items[0]
   else
   Result := nil;
-end;
-
-constructor TG2QuickListG.Create;
-begin
-  Clear;
 end;
 
 function TG2QuickListG.Find(const Item: T): TG2IntS32;

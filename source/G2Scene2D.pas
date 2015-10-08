@@ -116,7 +116,7 @@ type
     procedure OnRender(const Display: TG2Display2D); virtual;
   public
     property UserData: Pointer read _UserData write _UserData;
-    property GUID: String read _GUID;
+    property GUID: String read _GUID write _GUID;
     property Scene: TG2Scene2D read _Scene;
     property Parent: TG2Scene2DEntity read _Parent write SetParent;
     property Children[const Index: TG2IntS32]: TG2Scene2DEntity read GetChild;
@@ -156,6 +156,7 @@ type
     property Scene: TG2Scene2D read _Scene;
     property Enabled: Boolean read _Enabled write SetEnabled;
     class constructor ClassCreate;
+    class function LoadClass(const dm: TG2DataManager; const OwnerScene: TG2Scene2D): TG2Scene2DJoint;
     constructor Create(const OwnerScene: TG2Scene2D); virtual;
     destructor Destroy; override;
     procedure Save(const dm: TG2DataManager); virtual;
@@ -1282,7 +1283,7 @@ begin
 end;
 
 procedure TG2Scene2DEntity.Save(const dm: TG2DataManager);
-  var i, n: TG2IntS32;
+  var i: TG2IntS32;
 begin
   dm.WriteBuffer(@_Transform, SizeOf(_Transform));
   dm.WriteStringA(_Name);
@@ -1300,7 +1301,7 @@ begin
 end;
 
 procedure TG2Scene2DEntity.Load(const dm: TG2DataManager);
-  var i, j, n, ec, cc: TG2IntS32;
+  var i, j, ec, cc: TG2IntS32;
   var e: TG2Scene2DEntity;
   var c: TG2Scene2DComponent;
   var CName: String;
@@ -1346,6 +1347,21 @@ class constructor TG2Scene2DJoint.ClassCreate;
 begin
   SetLength(JointList, Length(JointList) + 1);
   JointList[High(JointList)] := CG2Scene2DJoint(ClassType);
+end;
+
+class function TG2Scene2DJoint.LoadClass(const dm: TG2DataManager; const OwnerScene: TG2Scene2D): TG2Scene2DJoint;
+  var cn: String;
+  var i: TG2IntS32;
+begin
+  cn := dm.ReadStringA;
+  for i := 0 to High(JointList) do
+  if JointList[i].ClassName = cn then
+  begin
+    Result := JointList[i].Create(OwnerScene);
+    Result.Load(dm);
+    Exit;
+  end;
+  Result := nil;
 end;
 
 constructor TG2Scene2DJoint.Create(const OwnerScene: TG2Scene2D);
@@ -1445,7 +1461,6 @@ begin
 end;
 
 procedure TG2Scene2DDistanceJoint.Save(const dm: TG2DataManager);
-  var n: Integer;
 begin
   SaveClassType(dm);
   if _RigidBodyA = nil then
@@ -1471,7 +1486,6 @@ begin
 end;
 
 procedure TG2Scene2DDistanceJoint.Load(const dm: TG2DataManager);
-  var n: Integer;
   var GUID: String;
   var e: TG2Scene2DEntity;
 begin
@@ -1567,7 +1581,6 @@ begin
 end;
 
 procedure TG2Scene2DRevoluteJoint.Save(const dm: TG2DataManager);
-  var n: Integer;
 begin
   SaveClassType(dm);
   if _RigidBodyA = nil then
@@ -1591,9 +1604,7 @@ begin
 end;
 
 procedure TG2Scene2DRevoluteJoint.Load(const dm: TG2DataManager);
-  var n: Integer;
   var GUID: String;
-  var b: Boolean;
   var e: TG2Scene2DEntity;
 begin
   GUID := dm.ReadStringA;
@@ -2101,7 +2112,7 @@ end;
 
 procedure TG2Scene2D.Load(const dm: TG2DataManager);
   var Header: array[0..3] of AnsiChar;
-  var i, j, n, cn: TG2IntS32;
+  var i, j, n: TG2IntS32;
   var CName: String;
   var Joint: TG2Scene2DJoint;
 begin
@@ -2279,7 +2290,6 @@ begin
 end;
 
 procedure TG2Scene2DComponentSprite.Load(const dm: TG2DataManager);
-  var n: TG2IntS32;
   var Usage: TG2TextureUsage;
   var TexFile: String;
 begin
@@ -2766,7 +2776,6 @@ begin
 end;
 
 procedure TG2Scene2DComponentBackground.Load(const dm: TG2DataManager);
-  var n: TG2IntS32;
   var TexFile: String;
 begin
   TexFile := dm.ReadStringA;
@@ -2973,7 +2982,6 @@ begin
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.Load(const dm: TG2DataManager);
-  var n: TG2IntS32;
   var SkeletonPath: String;
   var AtlasPath: String;
   var Atlas: TSpineAtlas;
@@ -3238,7 +3246,6 @@ begin
 end;
 
 procedure TG2Scene2DComponentRigidBody.Load(const dm: TG2DataManager);
-  var b: Boolean;
   var xf: TG2Transform2;
 begin
   {$Hints off}
@@ -3552,8 +3559,6 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeEdge.Load(const dm: TG2DataManager);
-  var n: TG2IntS32;
-  var EventName: String;
 begin
   dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_EdgeShape;
@@ -3645,8 +3650,6 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapePoly.Load(const dm: TG2DataManager);
-  var n: TG2IntS32;
-  var EventName: String;
 begin
   dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_PolyShape;
@@ -3828,7 +3831,6 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeCircle.Save(const dm: TG2DataManager);
-  var n: TG2IntS32;
 begin
   SaveClassType(dm);
   dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
@@ -3841,8 +3843,6 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeCircle.Load(const dm: TG2DataManager);
-  var n: TG2IntS32;
-  var EventName: String;
 begin
   dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_CircleShape;
@@ -3923,7 +3923,7 @@ begin
   SaveClassType(dm);
   dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   dm.WriteIntS32(_ChainShape.count);
-  dm.WriteBuffer(_ChainShape.vertices, SizeOf(_ChainShape.vertices^[0]) * _ChainShape.count);
+  dm.WriteBuffer(_ChainShape.vertices, TG2IntS64(SizeOf(_ChainShape.vertices^[0])) * _ChainShape.count);
   dm.WriteBool(_ChainShape.has_next_vertex);
   if (_ChainShape.has_next_vertex) then
   dm.WriteBuffer(@_ChainShape.next_vertex, SizeOf(_ChainShape.next_vertex));
@@ -3937,15 +3937,13 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeChain.Load(const dm: TG2DataManager);
-  var n: TG2IntS32;
-  var EventName: String;
 begin
   dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_ChainShape;
   _ChainShape.clear;
   _ChainShape.count := dm.ReadIntS32;
   _ChainShape.vertices := pb2_vec2_arr(b2_alloc(_ChainShape.count * SizeOf(tb2_vec2)));
-  dm.ReadBuffer(_ChainShape.vertices, _ChainShape.count * SizeOf(tb2_vec2));
+  dm.ReadBuffer(_ChainShape.vertices, _ChainShape.count * TG2IntS64(SizeOf(tb2_vec2)));
   _ChainShape.has_next_vertex := dm.ReadBool;
   if (_ChainShape.has_next_vertex) then
   dm.ReadBuffer(@_ChainShape.next_vertex, SizeOf(_ChainShape.next_vertex))
@@ -4624,13 +4622,13 @@ procedure TG2Scene2DComponentPoly.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
   dm.WriteIntS32(Length(_Vertices));
-  dm.WriteBuffer(@_Vertices[0], SizeOf(TG2Scene2DComponentPolyVertex) * Length(_Vertices));
+  dm.WriteBuffer(@_Vertices[0], TG2IntS64(SizeOf(TG2Scene2DComponentPolyVertex)) * Length(_Vertices));
   dm.WriteIntS32(Length(_Faces));
-  dm.WriteBuffer(@_Faces[0], SizeOf(_Faces[0]) * Length(_Faces));
+  dm.WriteBuffer(@_Faces[0], TG2IntS64(SizeOf(_Faces[0])) * Length(_Faces));
   dm.WriteIntS32(Length(_Layers));
   for i := 0 to High(_Layers) do
   begin
-    dm.WriteBuffer(@_Layers[i].Color[0], SizeOf(TG2Color) * Length(_Vertices));
+    dm.WriteBuffer(@_Layers[i].Color[0], TG2IntS64(SizeOf(TG2Color)) * Length(_Vertices));
     dm.WriteVec2(_Layers[i].Scale);
     if Assigned(_Layers[i].Texture)
     and _Layers[i].Texture.IsShared then
@@ -4648,21 +4646,20 @@ end;
 
 procedure TG2Scene2DComponentPoly.Load(const dm: TG2DataManager);
   var i, n: TG2IntS32;
-  var b: Boolean;
   var TexFile: String;
 begin
   n := dm.ReadIntS32;
   SetLength(_Vertices, n);
-  dm.ReadBuffer(@_Vertices[0], SizeOf(TG2Scene2DComponentPolyVertex) * Length(_Vertices));
+  dm.ReadBuffer(@_Vertices[0], TG2IntS64(SizeOf(TG2Scene2DComponentPolyVertex)) * Length(_Vertices));
   n := dm.ReadIntS32;
   SetLength(_Faces, n);
-  dm.ReadBuffer(@_Faces[0], SizeOf(_Faces[0]) * Length(_Faces));
+  dm.ReadBuffer(@_Faces[0], TG2IntS64(SizeOf(_Faces[0])) * Length(_Faces));
   n := dm.ReadIntS32;
   SetLength(_Layers, n);
   CreateLayers;
   for i := 0 to High(_Layers) do
   begin
-    dm.ReadBuffer(@_Layers[i].Color[0], SizeOf(TG2Color) * Length(_Vertices));
+    dm.ReadBuffer(@_Layers[i].Color[0], TG2IntS64(SizeOf(TG2Color)) * Length(_Vertices));
     _Layers[i].Scale := dm.ReadVec2;
     TexFile := dm.ReadStringA;
     if Length(TexFile) > 0 then

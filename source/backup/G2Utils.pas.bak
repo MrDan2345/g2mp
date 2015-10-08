@@ -57,7 +57,6 @@ type
     property First: T read GetFirst;
     property Last: T read GetLast;
     property Data: TItemPtr read GetData;
-    constructor Create;
     function Find(const Item: T): TG2IntS32;
     function Add(const Item: T): TG2IntS32;
     function Pop: T;
@@ -424,11 +423,6 @@ begin
   Result := nil;
 end;
 
-constructor TG2QuickListG.Create;
-begin
-  Clear;
-end;
-
 function TG2QuickListG.Find(const Item: T): TG2IntS32;
   var i: TG2IntS32;
 begin
@@ -610,6 +604,11 @@ end;
 procedure TG2QuickListG.Sort(const CmpFunc: TCmpFuncObj);
 begin
   Sort(CmpFunc, 0, _ItemCount - 1);
+end;
+
+function TG2QuickListG.Create: TListType;
+begin
+  Result.Clear;
 end;
 {$Hints on}
 //TG2QuickListG END
@@ -1401,7 +1400,6 @@ function TG2ML.Read(const Data: AnsiString): PG2MLObject;
   var tt: TG2TokenType;
   var CurObject: PG2MLObject;
   var NewObject: PG2MLObject;
-  var DataSize: Integer;
 begin
   _Parser.Parse(Data);
   New(Result);

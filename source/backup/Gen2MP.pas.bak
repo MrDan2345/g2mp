@@ -711,7 +711,7 @@ type
     destructor Destroy; override;
     procedure Start;
     procedure Stop;
-    procedure WaitFor(const Timeout: TG2IntS32 = $ffffffff);
+    procedure WaitFor(const Timeout: TG2IntU32 = $ffffffff);
   end;
 
   TG2CriticalSection = object
@@ -1868,7 +1868,7 @@ type
     procedure UnLock;
     procedure Bind;
     procedure Unbind;
-    constructor Create(const Count: TG2IntU32); override;
+    constructor Create(const Count: TG2IntU32);
   end;
   {$elseif defined(G2Gfx_OGL)}
   TG2IndexBuffer = class (TG2Buffer)

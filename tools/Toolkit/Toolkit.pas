@@ -1962,7 +1962,7 @@ type
     procedure UpdatePopUp;
     procedure OnCopyEntity;
     procedure OnDeleteEntity;
-    procedure OnCreatePrefab;
+    procedure OnSavePrefab;
   protected
     procedure OnInitialize; override;
     procedure OnFinalize; override;
@@ -1999,9 +1999,13 @@ type
     var _Selecting: Boolean;
     var _DragPos: TG2Vec2;
     var _TargetZoom: Single;
+    var _PrefabCreatePos: TG2Vec2;
     procedure OnCreateEntity;
+    procedure OnCreatePrefab;
+    procedure OnSelectPrefab(const PrefabName: String);
     procedure OnCreateJointDistance;
-    procedure OncreateJointRevolute;
+    procedure OnCreateJointRevolute;
+    procedure OnSavePrefab;
     procedure OnCopyEntity;
     procedure OnPasteEntity;
     procedure OnDeleteEntity;
@@ -3918,6 +3922,7 @@ type
     procedure AddComponentTypePair(const ComponentClass: CG2Scene2DComponent; const ComponentDataClass: CScene2DComponentData; const AddProc: TG2ProcObj);
     procedure SetEditor(const Value: TScene2DEditor); inline;
     procedure OnGravityChange(const Sender: Pointer);
+    procedure FindSelectedJoints(var JointList: TG2Scene2DJointList);
   public
     var ComponentList: TComponentList;
     var Selection: TG2Scene2DEntityList;
@@ -3933,8 +3938,10 @@ type
     procedure DeleteEntity(var Entity: TG2Scene2DEntity);
     procedure CopySelectedEntity;
     procedure PasteEntity(const Pos: TG2Vec2);
-    procedure CreatePrefab;
+    procedure SavePrefab;
+    function CreatePrefab(const Transform: TG2Transform2; const PrefabName: String): TG2Scene2DEntity;
     procedure CreateEntityData(const Entity: TG2Scene2DEntity);
+    procedure CreateJointData(const Joint: TG2Scene2DJoint);
     procedure VerifyEntityName(const Entity: TG2Scene2DEntity);
     function CreateJointDistance(const Position: TG2Vec2): TG2Scene2DDistanceJoint;
     function CreateJointRevolute(const Position: TG2Vec2): TG2Scene2DRevoluteJoint;
@@ -4054,7 +4061,16 @@ type
     class function CheckExtension(const Ext: String): Boolean; override;
     class function ProcessFile(const FilePath: String): TG2QuickListString; override;
   end;
-//TAssetEffect2D END
+//TAssetScene2D END
+
+//TAssetPrefab2D BEGIN
+  TAssetPrefab2D = class (TAsset)
+  public
+    class function GetAssetName: String; override;
+    class function CheckExtension(const Ext: String): Boolean; override;
+    class function ProcessFile(const FilePath: String): TG2QuickListString; override;
+  end;
+//TAssetPrefab2D END
 
 //TAssetManager BEGIN
   TAssetManager = object
@@ -4986,9 +5002,9 @@ begin
   begin
     if Item is TPopUpButton then
     begin
+      App.UI.Overlay := nil;
       if Assigned(TPopUpButton(Item).Callback) then
       TPopUpButton(Item).Callback;
-      App.UI.Overlay := nil;
     end
     else if Item is TPopUpGroup then
     begin
@@ -5060,6 +5076,7 @@ begin
   AddAssetType(TAssetTexture);
   AddAssetType(TAssetEffect2D);
   AddAssetType(TAssetScene2D);
+  AddAssetType(TAssetPrefab2D);
   _ItemSize := App.UI.Font1.TextHeight('A') + 4;
 end;
 
@@ -7291,7 +7308,8 @@ begin
   Result := 0;
   for i := 0 to ChildCount - 1 do
   Result := G2Max(Children[i].GetMinHeight, Result);
-  Result := Result + _BorderSize * 2 + _Padding * 2 + _HeaderHeight + _FootterSize;
+  Result := Result + _BorderSize * 2 + _Padding * 2 + _HeaderHeight;// + _FootterSize;
+  if ChildCount > 1 then Result := Result + _FootterSize;
 end;
 
 function TUIWorkspaceFrame.GetInsertPositon(const x, y: Single): TUIWorkspaceInsertPosition;
@@ -11820,7 +11838,7 @@ end;
 
 function TUIWorkspaceSettings.GetMinHeight: Single;
 begin
-  Result := G2Max(inherited GetMinHeight, 64);
+  Result := G2Max(inherited GetMinHeight, 4);
 end;
 
 class function TUIWorkspaceSettings.GetWorkspaceName: AnsiString;
@@ -14500,7 +14518,7 @@ begin
   if App.Scene2DData.Selection.Count > 0 then
   begin
     if App.Scene2DData.Selection.Count = 1 then
-    _PopUp.AddButton('Create Prefab', @OnCreatePrefab);
+    _PopUp.AddButton('Save Prefab', @OnSavePrefab);
     _PopUp.AddButton('Copy', @OnCopyEntity);
     _PopUp.AddButton('Delete', @OnDeleteEntity);
   end;
@@ -14522,9 +14540,9 @@ begin
   end;
 end;
 
-procedure TUIWorkspaceScene2DStructure.OnCreatePrefab;
+procedure TUIWorkspaceScene2DStructure.OnSavePrefab;
 begin
-  App.Scene2DData.CreatePrefab;
+  App.Scene2DData.SavePrefab;
 end;
 
 procedure TUIWorkspaceScene2DStructure.OnInitialize;
@@ -14538,7 +14556,7 @@ begin
   _ScrollV.Orientation := sbVertical;
   _Menu := TUIWorkspaceCustom.Create;
   _Menu.Parent := Self;
-  _ItemHeight := App.UI.Font1.TextHeight('A') + 16;
+  _ItemHeight := App.UI.Font1.TextHeight('A') + 8;
 
   p := _Menu.Panel;
   p.Client.SpacingTop := 2;
@@ -14949,14 +14967,30 @@ begin
   end;
 end;
 
+procedure TUIWorkspaceScene2D.OnCreatePrefab;
+begin
+  _PrefabCreatePos := _Display.CoordToDisplay(_PopUp.Position);
+  App.UI.OverlayAssetSelect.Open(TAssetPrefab2D, @OnSelectPrefab);
+end;
+
+procedure TUIWorkspaceScene2D.OnSelectPrefab(const PrefabName: String);
+begin
+  App.Scene2DData.CreatePrefab(G2Transform2(_PrefabCreatePos, G2Rotation2), PrefabName);
+end;
+
 procedure TUIWorkspaceScene2D.OnCreateJointDistance;
 begin
   App.Scene2DData.CreateJointDistance(_Display.CoordToDisplay(_PopUp.Position));
 end;
 
-procedure TUIWorkspaceScene2D.OncreateJointRevolute;
+procedure TUIWorkspaceScene2D.OnCreateJointRevolute;
 begin
   App.Scene2DData.CreateJointRevolute(_Display.CoordToDisplay(_PopUp.Position));
+end;
+
+procedure TUIWorkspaceScene2D.OnSavePrefab;
+begin
+  App.Scene2DData.SavePrefab;
 end;
 
 procedure TUIWorkspaceScene2D.OnCopyEntity;
@@ -15018,8 +15052,11 @@ procedure TUIWorkspaceScene2D.UpdatePopUp;
 begin
   _PopUp.Clear;
   _PopUp.AddButton('Create/Entity', @OnCreateEntity);
+  _PopUp.AddButton('Create/Prefab', @OnCreatePrefab);
   _PopUp.AddButton('Create/Joint/Distance Joint', @OnCreateJointDistance);
   _PopUp.AddButton('Create/Joint/Revolute Joint', @OnCreateJointRevolute);
+  if App.Scene2DData.Selection.Count = 1 then
+  _PopUp.AddButton('Save Prefab', @OnSavePrefab);
   if App.Scene2DData.Selection.Count > 0 then
   _PopUp.AddButton('Copy', @OnCopyEntity);
   if Clipboard.HasFormat(App.cbf_scene2d_object) then
@@ -17032,7 +17069,7 @@ end;
 
 class constructor TUIWorkspaceParticles2DEditor.CreateClass;
 begin
-  WorkspaceList.Create;
+  WorkspaceList.Clear;
 end;
 
 class function TUIWorkspaceParticles2DEditor.GetWorkspaceName: AnsiString;
@@ -22388,7 +22425,7 @@ constructor TParticleEmitter.Create;
 begin
   inherited Create;
   Name := '';
-  Emitters.Create;
+  Emitters.Clear;
   ParentEffect := nil;
   ParentEmitter := nil;
   Texture := nil;
@@ -22588,7 +22625,7 @@ constructor TParticleEffect.Create;
 begin
   inherited Create;
   Name := '';
-  Emitters.Create;
+  Emitters.Clear;
   Scale := 1;
 end;
 
@@ -24159,7 +24196,7 @@ end;
 procedure TParticleData.Initialize;
 begin
   _ExportState := es_none;
-  Effects.Create;
+  Effects.Clear;
   Selection := nil;
   Playback := TParticlePlayback.Create;
   Mods.Clear;
@@ -29407,6 +29444,57 @@ begin
   Scene.Gravity := _PropGravity;
 end;
 
+procedure TScene2DData.FindSelectedJoints(var JointList: TG2Scene2DJointList);
+  function IsEntityInSelection(const e: TG2Scene2DEntity): Boolean;
+    var Data: PScene2DEntityData;
+  begin
+    if not Assigned(e) then Exit(False);
+    Data := PScene2DEntityData(e.UserData);
+    if not Assigned(Data) then Exit(False);
+    while Assigned(Data) do
+    begin
+      if Data^.Selected then Exit(True);
+      if Assigned(Data^.Entity.Parent) then Data := PScene2DEntityData(Data^.Entity.Parent.UserData)
+      else Exit(False);
+    end;
+    Result := False;
+  end;
+  var Joint: TG2Scene2DJoint;
+  var JointDistance: TG2Scene2DDistanceJoint absolute Joint;
+  var JointRevolute: TG2Scene2DRevoluteJoint absolute Joint;
+  var i: Integer;
+begin
+  JointList.Clear;
+  for i := 0 to Scene.JointCount - 1 do
+  begin
+    Joint := Scene.Joints[i];
+    if Joint is TG2Scene2DDistanceJoint then
+    begin
+      if (JointDistance.RigidBodyA <> nil)
+      and (JointDistance.RigidBodyA.Owner <> nil)
+      and (IsEntityInSelection(JointDistance.RigidBodyA.Owner))
+      and (JointDistance.RigidBodyA <> nil)
+      and (JointDistance.RigidBodyA.Owner <> nil)
+      and (IsEntityInSelection(JointDistance.RigidBodyA.Owner)) then
+      begin
+        JointList.Add(Joint);
+      end;
+    end
+    else if Joint is TG2Scene2DRevoluteJoint then
+    begin
+      if (JointRevolute.RigidBodyA <> nil)
+      and (JointRevolute.RigidBodyA.Owner <> nil)
+      and (IsEntityInSelection(JointRevolute.RigidBodyA.Owner))
+      and (JointRevolute.RigidBodyA <> nil)
+      and (JointRevolute.RigidBodyA.Owner <> nil)
+      and (IsEntityInSelection(JointRevolute.RigidBodyA.Owner)) then
+      begin
+        JointList.Add(Joint);
+      end;
+    end;
+  end;
+end;
+
 function TScene2DData.FindEntity(const Name: AnsiString; const IgnoreEntity: TG2Scene2DEntity): TG2Scene2DEntity;
   var i: Integer;
 begin
@@ -29564,9 +29652,30 @@ begin
   PasteStream.Free;
 end;
 
-procedure TScene2DData.CreatePrefab;
+procedure TScene2DData.SavePrefab;
+  var GUIDList: TG2QuickListAnsiString;
+  procedure BackupGUID(const e: TG2Scene2DEntity);
+    var i: Integer;
+  begin
+    GUIDList.Add(e.GUID);
+    e.NewGUID;
+    for i := 0 to e.ChildCount - 1 do
+    BackupGUID(e.Children[i]);
+  end;
+  var CurGUID: Integer;
+  procedure RecoverGUID(const e: TG2Scene2DEntity);
+    var i: Integer;
+  begin
+    e.GUID := GUIDList[CurGUID];
+    Inc(CurGUID);
+    for i := 0 to e.ChildCount - 1 do
+    RecoverGUID(e.Children[i]);
+  end;
   var sd: TSaveDialog;
   var dm: TG2DataManager;
+  var jl: TG2Scene2DJointList;
+  var Joint: TG2Scene2DJoint;
+  var i: Integer;
 begin
   if Selection.Count <> 1 then Exit;
   sd := TSaveDialog.Create(nil);
@@ -29575,12 +29684,80 @@ begin
   begin
     dm := TG2DataManager.Create(sd.FileName, dmWrite);
     try
+      GUIDList.Clear;
+      BackupGUID(Selection[0]);
+      dm.WriteStringARaw('PF2D');
       Selection[0].Save(dm);
+      jl.Clear;
+      FindSelectedJoints(jl);
+      dm.WriteIntS32(jl.Count);
+      for i := 0 to jl.Count - 1 do
+      jl[i].Save(dm);
+      CurGUID := 0;
+      RecoverGUID(Selection[0]);
     finally
       dm.Free;
     end;
   end;
   sd.Free;
+end;
+
+function TScene2DData.CreatePrefab(const Transform: TG2Transform2; const PrefabName: String): TG2Scene2DEntity;
+  var jl: TG2Scene2DJointList;
+  procedure ProcessEntity(const e: TG2Scene2DEntity);
+    var i: Integer;
+  begin
+    CreateEntityData(e);
+    e.NewGUID;
+    VerifyEntityName(e);
+    for i := 0 to e.ChildCount - 1 do
+    ProcessEntity(e.Children[i]);
+    for i := 0 to TUIWorkspaceScene2DStructure.WorkspaceList.Count - 1 do
+    TUIWorkspaceScene2DStructure.WorkspaceList[i].OnCreateEntity(e);
+  end;
+  var dm: TG2DataManager;
+  var Def: array[0..3] of AnsiChar;
+  var n, i: Integer;
+  var Shift: TG2Vec2;
+  var Joint: TG2Scene2DJoint;
+begin
+  dm := TG2DataManager.Create(PrefabName, dmAsset);
+  dm.ReadBuffer(@Def, 4);
+  if Def = 'PF2D' then
+  begin
+    Result := App.Scene2DData.CreateEntity(Transform);
+    Result.Load(dm);
+    Shift := Transform.p - Result.Transform.p;
+    n := dm.ReadIntS32;
+    jl.Clear;
+    for i := 0 to n - 1 do
+    begin
+      Joint := TG2Scene2DJoint.LoadClass(dm, Scene);
+      //if Joint is TG2Scene2DDistanceJoint then
+      //begin
+      //  TG2Scene2DDistanceJoint(Joint).AnchorA := TG2Scene2DDistanceJoint(Joint).AnchorA + Shift;
+      //  TG2Scene2DDistanceJoint(Joint).AnchorB := TG2Scene2DDistanceJoint(Joint).AnchorB + Shift;
+      //end
+      //else if Joint is TG2Scene2DRevoluteJoint then
+      //begin
+      //  TG2Scene2DRevoluteJoint(Joint).Anchor := TG2Scene2DRevoluteJoint(Joint).Anchor + Shift;
+      //end;
+      jl.Add(Joint);
+    end;
+    ProcessEntity(Result);
+    for i := 0 to jl.Count - 1 do
+    CreateJointData(jl[i]);
+    Result.Transform := Transform;
+    if Selection.Count = 0 then
+    begin
+      SelectJoint := nil;
+      Editor := nil;
+      SelectionUpdateStart;
+      Selection.Add(Result);
+      SelectionUpdateEnd;
+    end;
+  end;
+  dm.Free;
 end;
 
 procedure TScene2DData.CreateEntityData(const Entity: TG2Scene2DEntity);
@@ -29676,6 +29853,27 @@ begin
     end;
   end;
   EntityData^.UpdateProperties;
+end;
+
+procedure TScene2DData.CreateJointData(const Joint: TG2Scene2DJoint);
+  var JointData: TScene2DJointData;
+begin
+  if Joint is TG2Scene2DDistanceJoint then
+  begin
+    JointData := TScene2DJointDataDistance.Create;
+    Joint.UserData := JointData;
+    TScene2DJointDataDistance(JointData).Joint := TG2Scene2DDistanceJoint(Joint);
+    TScene2DJointDataDistance(JointData).AnchorA := TG2Scene2DDistanceJoint(Joint).AnchorA;
+    TScene2DJointDataDistance(JointData).AnchorB := TG2Scene2DDistanceJoint(Joint).AnchorB;
+  end
+  else if Joint is TG2Scene2DRevoluteJoint then
+  begin
+    JointData := TScene2DJointDataRevolute.Create;
+    TScene2DJointDataRevolute(JointData).Position := TG2Scene2DRevoluteJoint(Joint).Anchor;
+    Joint.UserData := JointData;
+    TScene2DJointDataRevolute(JointData).Joint := TG2Scene2DRevoluteJoint(Joint);
+    TScene2DJointDataRevolute(JointData).Anchor := TG2Scene2DRevoluteJoint(Joint).Anchor;
+  end;
 end;
 
 procedure TScene2DData.VerifyEntityName(const Entity: TG2Scene2DEntity);
@@ -30160,19 +30358,7 @@ begin
   for i := 0 to _Scene.JointCount - 1 do
   begin
     Joint := _Scene.Joints[i];
-    if Joint is TG2Scene2DDistanceJoint then
-    begin
-      JointData := TScene2DJointDataDistance.Create;
-      Joint.UserData := JointData;
-      TScene2DJointDataDistance(JointData).Joint := TG2Scene2DDistanceJoint(Joint);
-    end
-    else if Joint is TG2Scene2DRevoluteJoint then
-    begin
-      JointData := TScene2DJointDataRevolute.Create;
-      TScene2DJointDataRevolute(JointData).Position := TG2Scene2DRevoluteJoint(Joint).Anchor;
-      Joint.UserData := JointData;
-      TScene2DJointDataRevolute(JointData).Joint := TG2Scene2DRevoluteJoint(Joint);
-    end;
+    CreateJointData(Joint);
   end;
   UpdateProperties;
 end;
@@ -30334,7 +30520,7 @@ end;
 
 class function TAsset.ProcessFile(const FilePath: String): TG2QuickListString;
 begin
-  Result.Create;
+  Result.Clear;
   Result.Add(FilePath);
 end;
 
@@ -30434,12 +30620,12 @@ begin
   Delete(Ext, 1, 1);
   if LowerCase(Ext) = 'png' then
   begin
-    Result.Create;
+    Result.Clear;
     Result.Add(FilePath);
   end
   else if LowerCase(Ext) = 'g2atlas' then
   begin
-    Result.Create;
+    Result.Clear;
     g2ml := TG2ML.Create;
     dm := TG2DataManager.Create(FilePath, dmAsset);
     try
@@ -30528,6 +30714,30 @@ begin
   end;
 end;
 //TAssetScene2D END
+
+//TAssetPrefab2D BEGIN
+class function TAssetPrefab2D.GetAssetName: String;
+begin
+  Result := 'Prefab 2D';
+end;
+
+class function TAssetPrefab2D.CheckExtension(const Ext: String): Boolean;
+begin
+  Result := (LowerCase(Ext) = 'g2prefab2d');
+end;
+
+class function TAssetPrefab2D.ProcessFile(const FilePath: String): TG2QuickListString;
+  var Ext: String;
+begin
+  Ext := ExtractFileExt(FilePath);
+  Delete(Ext, 1, 1);
+  if LowerCase(Ext) = 'g2prefab2d' then
+  begin
+    Result.Clear;
+    Result.Add(FilePath);
+  end;
+end;
+//TAssetPrefab2D END
 
 //TAssetManager BEIGN
 function TAssetManager.VerifyPath(const Path: String): String;

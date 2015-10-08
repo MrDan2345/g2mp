@@ -711,7 +711,7 @@ type
     destructor Destroy; override;
     procedure Start;
     procedure Stop;
-    procedure WaitFor(const Timeout: TG2IntS32 = $ffffffff);
+    procedure WaitFor(const Timeout: TG2IntU32 = $ffffffff);
   end;
 
   TG2CriticalSection = object
@@ -5982,7 +5982,7 @@ begin
   CloseThread(_ThreadHandle);
 end;
 
-procedure TG2Thread.WaitFor(const Timeout: TG2IntS32);
+procedure TG2Thread.WaitFor(const Timeout: TG2IntU32);
 begin
   WaitForThreadTerminate(_ThreadHandle, Timeout);
 end;
