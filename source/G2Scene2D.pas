@@ -251,6 +251,13 @@ type
     var _ContactListener: TPhysContactListener;
     var _PhysDraw: TPhysDraw;
     var _Simulate: Boolean;
+    var _GridEnable: Boolean;
+    var _GridSizeX: TG2Float;
+    var _GridSizeY: TG2Float;
+    var _GridSizeXRcp: TG2Float;
+    var _GridSizeYRcp: TG2Float;
+    var _GridOffsetX: TG2Float;
+    var _GridOffsetY: TG2Float;
     procedure Update;
     function GetEntity(const Index: TG2IntS32): TG2Scene2DEntity; inline;
     function GetEntityCount: TG2IntS32; inline;
@@ -264,6 +271,8 @@ type
     function CompRenderHooks(const Item0, Item1: TG2Scene2DRenderHook): TG2IntS32;
     function GetGravity: TG2Vec2; inline;
     procedure SetGravity(const Value: TG2Vec2); inline;
+    procedure SetGridSizeX(const Value: TG2Float); inline;
+    procedure SetGridSizeY(const Value: TG2Float); inline;
   public
     property Entities[const Index: TG2IntS32]: TG2Scene2DEntity read GetEntity;
     property EntityCount: TG2IntS32 read GetEntityCount;
@@ -272,6 +281,11 @@ type
     property Gravity: TG2Vec2 read GetGravity write SetGravity;
     property Simulate: Boolean read _Simulate write _Simulate;
     property PhysWorld: tb2_world read _PhysWorld;
+    property GridEnable: Boolean read _GridEnable write _GridEnable;
+    property GridSizeX: TG2Float read _GridSizeX write SetGridSizeX;
+    property GridSizeY: TG2Float read _GridSizeY write SetGridSizeY;
+    property GridOffsetX: TG2Float read _GridOffsetX write _GridOffsetX;
+    property GridOffsetY: TG2Float read _GridOffsetY write _GridOffsetY;
     constructor Create;
     destructor Destroy; override;
     procedure Clear;
@@ -282,6 +296,8 @@ type
     procedure RenderHookRemove(var Hook: TG2Scene2DRenderHook);
     function FindEntity(const GUID: String): TG2Scene2DEntity;
     function FindEntityByName(const EntityName: String): TG2Scene2DEntity;
+    function AdjustToGrid(const v: TG2Vec2): TG2Vec2;
+    function GridPos(const v: TG2Vec2): TPoint;
     procedure Save(const dm: TG2DataManager);
     procedure Load(const dm: TG2DataManager);
     procedure Load(const FileName: String);
@@ -1973,6 +1989,18 @@ begin
   _PhysWorld.set_gravity(_Gravity);
 end;
 
+procedure TG2Scene2D.SetGridSizeX(const Value: TG2Float);
+begin
+  _GridSizeX := Value;
+  _GridSizeXRcp := 1 / _GridSizeX;
+end;
+
+procedure TG2Scene2D.SetGridSizeY(const Value: TG2Float);
+begin
+  _GridSizeY := Value;
+  _GridSizeYRcp := 1 / _GridSizeY;
+end;
+
 constructor TG2Scene2D.Create;
 begin
   _Entities.Clear;
@@ -1991,6 +2019,13 @@ begin
   _PhysWorld.set_warm_starting(true);
   _PhysWorld.set_contact_listener(_ContactListener);
   _Simulate := False;
+  _GridEnable := False;
+  _GridSizeX := 0.5;
+  _GridSizeY := 0.5;
+  _GridSizeXRcp := 1 / _GridSizeX;
+  _GridSizeYRcp := 1 / _GridSizeY;
+  _GridOffsetX := 0;
+  _GridOffsetY := 0;
   g2.CallbackUpdateAdd(@Update);
   inherited Create;
 end;
@@ -2090,6 +2125,19 @@ begin
   if _Entities[i].Name = EntityName then
   Exit(_Entities[i]);
   Result := nil;
+end;
+
+function TG2Scene2D.AdjustToGrid(const v: TG2Vec2): TG2Vec2;
+begin
+  if not _GridEnable then Exit(v);
+  Result.x := Round((v.x - _GridOffsetX) * _GridSizeXRcp) * _GridSizeX + _GridOffsetX;
+  Result.y := Round((v.y - _GridOffsetY) * _GridSizeYRcp) * _GridSizeY + _GridOffsetY;
+end;
+
+function TG2Scene2D.GridPos(const v: TG2Vec2): TPoint;
+begin
+  Result.x := Round((v.x - _GridOffsetX) * _GridSizeXRcp);
+  Result.y := Round((v.y - _GridOffsetY) * _GridSizeYRcp);
 end;
 
 procedure TG2Scene2D.Save(const dm: TG2DataManager);

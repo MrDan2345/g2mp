@@ -1996,7 +1996,6 @@ type
     var _DraggingSelectionRot: Boolean;
     var _DraggingSelectionPos: TG2Vec2;
     var _DraggingSelectionOffset: TG2Vec2;
-    var _Selecting: Boolean;
     var _DragPos: TG2Vec2;
     var _TargetZoom: Single;
     var _PrefabCreatePos: TG2Vec2;
@@ -3912,6 +3911,8 @@ type
 
   TScene2DData = object
   private
+    var _GridSizeX: TG2Float;
+    var _GridSizeY: TG2Float;
     var _PropGravity: TG2Vec2;
     var _SavedStream: TMemoryStream;
     var _Scene: TG2Scene2D;
@@ -3922,6 +3923,8 @@ type
     procedure AddComponentTypePair(const ComponentClass: CG2Scene2DComponent; const ComponentDataClass: CScene2DComponentData; const AddProc: TG2ProcObj);
     procedure SetEditor(const Value: TScene2DEditor); inline;
     procedure OnGravityChange(const Sender: Pointer);
+    procedure OnGridSizeXChange(const Sender: Pointer);
+    procedure OnGridSizeYChange(const Sender: Pointer);
     procedure FindSelectedJoints(var JointList: TG2Scene2DJointList);
   public
     var ComponentList: TComponentList;
@@ -15093,9 +15096,10 @@ end;
 procedure TUIWorkspaceScene2D.OnRender;
   var r: TG2Rect;
   var i: Integer;
+  var pt0, pt1: TPoint;
   var e: TG2Scene2DEntity;
-  var p: TG2Vec2;
-  var c: TG2Color;
+  var p, v0, v1: TG2Vec2;
+  var c, c1: TG2Color;
   var d: TG2Float;
 begin
   r := Frame;
@@ -15131,6 +15135,85 @@ begin
     if PtInSelDragY(g2.MousePos) then c := $ff4040ff else c := $ff0000cc;
     App.UI.DrawArrow(p, p + G2Vec2(0, 100), 6, c);
     g2.PrimRect(p.x - 4, p.y - 4, 8, 8, $ffffff00);
+  end;
+  if App.Scene2DData.Scene.GridEnable then
+  begin
+    r := Frame;
+    r.h := 8;
+    g2.PrimRect(r.x, r.y, r.w, r.h, App.UI.GetColorPrimary(0.2));
+    r.y := Frame.b - r.h;
+    g2.PrimRect(r.x, r.y, r.w, r.h, App.UI.GetColorPrimary(0.2));
+    r := Frame;
+    r.w := 8;
+    g2.PrimRect(r.x, r.y, r.w, r.h, App.UI.GetColorPrimary(0.2));
+    r.x := Frame.r - r.w;
+    g2.PrimRect(r.x, r.y, r.w, r.h, App.UI.GetColorPrimary(0.2));
+    c := App.UI.GetColorPrimary(0.8);
+    c1 := App.UI.GetColorPrimary(0.4);
+    v0 := _Display.CoordToDisplay(G2Vec2(Frame.l + 8, Frame.t + 8));
+    v1 := _Display.CoordToDisplay(G2Vec2(Frame.r - 8, Frame.t + 8));
+    v0 := App.Scene2DData.Scene.AdjustToGrid(v0);
+    v1 := App.Scene2DData.Scene.AdjustToGrid(v1);
+    pt0 := App.Scene2DData.Scene.GridPos(v0);
+    pt1 := App.Scene2DData.Scene.GridPos(v1);
+    v0 := _Display.CoordToScreen(v0);
+    v1 := _Display.CoordToScreen(v1);
+    if pt1.x >= pt0.x then
+    begin
+      while pt1.x > pt0.x + 100 do
+      begin
+        pt1.x := pt1.x div 10;
+        pt0.x := pt0.x div 10;
+      end;
+      g2.PrimBegin(ptLines, bmNormal);
+      for i := pt0.x to pt1.x do
+      begin
+        if pt1.x > pt0.x then
+        d := (i - pt0.x) / (pt1.x - pt0.x) * (v1.x - v0.x) + v0.x
+        else
+        d := v0.x;
+        if (d > Frame.l + 8) and (d < Frame.r - 8) then
+        begin
+          g2.PrimAdd(d, Frame.t, c);
+          g2.PrimAdd(d, Frame.t + 8, c1);
+          g2.PrimAdd(d, Frame.b - 8, c1);
+          g2.PrimAdd(d, Frame.b, c);
+        end;
+      end;
+      g2.PrimEnd;
+    end;
+    v0 := _Display.CoordToDisplay(G2Vec2(Frame.l + 8, Frame.t + 8));
+    v1 := _Display.CoordToDisplay(G2Vec2(Frame.l + 8, Frame.b - 8));
+    v0 := App.Scene2DData.Scene.AdjustToGrid(v0);
+    v1 := App.Scene2DData.Scene.AdjustToGrid(v1);
+    pt0 := App.Scene2DData.Scene.GridPos(v0);
+    pt1 := App.Scene2DData.Scene.GridPos(v1);
+    v0 := _Display.CoordToScreen(v0);
+    v1 := _Display.CoordToScreen(v1);
+    if pt1.y >= pt0.y then
+    begin
+      while pt1.y > pt0.y + 100 do
+      begin
+        pt1.y := pt1.y div 10;
+        pt0.y := pt0.y div 10;
+      end;
+      g2.PrimBegin(ptLines, bmNormal);
+      for i := pt0.y to pt1.y do
+      begin
+        if pt1.y > pt0.y then
+        d := (i - pt0.y) / (pt1.y - pt0.y) * (v1.y - v0.y) + v0.y
+        else
+        d := v0.y;
+        if (d > Frame.t + 8) and (d < Frame.b - 8) then
+        begin
+          g2.PrimAdd(Frame.l, d, c);
+          g2.PrimAdd(Frame.l + 8, d, c1);
+          g2.PrimAdd(Frame.r - 8, d, c1);
+          g2.PrimAdd(Frame.r, d, c);
+        end;
+      end;
+      g2.PrimEnd;
+    end;
   end;
   App.UI.PopClipRect;
 end;
@@ -29385,7 +29468,10 @@ begin
       xfrb := RigidBodyA.Component.Transform;
       G2Transform2Mul(@xf, @xfrb, @xf);
       v1 := Display.CoordToScreen(xf.p);
-      g2.PrimLine(v, v1, $ffff0000);
+      g2.PolyBegin(ptLines, App.UI.TexDots);
+      g2.PolyAdd(v, G2Vec2(0, 0.5), $ffff0000);
+      g2.PolyAdd(v1, G2Vec2((v1 - v).Len * 0.05, 0.5), $ffff0000);
+      g2.PolyEnd;
     end;
     if RigidBodyB <> nil then
     begin
@@ -29393,14 +29479,17 @@ begin
       xfrb := RigidBodyB.Component.Transform;
       G2Transform2Mul(@xf, @xfrb, @xf);
       v1 := Display.CoordToScreen(xf.p);
-      g2.PrimLine(v, v1, $ffff0000);
+      g2.PolyBegin(ptLines, App.UI.TexDots);
+      g2.PolyAdd(v, G2Vec2(0, 0.5), $ffff0000);
+      g2.PolyAdd(v1, G2Vec2((v1 - v).Len * 0.05, 0.5), $ffff0000);
+      g2.PolyEnd;
     end;
   end;
   if (RigidBodyA = nil)
   or (RigidBodyB = nil) then
   c := G2LerpColor($ff404040, $ffff0000, Abs(Sin(G2PiTime(300))))
   else
-  c := G2LerpColor($ff404040, $ff00cc00, Abs(Sin(G2PiTime(300))));
+  c := $ff00cc00;
   g2.PicRect(
     Round(v.x - 8), Round(v.y - 8), 16, 16,
     c,
@@ -29413,6 +29502,8 @@ end;
 procedure TScene2DData.UpdateProperties;
 begin
   _PropGravity := Scene.Gravity;
+  _GridSizeX := Scene.GridSizeX;
+  _GridSizeY := Scene.GridSizeY;
 end;
 
 procedure TScene2DData.AddComponentTypePair(
@@ -29442,6 +29533,16 @@ end;
 procedure TScene2DData.OnGravityChange(const Sender: Pointer);
 begin
   Scene.Gravity := _PropGravity;
+end;
+
+procedure TScene2DData.OnGridSizeXChange(const Sender: Pointer);
+begin
+  Scene.GridSizeX := _GridSizeX;
+end;
+
+procedure TScene2DData.OnGridSizeYChange(const Sender: Pointer);
+begin
+  Scene.GridSizeY := _GridSizeY;
 end;
 
 procedure TScene2DData.FindSelectedJoints(var JointList: TG2Scene2DJointList);
@@ -29566,8 +29667,27 @@ begin
 end;
 
 procedure TScene2DData.CopySelectedEntity;
+  var GUIDList: TG2QuickListAnsiString;
+  procedure BackupGUID(const e: TG2Scene2DEntity);
+    var i: Integer;
+  begin
+    GUIDList.Add(e.GUID);
+    e.NewGUID;
+    for i := 0 to e.ChildCount - 1 do
+    BackupGUID(e.Children[i]);
+  end;
+  var CurGUID: Integer;
+  procedure RecoverGUID(const e: TG2Scene2DEntity);
+    var i: Integer;
+  begin
+    e.GUID := GUIDList[CurGUID];
+    Inc(CurGUID);
+    for i := 0 to e.ChildCount - 1 do
+    RecoverGUID(e.Children[i]);
+  end;
   var CopyStream: TMemoryStream;
   var TopEntities: TG2Scene2DEntityList;
+  var jl: TG2Scene2DJointList;
   var i, j: Integer;
   var b: Boolean;
   var dm: TG2DataManager;
@@ -29595,10 +29715,21 @@ begin
         end;
       end;
     end;
+    jl.Clear;
+    FindSelectedJoints(jl);
     dm := TG2DataManager.Create(CopyStream, dmWrite);
     dm.WriteIntS32(TopEntities.Count);
+    GUIDList.Clear;
+    for i := 0 to TopEntities.Count - 1 do
+    BackupGUID(TopEntities[i]);
     for i := 0 to TopEntities.Count - 1 do
     TopEntities[i].Save(dm);
+    dm.WriteIntS32(jl.Count);
+    for i := 0 to jl.Count - 1 do
+    jl[i].Save(dm);
+    CurGUID := 0;
+    for i := 0 to TopEntities.Count - 1 do
+    RecoverGUID(TopEntities[i]);
     dm.Free;
     Clipboard.SetFormat(App.cbf_scene2d_object, CopyStream);
   finally
@@ -29613,7 +29744,7 @@ procedure TScene2DData.PasteEntity(const Pos: TG2Vec2);
   begin
     Entity.NewGUID;
     VerifyEntityName(Entity);
-    NewEntities.Add(Entity);
+    //NewEntities.Add(Entity);
     CreateEntityData(Entity);
     for i := 0 to Entity.ChildCount - 1 do
     CreateNewEntityData(Entity.Children[i]);
@@ -29624,6 +29755,7 @@ procedure TScene2DData.PasteEntity(const Pos: TG2Vec2);
   var n, i: Integer;
   var dm: TG2DataManager;
   var Entity: TG2Scene2DEntity;
+  var Joint: TG2Scene2DJoint;
   var v: TG2Vec2;
 begin
   if not Clipboard.HasFormat(App.cbf_scene2d_object) then Exit;
@@ -29637,8 +29769,16 @@ begin
   begin
     Entity := TG2Scene2DEntity.Create(_Scene);
     Entity.Load(dm);
-    CreateNewEntityData(Entity);
+    NewEntities.Add(Entity);
   end;
+  n := dm.ReadIntS32;
+  for i := 0 to n - 1 do
+  begin
+    Joint := TG2Scene2DJoint.LoadClass(dm, _Scene);
+    CreateJointData(Joint);
+  end;
+  for i := 0 to NewEntities.Count - 1 do
+  CreateNewEntityData(NewEntities[i]);
   if NewEntities.Count > 0 then
   begin
     v := NewEntities[0].Transform.p;
@@ -29646,7 +29786,7 @@ begin
     v += NewEntities[i].Transform.p;
     v := Pos - (v * (1 / NewEntities.Count));
     for i := 0 to NewEntities.Count - 1 do
-    NewEntities[i].Transform.p := NewEntities[i].Transform.p + v;
+    NewEntities[i].Transform := G2Transform2(NewEntities[i].Transform.p + v, NewEntities[i].Transform.r);
   end;
   dm.Free;
   PasteStream.Free;
@@ -29674,7 +29814,6 @@ procedure TScene2DData.SavePrefab;
   var sd: TSaveDialog;
   var dm: TG2DataManager;
   var jl: TG2Scene2DJointList;
-  var Joint: TG2Scene2DJoint;
   var i: Integer;
 begin
   if Selection.Count <> 1 then Exit;
@@ -30388,6 +30527,12 @@ begin
   AddComponentTypePair(TG2Scene2DComponentCollisionShapeChain, TScene2DComponentDataShapeChain, @BtnComponentShapeChain);
   SceneProperties := TPropertySet.Create;
   SceneProperties.PropVec2('Gravity', @_PropGravity, nil, @OnGravityChange);
+  Prop := SceneProperties.PropGroup('Grid');
+  SceneProperties.PropBool('Enable Grid', @_Scene.GridEnable, Prop, nil);
+  SceneProperties.PropFloat('Size X', @_GridSizeX, Prop, @OnGridSizeXChange);
+  SceneProperties.PropFloat('Size Y', @_GridSizeY, Prop, @OnGridSizeYChange);
+  SceneProperties.PropFloat('Offset X', @_Scene.GridOffsetX, Prop, nil);
+  SceneProperties.PropFloat('Offset Y', @_Scene.GridOffsetY, Prop, nil);
   _PropertySet := SceneProperties;
 end;
 
@@ -30520,7 +30665,9 @@ end;
 
 class function TAsset.ProcessFile(const FilePath: String): TG2QuickListString;
 begin
+  {$Warnings off}
   Result.Clear;
+  {$Warnings on}
   Result.Add(FilePath);
 end;
 
@@ -30589,7 +30736,9 @@ class function TAssetTexture.ProcessFile(
   const FilePath: String
 ): TG2QuickListString;
 begin
+  {$Warnings off}
   Result.Clear;
+  {$Warnings on}
   Result.Add(FilePath);
 end;
 //TAssetTexture END
@@ -30620,7 +30769,9 @@ begin
   Delete(Ext, 1, 1);
   if LowerCase(Ext) = 'png' then
   begin
+    {$Warnings off}
     Result.Clear;
+    {$Warnings on}
     Result.Add(FilePath);
   end
   else if LowerCase(Ext) = 'g2atlas' then
@@ -30685,7 +30836,9 @@ begin
   Delete(Ext, 1, 1);
   if LowerCase(Ext) = 'g2fx' then
   begin
+    {$Warnings off}
     Result.Clear;
+    {$Warnings on}
     Result.Add(FilePath);
   end;
 end;
@@ -30709,7 +30862,9 @@ begin
   Delete(Ext, 1, 1);
   if LowerCase(Ext) = 'g2s2d' then
   begin
+    {$Warnings off}
     Result.Clear;
+    {$Warnings on}
     Result.Add(FilePath);
   end;
 end;
@@ -30733,7 +30888,9 @@ begin
   Delete(Ext, 1, 1);
   if LowerCase(Ext) = 'g2prefab2d' then
   begin
+    {$Warnings off}
     Result.Clear;
+    {$Warnings on}
     Result.Add(FilePath);
   end;
 end;
