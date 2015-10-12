@@ -1956,6 +1956,7 @@ type
     function ItemOpen(const Item: TG2Scene2DEntity): Boolean;
     function GetContentSize: TG2Float;
     procedure BtnSaveScene;
+    procedure BtnSaveSceneAs;
     procedure BtnLoadScene;
     procedure BtnClearScene;
     procedure BtnSimulate;
@@ -1996,9 +1997,11 @@ type
     var _DraggingSelectionRot: Boolean;
     var _DraggingSelectionPos: TG2Vec2;
     var _DraggingSelectionOffset: TG2Vec2;
+    var _DraggingSelectionAngle: TG2Float;
     var _DragPos: TG2Vec2;
     var _TargetZoom: Single;
     var _PrefabCreatePos: TG2Vec2;
+    var _ResetCamFrame: TG2Rect;
     procedure OnCreateEntity;
     procedure OnCreatePrefab;
     procedure OnSelectPrefab(const PrefabName: String);
@@ -2633,6 +2636,7 @@ type
     var TexDocEmpty: TG2Texture2D;
     var TexFileOpen: TG2Texture2D;
     var TexFileSave: TG2Texture2D;
+    var TexFileSaveAs: TG2Texture2D;
     var TexDocExport: TG2Texture2D;
     var TexDocPlus: TG2Texture2D;
     var TexFolderPlus: TG2Texture2D;
@@ -3469,8 +3473,9 @@ type
 //TScene2DEditorJointRevolute END
 
 //TScene2DEntityData BEGIN
-  TScene2DEntityData = object
+  TScene2DEntityData = class
   public
+    var oxf: TG2Transform2;
     var Entity: TG2Scene2DEntity;
     var Selected: Boolean;
     var OpenStructure: TG2QuickList;
@@ -3478,15 +3483,14 @@ type
     var EditName: String;
     var EditPosition: TG2Vec2;
     var EditRotation: TG2Float;
+    constructor Create(const AEntity: TG2Scene2DEntity);
+    destructor Destroy; override;
     procedure SyncProperties;
     procedure OnNameChange(const Sender: Pointer);
     procedure OnPositionChange(const Sender: Pointer);
     procedure OnRotationChange(const Sender: Pointer);
     procedure UpdateProperties;
-    procedure Save(const dm: TG2DataManager);
-    procedure Load(const dn: TG2DataManager);
   end;
-  PScene2DEntityData = ^TScene2DEntityData;
 //TScene2DEntityData END
 
 //TScene2DComponentData BEGIN
@@ -3930,7 +3934,7 @@ type
     var ComponentList: TComponentList;
     var Selection: TG2Scene2DEntityList;
     var SelectJoint: TScene2DJointData;
-    var SelPos: TG2Vec2;
+    var sxf: TG2Transform2;
     var SceneProperties: TPropertySet;
     var ScenePath: String;
     property PropertySet: TPropertySet read _PropertySet write _PropertySet;
@@ -14414,12 +14418,12 @@ end;
 function TUIWorkspaceScene2DStructure.ItemOpen(
   const Item: TG2Scene2DEntity
 ): Boolean;
-  var ItemData: PScene2DEntityData;
+  var ItemData: TScene2DEntityData;
   var i: Integer;
 begin
-  ItemData := PScene2DEntityData(Item.UserData);
-  for i := 0 to ItemData^.OpenStructure.Count - 1 do
-  if ItemData^.OpenStructure[i] = Pointer(Self) then Exit(True);
+  ItemData := TScene2DEntityData(Item.UserData);
+  for i := 0 to ItemData.OpenStructure.Count - 1 do
+  if ItemData.OpenStructure[i] = Pointer(Self) then Exit(True);
   Result := False;
 end;
 
@@ -14441,7 +14445,6 @@ begin
 end;
 
 procedure TUIWorkspaceScene2DStructure.BtnSaveScene;
-  var sd: TSaveDialog;
   var dm: TG2DataManager;
   var ScenePath: String;
 begin
@@ -14460,45 +14463,35 @@ begin
   end
   else
   begin
-    sd := TSaveDialog.Create(nil);
-    try
-      if sd.Execute then
-      begin
-        dm := TG2DataManager.Create(sd.FileName, dmWrite);
-        try
-          App.Scene2DData.ScenePath := ExtractFileName(sd.FileName);
-          App.Scene2DData.Scene.Save(dm);
-        finally
-          dm.Free;
-        end;
+    BtnSaveSceneAs;
+  end;
+end;
+
+procedure TUIWorkspaceScene2DStructure.BtnSaveSceneAs;
+  var sd: TSaveDialog;
+  var dm: TG2DataManager;
+begin
+  sd := TSaveDialog.Create(nil);
+  sd.DefaultExt := '.g2s2d';
+  try
+    if sd.Execute then
+    begin
+      dm := TG2DataManager.Create(sd.FileName, dmWrite);
+      try
+        App.Scene2DData.ScenePath := ExtractFileName(sd.FileName);
+        App.Scene2DData.Scene.Save(dm);
+      finally
+        dm.Free;
       end;
-    finally
-      sd.Free;
     end;
+  finally
+    sd.Free;
   end;
 end;
 
 procedure TUIWorkspaceScene2DStructure.BtnLoadScene;
-  var od: TOpenDialog;
-  var dm: TG2DataManager;
 begin
   App.UI.OverlayAssetSelect.Open(TAssetScene2D, @App.Scene2DData.LoadScene);
-  //od := TOpenDialog.Create(nil);
-  //try
-  //  if od.Execute then
-  //  begin
-  //    dm := TG2DataManager.Create(od.FileName, dmRead);
-  //    try
-  //      App.Scene2DData.ClearScene;
-  //      App.Scene2DData.Scene.Load(dm);
-  //      App.Scene2DData.OnLoad;
-  //    finally
-  //      dm.Free;
-  //    end;
-  //  end;
-  //finally
-  //  od.Free;
-  //end;
 end;
 
 procedure TUIWorkspaceScene2DStructure.BtnClearScene;
@@ -14563,7 +14556,7 @@ begin
 
   p := _Menu.Panel;
   p.Client.SpacingTop := 2;
-  sm := p.Client.SplitterM(6);
+  sm := p.Client.SplitterM(7);
   sm.SizingH := csFixed;
   sm.EqualSized := False;
 
@@ -14575,24 +14568,31 @@ begin
   b.OnClick := @BtnSaveScene;
 
   b := sm.Subset[1].Button('');
+  b.Icon := App.UI.TexFileSaveAs;
+  b.SizingH := csFixed;
+  b.Width := 32;
+  b.Hint := 'Save Scene (Select File)';
+  b.OnClick := @BtnSaveSceneAs;
+
+  b := sm.Subset[2].Button('');
   b.Icon := App.UI.TexFileOpen;
   b.SizingH := csFixed;
   b.Width := 32;
   b.Hint := 'Load Scene';
   b.OnClick := @BtnLoadScene;
 
-  b := sm.Subset[2].Button('');
+  b := sm.Subset[3].Button('');
   b.Icon := App.UI.TexDelete;
   b.SizingH := csFixed;
   b.Width := 32;
   b.Hint := 'Clear Scene';
   b.OnClick := @BtnClearScene;
 
-  p := sm.Subset[3].Panel;
+  p := sm.Subset[4].Panel;
   p.SizingH := csFixed;
   p.Width := 8;
 
-  b := sm.Subset[4].Button('');
+  b := sm.Subset[5].Button('');
   b.Icon := App.UI.TexPlay;
   b.SizingH := csFixed;
   b.Width := 32;
@@ -14609,7 +14609,7 @@ begin
   _PopUp.Free;
   if App.Scene2DData.Scene <> nil then
   for i := 0 to App.Scene2DData.Scene.EntityCount - 1 do
-  PScene2DEntityData(App.Scene2DData.Scene.Entities[i].UserData)^.OpenStructure.Remove(Self);
+  TScene2DEntityData(App.Scene2DData.Scene.Entities[i].UserData).OpenStructure.Remove(Self);
   WorkspaceList.Remove(Self);
   inherited OnFinalize;
 end;
@@ -14634,12 +14634,12 @@ procedure TUIWorkspaceScene2DStructure.OnRender;
   procedure RenderItem(const Item: TG2Scene2DEntity; const Offset: Integer);
     var i: Integer;
     var s: String;
-    var ItemData: PScene2DEntityData;
+    var ItemData: TScene2DEntityData;
     var Open: Boolean;
   begin
-    ItemData := PScene2DEntityData(Item.UserData);
+    ItemData := TScene2DEntityData(Item.UserData);
     Open := ItemOpen(Item);
-    if ItemData^.Selected then
+    if ItemData.Selected then
     g2.PrimRect(x, y, w, h, App.UI.GetColorSecondary(0.5, 0.5));
     App.UI.Font1.Print(
       Round(x + Offset),
@@ -14708,7 +14708,7 @@ end;
 procedure TUIWorkspaceScene2DStructure.OnMouseDown(const Button, x, y: Integer);
   var Item: TG2Scene2DEntity;
   var InExpand: Boolean;
-  var ItemData: PScene2DEntityData;
+  var ItemData: TScene2DEntityData;
   var r: TG2Rect;
   var i, ItemID, SelID: TG2IntS32;
 begin
@@ -14721,19 +14721,19 @@ begin
       Item := PtInItem(G2Vec2(x, y), InExpand);
       if (Item <> nil) then
       begin
-        ItemData := PScene2DEntityData(Item.UserData);
+        ItemData := TScene2DEntityData(Item.UserData);
         if InExpand then
         begin
           if ItemOpen(Item) then
-          ItemData^.OpenStructure.Remove(Self)
+          ItemData.OpenStructure.Remove(Self)
           else
-          ItemData^.OpenStructure.Add(Self);
+          ItemData.OpenStructure.Add(Self);
         end
         else
         begin
           if g2.KeyDown[G2K_CtrlR] or g2.KeyDown[G2K_CtrlL] then
           begin
-            if ItemData^.Selected then
+            if ItemData.Selected then
             begin
               App.Scene2DData.SelectionUpdateStart;
               App.Scene2DData.Selection.Remove(Item);
@@ -14770,7 +14770,7 @@ begin
                 begin
                   for i := SelID + 1 to ItemID do
                   begin
-                    if not PScene2DEntityData(App.Scene2DData.Scene.Entities[i].UserData)^.Selected
+                    if not TScene2DEntityData(App.Scene2DData.Scene.Entities[i].UserData).Selected
                     and (App.Scene2DData.Scene.Entities[i].Parent = Item.Parent) then
                     App.Scene2DData.Selection.Add(App.Scene2DData.Scene.Entities[i]);
                   end;
@@ -14779,7 +14779,7 @@ begin
                 begin
                   for i := SelID - 1 downto ItemID do
                   begin
-                    if not PScene2DEntityData(App.Scene2DData.Scene.Entities[i].UserData)^.Selected
+                    if not TScene2DEntityData(App.Scene2DData.Scene.Entities[i].UserData).Selected
                     and (App.Scene2DData.Scene.Entities[i].Parent = Item.Parent) then
                     App.Scene2DData.Selection.Add(App.Scene2DData.Scene.Entities[i]);
                   end;
@@ -14789,7 +14789,7 @@ begin
               end
               else
               begin
-                if not ItemData^.Selected then
+                if not ItemData.Selected then
                 begin
                   App.Scene2DData.SelectionUpdateStart;
                   App.Scene2DData.Selection.Clear;
@@ -14814,7 +14814,7 @@ begin
               App.Scene2DData.SelectionUpdateEnd;
             end;
           end
-          else if not ItemData^.Selected then
+          else if not ItemData.Selected then
           begin
             App.Scene2DData.SelectionUpdateStart;
             App.Scene2DData.Selection.Clear;
@@ -15022,7 +15022,7 @@ function TUIWorkspaceScene2D.PtInSelRotate(const pt: TG2Vec2): Boolean;
   var d: TG2Float;
 begin
   if App.Scene2DData.Selection.Count = 0 then Exit(False);
-  p := _Display.CoordToScreen(App.Scene2DData.SelPos);
+  p := _Display.CoordToScreen(App.Scene2DData.sxf.p);
   d := (p - pt).Len;
   Result := (d > 100) and (d < 108);
 end;
@@ -15031,7 +15031,7 @@ function TUIWorkspaceScene2D.PtInSelDrag(const pt: TG2Vec2): Boolean;
   var p: TG2Vec2;
 begin
   if App.Scene2DData.Selection.Count = 0 then Exit(False);
-  p := _Display.CoordToScreen(App.Scene2DData.SelPos);
+  p := _Display.CoordToScreen(App.Scene2DData.sxf.p);
   Result := G2Rect(p.x + 4, p.y + 4, 46, 46).Contains(pt);
 end;
 
@@ -15039,7 +15039,7 @@ function TUIWorkspaceScene2D.PtInSelDragX(const pt: TG2Vec2): Boolean;
   var p: TG2Vec2;
 begin
   if App.Scene2DData.Selection.Count = 0 then Exit(False);
-  p := _Display.CoordToScreen(App.Scene2DData.SelPos);
+  p := _Display.CoordToScreen(App.Scene2DData.sxf.p);
   Result := G2Rect(p.x + 8, p.y - 5, 92, 10).Contains(pt);
 end;
 
@@ -15047,7 +15047,7 @@ function TUIWorkspaceScene2D.PtInSelDragY(const pt: TG2Vec2): Boolean;
   var p: TG2Vec2;
 begin
   if App.Scene2DData.Selection.Count = 0 then Exit(False);
-  p := _Display.CoordToScreen(App.Scene2DData.SelPos);
+  p := _Display.CoordToScreen(App.Scene2DData.sxf.p);
   Result := G2Rect(p.x - 5, p.y + 8, 10, 92).Contains(pt);
 end;
 
@@ -15080,6 +15080,7 @@ begin
   _Display.Width := 10;
   _Display.Height := 10;
   _PopUp := TOverlayPopUp.Create;
+  _ResetCamFrame := G2Rect(-128 - 8, 8, 128, 24);
 end;
 
 procedure TUIWorkspaceScene2D.OnFinalize;
@@ -15101,6 +15102,7 @@ procedure TUIWorkspaceScene2D.OnRender;
   var p, v0, v1: TG2Vec2;
   var c, c1: TG2Color;
   var d: TG2Float;
+  var str: String;
 begin
   r := Frame;
   g2.PrimRect(
@@ -15124,7 +15126,7 @@ begin
   if (App.Scene2DData.Selection.Count > 0)
   and (App.Scene2DData.Editor = nil) then
   begin
-    p := _Display.CoordToScreen(App.Scene2DData.SelPos);
+    p := _Display.CoordToScreen(App.Scene2DData.sxf.p);
     if PtInSelRotate(g2.MousePos) then c := $ff20ff20 else c := $ff00cc00;
     App.UI.DrawCircleBorder(p, 104, 4, 64, c);
     if PtInSelDrag(g2.MousePos) then c := $80ffff00 else c := $40cccc00;
@@ -15215,14 +15217,42 @@ begin
       g2.PrimEnd;
     end;
   end;
+  if App.Scene2DData.Editor = nil then
+  begin
+    r := _ResetCamFrame;
+    r.x := r.x + _Display.ViewPort.Right;
+    r.y := r.y + _Display.ViewPort.Top;
+    if r.Contains(g2.MousePos) then
+    begin
+      if g2.MouseDown[G2MB_Left]
+      and r.Contains(g2.MouseDownPos[G2MB_Left]) then
+      begin
+        c := $ff404040;
+      end
+      else
+      begin
+        c := $ffa0a0a0;
+      end;
+    end
+    else
+    begin
+      c := $ff808080;
+    end;
+    App.UI.DrawSpotFrame(r, 8, c);
+    str := 'Reset Camera';
+    App.UI.Font1.Print(
+      r.x + (r.w - App.UI.Font1.TextWidth(str)) * 0.5,
+      r.y + (r.h - App.UI.Font1.TextHeight(str)) * 0.5,
+      1, 1, $ff000000, str, bmNormal, tfPoint
+    );
+  end;
   App.UI.PopClipRect;
 end;
 
 procedure TUIWorkspaceScene2D.OnUpdate;
-  var cp, p: TG2Vec2;
+  var cp: TG2Vec2;
   var xf, xf1: TG2Transform2;
-  var r0, r1, r: TG2Rotation2;
-  var DragSelOffset: TG2Vec2;
+  var r0: TG2Rotation2;
   var i: Integer;
 begin
   _Display.Zoom := G2LerpFloat(_Display.Zoom, _TargetZoom, 0.2);
@@ -15236,39 +15266,36 @@ begin
   or _DraggingSelectionPosX
   or _DraggingSelectionPosY then
   begin
-    DragSelOffset := cp - _DraggingSelectionPos;
-    xf.SetIdentity;
-    xf.p := _Display.CoordToScreen(App.Scene2DData.SelPos);
+    xf := G2Transform2;
+    xf.p := _Display.CoordToScreen(App.Scene2DData.sxf.p);
+    xf.r := App.Scene2DData.sxf.r;
     if _DraggingSelectionPosX then
     begin
-      xf.p.x := xf.p.x + DragSelOffset.x;
+      xf.p.x := cp.x + _DraggingSelectionOffset.x;
     end;
     if _DraggingSelectionPosY then
     begin
-      xf.p.y := xf.p.y + DragSelOffset.y;
+      xf.p.y := cp.y + _DraggingSelectionOffset.y;
     end;
     if _DraggingSelectionRot then
     begin
-      r0.AxisX := (_DraggingSelectionPos - xf.p).Norm;
-      r1.AxisX := (cp - xf.p).Norm;
-      xf.r.Angle := r1.Angle - r0.Angle;
+      r0.AxisX := (cp - xf.p).Norm;
+      xf.r.Angle := r0.Angle - _DraggingSelectionAngle;
+      App.Scene2DData.sxf.r := xf.r;
     end;
-    xf.p := _Display.CoordToDisplay(xf.p) - App.Scene2DData.SelPos;
+    xf.p := App.Scene2DData.Scene.AdjustToGrid(_Display.CoordToDisplay(xf.p));
     for i := 0 to App.Scene2DData.Selection.Count - 1 do
     if (App.Scene2DData.Selection[i].Parent = nil)
-    or (not PScene2DEntityData(App.Scene2DData.Selection[i].Parent.UserData)^.Selected) then
+    or (not TScene2DEntityData(App.Scene2DData.Selection[i].Parent.UserData).Selected) then
     begin
-      xf1 := App.Scene2DData.Selection[i].Transform;
-      r := xf1.r;
-      G2Rotation2Mul(@r, @r, @xf.r);
-      p := xf1.p - App.Scene2DData.SelPos;
-      G2Vec2Rotation2Mul(@p, @p, @xf.r);
-      p += App.Scene2DData.SelPos + xf.p;
-      xf1.SetValue(p, r);
+      G2Transform2Mul(
+        @xf1,
+        @TScene2DEntityData(App.Scene2DData.Selection[i].UserData).oxf,
+        @xf
+      );
       App.Scene2DData.Selection[i].Transform := xf1;
     end;
     App.Scene2DData.UpdateSelectionPos;
-    _DraggingSelectionPos := cp;
   end;
   if (App.Scene2DData.Editor <> nil)
   and Frame.Contains(g2.MousePos) then
@@ -15276,6 +15303,7 @@ begin
 end;
 
 procedure TUIWorkspaceScene2D.OnMouseDown(const Button, x, y: Integer);
+  var r: TG2Rotation2;
 begin
   case Button of
     G2MB_Left:
@@ -15287,26 +15315,35 @@ begin
         begin
           _DraggingSelectionPosX := True;
           _DraggingSelectionPos := G2Vec2(x, y);
-          _DraggingSelectionOffset := _Display.CoordToScreen(App.Scene2DData.SelPos) - _DraggingSelectionPos;
+          _DraggingSelectionOffset := _Display.CoordToScreen(App.Scene2DData.sxf.p) - _DraggingSelectionPos;
         end
         else if PtInSelDragY(G2Vec2(x, y)) then
         begin
           _DraggingSelectionPosY := True;
           _DraggingSelectionPos := G2Vec2(x, y);
-          _DraggingSelectionOffset := _Display.CoordToScreen(App.Scene2DData.SelPos) - _DraggingSelectionPos;
+          _DraggingSelectionOffset := _Display.CoordToScreen(App.Scene2DData.sxf.p) - _DraggingSelectionPos;
         end
         else if PtInSelDrag(G2Vec2(x, y)) then
         begin
           _DraggingSelectionPosX := True;
           _DraggingSelectionPosY := True;
           _DraggingSelectionPos := G2Vec2(x, y);
-          _DraggingSelectionOffset := _Display.CoordToScreen(App.Scene2DData.SelPos) - _DraggingSelectionPos;
+          _DraggingSelectionOffset := _Display.CoordToScreen(App.Scene2DData.sxf.p) - _DraggingSelectionPos;
         end
         else if PtInSelRotate(G2Vec2(x, y)) then
         begin
           _DraggingSelectionRot := True;
           _DraggingSelectionPos := G2Vec2(x, y);
-          _DraggingSelectionOffset := _Display.CoordToScreen(App.Scene2DData.SelPos) - _DraggingSelectionPos;
+          _DraggingSelectionOffset := _Display.CoordToScreen(App.Scene2DData.sxf.p) - _DraggingSelectionPos;
+          if _DraggingSelectionOffset.LenSq > G2EPS then
+          begin
+            r.AxisX := -_DraggingSelectionOffset.Norm;
+            _DraggingSelectionAngle := r.Angle - App.Scene2DData.sxf.r.Angle;
+          end
+          else
+          begin
+            _DraggingSelectionAngle := 0;
+          end;
         end;
       end;
     end;
@@ -15322,6 +15359,7 @@ end;
 
 procedure TUIWorkspaceScene2D.OnMouseUp(const Button, x, y: Integer);
   var v: TG2Vec2;
+  var r: TG2Rect;
 begin
   case Button of
     G2MB_Left:
@@ -15339,10 +15377,21 @@ begin
         else
         begin
           if Frame.Contains(x, y)
-          and Frame.Contains(g2.MouseDownPos[Button])
-          and ((G2Vec2(x, y) - g2.MouseDownPos[Button]).Len < 2) then
+          and Frame.Contains(g2.MouseDownPos[Button]) then
           begin
-            App.Scene2DData.MouseClick(_Display, Button, x, y);
+            r := _ResetCamFrame;
+            r.x := r.x + _Display.ViewPort.Right;
+            r.y := r.y + _Display.ViewPort.Top;
+            if r.Contains(x, y)
+            and (r.Contains(g2.MouseDownPos[Button])) then
+            begin
+              _TargetZoom := 1;
+              _Display.Position := G2Vec2(0, 0);
+            end
+            else if ((G2Vec2(x, y) - g2.MouseDownPos[Button]).Len < 2) then
+            begin
+              App.Scene2DData.MouseClick(_Display, Button, x, y);
+            end;
           end;
         end;
       end;
@@ -20592,6 +20641,8 @@ begin
   TexFileOpen.Load(@Bin_file_open_16, SizeOf(Bin_file_open_16), tu2D);
   TexFileSave := TG2Texture2D.Create;
   TexFileSave.Load(@Bin_file_save_16, SizeOf(Bin_file_save_16), tu2D);
+  TexFileSaveAs := TG2Texture2D.Create;
+  TexFileSaveAs.Load(@Bin_file_save_as_16, SizeOf(Bin_file_save_as_16), tu2D);
   TexPlus := TG2Texture2D.Create;
   TexPlus.Load(@Bin_plus_icon_16, SizeOf(Bin_plus_icon_16), tu2D);
   TexGear := TG2Texture2D.Create;
@@ -24959,7 +25010,7 @@ begin
   if VSelect > -1 then
   begin
     xf := GetTransform;
-    v := Display.CoordToDisplay(g2.MousePos);
+    v := App.Scene2DData.Scene.AdjustToGrid(Display.CoordToDisplay(g2.MousePos));
     v := xf.TransformInv(v);
     case VSelect of
       0: Component.Component.Vertex1 := v;
@@ -25057,7 +25108,7 @@ begin
   if VSelect > -1 then
   begin
     xf := GetTransform;
-    v := Display.CoordToDisplay(g2.MousePos);
+    v := App.Scene2DData.Scene.AdjustToGrid(Display.CoordToDisplay(g2.MousePos));
     v := xf.TransformInv(v);
     Component.Component.Vertices^[VSelect] := v;
   end;
@@ -25263,7 +25314,7 @@ begin
   if VSelect > -1 then
   begin
     xf := GetTransform;
-    mc := Display.CoordToDisplay(g2.MousePos);
+    mc := App.Scene2DData.Scene.AdjustToGrid(Display.CoordToDisplay(g2.MousePos));
     mc := xf.TransformInv(mc);
     Limc := 0;
     b := True;
@@ -25833,10 +25884,10 @@ begin
     vp := vp + _SelectVertex[i].v;
     for j := 0 to High(carr) do
     begin
-      carr[i].r := carr[i].r + _SelectVertex[i].c[i].r;
-      carr[i].g := carr[i].g + _SelectVertex[i].c[i].g;
-      carr[i].b := carr[i].b + _SelectVertex[i].c[i].b;
-      carr[i].a := carr[i].a + _SelectVertex[i].c[i].a;
+      carr[i].r := carr[i].r + _SelectVertex[i].c[j].r;
+      carr[i].g := carr[i].g + _SelectVertex[i].c[j].g;
+      carr[i].b := carr[i].b + _SelectVertex[i].c[j].b;
+      carr[i].a := carr[i].a + _SelectVertex[i].c[j].a;
     end;
   end;
   vp := vp * (1 / _SelectVertex.Count);
@@ -26269,19 +26320,19 @@ begin
   and TG2Rect(Display.ViewPort).Contains(g2.MouseDownPos[G2MB_Left])
   and ((G2Vec2(g2.MouseDownPos[G2MB_Left]) - G2Vec2(g2.MousePos)).Len > 2) then
   begin
-    StartDrag(mc);
+    StartDrag(xf.TransformInv(mc));
   end;
   if _Drag then
   begin
     if EditMode = em_tex_coord then
     begin
       for i := 0 to _VDrag.Count - 1 do
-      _VDrag[i].t := mc + _VOffset[i]
+      _VDrag[i].t := xf.TransformInv(App.Scene2DData.Scene.AdjustToGrid(xf.Transform(xf.TransformInv(mc) + _VOffset[i])))
     end
     else
     begin
       for i := 0 to _VDrag.Count - 1 do
-      _VDrag[i].v := mc + _VOffset[i];
+      _VDrag[i].v := xf.TransformInv(App.Scene2DData.Scene.AdjustToGrid(xf.Transform(xf.TransformInv(mc) + _VOffset[i])));
     end;
   end
   else
@@ -26651,6 +26702,7 @@ procedure TScene2DEditorPoly.MouseDown(const Display: TG2Display2D; const Button
   var i: Integer;
   var r: TG2Rect;
   var mc: TG2Vec2;
+  var xf: TG2Transform2;
 begin
   if Button = G2MB_Left then
   begin
@@ -26674,6 +26726,7 @@ begin
     r.y := Display.ViewPort.Bottom + r.y;
     _BrushSizeMd := r.Contains(x, y);
     _MdInButton := _MdInButton or _BrushSizeMd;
+    xf := Component.Component.Owner.Transform;
     if not _MdInButton then
     begin
       _MdInVertex := _MOverVertex;
@@ -26686,7 +26739,7 @@ begin
         begin
           if _SelectVertex.Find(_MdInVertex) > -1 then
           begin
-            StartDrag(Display.CoordToDisplay(G2Vec2(x, y)));
+            StartDrag(xf.TransformInv(Display.CoordToDisplay(G2Vec2(x, y))));
           end
           else
           begin
@@ -26705,7 +26758,7 @@ begin
         begin
           if _SelectEdge.Find(_MdInEdge) > -1 then
           begin
-            StartDrag(Display.CoordToDisplay(G2Vec2(x, y)));
+            StartDrag(xf.TransformInv(Display.CoordToDisplay(G2Vec2(x, y))));
           end
           else
           begin
@@ -26724,7 +26777,7 @@ begin
         begin
           if _SelectFace.Find(_MdInFace) > -1 then
           begin
-            StartDrag(Display.CoordToDisplay(G2Vec2(x, y)));
+            StartDrag(xf.TransformInv(Display.CoordToDisplay(G2Vec2(x, y))));
           end
           else
           begin
@@ -26999,7 +27052,7 @@ begin
   case _ActionType of
     jdat_drag_joint:
     begin
-      v := Display.CoordToDisplay(g2.MousePos);
+      v := App.Scene2DData.Scene.AdjustToGrid(Display.CoordToDisplay(g2.MousePos));
       _Joint.Position := v;
       e := App.Scene2DData.Pick(v);
       if e <> nil then
@@ -27027,12 +27080,12 @@ begin
     end;
     jdat_drag_anchor_a:
     begin
-      v := Display.CoordToDisplay(g2.MousePos);
+      v := App.Scene2DData.Scene.AdjustToGrid(Display.CoordToDisplay(g2.MousePos));
       _Joint.AnchorA := _Joint.RigidBodyA.GetLocalPoint(v);
     end;
     jdat_drag_anchor_b:
     begin
-      v := Display.CoordToDisplay(g2.MousePos);
+      v := App.Scene2DData.Scene.AdjustToGrid(Display.CoordToDisplay(g2.MousePos));
       _Joint.AnchorB := _Joint.RigidBodyB.GetLocalPoint(v);
     end;
     else
@@ -27275,13 +27328,13 @@ begin
   case _ActionType of
     jrat_drag_joint:
     begin
-      v := Display.CoordToDisplay(g2.MousePos);
+      v := App.Scene2DData.Scene.AdjustToGrid(Display.CoordToDisplay(g2.MousePos));
       _Joint.Position := v;
     end;
     jrat_drag_anchor_a,
     jrat_drag_anchor_b:
     begin
-      v := Display.CoordToDisplay(g2.MousePos);
+      v := App.Scene2DData.Scene.AdjustToGrid(Display.CoordToDisplay(g2.MousePos));
       e := App.Scene2DData.Pick(v);
       if e <> nil then
       begin
@@ -27500,6 +27553,114 @@ end;
 //TScene2DEditorJointRevolute END
 
 //TScene2DEntityData BEGIN
+constructor TScene2DEntityData.Create(const AEntity: TG2Scene2DEntity);
+  var Component: TG2Scene2DComponent;
+  var ComponentData: TScene2DComponentData;
+  var i: Integer;
+begin
+  inherited Create;
+  Entity := AEntity;
+  Selected := False;
+  OpenStructure.Clear;
+  Properties := TPropertySet.Create;
+  SyncProperties;
+  AEntity.UserData := Self;
+  for i := 0 to Entity.ComponentCount - 1 do
+  begin
+    Component := Entity.Components[i];
+    if Component is TG2Scene2DComponentSprite then
+    begin
+      ComponentData := TScene2DComponentDataSprite.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataSprite(ComponentData).Component := TG2Scene2DComponentSprite(Component);
+    end
+    else if Component is TG2Scene2DComponentBackground then
+    begin
+      ComponentData := TScene2DComponentDataBackground.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataBackground(ComponentData).Component := TG2Scene2DComponentBackground(Component);
+    end
+    else if Component is TG2Scene2DComponentSpineAnimation then
+    begin
+      ComponentData := TScene2DComponentDataSpineAnimation.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataSpineAnimation(ComponentData).Component := TG2Scene2DComponentSpineAnimation(Component);
+    end
+    else if Component is TG2Scene2DComponentEffect then
+    begin
+      ComponentData := TScene2DComponentDataEffect.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataEffect(ComponentData).Component := TG2Scene2DComponentEffect(Component);
+      if TG2Scene2DComponentEffect(Component).EffectInst <> nil then
+      TG2Scene2DComponentEffect(Component).EffectInst.Play;
+    end
+    else if Component is TG2Scene2DComponentCharacter then
+    begin
+      ComponentData := TScene2DComponentDataCharacter.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataCharacter(ComponentData).Component := TG2Scene2DComponentCharacter(Component);
+    end
+    else if Component is TG2Scene2DComponentRigidBody then
+    begin
+      ComponentData := TScene2DComponentDataRigidBody.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataRigidBody(ComponentData).Component := TG2Scene2DComponentRigidBody(Component);
+    end
+    else if Component is TG2Scene2DComponentCollisionShapeBox then
+    begin
+      ComponentData := TScene2DComponentDataShapeBox.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataShapeBox(ComponentData).Component := TG2Scene2DComponentCollisionShapeBox(Component);
+    end
+    else if Component is TG2Scene2DComponentCollisionShapeChain then
+    begin
+      ComponentData := TScene2DComponentDataShapeChain.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataShapeChain(ComponentData).Component := TG2Scene2DComponentCollisionShapeChain(Component);
+    end
+    else if Component is TG2Scene2DComponentCollisionShapeCircle then
+    begin
+      ComponentData := TScene2DComponentDataShapeCircle.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataShapeCircle(ComponentData).Component := TG2Scene2DComponentCollisionShapeCircle(Component);
+    end
+    else if Component is TG2Scene2DComponentCollisionShapeEdge then
+    begin
+      ComponentData := TScene2DComponentDataShapeEdge.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataShapeEdge(ComponentData).Component := TG2Scene2DComponentCollisionShapeEdge(Component);
+    end
+    else if Component is TG2Scene2DComponentCollisionShapePoly then
+    begin
+      ComponentData := TScene2DComponentDataShapePoly.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataShapePoly(ComponentData).Component := TG2Scene2DComponentCollisionShapePoly(Component);
+    end
+    else if Component is TG2Scene2DComponentPoly then
+    begin
+      ComponentData := TScene2DComponentDataPoly.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataPoly(ComponentData).Component := TG2Scene2DComponentPoly(Component);
+      TScene2DComponentDataPoly(ComponentData).GenerateData;
+    end;
+  end;
+  UpdateProperties;
+end;
+
+destructor TScene2DEntityData.Destroy;
+begin
+  if App.Scene2DData.PropertySet = Properties then
+  App.Scene2DData.PropertySet := nil;
+  if Selected then
+  begin
+    App.Scene2DData.SelectionUpdateStart;
+    App.Scene2DData.Selection.Remove(Entity);
+    App.Scene2DData.SelectionUpdateEnd;
+  end;
+  Properties.Free;
+  inherited Destroy;
+end;
+
 procedure TScene2DEntityData.SyncProperties;
 begin
   EditName := Entity.Name;
@@ -27534,22 +27695,6 @@ begin
   for i := 0 to Entity.ComponentCount - 1 do
   TScene2DComponentData(Entity.Components[i].UserData).AddToProperties(Properties);
   Properties.PropButton('Add Component', @App.Scene2DData.BtnAddComponent);
-end;
-
-procedure TScene2DEntityData.Save(const dm: TG2DataManager);
-  var i: Integer;
-begin
-  Entity.Save(dm);
-  dm.WriteIntS32(Entity.ChildCount);
-  for i := 0 to Entity.ChildCount - 1 do
-  begin
-    PScene2DEntityData(Entity.Children[i])^.Save(dm);
-  end;
-end;
-
-procedure TScene2DEntityData.Load(const dn: TG2DataManager);
-begin
-
 end;
 //TScene2DEntityData END
 
@@ -28041,7 +28186,7 @@ procedure TScene2DComponentDataPoly.UpdateGroup;
   var Properties: TPropertySet;
   var LayerGroup: TPropertySet.TProperty;
 begin
-  Properties := PScene2DEntityData(Component.Owner.UserData)^.Properties;
+  Properties := TScene2DEntityData(Component.Owner.UserData).Properties;
   Group.Clear;
   for i := 0 to Layers.Count - 1 do
   begin
@@ -29503,6 +29648,7 @@ procedure TScene2DData.UpdateProperties;
 begin
   _PropGravity := Scene.Gravity;
   _GridSizeX := Scene.GridSizeX;
+  _GridSizeY := Scene.GridSizeY;
 end;
 
 procedure TScene2DData.AddComponentTypePair(
@@ -29546,15 +29692,15 @@ end;
 
 procedure TScene2DData.FindSelectedJoints(var JointList: TG2Scene2DJointList);
   function IsEntityInSelection(const e: TG2Scene2DEntity): Boolean;
-    var Data: PScene2DEntityData;
+    var Data: TScene2DEntityData;
   begin
     if not Assigned(e) then Exit(False);
-    Data := PScene2DEntityData(e.UserData);
+    Data := TScene2DEntityData(e.UserData);
     if not Assigned(Data) then Exit(False);
     while Assigned(Data) do
     begin
-      if Data^.Selected then Exit(True);
-      if Assigned(Data^.Entity.Parent) then Data := PScene2DEntityData(Data^.Entity.Parent.UserData)
+      if Data.Selected then Exit(True);
+      if Assigned(Data.Entity.Parent) then Data := TScene2DEntityData(Data.Entity.Parent.UserData)
       else Exit(False);
     end;
     Result := False;
@@ -29613,7 +29759,7 @@ function TScene2DData.CreateEntity(
   var i: Integer;
   var NameBase, EntityName: AnsiString;
   var NameIndex: Integer;
-  var EntityData: PScene2DEntityData;
+  var EntityData: TScene2DEntityData;
 begin
   NameBase := 'Entity';
   NameIndex := 0;
@@ -29626,21 +29772,14 @@ begin
   Result := TG2Scene2DEntity.Create(App.Scene2DData.Scene);
   Result.Transform := Transform;
   Result.Name := EntityName;
-  New(EntityData);
-  EntityData^.Entity := Result;
-  EntityData^.Selected := False;
-  EntityData^.OpenStructure.Clear;
-  EntityData^.Properties := TPropertySet.Create;
-  EntityData^.SyncProperties;
-  Result.UserData := EntityData;
-  EntityData^.UpdateProperties;
+  EntityData := TScene2DEntityData.Create(Result);
   for i := 0 to TUIWorkspaceScene2DStructure.WorkspaceList.Count - 1 do
   TUIWorkspaceScene2DStructure.WorkspaceList[i].OnCreateEntity(Result);
 end;
 
 procedure TScene2DData.DeleteEntity(var Entity: TG2Scene2DEntity);
   var i: Integer;
-  var EntityData: PScene2DEntityData;
+  var EntityData: TScene2DEntityData;
   var Component: TG2Scene2DComponent;
 begin
   for i := 0 to TUIWorkspaceScene2DStructure.WorkspaceList.Count - 1 do
@@ -29650,17 +29789,8 @@ begin
     Component := Entity.Components[i];
     DeleteComponent(Component);
   end;
-  EntityData := PScene2DEntityData(Entity.UserData);
-  if PropertySet = EntityData^.Properties then
-  PropertySet := nil;
-  if EntityData^.Selected then
-  begin
-    SelectionUpdateStart;
-    Selection.Remove(Entity);
-    SelectionUpdateEnd;
-  end;
-  EntityData^.Properties.Free;
-  Dispose(EntityData);
+  EntityData := TScene2DEntityData(Entity.UserData);
+  EntityData.Free;
   Entity.Free;
   Entity := nil;
 end;
@@ -29899,98 +30029,12 @@ begin
 end;
 
 procedure TScene2DData.CreateEntityData(const Entity: TG2Scene2DEntity);
-  var EntityData: PScene2DEntityData;
+  var EntityData: TScene2DEntityData;
   var Component: TG2Scene2DComponent;
   var ComponentData: TScene2DComponentData;
   var j: Integer;
 begin
-  New(EntityData);
-  EntityData^.Entity := Entity;
-  EntityData^.Selected := False;
-  EntityData^.OpenStructure.Clear;
-  EntityData^.Properties := TPropertySet.Create;
-  EntityData^.SyncProperties;
-  Entity.UserData := EntityData;
-  for j := 0 to Entity.ComponentCount - 1 do
-  begin
-    Component := Entity.Components[j];
-    if Component is TG2Scene2DComponentSprite then
-    begin
-      ComponentData := TScene2DComponentDataSprite.Create;
-      Component.UserData := ComponentData;
-      TScene2DComponentDataSprite(ComponentData).Component := TG2Scene2DComponentSprite(Component);
-    end
-    else if Component is TG2Scene2DComponentBackground then
-    begin
-      ComponentData := TScene2DComponentDataBackground.Create;
-      Component.UserData := ComponentData;
-      TScene2DComponentDataBackground(ComponentData).Component := TG2Scene2DComponentBackground(Component);
-    end
-    else if Component is TG2Scene2DComponentSpineAnimation then
-    begin
-      ComponentData := TScene2DComponentDataSpineAnimation.Create;
-      Component.UserData := ComponentData;
-      TScene2DComponentDataSpineAnimation(ComponentData).Component := TG2Scene2DComponentSpineAnimation(Component);
-    end
-    else if Component is TG2Scene2DComponentEffect then
-    begin
-      ComponentData := TScene2DComponentDataEffect.Create;
-      Component.UserData := ComponentData;
-      TScene2DComponentDataEffect(ComponentData).Component := TG2Scene2DComponentEffect(Component);
-      if TG2Scene2DComponentEffect(Component).EffectInst <> nil then
-      TG2Scene2DComponentEffect(Component).EffectInst.Play;
-    end
-    else if Component is TG2Scene2DComponentCharacter then
-    begin
-      ComponentData := TScene2DComponentDataCharacter.Create;
-      Component.UserData := ComponentData;
-      TScene2DComponentDataCharacter(ComponentData).Component := TG2Scene2DComponentCharacter(Component);
-    end
-    else if Component is TG2Scene2DComponentRigidBody then
-    begin
-      ComponentData := TScene2DComponentDataRigidBody.Create;
-      Component.UserData := ComponentData;
-      TScene2DComponentDataRigidBody(ComponentData).Component := TG2Scene2DComponentRigidBody(Component);
-    end
-    else if Component is TG2Scene2DComponentCollisionShapeBox then
-    begin
-      ComponentData := TScene2DComponentDataShapeBox.Create;
-      Component.UserData := ComponentData;
-      TScene2DComponentDataShapeBox(ComponentData).Component := TG2Scene2DComponentCollisionShapeBox(Component);
-    end
-    else if Component is TG2Scene2DComponentCollisionShapeChain then
-    begin
-      ComponentData := TScene2DComponentDataShapeChain.Create;
-      Component.UserData := ComponentData;
-      TScene2DComponentDataShapeChain(ComponentData).Component := TG2Scene2DComponentCollisionShapeChain(Component);
-    end
-    else if Component is TG2Scene2DComponentCollisionShapeCircle then
-    begin
-      ComponentData := TScene2DComponentDataShapeCircle.Create;
-      Component.UserData := ComponentData;
-      TScene2DComponentDataShapeCircle(ComponentData).Component := TG2Scene2DComponentCollisionShapeCircle(Component);
-    end
-    else if Component is TG2Scene2DComponentCollisionShapeEdge then
-    begin
-      ComponentData := TScene2DComponentDataShapeEdge.Create;
-      Component.UserData := ComponentData;
-      TScene2DComponentDataShapeEdge(ComponentData).Component := TG2Scene2DComponentCollisionShapeEdge(Component);
-    end
-    else if Component is TG2Scene2DComponentCollisionShapePoly then
-    begin
-      ComponentData := TScene2DComponentDataShapePoly.Create;
-      Component.UserData := ComponentData;
-      TScene2DComponentDataShapePoly(ComponentData).Component := TG2Scene2DComponentCollisionShapePoly(Component);
-    end
-    else if Component is TG2Scene2DComponentPoly then
-    begin
-      ComponentData := TScene2DComponentDataPoly.Create;
-      Component.UserData := ComponentData;
-      TScene2DComponentDataPoly(ComponentData).Component := TG2Scene2DComponentPoly(Component);
-      TScene2DComponentDataPoly(ComponentData).GenerateData;
-    end;
-  end;
-  EntityData^.UpdateProperties;
+  EntityData := TScene2DEntityData.Create(Entity);
 end;
 
 procedure TScene2DData.CreateJointData(const Joint: TG2Scene2DJoint);
@@ -30202,21 +30246,30 @@ procedure TScene2DData.SelectionUpdateStart;
   var i: Integer;
 begin
   for i := 0 to Selection.Count - 1 do
-  PScene2DEntityData(Selection[i].UserData)^.Selected := False;
+  TScene2DEntityData(Selection[i].UserData).Selected := False;
 end;
 
 procedure TScene2DData.SelectionUpdateEnd;
   var i: Integer;
+  var xf: TG2Transform2;
 begin
   if SelectJoint <> nil then
   Selection.Clear;
   for i := 0 to Selection.Count - 1 do
-  PScene2DEntityData(Selection[i].UserData)^.Selected := True;
+  TScene2DEntityData(Selection[i].UserData).Selected := True;
   UpdateSelectionPos;
+  sxf.r := G2Rotation2;
+  xf := G2Transform2(sxf.p, G2Rotation2);
+  for i := 0 to Selection.Count - 1 do
+  G2Transform2MulInv(
+    @TScene2DEntityData(Selection[i].UserData).oxf,
+    @Selection[i].Transform,
+    @xf
+  );
   if Selection.Count = 1 then
   begin
-    PScene2DEntityData(Selection[0].UserData)^.UpdateProperties;
-    PropertySet := PScene2DEntityData(Selection[0].UserData)^.Properties;
+    TScene2DEntityData(Selection[0].UserData).UpdateProperties;
+    PropertySet := TScene2DEntityData(Selection[0].UserData).Properties;
   end
   else
   begin
@@ -30228,10 +30281,10 @@ end;
 procedure TScene2DData.UpdateSelectionPos;
   var i: Integer;
 begin
-  SelPos.SetZero;
+  sxf.p.SetZero;
   for i := 0 to Selection.Count - 1 do
-  SelPos += Selection[i].Transform.p;
-  SelPos *= 1 / Selection.Count;
+  sxf.p += Selection[i].Transform.p;
+  sxf.p *= 1 / Selection.Count;
 end;
 
 procedure TScene2DData.BtnAddComponent;
@@ -30533,6 +30586,7 @@ begin
   SceneProperties.PropFloat('Offset X', @_Scene.GridOffsetX, Prop, nil);
   SceneProperties.PropFloat('Offset Y', @_Scene.GridOffsetY, Prop, nil);
   _PropertySet := SceneProperties;
+  UpdateProperties;
 end;
 
 procedure TScene2DData.Finalize;
@@ -30583,7 +30637,7 @@ end;
 procedure TScene2DData.Update;
 begin
   if Selection.Count = 1 then
-  PScene2DEntityData(Selection[0].UserData)^.SyncProperties;
+  TScene2DEntityData(Selection[0].UserData).SyncProperties;
   if Assigned(_Editor) then Editor.Update;
 end;
 
