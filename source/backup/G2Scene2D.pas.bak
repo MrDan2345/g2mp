@@ -2020,8 +2020,8 @@ begin
   _PhysWorld.set_contact_listener(_ContactListener);
   _Simulate := False;
   _GridEnable := False;
-  _GridSizeX := 0.1;
-  _GridSizeY := 0.1;
+  _GridSizeX := 0.5;
+  _GridSizeY := 0.5;
   _GridSizeXRcp := 1 / _GridSizeX;
   _GridSizeYRcp := 1 / _GridSizeY;
   _GridOffsetX := 0;
@@ -2146,6 +2146,11 @@ procedure TG2Scene2D.Save(const dm: TG2DataManager);
 begin
   dm.WriteBuffer(@Header, SizeOf(Header));
   dm.WriteVec2(_Gravity);
+  dm.WriteBool(_GridEnable);
+  dm.WriteFloat(_GridSizeX);
+  dm.WriteFloat(_GridSizeY);
+  dm.WriteFloat(_GridOffsetX);
+  dm.WriteFloat(_GridOffsetY);
   n := 0;
   for i := 0 to EntityCount - 1 do
   if Entities[i].Parent = nil then Inc(n);
@@ -2170,6 +2175,11 @@ begin
   if Header <> 'G2S2' then Exit;
   _Gravity := dm.ReadVec2;
   _PhysWorld.set_gravity(_Gravity);
+  _GridEnable := dm.ReadBool;
+  GridSizeX := dm.ReadFloat;
+  GridSizeY := dm.ReadFloat;
+  _GridOffsetX := dm.ReadFloat;
+  dm.ReadFloat;
   {$Hints off}
   n := dm.ReadIntS32;
   {$Hints on}

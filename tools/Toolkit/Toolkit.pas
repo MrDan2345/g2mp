@@ -27676,12 +27676,14 @@ end;
 
 procedure TScene2DEntityData.OnPositionChange(const Sender: Pointer);
 begin
-  Entity.Transform.p := EditPosition;
+  Entity.Transform := G2Transform2(EditPosition, Entity.Transform.r);
+  App.Scene2DData.UpdateSelectionPos;
 end;
 
 procedure TScene2DEntityData.OnRotationChange(const Sender: Pointer);
 begin
-  Entity.Transform.r.Angle := EditRotation * G2DegToRad;
+  Entity.Transform := G2Transform2(Entity.Transform.p, G2Rotation2(EditRotation * G2DegToRad));
+  App.Scene2DData.UpdateSelectionPos;
 end;
 
 procedure TScene2DEntityData.UpdateProperties;
@@ -30281,6 +30283,7 @@ end;
 procedure TScene2DData.UpdateSelectionPos;
   var i: Integer;
 begin
+  if Selection.Count = 0 then Exit;
   sxf.p.SetZero;
   for i := 0 to Selection.Count - 1 do
   sxf.p += Selection[i].Transform.p;
