@@ -104,6 +104,7 @@ uses
   G2Audio,
   G2AudioWAV,
   G2MeshData,
+  G2MeshG2M,
   {$if defined(G2RM_SM2)}
     G2Shaders,
   {$endif}
@@ -134,7 +135,6 @@ type
   TG2Updater = class;
   TG2Renderer = class;
   {$endif}
-  TG2Mgr = class;
   TG2TextureBase = class;
   TG2Texture2DBase = class;
   TG2Texture2D = class;
@@ -155,6 +155,10 @@ type
   TG2VertexBuffer = class;
   TG2IndexBuffer = class;
   TG2Display2D = class;
+  {$if defined(G2RM_SM2)}
+  TG2Mesh = class;
+  TG2MeshInst = class;
+  {$endif}
   TG2S3DMesh = class;
   TG2S3DMeshInst = class;
   TG2S3DParticle = class;
@@ -1162,16 +1166,16 @@ type
   end;
   {$endif}
 
-  TG2Mgr = class
-  private
-    _Items: TG2QuickList;
-    procedure FreeItems;
-  public
-    procedure ItemAdd(const Item: TG2Res);
-    procedure ItemRemove(const Item: TG2Res);
-    constructor Create;
-    destructor Destroy; override;
-  end;
+  //TG2Mgr = class
+  //private
+  //  _Items: TG2QuickList;
+  //  procedure FreeItems;
+  //public
+  //  procedure ItemAdd(const Item: TG2Res);
+  //  procedure ItemRemove(const Item: TG2Res);
+  //  constructor Create;
+  //  destructor Destroy; override;
+  //end;
 
   TG2TextureBase = class (TG2Asset)
   protected
@@ -1211,12 +1215,8 @@ type
   PG2Texture2DBase = ^TG2Texture2DBase;
 
   TG2Texture2D = class (TG2Texture2DBase)
-  private
-    var _FileName: String;
   public
-    class function FindTexture(const FileName: String): TG2Texture2D;
     class function SharedAsset(const SharedAssetName: String; const TextureUsage: TG2TextureUsage = tuDefault): TG2Texture2D;
-    property TextureFileName: String read _FileName write _FileName;
     function Load(const FileName: String; const TextureUsage: TG2TextureUsage = tuDefault): Boolean;
     function Load(const Stream: TStream; const TextureUsage: TG2TextureUsage = tuDefault): Boolean;
     function Load(const Buffer: Pointer; const Size: TG2IntS32; const TextureUsage: TG2TextureUsage = tuDefault): Boolean;
@@ -1730,6 +1730,7 @@ type
   end;
 
   TG2VBDecl = array of TG2VBVertex;
+  PG2VBDecl = ^TG2VBDecl;
 
   TG2BufferUsage = (buNone, buWriteOnly, buReadWrite);
   TG2BufferLockMode = (lmNone, lmReadOnly, lmReadWrite);
@@ -2602,6 +2603,7 @@ type
     {$if defined(G2RM_SM2)}
     _AttribPosition: GLInt;
     _AttribColor: GLInt;
+    _AttribTexCoord: GLInt;
     {$endif}
     {$elseif defined(G2Gfx_GLES)}
     _VertPositions: array of TG2Vec3;
@@ -2926,6 +2928,135 @@ type
     procedure PolyAdd(const x, y, u, v: TG2Float; const Color: TG2Color); inline; overload;
     procedure PolyAdd(const Pos, TexCoord: TG2Vec2; const Color: TG2Color); inline; overload;
   end;
+
+{$if defined(G2RM_SM2)}
+  TG2MeshNode = object
+    var OwnerID: TG2IntS32;
+    var Name: AnsiString;
+    var Transform: TG2Mat;
+    var SubNodesID: TG2QuickListIntS32;
+  end;
+
+  TG2GeomDataStatic = object
+    var BBox: TG2Box;
+    var VB: TG2VertexBuffer;
+  end;
+  PG2GeomDataStatic = ^TG2GeomDataStatic;
+
+  TG2GeomDataSkinned = record
+    MaxWeights: Word;
+    BoneCount: TG2IntS32;
+    Bones: array of record
+      NodeID: TG2IntS32;
+      Bind: TG2Mat;
+      BBox: TG2Box;
+      VCount: TG2IntS32;
+    end;
+    VB: TG2VertexBuffer;
+  end;
+  PG2GeomDataSkinned = ^TG2GeomDataSkinned;
+
+  TG2MeshGeom = object
+    NodeID: TG2IntS32;
+    Decl: TG2VBDecl;
+    Skinned: Boolean;
+    Data: Pointer;
+    VCount: TG2IntS32;
+    FCount: TG2IntS32;
+    GCount: TG2IntS32;
+    TCount: TG2IntS32;
+    IB: TG2IndexBuffer;
+    Groups: array of record
+      Material: TG2IntS32;
+      VertexStart: TG2IntS32;
+      VertexCount: TG2IntS32;
+      FaceStart: TG2IntS32;
+      FaceCount: TG2IntS32;
+    end;
+    Visible: Boolean;
+  end;
+
+  TG2MeshAnim = object
+    Name: AnsiString;
+    FrameRate: TG2IntS32;
+    FrameCount: TG2IntS32;
+    NodeCount: TG2IntS32;
+    Nodes: array of record
+      NodeID: TG2IntS32;
+      Frames: array of record
+        Scaling: TG2Vec3;
+        Rotation: TG2Quat;
+        Translation: TG2Vec3;
+      end;
+    end;
+  end;
+
+  TG2MeshMaterial = object
+    ChannelCount: TG2IntS32;
+    Channels: array of record
+      Name: AnsiString;
+      TwoSided: Boolean;
+      MapDiffuse: TG2Texture2D;
+      MapLight: TG2Texture2D;
+    end;
+  end;
+  PG2MeshMaterial = ^TG2MeshMaterial;
+
+  TG2MeshNodeArray = specialize TG2Array<TG2MeshNode>;
+  TG2MeshGeomArray = specialize TG2Array<TG2MeshGeom>;
+  TG2MeshAnimArray = specialize TG2Array<TG2MeshAnim>;
+  TG2MeshMaterialArray = specialize TG2Array<TG2MeshMaterial>;
+
+  TG2Mesh = class (TG2Asset)
+  protected
+    procedure Initialize; override;
+    procedure Finalize; override;
+  public
+    class function SharedAsset(const SharedAssetName: String): TG2Mesh;
+    var Nodes: TG2MeshNodeArray;
+    var Geoms: TG2MeshGeomArray;
+    var Anims: TG2MeshAnimArray;
+    var Materials: TG2MeshMaterialArray;
+    procedure Load(const MeshData: TG2MeshData);
+    procedure Load(const DataManager: TG2DataManager);
+    procedure Load(const Stream: TStream);
+    procedure Load(const FileName: String);
+    function AnimIndex(const Name: AnsiString): TG2IntS32;
+    function NewInst: TG2MeshInst;
+  end;
+
+  TG2MeshInst = class (TG2Ref)
+  private
+    var _Mesh: TG2Mesh;
+    var _RootNodes: TG2QuickListIntS32;
+    var _SkinTransforms: array of array of TG2Mat;
+    var _AutoComputeTransforms: Boolean;
+    function GetOBBox: TG2Box;
+    function GetGeomBBox(const Index: TG2IntS32): TG2Box;
+    function GetSkinTransforms(const Index: TG2IntS32): PG2Mat; inline;
+    function GetAABox: TG2AABox;
+    procedure ComputeSkinTransforms;
+  protected
+  public
+    var Transforms: array of record
+      TransformDef: TG2Mat;
+      TransformCur: TG2Mat;
+      TransformCom: TG2Mat;
+    end;
+    var Materials: array of PG2MeshMaterial;
+    property Mesh: TG2Mesh read _Mesh;
+    property OBBox: TG2Box read GetOBBox;
+    property AABox: TG2AABox read GetAABox;
+    property AutoComputeTransforms: Boolean read _AutoComputeTransforms write _AutoComputeTransforms;
+    property GeomBBox[const Index: TG2IntS32]: TG2Box read GetGeomBBox;
+    property SkinTransforms[const Index: TG2IntS32]: PG2Mat read GetSkinTransforms;
+    constructor Create(const AMesh: TG2Mesh);
+    destructor Destroy; override;
+    procedure FrameSetFast(const AnimName: AnsiString; const Frame: TG2IntS32);
+    procedure FrameSet(const AnimName: AnsiString; const Frame: TG2Float);
+    procedure ComputeTransforms;
+  end;
+{$endif}
 
   TG2S3DNode = class
   protected
@@ -5982,7 +6113,7 @@ begin
   CloseThread(_ThreadHandle);
 end;
 
-procedure TG2Thread.WaitFor(const Timeout: TG2IntS32);
+procedure TG2Thread.WaitFor(const Timeout: TG2IntU32);
 begin
   WaitForThreadTerminate(_ThreadHandle, Timeout);
 end;
@@ -6918,6 +7049,7 @@ begin
   end;
   Result := nil;
 end;
+{$endif}
 
 procedure TG2Gfx.ThreadAttach;
 begin
@@ -6928,7 +7060,6 @@ procedure TG2Gfx.ThreadDetach;
 begin
 
 end;
-{$endif}
 
 constructor TG2Gfx.Create;
 begin
@@ -8055,33 +8186,33 @@ end;
 {$endif}
 
 //TG2Mgr BEGIN
-procedure TG2Mgr.FreeItems;
-begin
-  while _Items.Count > 0 do
-  TG2Res(_Items[0]).Free;
-end;
-
-procedure TG2Mgr.ItemAdd(const Item: TG2Res);
-begin
-  _Items.Add(Item);
-end;
-
-procedure TG2Mgr.ItemRemove(const Item: TG2Res);
-begin
-  _Items.Remove(Item);
-end;
-
-constructor TG2Mgr.Create;
-begin
-  inherited Create;
-  _Items.Clear;
-end;
-
-destructor TG2Mgr.Destroy;
-begin
-  FreeItems;
-  inherited Destroy;
-end;
+//procedure TG2Mgr.FreeItems;
+//begin
+//  while _Items.Count > 0 do
+//  TG2Res(_Items[0]).Free;
+//end;
+//
+//procedure TG2Mgr.ItemAdd(const Item: TG2Res);
+//begin
+//  _Items.Add(Item);
+//end;
+//
+//procedure TG2Mgr.ItemRemove(const Item: TG2Res);
+//begin
+//  _Items.Remove(Item);
+//end;
+//
+//constructor TG2Mgr.Create;
+//begin
+//  inherited Create;
+//  _Items.Clear;
+//end;
+//
+//destructor TG2Mgr.Destroy;
+//begin
+//  FreeItems;
+//  inherited Destroy;
+//end;
 //TG2Mgr END
 
 //TG2TextureBase BEGIN
@@ -8243,20 +8374,6 @@ end;
 //TG2Texture2DBase END
 
 //TG2Texture2D BEGIN
-class function TG2Texture2D.FindTexture(const FileName: String): TG2Texture2D;
-  var Res: TG2Res;
-begin
-  Res := TG2Res.List;
-  while Res <> nil do
-  begin
-    if (Res is TG2Texture2D)
-    and (TG2Texture2D(Res).TextureFileName = FileName)
-    and (Res.RefCount > 0) then Exit(TG2Texture2D(Res));
-    Res := Res.Next;
-  end;
-  Result := nil;
-end;
-
 class function TG2Texture2D.SharedAsset(const SharedAssetName: String; const TextureUsage: TG2TextureUsage): TG2Texture2D;
   var Res: TG2Res;
   var dm: TG2DataManager;
@@ -8292,7 +8409,6 @@ begin
     try
       Image.Load(FileName);
       Result := Load(Image, TextureUsage);
-      _FileName := FileName;
     finally
       Image.Free;
     end;
@@ -8312,7 +8428,6 @@ begin
     try
       Image.Load(Stream);
       Result := Load(Image, TextureUsage);
-      _FileName := '';
     finally
       Image.Free;
     end;
@@ -8332,7 +8447,6 @@ begin
     try
       Image.Load(Buffer, Size);
       Result := Load(Image, TextureUsage);
-      _FileName := '';
     finally
       Image.Free;
     end;
@@ -8352,7 +8466,6 @@ begin
     try
       Image.Load(DataManager);
       Result := Load(Image, TextureUsage);
-      _FileName := '';
     finally
       Image.Free;
     end;
@@ -8394,7 +8507,6 @@ function TG2Texture2D.Load(const Image: TG2Image; const TextureUsage: TG2Texture
 begin
   Release;
   _Gfx.ThreadAttach;
-  _FileName := '';
   Result := False;
   _Usage := TextureUsage;
   if (Image.Width <= 0) or (Image.Height <= 0) or (Image.Data = nil) then Exit;
@@ -9134,7 +9246,7 @@ begin
     if (TextureNames = nil) then
     begin
       if Img^.Texture is TG2Texture2D then
-      Img^.Name := ExtractFileName(TG2Texture2D(Img^.Texture).TextureFileName)
+      Img^.Name := TG2Texture2D(Img^.Texture).AssetName
       else if Img^.Texture is TG2Texture2DRT then
       begin
         Img^.Name := 'rt_' + IntToStr(rti);
@@ -14855,7 +14967,6 @@ begin
   _ShaderGroup.Method := 'Prim';
   {$if defined(G2Gfx_D3D9)}
   _Gfx.Device.SetVertexDeclaration(_Decl);
-  WVP := G2MatOrth2D(_Gfx.SizeRT.x, _Gfx.SizeRT.y, 0, 1);
   {$elseif defined(G2Gfx_OGL)}
   _AttribPosition := _ShaderGroup.Attribute('a_Position0');
   _AttribColor := _ShaderGroup.Attribute('a_Color0');
@@ -14865,7 +14976,6 @@ begin
   WVP := G2MatOrth2D(_Gfx.SizeRT.x, _Gfx.SizeRT.y, 0, 1, False, False);
   glDisable(GL_TEXTURE_2D);
   {$endif}
-  _ShaderGroup.UniformMatrix4x4('WVP', WVP);
   {$endif}
   _Gfx.BlendMode := bmNormal;
 end;
@@ -15462,9 +15572,6 @@ procedure TG2RenderControlPoly3D.RenderBegin;
 {$if defined(G2Gfx_D3D9) and defined(G2Gfx_FF)}
   var m: TG2Mat;
 {$endif}
-{$if defined(G2RM_SM2)}
-  var WVP: TG2Mat;
-{$endif}
 begin
   _CurPoint := 0;
   _CurPrimType := ptNone;
@@ -15493,20 +15600,14 @@ begin
   glEnableClientState(GL_COLOR_ARRAY);
   {$endif}
   {$elseif defined(G2RM_SM2)}
-  _ShaderGroup.Method := 'Prim';
+  _ShaderGroup.Method := 'Pic';
   {$if defined(G2Gfx_D3D9)}
   _Gfx.Device.SetVertexDeclaration(_Decl);
-  WVP := G2MatOrth2D(_Gfx.SizeRT.x, _Gfx.SizeRT.y, 0, 1);
   {$elseif defined(G2Gfx_OGL)}
   _AttribPosition := _ShaderGroup.Attribute('a_Position0');
   _AttribColor := _ShaderGroup.Attribute('a_Color0');
-  if _Gfx.RenderTarget = nil then
-  WVP := G2MatOrth2D(_Gfx.SizeRT.x, _Gfx.SizeRT.y, 0, 1)
-  else
-  WVP := G2MatOrth2D(_Gfx.SizeRT.x, _Gfx.SizeRT.y, 0, 1, False, False);
-  glDisable(GL_TEXTURE_2D);
+  _AttribTexCoord := _ShaderGroup.Attribute('a_TexCoord0');
   {$endif}
-  _ShaderGroup.UniformMatrix4x4('WVP', WVP);
   {$endif}
   _Gfx.BlendMode := bmNormal;
 end;
@@ -15613,6 +15714,7 @@ begin
     {$elseif defined(G2RM_SM2)}
     glVertexAttrib4f(_AttribColor, p^.Points[i].Color.r * G2Rcp255, p^.Points[i].Color.g * G2Rcp255, p^.Points[i].Color.b * G2Rcp255, p^.Points[i].Color.a * G2Rcp255);
     glVertexAttrib3f(_AttribPosition, p^.Points[i].x, p^.Points[i].y, p^.Points[i].z);
+    glVertexAttrib2f(_AttribTexCoord, p^.Points[i].u, p^.Points[i].v);
     {$endif}
     Inc(_CurPoint);
   end;
@@ -15642,7 +15744,7 @@ end;
 constructor TG2RenderControlPoly3D.Create;
 {$if defined(G2Gfx_D3D9)}
 {$if defined(G2RM_SM2)}
-  var ve: array[0..2] of TD3DVertexElement9;
+  var ve: array[0..3] of TD3DVertexElement9;
 {$endif}
 {$elseif defined(G2Gfx_GLES)}
   var i: TG2IntS32;
@@ -15661,7 +15763,8 @@ begin
   {$if defined(G2RM_SM2)}
   ve[0] := D3DVertexElement(0, D3DDECLTYPE_FLOAT3, D3DDECLUSAGE_POSITION);
   ve[1] := D3DVertexElement(12, D3DDECLTYPE_D3DCOLOR, D3DDECLUSAGE_COLOR);
-  ve[2] := D3DDECL_END;
+  ve[2] := D3DVertexElement(16, D3DDECLTYPE_FLOAT2, D3DDECLUSAGE_TEXCOORD);
+  ve[3] := D3DDECL_END;
   _Gfx.Device.CreateVertexDeclaration(@ve, _Decl);
   {$endif}
   SetLength(_Vertices, _MaxPoints);
@@ -16796,6 +16899,498 @@ begin
   g2.PolyAdd(CoordToScreen(Pos), TexCoord, Color);
 end;
 //TG2Display2D END
+
+{$if defined(G2RM_SM2)}
+//TG2Mesh BEGIN
+procedure TG2Mesh.Initialize;
+begin
+  Nodes.Clear;
+  Geoms.Clear;
+  Anims.Clear;
+  Materials.Clear;
+end;
+
+procedure TG2Mesh.Finalize;
+begin
+  inherited Finalize;
+end;
+
+class function TG2Mesh.SharedAsset(const SharedAssetName: String): TG2Mesh;
+  var Res: TG2Res;
+  var dm: TG2DataManager;
+begin
+  Res := TG2Res.List;
+  while Res <> nil do
+  begin
+    if (Res is TG2Mesh)
+    and (TG2Mesh(Res).AssetName = SharedAssetName)
+    and (Res.RefCount > 0) then
+    begin
+      Result := TG2Mesh(Res);
+      Exit;
+    end;
+    Res := Res.Next;
+  end;
+  dm := TG2DataManager.Create(SharedAssetName, dmAsset);
+  Result := TG2Mesh.Create;
+  Result.AssetName := SharedAssetName;
+  Result.Load(dm);
+  dm.Free;
+end;
+
+procedure TG2Mesh.Load(const MeshData: TG2MeshData);
+  type TVertex = packed record
+    Position: TG2Vec3;
+    Normal: TG2Vec3;
+    Tangent: TG2Vec3;
+    Binormal: TG2Vec3;
+  end;
+  type PVertex = ^TVertex;
+  var i, j, n: TG2IntS32;
+  var MinV, MaxV, v: TG2Vec3;
+  var Vertex: PVertex;
+  var TexCoords: PG2Vec2;
+  var BlendWeights: PG2Float;
+  var BlendIndices: PG2Float;
+  var DataStatic: PG2GeomDataStatic;
+  var DataSkinned: PG2GeomDataSkinned;
+begin
+  Nodes.Clear;
+  Nodes.Allocate(MeshData.NodeCount);
+  for i := 0 to Nodes.Count - 1 do
+  begin
+    Nodes[i]^.Name := MeshData.Nodes[i].Name;
+    Nodes[i]^.OwnerID := MeshData.Nodes[i].OwnerID;
+    Nodes[i]^.Transform := MeshData.Nodes[i].Transform;
+    Nodes[i]^.SubNodesID.Clear;
+  end;
+  for i := 0 to Nodes.Count - 1 do
+  if Nodes[i]^.OwnerID > -1 then
+  begin
+    Nodes[Nodes[i]^.OwnerID]^.SubNodesID.Add(i);
+  end;
+  Geoms.Clear;
+  Geoms.Allocate(MeshData.GeomCount);
+  for i := 0 to Geoms.Count - 1 do
+  begin
+    Geoms[i]^.NodeID := MeshData.Geoms[i].NodeID;
+    Geoms[i]^.VCount := MeshData.Geoms[i].VCount;
+    Geoms[i]^.FCount := MeshData.Geoms[i].FCount;
+    Geoms[i]^.GCount := MeshData.Geoms[i].MCount;
+    Geoms[i]^.TCount := MeshData.Geoms[i].TCount;
+    Geoms[i]^.Visible := True;
+    Geoms[i]^.Skinned := MeshData.Geoms[i].SkinID > -1;
+    SetLength(Geoms[i]^.Decl, 4 + Geoms[i]^.TCount);
+    Geoms[i]^.Decl[0].Element := vbPosition; Geoms[i]^.Decl[0].Count := 3;
+    Geoms[i]^.Decl[1].Element := vbNormal; Geoms[i]^.Decl[1].Count := 3;
+    Geoms[i]^.Decl[2].Element := vbTangent; Geoms[i]^.Decl[2].Count := 3;
+    Geoms[i]^.Decl[3].Element := vbBinormal; Geoms[i]^.Decl[3].Count := 3;
+    for j := 4 to 4 + Geoms[i]^.TCount - 1 do
+    begin
+      Geoms[i]^.Decl[j].Element := vbTexCoord;
+      Geoms[i]^.Decl[j].Count := 2;
+    end;
+    if Geoms[i]^.Skinned then
+    begin
+      New(DataSkinned);
+      Geoms[i]^.Data := DataSkinned;
+      DataSkinned^.MaxWeights := MeshData.Skins[MeshData.Geoms[i].SkinID].MaxWeights;
+      DataSkinned^.BoneCount := MeshData.Skins[MeshData.Geoms[i].SkinID].BoneCount;
+      SetLength(DataSkinned^.Bones, DataSkinned^.BoneCount);
+      for j := 0 to DataSkinned^.BoneCount - 1 do
+      begin
+        DataSkinned^.Bones[j].NodeID := MeshData.Skins[MeshData.Geoms[i].SkinID].Bones[j].NodeID;
+        DataSkinned^.Bones[j].Bind := MeshData.Skins[MeshData.Geoms[i].SkinID].Bones[j].Bind;
+        DataSkinned^.Bones[j].BBox := MeshData.Skins[MeshData.Geoms[i].SkinID].Bones[j].BBox;
+        DataSkinned^.Bones[j].VCount := MeshData.Skins[MeshData.Geoms[i].SkinID].Bones[j].VCount;
+      end;
+      n := Length(Geoms[i]^.Decl);
+      if DataSkinned^.MaxWeights = 1 then
+      begin
+        SetLength(Geoms[i]^.Decl, Length(Geoms[i]^.Decl) + 1);
+        Geoms[i]^.Decl[n].Element := vbVertexIndex; Geoms[i]^.Decl[n].Count := 1;
+      end
+      else
+      begin
+        SetLength(Geoms[i]^.Decl, Length(Geoms[i]^.Decl) + 2 * DataSkinned^.MaxWeights);
+        Geoms[i]^.Decl[n].Element := vbVertexIndex; Geoms[i]^.Decl[n].Count := DataSkinned^.MaxWeights;
+        Inc(n);
+        Geoms[i]^.Decl[n].Element := vbVertexWeight; Geoms[i]^.Decl[n].Count := DataSkinned^.MaxWeights;
+      end;
+      DataSkinned^.VB := TG2VertexBuffer.Create(Geoms[i]^.Decl, Geoms[i]^.VCount);
+      DataSkinned^.VB.Lock;
+      for j := 0 to Geoms[i]^.VCount - 1 do
+      begin
+        Vertex := PVertex(DataSkinned^.VB.Data + TG2IntS32(DataSkinned^.VB.VertexSize) * j);
+        TexCoords := PG2Vec2(Pointer(Vertex) + TG2IntS32(SizeOf(TVertex)));
+        BlendIndices := PG2Float(Pointer(TexCoords) + Geoms[i]^.TCount * 8);
+        BlendWeights := PG2Float(Pointer(BlendIndices) + DataSkinned^.MaxWeights * 4);
+        Vertex^.Position := MeshData.Geoms[i].Vertices[j].Position;
+        Vertex^.Normal := MeshData.Geoms[i].Vertices[j].Normal;
+        Vertex^.Tangent := MeshData.Geoms[i].Vertices[j].Tangent;
+        Vertex^.Binormal := MeshData.Geoms[i].Vertices[j].Binormal;
+        for n := 0 to Geoms[i]^.TCount - 1 do
+        begin
+          TexCoords^ := MeshData.Geoms[i].Vertices[j].TexCoords[n];
+          Inc(TexCoords);
+        end;
+        if DataSkinned^.MaxWeights = 1 then
+        BlendIndices^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[0].BoneID
+        else
+        for n := 0 to DataSkinned^.MaxWeights - 1 do
+        begin
+          BlendIndices^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].BoneID;
+          Inc(BlendIndices);
+          BlendWeights^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].Weight;
+          Inc(BlendWeights);
+        end;
+      end;
+      DataSkinned^.VB.UnLock;
+    end
+    else
+    begin
+      New(DataStatic);
+      Geoms[i]^.Data := DataStatic;
+      DataStatic^.VB := TG2VertexBuffer.Create(Geoms[i]^.Decl, Geoms[i]^.VCount);
+      DataStatic^.VB.Lock;
+      MinV := MeshData.Geoms[i].Vertices[0].Position;
+      MaxV := MinV;
+      for j := 0 to Geoms[i]^.VCount - 1 do
+      begin
+        Vertex := PVertex(DataStatic^.VB.Data + TG2IntS32(DataStatic^.VB.VertexSize) * j);
+        TexCoords := PG2Vec2(DataStatic^.VB.Data + TG2IntS32(DataStatic^.VB.VertexSize) * j + TG2IntS32(SizeOf(TVertex)));
+        Vertex^.Position := MeshData.Geoms[i].Vertices[j].Position;
+        Vertex^.Normal := MeshData.Geoms[i].Vertices[j].Normal;
+        Vertex^.Tangent := MeshData.Geoms[i].Vertices[j].Tangent;
+        Vertex^.Binormal := MeshData.Geoms[i].Vertices[j].Binormal;
+        for n := 0 to Geoms[i]^.TCount - 1 do
+        begin
+          TexCoords^ := MeshData.Geoms[i].Vertices[j].TexCoords[n];
+          Inc(TexCoords);
+        end;
+        if MeshData.Geoms[i].Vertices[j].Position.x > MaxV.x then MaxV.x := MeshData.Geoms[i].Vertices[j].Position.x
+        else if MeshData.Geoms[i].Vertices[j].Position.x < MinV.x then MinV.x := MeshData.Geoms[i].Vertices[j].Position.x;
+        if MeshData.Geoms[i].Vertices[j].Position.y > MaxV.y then MaxV.y := MeshData.Geoms[i].Vertices[j].Position.y
+        else if MeshData.Geoms[i].Vertices[j].Position.y < MinV.y then MinV.y := MeshData.Geoms[i].Vertices[j].Position.y;
+        if MeshData.Geoms[i].Vertices[j].Position.z > MaxV.z then MaxV.z := MeshData.Geoms[i].Vertices[j].Position.z
+        else if MeshData.Geoms[i].Vertices[j].Position.z < MinV.z then MinV.z := MeshData.Geoms[i].Vertices[j].Position.z;
+      end;
+      DataStatic^.VB.UnLock;
+      DataStatic^.BBox.c := (MinV + MaxV) * 0.5;
+      v := (MaxV - MinV) * 0.5;
+      DataStatic^.BBox.vx.SetValue(v.x, 0, 0);
+      DataStatic^.BBox.vy.SetValue(0, v.y, 0);
+      DataStatic^.BBox.vz.SetValue(0, 0, v.z);
+    end;
+    Geoms[i]^.IB := TG2IndexBuffer.Create(Geoms[i]^.FCount * 3);
+    Geoms[i]^.IB.Lock;
+    for j := 0 to Geoms[i]^.FCount - 1 do
+    begin
+      PG2IntU16Arr(Geoms[i]^.IB.Data)^[j * 3 + 0] := MeshData.Geoms[i].Faces[j][0];
+      PG2IntU16Arr(Geoms[i]^.IB.Data)^[j * 3 + 1] := MeshData.Geoms[i].Faces[j][1];
+      PG2IntU16Arr(Geoms[i]^.IB.Data)^[j * 3 + 2] := MeshData.Geoms[i].Faces[j][2];
+    end;
+    Geoms[i]^.IB.UnLock;
+    SetLength(Geoms[i]^.Groups, Geoms[i]^.GCount);
+    for j := 0 to Geoms[i]^.GCount - 1 do
+    begin
+      Geoms[i]^.Groups[j].Material := MeshData.Geoms[i].Groups[j].MaterialID;
+      Geoms[i]^.Groups[j].VertexStart := MeshData.Geoms[i].Groups[j].VertexStart;
+      Geoms[i]^.Groups[j].VertexCount := MeshData.Geoms[i].Groups[j].VertexCount;
+      Geoms[i]^.Groups[j].FaceStart := MeshData.Geoms[i].Groups[j].FaceStart;
+      Geoms[i]^.Groups[j].FaceCount := MeshData.Geoms[i].Groups[j].FaceCount;
+    end;
+  end;
+  Materials.Clear;
+  Materials.Allocate(MeshData.MaterialCount);
+  for i := 0 to Materials.Count - 1 do
+  begin
+    Materials[i]^.ChannelCount := MeshData.Materials[i].ChannelCount;
+    SetLength(Materials[i]^.Channels, Materials[i]^.ChannelCount);
+    for j := 0 to Materials[i]^.ChannelCount - 1 do
+    begin
+      Materials[i]^.Channels[j].Name := MeshData.Materials[i].Channels[j].Name;
+      Materials[i]^.Channels[j].TwoSided := MeshData.Materials[i].Channels[j].TwoSided;
+      //if G2FileExists(MeshData.Materials[i].Channels[j].DiffuseMap) then
+      begin
+        Materials[i]^.Channels[j].MapDiffuse := TG2Texture2D.SharedAsset(MeshData.Materials[i].Channels[j].DiffuseMap, tu3D);
+        Materials[i]^.Channels[j].MapDiffuse.RefInc;
+      end;
+      //else
+      //begin
+      //  Materials[i]^.Channels[j].MapDiffuse := nil;
+      //end;
+      if G2FileExists(MeshData.Materials[i].Channels[j].LightMap) then
+      begin
+        Materials[i]^.Channels[j].MapLight := TG2Texture2D.SharedAsset(MeshData.Materials[i].Channels[j].LightMap, tuDefault);
+        Materials[i]^.Channels[j].MapLight.RefInc;
+      end
+      else
+      begin
+        Materials[i]^.Channels[j].MapLight := nil;
+      end;
+    end;
+  end;
+  Anims.Clear;
+  Anims.Allocate(MeshData.AnimCount);
+  for i := 0 to Anims.Count - 1 do
+  begin
+    Anims[i]^.Name := MeshData.Anims[i].Name;
+    Anims[i]^.FrameCount := MeshData.Anims[i].FrameCount;
+    Anims[i]^.FrameRate := MeshData.Anims[i].FrameRate;
+    Anims[i]^.NodeCount := MeshData.Anims[i].NodeCount;
+    SetLength(Anims[i]^.Nodes, Anims[i]^.NodeCount);
+    for j := 0 to Anims[i]^.NodeCount - 1 do
+    begin
+      Anims[i]^.Nodes[j].NodeID := MeshData.Anims[i].Nodes[j].NodeID;
+      SetLength(Anims[i]^.Nodes[j].Frames, Anims[i]^.FrameCount);
+      for n := 0 to Anims[i]^.FrameCount - 1 do
+      begin
+        Anims[i]^.Nodes[j].Frames[n].Scaling := MeshData.Anims[i].Nodes[j].Frames[n].Scaling;
+        Anims[i]^.Nodes[j].Frames[n].Rotation := MeshData.Anims[i].Nodes[j].Frames[n].Rotation;
+        Anims[i]^.Nodes[j].Frames[n].Translation := MeshData.Anims[i].Nodes[j].Frames[n].Translation;
+      end;
+    end;
+  end;
+end;
+
+procedure TG2Mesh.Load(const DataManager: TG2DataManager);
+  var MeshData: TG2MeshData;
+  var MeshLoader: TG2MeshLoader;
+  var i: TG2IntS32;
+begin
+  for i := 0 to High(G2MeshLoaders) do
+  if G2MeshLoaders[i].CanLoad(DataManager) then
+  begin
+    MeshLoader := G2MeshLoaders[i].Create;
+    try
+      MeshLoader.Load(DataManager);
+      MeshLoader.ExportMeshData(@MeshData);
+      MeshData.LimitSkins;
+      Load(MeshData);
+    finally
+      MeshLoader.Free;
+    end;
+  end;
+end;
+
+procedure TG2Mesh.Load(const Stream: TStream);
+  var dm: TG2DataManager;
+begin
+  dm := TG2DataManager.Create(Stream);
+  Load(dm);
+  dm.Free;
+end;
+
+procedure TG2Mesh.Load(const FileName: String);
+  var dm: TG2DataManager;
+begin
+  dm := TG2DataManager.Create(FileName, dmAsset);
+  Load(dm);
+  dm.Free;
+end;
+
+function TG2Mesh.AnimIndex(const Name: AnsiString): TG2IntS32;
+  var i: TG2IntS32;
+begin
+  for i := 0 to Anims.Count - 1 do
+  if Anims[i]^.Name = Name then
+  begin
+    Result := i;
+    Exit;
+  end;
+  Result := -1;
+end;
+
+function TG2Mesh.NewInst: TG2MeshInst;
+begin
+  Result := TG2MeshInst.Create(Self);
+end;
+//TG2Mesh END
+
+//TG2MeshInst BEIGN
+function TG2MeshInst.GetOBBox: TG2Box;
+  var i: TG2IntS32;
+  var b: TG2AABox;
+begin
+  if _Mesh.Geoms.Count < 1 then
+  begin
+    {$Warnings off}
+    Result.SetValue(G2Vec3(0, 0, 0), G2Vec3(0, 0, 0), G2Vec3(0, 0, 0), G2Vec3(0, 0, 0));
+    {$Warnings on}
+    Exit;
+  end;
+  b := GetGeomBBox(0);
+  for i := 1 to _Mesh.Geoms.Count - 1 do
+  b.Merge(GetGeomBBox(i));
+  Result := b;
+end;
+
+function TG2MeshInst.GetGeomBBox(const Index: TG2IntS32): TG2Box;
+  var DataSkinned: PG2GeomDataSkinned;
+  var i, j: TG2IntS32;
+  var b: TG2AABox;
+begin
+  if _Mesh.Geoms[Index]^.Skinned then
+  begin
+    DataSkinned := PG2GeomDataSkinned(_Mesh.Geoms[Index]^.Data);
+    for i := 0 to DataSkinned^.BoneCount - 1 do
+    if DataSkinned^.Bones[i].VCount > 0 then
+    begin
+      b := DataSkinned^.Bones[i].BBox.Transform(_SkinTransforms[Index][i]);
+      Break;
+    end;
+    for j := i + 1 to DataSkinned^.BoneCount - 1 do
+    if DataSkinned^.Bones[j].VCount > 0 then
+    b.Merge(DataSkinned^.Bones[j].BBox.Transform(_SkinTransforms[Index][j]));
+    Result := b;
+  end
+  else
+  Result := PG2GeomDataStatic(_Mesh.Geoms[Index]^.Data)^.BBox.Transform(Transforms[_Mesh.Geoms[Index]^.NodeID].TransformCom);
+end;
+
+function TG2MeshInst.GetSkinTransforms(const Index: TG2IntS32): PG2Mat;
+begin
+  Result := @_SkinTransforms[Index];
+end;
+
+function TG2MeshInst.GetAABox: TG2AABox;
+begin
+  Result := GetOBBox;
+end;
+
+procedure TG2MeshInst.ComputeSkinTransforms;
+  var i, j: TG2IntS32;
+  var DataSkinned: PG2GeomDataSkinned;
+begin
+  for i := 0 to _Mesh.Geoms.Count - 1 do
+  if _Mesh.Geoms[i]^.Skinned then
+  begin
+    DataSkinned := PG2GeomDataSkinned(_Mesh.Geoms[i]^.Data);
+    for j := 0 to DataSkinned^.BoneCount - 1 do
+    _SkinTransforms[i][j] := DataSkinned^.Bones[j].Bind * Transforms[DataSkinned^.Bones[j].NodeID].TransformCom;
+  end;
+end;
+
+constructor TG2MeshInst.Create(const AMesh: TG2Mesh);
+  var i: TG2IntS32;
+begin
+  inherited Create;
+  _Mesh := AMesh;
+  SetLength(Materials, _Mesh.Materials.Count);
+  for i := 0 to _Mesh.Materials.Count - 1 do
+  Materials[i] := _Mesh.Materials[i];
+  SetLength(Transforms, _Mesh.Nodes.Count);
+  _RootNodes.Clear;
+  for i := 0 to _Mesh.Nodes.Count - 1 do
+  begin
+    if _Mesh.Nodes[i]^.OwnerID = -1 then
+    begin
+      _RootNodes.Add(i);
+    end;
+    Transforms[i].TransformDef := _Mesh.Nodes[i]^.Transform;
+    Transforms[i].TransformCur := Transforms[i].TransformDef;
+    Transforms[i].TransformCom := G2MatIdentity;
+  end;
+  SetLength(_SkinTransforms, _Mesh.Geoms.Count);
+  for i := 0 to _Mesh.Geoms.Count - 1 do
+  if _Mesh.Geoms[i]^.Skinned then
+  begin
+    SetLength(_SkinTransforms[i], PG2GeomDataSkinned(_Mesh.Geoms[i]^.Data)^.BoneCount);
+  end;
+  ComputeTransforms;
+end;
+
+destructor TG2MeshInst.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TG2MeshInst.FrameSetFast(const AnimName: AnsiString; const Frame: TG2IntS32);
+  var AnimIndex, i, f0: TG2IntS32;
+  var ms, mr, mt: TG2Mat;
+begin
+  AnimIndex := _Mesh.AnimIndex(AnimName);
+  if AnimIndex > -1 then
+  begin
+    if Frame < 0 then
+    f0 := _Mesh.Anims[AnimIndex]^.FrameCount - (Abs(Frame) mod _Mesh.Anims[AnimIndex]^.FrameCount)
+    else
+    f0 := Frame mod _Mesh.Anims[AnimIndex]^.FrameCount;
+    for i := 0 to _Mesh.Anims[AnimIndex]^.NodeCount - 1 do
+    begin
+      ms := G2MatScaling(_Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f0].Scaling);
+      mr := G2MatRotation(_Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f0].Rotation);
+      mt := G2MatTranslation(_Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f0].Translation);
+      Transforms[_Mesh.Anims[AnimIndex]^.Nodes[i].NodeID].TransformCur := ms * mr * mt;
+    end;
+    if _AutoComputeTransforms then ComputeTransforms;
+  end;
+end;
+
+procedure TG2MeshInst.FrameSet(const AnimName: AnsiString; const Frame: TG2Float);
+  var AnimIndex, i, f0, f1: TG2IntS32;
+  var f: TG2Float;
+  var s0: TG2Vec3;
+  var r0: TG2Quat;
+  var t0: TG2Vec3;
+  var ms, mr, mt: TG2Mat;
+begin
+  AnimIndex := _Mesh.AnimIndex(AnimName);
+  if AnimIndex > -1 then
+  begin
+    if Frame < 0 then
+    f := _Mesh.Anims[AnimIndex]^.FrameCount - (Trunc(Abs(Frame)) mod _Mesh.Anims[AnimIndex]^.FrameCount) + Frac(Frame)
+    else
+    f := Frame;
+    f0 := Trunc(f) mod _Mesh.Anims[AnimIndex]^.FrameCount;
+    f1 := (f0 + 1) mod _Mesh.Anims[AnimIndex]^.FrameCount;
+    f := Frac(f);
+    for i := 0 to _Mesh.Anims[AnimIndex]^.NodeCount - 1 do
+    begin
+      s0 := G2LerpVec3(
+        _Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f0].Scaling,
+        _Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f1].Scaling,
+        f
+      );
+      r0 := G2QuatSlerp(
+        _Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f0].Rotation,
+        _Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f1].Rotation,
+        f
+      );
+      t0 := G2LerpVec3(
+        _Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f0].Translation,
+        _Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f1].Translation,
+        f
+      );
+      ms := G2MatScaling(s0);
+      mr := G2MatRotation(r0);
+      mt := G2MatTranslation(t0);
+      Transforms[_Mesh.Anims[AnimIndex]^.Nodes[i].NodeID].TransformCur := ms * mr * mt;
+    end;
+    if _AutoComputeTransforms then ComputeTransforms;
+  end;
+end;
+
+procedure TG2MeshInst.ComputeTransforms;
+  procedure ComputeNode(const NodeID: TG2IntS32);
+    var i: TG2IntS32;
+  begin
+    if _Mesh.Nodes[NodeID]^.OwnerID > -1 then
+    Transforms[NodeID].TransformCom := Transforms[NodeID].TransformCur * Transforms[_Mesh.Nodes[NodeID]^.OwnerID].TransformCom
+    else
+    Transforms[NodeID].TransformCom := Transforms[NodeID].TransformCur;
+    for i := 0 to _Mesh.Nodes[NodeID]^.SubNodesID.Count - 1 do
+    ComputeNode(_Mesh.Nodes[NodeID]^.SubNodesID[i]);
+  end;
+  var i: TG2IntS32;
+begin
+  for i := 0 to _RootNodes.Count - 1 do
+  ComputeNode(_RootNodes[i]);
+  ComputeSkinTransforms;
+end;
+//TG2MeshInst END
+{$endif}
 
 //TG2S3DNode BEGIN
 procedure TG2S3DNode.SetTransform(const Value: TG2Mat);

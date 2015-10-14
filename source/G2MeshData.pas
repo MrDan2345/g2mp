@@ -145,12 +145,12 @@ type
 
   TG2MeshLoader = class
   protected
-    function CheckDataHeader(const DataManager: TG2DataManager; const Header: AnsiString): Boolean;
+    class function CheckDataHeader(const DataManager: TG2DataManager; const Header: AnsiString): Boolean;
   public
-    function CanLoad(const DataManager: TG2DataManager): Boolean; virtual; overload;
-    function CanLoad(const Stream: TStream): Boolean; virtual; overload;
-    function CanLoad(const FileName: String): Boolean; virtual; overload;
-    function CanLoad(const Buffer: Pointer; const Size: TG2IntS64): Boolean; virtual; overload;
+    class function CanLoad(const DataManager: TG2DataManager): Boolean; virtual; overload;
+    class function CanLoad(const Stream: TStream): Boolean; virtual; overload;
+    class function CanLoad(const FileName: String): Boolean; virtual; overload;
+    class function CanLoad(const Buffer: Pointer; const Size: TG2IntS64): Boolean; virtual; overload;
     procedure Load(const DataManager: TG2DataManager); virtual; overload;
     procedure Load(const Stream: TStream); virtual; overload;
     procedure Load(const FileName: String); virtual; overload;
@@ -159,6 +159,8 @@ type
   end;
 
   CG2MeshLoader = class of TG2MeshLoader;
+
+procedure G2AddMeshLoader(const Loader: CG2MeshLoader);
 
 var G2MeshLoaders: array of CG2MeshLoader;
 
@@ -238,7 +240,7 @@ end;
 //TG2MeshData END
 
 //TG2MeshLoader BEGIN
-function TG2MeshLoader.CheckDataHeader(const DataManager: TG2DataManager; const Header: AnsiString): Boolean;
+class function TG2MeshLoader.CheckDataHeader(const DataManager: TG2DataManager; const Header: AnsiString): Boolean;
   var Pos: TG2IntS64;
   var DataHeader: AnsiString;
 begin
@@ -250,13 +252,13 @@ begin
 end;
 
 {$Hints off}
-function TG2MeshLoader.CanLoad(const DataManager: TG2DataManager): Boolean;
+class function TG2MeshLoader.CanLoad(const DataManager: TG2DataManager): Boolean;
 begin
   Result := False;
 end;
 {$Hints on}
 
-function TG2MeshLoader.CanLoad(const Stream: TStream): Boolean;
+class function TG2MeshLoader.CanLoad(const Stream: TStream): Boolean;
   var dm: TG2DataManager;
 begin
   dm := TG2DataManager.Create(Stream);
@@ -267,7 +269,7 @@ begin
   end;
 end;
 
-function TG2MeshLoader.CanLoad(const FileName: String): Boolean;
+class function TG2MeshLoader.CanLoad(const FileName: String): Boolean;
   var dm: TG2DataManager;
 begin
   dm := TG2DataManager.Create(FileName);
@@ -278,7 +280,7 @@ begin
   end;
 end;
 
-function TG2MeshLoader.CanLoad(const Buffer: Pointer; const Size: TG2IntS64): Boolean;
+class function TG2MeshLoader.CanLoad(const Buffer: Pointer; const Size: TG2IntS64): Boolean;
   var dm: TG2DataManager;
 begin
   dm := TG2DataManager.Create(Buffer, Size);

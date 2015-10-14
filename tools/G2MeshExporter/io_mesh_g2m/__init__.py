@@ -203,13 +203,13 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
       file.write(name.encode('utf-8'));
       h_pos = file.tell();
       file.write(struct.pack('i', 0));
-      print('block start ' + str(h_pos));
+      print('block start [' + name + '] ' + str(h_pos));
     #end
     def block_end():
     #begin
       nonlocal h_pos;
       s_pos = file.tell();
-      block_size = s_pos - h_pos;
+      block_size = s_pos - h_pos - 4;
       file.seek(h_pos);
       file.write(struct.pack('i', block_size));
       file.seek(s_pos);
@@ -262,6 +262,7 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
       file.seek(geom_offsets[i]);
       write_int(p);
       file.seek(p);
+      g = geoms[i];
       materials = [];
       colors = [];
       if len(g.vertex_colors) == 0:
@@ -276,7 +277,6 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
         #end
       #end
       write_int(geom_node_id[i]);
-      g = geoms[i];
       face_count = 0;
       for f in range(0, len(g.tessfaces)):
       #begin
@@ -299,6 +299,7 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
       write_int(len(colors));
       write_int(face_count);
       write_int(len(materials));
+      print('len(g.uv_layers) = ' + str(len(g.uv_layers)));
       if len(g.uv_layers) == 0:
       #begin
         write_int(1);
@@ -327,6 +328,7 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
           write_int(len(uvl.data));
           for uv in uvl.data:
           #begin
+            print('type of uv - ' + (type(uv).__name__));
             write_vector2(uv);
           #end
         #end

@@ -41,6 +41,7 @@ type
     type TCmpFunc = function (const Item0, Item1: T): TG2IntS32;
     type TCmpFuncObj = function (const Item0, Item1: T): TG2IntS32 of object;
   private
+    var _Items: array of T;
     var _ItemCount: TG2IntS32;
     procedure SetItem(const Index: TG2IntS32; const Value: T); inline;
     function GetItem(const Index: TG2IntS32): T; inline;
@@ -50,7 +51,6 @@ type
     function GetLast: T; inline;
     function GetData: TItemPtr; inline;
   public
-    var _Items: array of T;
     property Capacity: TG2IntS32 read GetCapacity write SetCapacity;
     property Count: TG2IntS32 read _ItemCount;
     property Items[const Index: TG2IntS32]: T read GetItem write SetItem; default;
@@ -104,6 +104,36 @@ type
     procedure Clear;
   end;
   PG2QuickSortListG = ^TG2QuickSortListG;
+
+  generic TG2Array<T> = object
+  public
+    type TItemPtr = ^T;
+    type TCmpFunc = function (const Item0, Item1: T): TG2IntS32;
+    type TCmpFuncObj = function (const Item0, Item1: T): TG2IntS32 of object;
+  private
+    var _Items: array of T;
+    var _ItemCount: TG2IntS32;
+    procedure SetItem(const Index: TG2IntS32; const Value: TItemPtr); inline;
+    function GetItem(const Index: TG2IntS32): TItemPtr; inline;
+    procedure SetCapacity(const Value: TG2IntS32); inline;
+    function GetCapacity: TG2IntS32; inline;
+    function GetData: TItemPtr; inline;
+  public
+    property Capacity: TG2IntS32 read GetCapacity write SetCapacity;
+    property Count: TG2IntS32 read _ItemCount;
+    property Items[const Index: TG2IntS32]: TItemPtr read GetItem write SetItem; default;
+    property Data: TItemPtr read GetData;
+    function Add(const Item: T): TG2IntS32;
+    function Insert(const Index: TG2IntS32; const Item: T): TG2IntS32;
+    procedure Delete(const Index: TG2IntS32; const ItemCount: TG2IntS32 = 1);
+    procedure Clear;
+    procedure Allocate(const Amount: TG2IntS32);
+    procedure Allocate(const Amount: TG2IntS32; const DefaultValue: T);
+    procedure Sort(const CmpFunc: TCmpFunc; RangeStart, RangeEnd: TG2IntS32); overload;
+    procedure Sort(const CmpFunc: TCmpFuncObj; RangeStart, RangeEnd: TG2IntS32); overload;
+    procedure Sort(const CmpFunc: TCmpFunc); overload;
+    procedure Sort(const CmpFunc: TCmpFuncObj); overload;
+  end;
 
   TG2QuickList = specialize TG2QuickListG<Pointer>;
   PG2QuickList = ^TG2QuickList;
@@ -605,11 +635,6 @@ procedure TG2QuickListG.Sort(const CmpFunc: TCmpFuncObj);
 begin
   Sort(CmpFunc, 0, _ItemCount - 1);
 end;
-
-function TG2QuickListG.Create: TListType;
-begin
-  Result.Clear;
-end;
 {$Hints on}
 //TG2QuickListG END
 
@@ -719,6 +744,147 @@ begin
 end;
 {$Hints on}
 //TG2QuickSortListG END
+
+//TG2Array BEGIN
+procedure TG2Array.SetItem(const Index: TG2IntS32; const Value: TItemPtr);
+begin
+  _Items[Index] := Value^;
+end;
+
+function TG2Array.GetItem(const Index: TG2IntS32): TItemPtr;
+begin
+  Result := _Items[Index];
+end;
+
+procedure TG2Array.SetCapacity(const Value: TG2IntS32);
+begin
+  SetLength(_Items, Value);
+end;
+
+function TG2Array.GetCapacity: TG2IntS32;
+begin
+  Result := Length(_Items);
+end;
+
+function TG2Array.GetData: TItemPtr;
+begin
+  Result := @_Items[0];
+end;
+
+function TG2Array.Add(const Item: T): TG2IntS32;
+begin
+  if Length(_Items) <= _ItemCount then
+  SetLength(_Items, Length(_Items) + 256);
+  _Items[_ItemCount] := Item;
+  Result := _ItemCount;
+  Inc(_ItemCount);
+end;
+
+function TG2Array.Insert(const Index: TG2IntS32; const Item: T): TG2IntS32;
+  var i: TG2IntS32;
+begin
+  if Length(_Items) <= _ItemCount then
+  SetLength(_Items, Length(_Items) + 256);
+  if Index < _ItemCount then
+  begin
+    for i := _ItemCount - 1 downto Index do
+    _Items[i + 1] := _Items[i];
+    _Items[Index] := Item;
+    Result := Index;
+  end
+  else
+  begin
+    _Items[_ItemCount] := Item;
+    Result := _ItemCount;
+  end;
+  Inc(_ItemCount);
+end;
+
+procedure TG2Array.Delete(const Index: TG2IntS32; const ItemCount: TG2IntS32);
+var i: TG2IntS32;
+begin
+  for i := Index to _ItemCount - (1 + ItemCount) do
+  _Items[i] := _Items[i + ItemCount];
+  Dec(_ItemCount, ItemCount);
+end;
+
+procedure TG2Array.Clear;
+begin
+  _ItemCount := 0;
+end;
+
+procedure TG2Array.Allocate(const Amount: TG2IntS32);
+begin
+  SetCapacity(_ItemCount + Amount);
+  _ItemCount += Amount;
+end;
+
+procedure TG2Array.Allocate(const Amount: TG2IntS32; const DefaultValue: T);
+  var i, j: Integer;
+begin
+  j := _ItemCount;
+  Allocate(Amount);
+  for i := j to _ItemCount - 1 do
+  _Items[i] := DefaultValue;
+end;
+
+procedure TG2Array.Sort(const CmpFunc: TCmpFunc; RangeStart, RangeEnd: TG2IntS32);
+  var i, j : LongInt;
+  var tmp, pivot: T;
+begin
+  if RangeEnd < RangeStart then Exit;
+  i := RangeStart;
+  j := RangeEnd;
+  pivot := _Items[(RangeStart + RangeEnd) shr 1];
+  repeat
+    while CmpFunc(pivot, _Items[i]) > 0 do i := i + 1;
+    while CmpFunc(pivot, _Items[j]) < 0 do j := j - 1;
+    if i <= j then
+    begin
+      tmp := _Items[i];
+      _Items[i] := _Items[j];
+      _Items[j] := tmp;
+      j := j - 1;
+      i := i + 1;
+    end;
+  until i > j;
+  if RangeStart < j then Sort(CmpFunc, RangeStart, j);
+  if i < RangeEnd then Sort(CmpFunc, i, RangeEnd);
+end;
+
+procedure TG2Array.Sort(const CmpFunc: TCmpFuncObj; RangeStart, RangeEnd: TG2IntS32);
+  var i, j : LongInt;
+  var tmp, pivot: T;
+begin
+  i := RangeStart;
+  j := RangeEnd;
+  pivot := _Items[(RangeStart + RangeEnd) shr 1];
+  repeat
+    while CmpFunc(pivot, _Items[i]) > 0 do i := i + 1;
+    while CmpFunc(pivot, _Items[j]) < 0 do j := j - 1;
+    if i <= j then
+    begin
+      tmp := _Items[i];
+      _Items[i] := _Items[j];
+      _Items[j] := tmp;
+      j := j - 1;
+      i := i + 1;
+    end;
+  until i > j;
+  if RangeStart < j then Sort(CmpFunc, RangeStart, j);
+  if i < RangeEnd then Sort(CmpFunc, i, RangeEnd);
+end;
+
+procedure TG2Array.Sort(const CmpFunc: TCmpFunc);
+begin
+  Sort(CmpFunc, 0, _ItemCount - 1);
+end;
+
+procedure TG2Array.Sort(const CmpFunc: TCmpFuncObj);
+begin
+  Sort(CmpFunc, 0, _ItemCount - 1);
+end;
+//TG2Array END
 
 //TG2Group BEGIN
 constructor TG2Group.Create;

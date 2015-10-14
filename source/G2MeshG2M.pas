@@ -292,7 +292,7 @@ type
       LegLNodeCount: TG2IntS32;
       LegLNodes: array of TG2RagdollObject;
     end;
-    function CanLoad(const DataManager: TG2DataManager): Boolean; override;
+    class function CanLoad(const DataManager: TG2DataManager): Boolean; override;
     procedure Load(const DataManager: TG2DataManager); override;
     procedure ExportMeshData(const MeshData: PG2MeshData); override;
   end;
@@ -303,7 +303,7 @@ uses
   Gen2MP;
 
 //TG2MeshLoaderG2M BEGIN
-function TG2MeshLoaderG2M.CanLoad(const DataManager: TG2DataManager): Boolean;
+class function TG2MeshLoaderG2M.CanLoad(const DataManager: TG2DataManager): Boolean;
 begin
   Result := CheckDataHeader(DataManager, 'G2M ');
 end;
@@ -1020,5 +1020,10 @@ begin
   MeshData^.LimitSkins(4);
 end;
 //TG2MeshLoaderG2M END
+
+initialization
+begin
+  G2AddMeshLoader(TG2MeshLoaderG2M);
+end;
 
 end.
