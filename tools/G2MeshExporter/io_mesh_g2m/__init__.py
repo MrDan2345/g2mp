@@ -263,6 +263,7 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
       write_int(p);
       file.seek(p);
       g = geoms[i];
+      print(type(g).__name__);
       materials = [];
       colors = [];
       if len(g.vertex_colors) == 0:
@@ -280,6 +281,10 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
       face_count = 0;
       for f in range(0, len(g.tessfaces)):
       #begin
+        if len(len(g.tessfaces[f].vertices) == 4):
+        #begin
+          print('quad face!');
+        #end
         face_count += len(g.tessfaces[f].vertices) - 2;
         material_added = False;
         for m in materials:
@@ -300,13 +305,15 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
       write_int(face_count);
       write_int(len(materials));
       print('len(g.uv_layers) = ' + str(len(g.uv_layers)));
-      if len(g.uv_layers) == 0:
+      #if len(g.uv_layers) == 0:
+      if len(g.tessface_uv_textures) == 0:
       #begin
         write_int(1);
       #end
       else:
       #begin
-        write_int(len(g.uv_layers));
+        #write_int(len(g.uv_layers));
+        write_int(len(g.tessface_uv_textures));
       #end
       for v in g.vertices:
       #begin
@@ -328,8 +335,7 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
           write_int(len(uvl.data));
           for uv in uvl.data:
           #begin
-            print('type of uv - ' + (type(uv).__name__));
-            write_vector2(uv);
+            write_vector2(uv.uv);
           #end
         #end
       #end;
