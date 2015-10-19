@@ -105,7 +105,7 @@ procedure TGame.Render;
 begin
   g2.Clear(True, $ff808080);
   W := G2MatRotationY(G2PiTime);
-  V := G2MatView(G2Vec3(-10, 10, -10), G2Vec3(0, 0, 0), G2Vec3(0, 1, 0));
+  V := G2MatView(G2Vec3(-5, 5, -5), G2Vec3(0, 0, 0), G2Vec3(0, 1, 0));
   P := G2MatProj(Pi * 0.4, g2.Params.Width / g2.Params.Height, 0.1, 100);
   WVP := W * V * P;
   g2.Gfx.StateChange.StateDepthEnable := True;
@@ -113,6 +113,7 @@ begin
   begin
     if Mesh.Geoms[gi]^.Skinned then Continue;
     DataStatic := PG2GeomDataStatic(Mesh.Geoms[gi]^.Data);
+    WVP := Mesh.Nodes[Mesh.Geoms[gi]^.NodeID]^.Transform * W * V * P;
     for mi := 0 to Mesh.Geoms[gi]^.GCount - 1 do
     begin
       g2.Gfx.Buffer.BufferBegin(

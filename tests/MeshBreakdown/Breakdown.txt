@@ -1,0 +1,250 @@
+Node Count: 3
+  Node[(0)Camera]:
+    Owner: -1
+    Transform: TG2Mat[0.69, -0.32, 0.65, 0.00, 0.73, 0.31, -0.61, 0.00, -0.01, 0.90, 0.45, 0.00, 0.00, 0.00, 0.00, 1.00]
+  Node[(1)Cube]:
+    Owner: -1
+    Transform: TG2Mat[1.00, 0.00, 0.00, 0.00, 0.00, 1.00, 0.00, 0.00, 0.00, 0.00, 1.00, 0.00, 0.00, 0.00, 0.00, 1.00]
+  Node[(2)Lamp]:
+    Owner: -1
+    Transform: TG2Mat[-0.29, -0.77, 0.57, 0.00, 0.96, -0.20, 0.22, 0.00, -0.06, 0.60, 0.79, 0.00, 0.00, 0.00, 0.00, 1.00]
+Geom Count: 1
+  Geom[(0)Cube]:
+    NodeID: 1
+    VCount: 8
+    FCount: 12
+    TCount: 1
+    MCount: 1
+    SkinID: -1
+    Faces:
+      Face[0]:
+        Vertex[0]:
+          Position: TG2Vec3[1.00, 1.00, -1.00]
+          Normal: TG2Vec3[0.67, 0.33, -0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 0.00]
+        Vertex[1]:
+          Position: TG2Vec3[1.00, -1.00, -1.00]
+          Normal: TG2Vec3[0.41, -0.82, -0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 0.00]
+        Vertex[2]:
+          Position: TG2Vec3[-1.00, -1.00, -1.00]
+          Normal: TG2Vec3[-0.67, -0.33, -0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 1.00]
+      Face[1]:
+        Vertex[0]:
+          Position: TG2Vec3[1.00, 1.00, -1.00]
+          Normal: TG2Vec3[0.67, 0.33, -0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 0.00]
+        Vertex[3]:
+          Position: TG2Vec3[1.00, -1.00, 1.00]
+          Normal: TG2Vec3[0.82, -0.41, 0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 0.00]
+        Vertex[1]:
+          Position: TG2Vec3[1.00, -1.00, -1.00]
+          Normal: TG2Vec3[0.41, -0.82, -0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 0.00]
+      Face[2]:
+        Vertex[0]:
+          Position: TG2Vec3[1.00, 1.00, -1.00]
+          Normal: TG2Vec3[0.67, 0.33, -0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 0.00]
+        Vertex[4]:
+          Position: TG2Vec3[1.00, 1.00, 1.00]
+          Normal: TG2Vec3[0.33, 0.67, 0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 0.00]
+        Vertex[3]:
+          Position: TG2Vec3[1.00, -1.00, 1.00]
+          Normal: TG2Vec3[0.82, -0.41, 0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 0.00]
+      Face[3]:
+        Vertex[4]:
+          Position: TG2Vec3[1.00, 1.00, 1.00]
+          Normal: TG2Vec3[0.33, 0.67, 0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 0.00]
+        Vertex[0]:
+          Position: TG2Vec3[1.00, 1.00, -1.00]
+          Normal: TG2Vec3[0.67, 0.33, -0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 0.00]
+        Vertex[5]:
+          Position: TG2Vec3[-1.00, 1.00, -1.00]
+          Normal: TG2Vec3[-0.41, 0.82, -0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 1.00]
+      Face[4]:
+        Vertex[0]:
+          Position: TG2Vec3[1.00, 1.00, -1.00]
+          Normal: TG2Vec3[0.67, 0.33, -0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 0.00]
+        Vertex[2]:
+          Position: TG2Vec3[-1.00, -1.00, -1.00]
+          Normal: TG2Vec3[-0.67, -0.33, -0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 1.00]
+        Vertex[5]:
+          Position: TG2Vec3[-1.00, 1.00, -1.00]
+          Normal: TG2Vec3[-0.41, 0.82, -0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 1.00]
+      Face[5]:
+        Vertex[2]:
+          Position: TG2Vec3[-1.00, -1.00, -1.00]
+          Normal: TG2Vec3[-0.67, -0.33, -0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 1.00]
+        Vertex[6]:
+          Position: TG2Vec3[-1.00, 1.00, 1.00]
+          Normal: TG2Vec3[-0.82, 0.41, 0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 1.00]
+        Vertex[5]:
+          Position: TG2Vec3[-1.00, 1.00, -1.00]
+          Normal: TG2Vec3[-0.41, 0.82, -0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 1.00]
+      Face[6]:
+        Vertex[2]:
+          Position: TG2Vec3[-1.00, -1.00, -1.00]
+          Normal: TG2Vec3[-0.67, -0.33, -0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 1.00]
+        Vertex[7]:
+          Position: TG2Vec3[-1.00, -1.00, 1.00]
+          Normal: TG2Vec3[-0.33, -0.67, 0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 1.00]
+        Vertex[6]:
+          Position: TG2Vec3[-1.00, 1.00, 1.00]
+          Normal: TG2Vec3[-0.82, 0.41, 0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 1.00]
+      Face[7]:
+        Vertex[1]:
+          Position: TG2Vec3[1.00, -1.00, -1.00]
+          Normal: TG2Vec3[0.41, -0.82, -0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 0.00]
+        Vertex[7]:
+          Position: TG2Vec3[-1.00, -1.00, 1.00]
+          Normal: TG2Vec3[-0.33, -0.67, 0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 1.00]
+        Vertex[2]:
+          Position: TG2Vec3[-1.00, -1.00, -1.00]
+          Normal: TG2Vec3[-0.67, -0.33, -0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 1.00]
+      Face[8]:
+        Vertex[1]:
+          Position: TG2Vec3[1.00, -1.00, -1.00]
+          Normal: TG2Vec3[0.41, -0.82, -0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 0.00]
+        Vertex[3]:
+          Position: TG2Vec3[1.00, -1.00, 1.00]
+          Normal: TG2Vec3[0.82, -0.41, 0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 0.00]
+        Vertex[7]:
+          Position: TG2Vec3[-1.00, -1.00, 1.00]
+          Normal: TG2Vec3[-0.33, -0.67, 0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 1.00]
+      Face[9]:
+        Vertex[4]:
+          Position: TG2Vec3[1.00, 1.00, 1.00]
+          Normal: TG2Vec3[0.33, 0.67, 0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 0.00]
+        Vertex[7]:
+          Position: TG2Vec3[-1.00, -1.00, 1.00]
+          Normal: TG2Vec3[-0.33, -0.67, 0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 1.00]
+        Vertex[3]:
+          Position: TG2Vec3[1.00, -1.00, 1.00]
+          Normal: TG2Vec3[0.82, -0.41, 0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 0.00]
+      Face[10]:
+        Vertex[4]:
+          Position: TG2Vec3[1.00, 1.00, 1.00]
+          Normal: TG2Vec3[0.33, 0.67, 0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 0.00]
+        Vertex[6]:
+          Position: TG2Vec3[-1.00, 1.00, 1.00]
+          Normal: TG2Vec3[-0.82, 0.41, 0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 1.00]
+        Vertex[7]:
+          Position: TG2Vec3[-1.00, -1.00, 1.00]
+          Normal: TG2Vec3[-0.33, -0.67, 0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[1.00, 1.00]
+      Face[11]:
+        Vertex[4]:
+          Position: TG2Vec3[1.00, 1.00, 1.00]
+          Normal: TG2Vec3[0.33, 0.67, 0.67]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 0.00]
+        Vertex[5]:
+          Position: TG2Vec3[-1.00, 1.00, -1.00]
+          Normal: TG2Vec3[-0.41, 0.82, -0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 1.00]
+        Vertex[6]:
+          Position: TG2Vec3[-1.00, 1.00, 1.00]
+          Normal: TG2Vec3[-0.82, 0.41, 0.41]
+          Binormal: TG2Vec3[0.00, 0.00, 0.00]
+          Tangent: TG2Vec3[0.00, 0.00, 0.00]
+          TexCoord[0]: TG2Vec2[0.00, 1.00]
+Anim Count: 0
+Skin Count: 0
+Material Count: 0

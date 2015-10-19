@@ -11,8 +11,10 @@ bl_info = {
 import bpy
 import array
 import struct
+import mathutils
 from bpy.props import *
 from bpy_extras.io_utils import ExportHelper
+from mathutils import Matrix
 
 class G2Animation(bpy.types.PropertyGroup):
 #begin
@@ -124,27 +126,164 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
   
   def execute(self, context):
   #begin
+    class tg2_geom:
+    #begin
+      node_id = -1;
+      node = None;
+      geom = None;
+      vertices = [];
+      colors = [];
+      tex_coords = [];
+      faces = [];
+      materials = [];
+      def add_tex_layer(self):
+      #begin
+        self.tex_coords.append([]);
+      #end
+      def add_color(self, col):
+      #begin
+        for i in range(0, len(self.colors)):
+        #begin
+          c = self.colors[i];
+          if abs(c[0] - col[0]) < 0.01 and abs(c[1] - col[1]) < 0.01 and abs(c[2] - col[2]) < 0.01:
+          #begin
+            return i;
+          #end
+        #end
+        self.colors.append(col);
+        return len(self.colors) - 1;
+      #end
+      def add_tex_coord(self, tl, tex_coord):
+      #begin
+        for i in range(0, len(self.tex_coords[tl])):
+        #begin
+          tc = self.tex_coords[tl][i];
+          if abs(tc[0] - tex_coord[0]) < 0.0001 and abs(tc[1] - tex_coord[1]) < 0.0001:
+          #begin
+            return i;
+          #end
+        #end
+        self.tex_coords[tl].append(tex_coord);
+        return len(self.tex_coords[tl]) - 1;
+      #end
+      def add_face_colors(self, c0, c1, c2):
+      #begin
+        i0 = self.add_color(c0);
+        i1 = self.add_color(c1);
+        i2 = self.add_color(c2);
+        return [i0, i1, i2];
+      #end
+      def add_face_tex_coords(self, tl, tc0, tc1, tc2):
+      #begin
+        i0 = self.add_tex_coord(tl, tc0);
+        i1 = self.add_tex_coord(tl, tc1);
+        i2 = self.add_tex_coord(tl, tc2);
+        return [i0, i1, i2];
+      #end
+      def generate(self):
+      #begin
+        self.vertices = [];
+        self.colors = [];
+        self.tex_coords = [];
+        self.faces = [];
+        for v in self.geom.vertices:
+        #begin
+          self.vertices.append(v.co);
+        #end
+        if len(self.geom.uv_layers) == 0:
+        #begin
+          self.add_tex_layer();
+        #end
+        else:
+        #begin
+          for l in self.geom.uv_layers:
+          #begin
+            self.add_tex_layer();
+          #end
+        #end          
+        for i in range(0, len(self.geom.tessfaces)):
+        #begin
+          f = self.geom.tessfaces[i];
+          material_added = False;
+          for m in self.materials:
+          #begin
+            if m == f.material_index:
+            #begin
+              material_added = True;
+              break;
+            #end
+          #end
+          if not material_added:
+          #begin
+            self.materials.append(f.material_index);
+          #end
+          fc = None;
+          ft = [];
+          if len(self.geom.tessface_vertex_colors) == 0:
+          #begin
+            fc = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1]];
+          #end
+          else:
+          #begin
+            fcd = self.geom.tessface_vertex_colors[0].data[i];
+            fc = [fcd.color1, fcd.color2, fcd.color3, fcd.color4];
+          #end
+          if len(self.geom.tessface_uv_textures) == 0:
+          #begin
+            ft.append([0, 0], [0, 0], [0, 0], [0, 0]);
+          #end
+          else:
+          #begin
+            for tc in self.geom.tessface_uv_textures:
+            #begin
+              ft.append([tc.data[i].uv1, tc.data[i].uv2, tc.data[i].uv3, tc.data[i].uv4]);
+            #end
+          #end
+          f_col = self.add_face_colors(fc[0], fc[1], fc[2]);
+          f_tex = [];
+          for t in range(0, len(self.tex_coords)):
+          #begin
+            f_tex.append(self.add_face_tex_coords(t, ft[t][0], ft[t][1], ft[t][2]));
+          #end
+          f_vert = [f.vertices[0], f.vertices[1], f.vertices[2]];
+          self.faces.append([f_vert, f_col, f_tex, f.material_index]);
+          if len(f.vertices) > 3:
+          #begin
+            f_col = self.add_face_colors(fc[2], fc[3], fc[0]);
+            f_tex = [];
+            for t in range(0, len(self.tex_coords)):
+            #begin
+              f_tex.append(self.add_face_tex_coords(t, ft[t][2], ft[t][3], ft[t][0]));
+            #end
+            f_vert = [f.vertices[2], f.vertices[3], f.vertices[0]];
+            self.faces.append([f_vert, f_col, f_tex, f.material_index]);
+          #end
+        #end
+      #end
+      def __init__(self, geom_object, object_id):
+      #begin
+        self.node_id = object_id;
+        self.node = geom_object;
+        self.geom = geom_object.to_mesh(bpy.context.scene, True, 'PREVIEW');
+        if not self.geom.tessfaces and self.geom.polygons:
+        #begin
+          self.geom.calc_tessface();
+        #end
+        self.generate();
+      #end
+    #end
     scope = bpy.data.objects;
     geoms = [];
-    geom_node_id = [];
     for i in range(0, len(scope)):
     #begin
       n = scope[i];
       if n.type == 'MESH':
       #begin
-        g = n.to_mesh(bpy.context.scene, True, 'PREVIEW');
-        if g is not None:
-        #begin
-          if not g.tessfaces and g.polygons:
-          #begin
-            mesh.calc_tessface();
-          #end
-          geoms.append(g);
-          geom_node_id.append(i);
-        #end
+        g = tg2_geom(n, i);
+        geoms.append(g);
       #end
     #end
-    def node_id(node):
+    def get_node_id(node):
     #begin
       nonlocal scope;
       for i in range(0, len(scope)):
@@ -157,13 +296,19 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
     file = open(self.filepath, 'wb');
     file.write(b'G2M ');
     h_pos = file.tell();
+    def write_float(f):
+    #begin
+      file.write(struct.pack('f', f));
+    #end
     def write_matrix_4x3(mat):
     #begin
+      mlh = Matrix([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]);
+      m = mlh * mat;
       for i in range(0, 4):
       #begin
         for j in range(0, 3):
         #begin
-          file.write(struct.pack('f', mat[i][j]));
+          file.write(struct.pack('f', m[j][i]));
         #end
       #end
     #end
@@ -191,6 +336,13 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
     def write_int(i):
     #begin
       file.write(struct.pack('i', i));
+    #end
+    def write_int3(v):
+    #begin
+      for i in range(0, 3):
+      #begin
+        file.write(struct.pack('i', v[i]));
+      #end
     #end
     def write_str_nt(s):
     #begin
@@ -236,7 +388,7 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
       file.seek(p);
       n = scope[i];
       ind = -1;
-      if n.parent: ind = node_id(n.parent);
+      if n.parent: ind = get_node_id(n.parent);
       write_int(ind);
       write_str_nt(n.name);
       write_matrix_4x3(n.matrix_world);
@@ -263,12 +415,75 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
       write_int(p);
       file.seek(p);
       g = geoms[i];
+      write_int(g.node_id);
+      write_int(len(g.vertices));
+      write_int(len(g.colors));
+      write_int(len(g.faces));
+      write_int(len(g.materials));
+      write_int(len(g.tex_coords));
+      print('node id = ' + str(g.node_id));
+      print('vcount = ' + str(len(g.vertices)));
+      print('ccount = ' + str(len(g.colors)));
+      print('fcount = ' + str(len(g.faces)));
+      print('mcount = ' + str(len(g.materials)));
+      print('tcount = ' + str(len(g.tex_coords)));
+      for v in g.vertices:
+      #begin
+        write_vector3([v[0], v[2], v[1]]);
+      #end;
+      for c in g.colors:
+      #begin
+        write_color(c);
+      #end
+      for tc in g.tex_coords:
+      #begin
+        write_int(len(tc));
+        for t in tc:
+        #begin
+          write_vector2(t);
+        #end
+      #end
+      for m in g.materials:
+      #begin
+        write_int(m);
+      #end
+      for f in g.faces:
+      #begin
+        f_vert = f[0];
+        f_col = f[1];
+        f_tex = f[2];
+        f_mat = f[3];
+        write_int3(f_vert);
+        write_int3(f_col);
+        for tc in f_tex:
+        #begin
+          write_int3(tc);
+        #end
+        write_int(0);
+        write_int(f_mat);
+      #end
+      '''
       print(type(g).__name__);
       materials = [];
       colors = [];
+      f_vertices = [];
+      f_colors = [];
+      f_tex_coords = [];
+      for f in g.tessfaces:
+      #begin
+        f_verices.append([f.vertices[0], f.verices[1], f.vertices[2]]);
+        if len(f.vertices) > 3:
+        #begin
+          f_verices.append([f.vertices[2], f.verices[1], f.vertices[3]);
+        #end
+      #end
       if len(g.vertex_colors) == 0:
       #begin
         colors.append([1.0, 1.0, 1.0]);
+        for f in f_vertices:
+        #begin
+          f_colors.append([0, 0, 0]);
+        #end
       #end
       else:
       #begin
@@ -276,12 +491,16 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
         #begin
           colors.append(c.color);
         #end
+        for f in g.tessface_vertex_colors:
+        #begin
+          f_colors.append([]);
+        #end
       #end
       write_int(geom_node_id[i]);
       face_count = 0;
       for f in range(0, len(g.tessfaces)):
       #begin
-        if len(len(g.tessfaces[f].vertices) == 4):
+        if len(g.tessfaces[f].vertices) == 4:
         #begin
           print('quad face!');
         #end
@@ -306,14 +525,14 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
       write_int(len(materials));
       print('len(g.uv_layers) = ' + str(len(g.uv_layers)));
       #if len(g.uv_layers) == 0:
-      if len(g.tessface_uv_textures) == 0:
+      if len(g.uv_layers) == 0:
       #begin
         write_int(1);
       #end
       else:
       #begin
         #write_int(len(g.uv_layers));
-        write_int(len(g.tessface_uv_textures));
+        write_int(len(g.uv_layers));
       #end
       for v in g.vertices:
       #begin
@@ -383,6 +602,7 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
           write_int(face.material_index);
         #end
       #end
+      '''
     #end
     block_end();
     #geoms export end
