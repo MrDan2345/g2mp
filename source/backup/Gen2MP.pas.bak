@@ -2930,16 +2930,16 @@ type
   end;
 
 {$if defined(G2RM_SM2)}
-  TG2MeshNode = object
-    var OwnerID: TG2IntS32;
-    var Name: AnsiString;
-    var Transform: TG2Mat;
-    var SubNodesID: TG2QuickListIntS32;
+  TG2MeshNode = record
+    OwnerID: TG2IntS32;
+    Name: AnsiString;
+    Transform: TG2Mat;
+    SubNodesID: TG2QuickListIntS32;
   end;
 
-  TG2GeomDataStatic = object
-    var BBox: TG2Box;
-    var VB: TG2VertexBuffer;
+  TG2GeomDataStatic = record
+    BBox: TG2Box;
+    VB: TG2VertexBuffer;
   end;
   PG2GeomDataStatic = ^TG2GeomDataStatic;
 
@@ -3017,6 +3017,7 @@ type
     var Geoms: TG2MeshGeomArray;
     var Anims: TG2MeshAnimArray;
     var Materials: TG2MeshMaterialArray;
+    destructor Destroy; override;
     procedure Load(const MeshData: TG2MeshData);
     procedure Load(const DataManager: TG2DataManager);
     procedure Load(const Stream: TStream);
@@ -7341,6 +7342,7 @@ procedure TG2GfxD3D9.Render;
 begin
   _Device.BeginScene;
   ProcessRenderQueue;
+  SetDepthEnable(True);
   _Device.EndScene;
   _DefSwapChain.Present(nil, nil, 0, nil, 0);
 end;
@@ -16936,6 +16938,45 @@ begin
   Result.AssetName := SharedAssetName;
   Result.Load(dm);
   dm.Free;
+end;
+
+destructor TG2Mesh.Destroy;
+  var DataSkinned: PG2GeomDataSkinned;
+  var DataStatic: PG2GeomDataStatic;
+  var i, j: TG2IntS32;
+begin
+  Nodes.Clear;
+  for i := 0 to Geoms.Count - 1 do
+  begin
+    if Geoms[i]^.Skinned then
+    begin
+      DataSkinned := PG2GeomDataSkinned(Geoms[i]^.Data);
+      DataSkinned^.VB.Free;
+      Dispose(DataSkinned);
+    end
+    else
+    begin
+      DataStatic := PG2GeomDataStatic(Geoms[i]^.Data);
+      DataStatic^.VB.Free;
+      Dispose(DataStatic);
+    end;
+    Geoms[i]^.IB.Free;
+  end;
+  Geoms.Clear;
+  Anims.Clear;
+  for i := 0 to Materials.Count - 1 do
+  for j := 0 to Materials[i]^.ChannelCount - 1 do
+  begin
+    if Assigned(Materials[i]^.Channels[j].MapDiffuse) then
+    begin
+      Materials[i]^.Channels[j].MapDiffuse.RefDec;
+    end;
+    if Assigned(Materials[i]^.Channels[j].MapLight) then
+    begin
+      Materials[i]^.Channels[j].MapLight.RefDec;
+    end;
+  end;
+  inherited Destroy;
 end;
 
 procedure TG2Mesh.Load(const MeshData: TG2MeshData);

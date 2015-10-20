@@ -80,13 +80,15 @@ begin
   MeshInst := Mesh.NewInst;
   MeshInst.RefInc;
   Shader := g2.Gfx.RequestShader('StandardShaders');
-  Shader.Method := 'Pic';
+  //Shader := TG2ShaderGroup.Create;
+  //Shader.Load('GlitterShaders.g2sg');
   Tex := TG2Texture2D.SharedAsset('Box.png', tu3D);
   Tex.RefInc;
 end;
 
 procedure TGame.Finalize;
 begin
+  //Shader.Free;
   Tex.RefDec;
   MeshInst.RefDec;
   Mesh.RefDec;
@@ -99,21 +101,25 @@ end;
 
 procedure TGame.Render;
   var gi, mi: Integer;
-  var WVP, W, V, P: TG2Mat;
+  var WVP, WL, W, V, P: TG2Mat;
   var DataStatic: PG2GeomDataStatic;
   var DataSkinned: PG2GeomDataSkinned;
+  var EyePos: TG2Vec3;
 begin
   g2.Clear(True, $ff808080);
+  EyePos := G2Vec3(-7, 7, -7);
+  //W := G2MatRotationY(Pi);
   W := G2MatRotationY(G2PiTime);
-  V := G2MatView(G2Vec3(-5, 5, -5), G2Vec3(0, 0, 0), G2Vec3(0, 1, 0));
-  P := G2MatProj(Pi * 0.4, g2.Params.Width / g2.Params.Height, 0.1, 100);
+  V := G2MatView(EyePos, G2Vec3(0, 4, 0), G2Vec3(0, 1, 0));
+  P := G2MatProj(Pi * 0.4, g2.Params.Width / g2.Params.Height, 1, 100);
   WVP := W * V * P;
   g2.Gfx.StateChange.StateDepthEnable := True;
   for gi := 0 to Mesh.Geoms.Count - 1 do
   begin
     if Mesh.Geoms[gi]^.Skinned then Continue;
     DataStatic := PG2GeomDataStatic(Mesh.Geoms[gi]^.Data);
-    WVP := Mesh.Nodes[Mesh.Geoms[gi]^.NodeID]^.Transform * W * V * P;
+    WL := Mesh.Nodes[Mesh.Geoms[gi]^.NodeID]^.Transform * W;
+    WVP := WL * V * P;
     for mi := 0 to Mesh.Geoms[gi]^.GCount - 1 do
     begin
       g2.Gfx.Buffer.BufferBegin(
@@ -123,7 +129,9 @@ begin
         Mesh.Geoms[gi]^.Groups[mi].FaceStart * 3,
         Mesh.Geoms[gi]^.Groups[mi].FaceCount
       );
+      g2.Gfx.Buffer.ParamMat4x4('W', WL);
       g2.Gfx.Buffer.ParamMat4x4('WVP', WVP);
+      //g2.Gfx.Buffer.ParamVec3('EyePos', EyePos);
       g2.Gfx.Buffer.ParamVec4('LightAmbient', G2Vec4(1, 1, 1, 1));
       g2.Gfx.Buffer.Sampler('Tex0', Tex);//Mesh.Materials[Mesh.Geoms[gi]^.Groups[mi].Material]^.Channels[0].MapDiffuse);
       g2.Gfx.Buffer.BufferEnd;

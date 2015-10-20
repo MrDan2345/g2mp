@@ -429,7 +429,7 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
       print('tcount = ' + str(len(g.tex_coords)));
       for v in g.vertices:
       #begin
-        write_vector3([v[0], v[2], v[1]]);
+        write_vector3(v);#[v[0], v[2], v[1]]);
       #end;
       for c in g.colors:
       #begin
