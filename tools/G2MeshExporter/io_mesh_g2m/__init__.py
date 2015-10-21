@@ -180,6 +180,38 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
         i2 = self.add_tex_coord(tl, tc2);
         return [i0, i1, i2];
       #end
+      def create_material_layer(self, mat):
+      #begin
+        later = {};
+        layer['name'] = mat.name;
+        layer['two_sided'] = False;
+        layer['ambient_color'] = [0, 0, 0];
+        layer['diffuse_color'] = [0, 0, 0];
+        layer['specular_color'] = [0, 0, 0];
+        layer['specular_color_amount'] = 0;
+        layer['specular_power'] = 1;
+        layer['emmissive_color'] = [0, 0, 0];
+        layer['emmissive_color_amount'] = 0;
+        layer['ambient_map_enable'] = False;
+        layer['ambient_map'] = '';
+        layer['ambient_map_amount'] = 0;
+        layer['diffuse_map_enable'] = False;
+        layer['diffuse_map'] = '';
+        layer['diffuse_map_amount'] = 0;
+        layer['specular_map_enable'] = False;
+        layer['specular_map'] = '';
+        layer['specular_map_amount'] = 0;
+        layer['opacity_map_enable'] = False;
+        layer['opacity_map'] = '';
+        layer['opacity_map_amount'] = 0;
+        layer['light_map_enable'] = False;
+        layer['light_map'] = '';
+        layer['light_map_amount'] = 0;
+        layer['bump_map_enable'] = False;
+        layer['bump_map'] = '';
+        layer['bump_map_amount'] = 0;
+        return layer;
+      #end
       def generate(self):
       #begin
         self.vertices = [];
@@ -200,23 +232,10 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
           #begin
             self.add_tex_layer();
           #end
-        #end          
+        #end
         for i in range(0, len(self.geom.tessfaces)):
         #begin
           f = self.geom.tessfaces[i];
-          material_added = False;
-          for m in self.materials:
-          #begin
-            if m == f.material_index:
-            #begin
-              material_added = True;
-              break;
-            #end
-          #end
-          if not material_added:
-          #begin
-            self.materials.append(f.material_index);
-          #end
           fc = None;
           ft = [];
           if len(self.geom.tessface_vertex_colors) == 0:
@@ -258,6 +277,17 @@ class ExportG2M(bpy.types.Operator, ExportHelper):
             f_vert = [f.vertices[2], f.vertices[3], f.vertices[0]];
             self.faces.append([f_vert, f_col, f_tex, f.material_index]);
           #end
+        #end
+        for m in self.geom.materials:
+        #begin
+          mat_layers = [];
+          layer = self.create_material_layer(m);
+          mat_layers.append(layer);
+          for tex in m.texture_slots:
+          #begin
+            
+          #end
+          self.materials.append(mat_layers);
         #end
       #end
       def __init__(self, geom_object, object_id):
