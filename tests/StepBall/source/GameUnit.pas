@@ -8,6 +8,7 @@ uses
   G2Math,
   G2Utils,
   G2DataManager,
+  G2Scene2D,
   Types,
   Classes;
 
@@ -15,6 +16,8 @@ type
   TGame = class
   protected
   public
+    Display: TG2Display2D;
+    Scene: TG2Scene2D;
     constructor Create;
     destructor Destroy; override;
     procedure Initialize;
@@ -50,7 +53,7 @@ begin
   g2.Params.MaxFPS := 100;
   g2.Params.Width := 1024;
   g2.Params.Height := 768;
-  g2.Params.ScreenMode := smMaximized;
+  g2.Params.ScreenMode := smWindow;
 end;
 
 destructor TGame.Destroy;
@@ -70,12 +73,20 @@ end;
 
 procedure TGame.Initialize;
 begin
-
+  Display := TG2Display2D.Create;
+  Display.Width := 8;
+  Display.Height := 6;
+  Display.Position := G2Vec2(0, 0);
+  Scene := TG2Scene2D.Create;
+  Scene.Load('Scene0.g2s2d');
+  Scene.EnablePhysics;
+  Scene.Simulate := True;
 end;
 
 procedure TGame.Finalize;
 begin
-
+  Scene.Free;
+  Display.Free;
 end;
 
 procedure TGame.Update;
@@ -85,7 +96,7 @@ end;
 
 procedure TGame.Render;
 begin
-
+  Scene.Render(Display);
 end;
 
 procedure TGame.KeyDown(const Key: Integer);
