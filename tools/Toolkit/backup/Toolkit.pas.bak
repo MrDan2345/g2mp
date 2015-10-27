@@ -496,9 +496,11 @@ type
     protected
       var _ValuePtr: PString;
       var _Editable: Boolean;
+      var _AllowEmpty: Boolean;
     public
       property ValuePtr: PString read _ValuePtr write _ValuePtr;
       property Editable: Boolean read _Editable write _Editable;
+      property AllowEmpty: Boolean read _AllowEmpty write _AllowEmpty;
       constructor Create; override;
     end;
     type TPropertyVec2 = class (TProperty)
@@ -2353,6 +2355,7 @@ type
     function HaveSelection: Boolean; inline;
     procedure CursorMove;
   public
+    var AllowEmpty: Boolean;
     var AutoAdjustTextPos: Boolean;
     var Text: PAnsiString;
     var Font: TG2Font;
@@ -2483,7 +2486,8 @@ type
       const OnChangeProc: TG2ProcObj;
       const DefaultText: AnsiString = '';
       const OnEnterProc: TG2ProcObj = nil;
-      const OnCursorMoveProc: TG2ProcObj = nil
+      const OnCursorMoveProc: TG2ProcObj = nil;
+      const AllowEmpty: Boolean = False
     );
     procedure EnableCode(
       const CodePtr: PCodeFile;
@@ -3481,20 +3485,26 @@ type
     var OpenStructure: TG2QuickList;
     var Properties: TPropertySet;
     var EditName: String;
+    var EditTags: AnsiString;
     var EditPosition: TG2Vec2;
     var EditRotation: TG2Float;
     constructor Create(const AEntity: TG2Scene2DEntity);
     destructor Destroy; override;
+    procedure SyncTags;
     procedure SyncProperties;
     procedure OnNameChange(const Sender: Pointer);
     procedure OnPositionChange(const Sender: Pointer);
     procedure OnRotationChange(const Sender: Pointer);
+    procedure OnTagsChange(const Sender: Pointer);
     procedure UpdateProperties;
   end;
 //TScene2DEntityData END
 
 //TScene2DComponentData BEGIN
   TScene2DComponentData = class
+  protected
+    Tags: AnsiString;
+    procedure SyncTags(const Cmp: TG2Scene2DComponent);
   public
     class function GetName: String; virtual;
     constructor Create; virtual;
@@ -3526,6 +3536,7 @@ type
     procedure OnChangeImage(const Sender: Pointer);
     procedure OnChangePosition(const Sender: Pointer);
     procedure OnChangeRotation(const Sender: Pointer);
+    procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataSprite END
 
@@ -3559,6 +3570,7 @@ type
     procedure OnFlipXChange(const Sender: Pointer);
     procedure OnFlipYChange(const Sender: Pointer);
     procedure OnTimeScaleChange(const Sender: Pointer);
+    procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataSpineAnimation END
 
@@ -3574,6 +3586,7 @@ type
     procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnChangeLayer(const Sender: Pointer);
     procedure OnChangeTexture(const Sender: Pointer);
+    procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataBackground END
 
@@ -3651,6 +3664,7 @@ type
     procedure Clear;
     procedure OnChangeLayerTexture(const Sender: Pointer);
     procedure OnChangeParam(const Sender: Pointer);
+    procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataPoly END
 
@@ -3676,6 +3690,7 @@ type
     procedure OnChangeLocalSpace(const Sender: Pointer);
     procedure OnChangeFixedOrientation(const Sender: Pointer);
     procedure OnChangeEffect(const Sender: Pointer);
+    procedure OnTagsChange(const Sender: Pointer);
     procedure OnPlay;
     procedure OnStop;
   end;
@@ -3686,7 +3701,8 @@ type
   private
     var _Position: TG2Vec2;
     var _Rotation: TG2Float;
-    var _Mass: TG2Float;
+    var _LinearDamping: TG2Float;
+    var _AngularDamping: TG2Float;
     var _FixedRotation: Boolean;
     var _BodyType: TG2Scene2DComponentRigidBodyType;
   public
@@ -3698,8 +3714,11 @@ type
     function GetWorldPoint(const LocalPoint: TG2Vec2): TG2Vec2;
     procedure OnChangePosition(const Sender: Pointer);
     procedure OnChangeRotation(const Sender: Pointer);
+    procedure OnChangeLinearDamping(const Sender: Pointer);
+    procedure OnChangeAngularDamping(const Sender: Pointer);
     procedure OnChangeFixedRotation(const Sender: Pointer);
     procedure OnChangeBodyType(const Sender: Pointer);
+    procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataRigidBody END
 
@@ -3711,6 +3730,7 @@ type
     destructor Destroy; override;
     procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure DebugDraw(const Display: TG2Display2D); override;
+    procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataCharacter END
 
@@ -3719,6 +3739,7 @@ type
   private
     var _Friction: TG2Float;
     var _Density: TG2Float;
+    var _Restitution: TG2Float;
     var _Sensor: Boolean;
   public
     var Component: TG2Scene2DComponentCollisionShapePoly;
@@ -3731,7 +3752,9 @@ type
     procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnChangeFriction(const Sender: Pointer);
     procedure OnChangeDensity(const Sender: Pointer);
+    procedure OnChangeRestitution(const Sender: Pointer);
     procedure OnChangeSensor(const Sender: Pointer);
+    procedure OnTagsChange(const Sender: Pointer);
     procedure OnEdit;
   end;
 //TScene2DComponentDataShapePoly END
@@ -3745,6 +3768,7 @@ type
     var _Height: TG2Float;
     var _Friction: TG2Float;
     var _Density: TG2Float;
+    var _Restitution: TG2Float;
     var _Sensor: Boolean;
   public
     var Component: TG2Scene2DComponentCollisionShapeBox;
@@ -3761,7 +3785,9 @@ type
     procedure OnChangeAngle(const Sender: Pointer);
     procedure OnChangeFriction(const Sender: Pointer);
     procedure OnChangeDensity(const Sender: Pointer);
+    procedure OnChangeRestitution(const Sender: Pointer);
     procedure OnChangeSensor(const Sender: Pointer);
+    procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataShapeBox END
 
@@ -3772,6 +3798,7 @@ type
     var _Radius: TG2Float;
     var _Friction: TG2Float;
     var _Density: TG2Float;
+    var _Restitution: TG2Float;
     var _Sensor: Boolean;
   public
     var Component: TG2Scene2DComponentCollisionShapeCircle;
@@ -3785,7 +3812,9 @@ type
     procedure OnChangeRadius(const Sender: Pointer);
     procedure OnChangeFriction(const Sender: Pointer);
     procedure OnChangeDensity(const Sender: Pointer);
+    procedure OnChangeRestitution(const Sender: Pointer);
     procedure OnChangeSensor(const Sender: Pointer);
+    procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataShapeCircle END
 
@@ -3794,6 +3823,7 @@ type
   private
     var _Friction: TG2Float;
     var _Density: TG2Float;
+    var _Restitution: TG2Float;
     var _Sensor: Boolean;
   public
     var Component: TG2Scene2DComponentCollisionShapeEdge;
@@ -3805,7 +3835,9 @@ type
     procedure OnEdit;
     procedure OnChangeFriction(const Sender: Pointer);
     procedure OnChangeDensity(const Sender: Pointer);
+    procedure OnChangeRestitution(const Sender: Pointer);
     procedure OnChangeSensor(const Sender: Pointer);
+    procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataShapeEdge END
 
@@ -3814,6 +3846,7 @@ type
   private
     var _Friction: TG2Float;
     var _Density: TG2Float;
+    var _Restitution: TG2Float;
     var _Sensor: Boolean;
   public
     var Component: TG2Scene2DComponentCollisionShapeChain;
@@ -3825,7 +3858,9 @@ type
     procedure OnEdit;
     procedure OnChangeFriction(const Sender: Pointer);
     procedure OnChangeDensity(const Sender: Pointer);
+    procedure OnChangeRestitution(const Sender: Pointer);
     procedure OnChangeSensor(const Sender: Pointer);
+    procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataShapeChain END
 
@@ -6311,6 +6346,7 @@ begin
   inherited Create;
   _PropertyType := pt_string;
   _Editable := True;
+  _AllowEmpty := False;
 end;
 
 procedure TPropertySet.TPropertyVec2.ComponentChangeProc(const Ptr: Pointer);
@@ -12573,10 +12609,15 @@ procedure TUIWorkspaceProperties.OnMouseDown(const Button, x, y: Integer);
   var InExpand, InEdit: Boolean;
   var r, pr: TG2Rect;
   procedure StartEditing;
+    var AllowEmpty: Boolean;
   begin
     _TextPos.x := pr.l + 4;
     _TextPos.y := pr.t + (pr.h - App.UI.Font1.TextHeight('A')) * 0.5;
-    App.UI.TextEdit.Enable(@_EditText, @_TextPos, App.UI.Font1, nil, _EditText, nil, nil);
+    if Prop.PropertyType = TPropertySet.TPropertyType.pt_string then
+    AllowEmpty := PropString.AllowEmpty
+    else
+    AllowEmpty := False;
+    App.UI.TextEdit.Enable(@_EditText, @_TextPos, App.UI.Font1, nil, _EditText, nil, nil, AllowEmpty);
     App.UI.TextEdit.ImplSingleLine.AutoAdjustTextPos := True;
     App.UI.TextEdit.OnFinishProc := @OnEditFinish;
     App.UI.TextEdit.AllowSymbols := True;
@@ -17129,7 +17170,7 @@ begin
     _EmitterNameEdit.Text := Emitter.Name;
     if Emitter.Texture <> nil then
     begin
-      _ParticleTextureFile.FilePath := Emitter.Texture.TextureFileName;
+      _ParticleTextureFile.FilePath := Emitter.Texture.AssetName;
       _ParticleTextureFile.FileName := ExtractFileName(_ParticleTextureFile.FilePath);
     end
     else
@@ -19076,7 +19117,7 @@ end;
 
 procedure TUITextEditSingleLine.OnDisable;
 begin
-  if Length(Text^) <= 0 then
+  if not AllowEmpty and (Length(Text^) <= 0) then
   Text^ := DefaultText;
   if Assigned(OnChangeProc) then
   OnChangeProc;
@@ -20405,12 +20446,14 @@ procedure TUITextEdit.Enable(
   const OnChangeProc: TG2ProcObj;
   const DefaultText: AnsiString;
   const OnEnterProc: TG2ProcObj;
-  const OnCursorMoveProc: TG2ProcObj
+  const OnCursorMoveProc: TG2ProcObj;
+  const AllowEmpty: Boolean = False
 );
 begin
   _OnFinishProc := nil;
   _Enabled := True;
   _Implementation := _SingleLine;
+  _SingleLine.AllowEmpty := AllowEmpty;
   _SingleLine.AutoAdjustTextPos := False;
   _SingleLine.Text := TextPtr;
   _SingleLine.TextPos := TextPosPtr;
@@ -22606,7 +22649,10 @@ begin
   for i := 0 to Emitters.Count - 1 do
   Emitters[i].Free;
   Emitters.Clear;
-  if Texture <> nil then Texture.Free;
+  if Texture <> nil then
+  begin
+    if Texture.IsShared then Texture.RefDec else Texture.Free;
+  end;
   inherited Destroy;
 end;
 
@@ -22628,7 +22674,7 @@ begin
   dm.WriteBool(Texture <> nil);
   if Texture <> nil then
   begin
-    dm.WriteStringA(Texture.TextureFileName);
+    dm.WriteStringA(Texture.AssetName);
     Image := Texture.CreateImage;
     Image.Save(dm);
     Image.Free;
@@ -22693,7 +22739,8 @@ begin
     Texture := TG2Texture2D.Create;
     TexName := dm.ReadStringA;
     Texture.Load(dm);
-    Texture.TextureFileName := TexName;
+    Texture.AssetName := TexName;
+    Texture.RefInc;
   end;
   TimeStart := dm.ReadFloat;
   TimeEnd := dm.ReadFloat;
@@ -24381,7 +24428,7 @@ procedure TParticleData.Render;
     g2ml.NodeOpen('emitter');
     g2ml.NodeValue('name', e.Name);
     if e.Texture <> nil then
-    g2ml.NodeValue('frame', ExtractFileName(e.Texture.TextureFileName))
+    g2ml.NodeValue('frame', ExtractFileName(e.Texture.AssetName))
     else
     g2ml.NodeValue('frame', '');
     g2ml.NodeValue('time_start', e.TimeStart);
@@ -27661,11 +27708,23 @@ begin
   inherited Destroy;
 end;
 
+procedure TScene2DEntityData.SyncTags;
+  var i: Integer;
+begin
+  EditTags := '';
+  for i := 0 to Entity.TagCount - 1 do
+  begin
+    if i > 0 then EditTags += ', ';
+    EditTags += Entity.Tags[i];
+  end;
+end;
+
 procedure TScene2DEntityData.SyncProperties;
 begin
   EditName := Entity.Name;
   EditPosition := Entity.Transform.p;
   EditRotation := Entity.Transform.r.Angle * G2RadToDeg;
+  SyncTags;
   if EditRotation < 0 then EditRotation := 360 + EditRotation;
 end;
 
@@ -27683,6 +27742,13 @@ end;
 procedure TScene2DEntityData.OnRotationChange(const Sender: Pointer);
 begin
   Entity.Transform := G2Transform2(Entity.Transform.p, G2Rotation2(EditRotation * G2DegToRad));
+  App.Scene2DData.UpdateSelectionPos;
+end;
+
+procedure TScene2DEntityData.OnTagsChange(const Sender: Pointer);
+begin
+  Entity.ParseTags(EditTags);
+  SyncTags;
 end;
 
 procedure TScene2DEntityData.UpdateProperties;
@@ -27693,6 +27759,7 @@ begin
   Properties.PropString('GUID', @Entity.GUID, nil).Editable := False;
   Properties.PropVec2('Position', @EditPosition, nil, @OnPositionChange);
   Properties.PropFloat('Rotation', @EditRotation, nil, @OnRotationChange);
+  Properties.PropString('Tags', @EditTags, nil, @OnTagsChange).AllowEmpty := True;
   for i := 0 to Entity.ComponentCount - 1 do
   TScene2DComponentData(Entity.Components[i].UserData).AddToProperties(Properties);
   Properties.PropButton('Add Component', @App.Scene2DData.BtnAddComponent);
@@ -27700,6 +27767,17 @@ end;
 //TScene2DEntityData END
 
 //TScene2DComponentData BEGIN
+procedure TScene2DComponentData.SyncTags(const Cmp: TG2Scene2DComponent);
+  var i: Integer;
+begin
+  Tags := '';
+  for i := 0 to Cmp.TagCount - 1 do
+  begin
+    if i > 0 then Tags += ', ';
+    Tags += Cmp.Tags[i];
+  end;
+end;
+
 class function TScene2DComponentData.GetName: String;
 begin
   Result := 'Component';
@@ -27783,6 +27861,7 @@ procedure TScene2DComponentDataSpineAnimation.AddToProperties(const PropertySet:
   var i: Integer;
   var Anim: TSpineAnimation;
 begin
+  SyncTags(Component);
   Group := PropertySet.PropComponent('Spine Animation', Component);
   Layer := Component.Layer;
   Offset := Component.Offset;
@@ -27813,6 +27892,7 @@ begin
   PropertySet.PropBool('Flip X', @FlipX, Group, @OnFlipXChange);
   PropertySet.PropBool('Flip Y', @FlipY, Group, @OnFlipYChange);
   PropertySet.PropFloat('Speed', @TimeScale, Group, @OnTimeScaleChange);
+  PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   UpdateAnimList;
 end;
 
@@ -27879,6 +27959,11 @@ procedure TScene2DComponentDataSpineAnimation.OnTimeScaleChange(const Sender: Po
 begin
   Component.TimeScale := TimeScale;
 end;
+
+procedure TScene2DComponentDataSpineAnimation.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+end;
 //TScene2DComponentDataSpineAnimation END
 
 //TScene2DComponentDataSprite BIEGIN
@@ -27922,6 +28007,7 @@ procedure TScene2DComponentDataSprite.AddToProperties(const PropertySet: TProper
   var Group: TPropertySet.TProperty;
   var Enum: TPropertySet.TPropertyEnum;
 begin
+  SyncTags(Component);
   Group := PropertySet.PropComponent('Sprite', Component);
   Layer := Component.Layer;
   PropertySet.PropInt('Layer', @Layer, Group, @OnChangeLayer);
@@ -27945,6 +28031,7 @@ begin
   Enum.AddValue('Linear', Byte(tfLinear));
   PropertySet.PropBlendMode('Blend Mode', @Component.BlendMode, Group);
   Enum.SetValue(Byte(Component.Filter));
+  PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
 end;
 
 procedure TScene2DComponentDataSprite.OnChangeLayer(const Sender: Pointer);
@@ -27988,6 +28075,12 @@ procedure TScene2DComponentDataSprite.OnChangeRotation(const Sender: Pointer);
 begin
   Component.Transform.r.Angle := Rotation * G2DegToRad;
 end;
+
+procedure TScene2DComponentDataSprite.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
+end;
 //TScene2DComponentDataSprite END
 
 //TScene2DComponentDataBackground BEGIN
@@ -28005,6 +28098,7 @@ procedure TScene2DComponentDataBackground.AddToProperties(const PropertySet: TPr
   var Group: TPropertySet.TProperty;
   var Enum: TPropertySet.TPropertyEnum;
 begin
+  SyncTags(Component);
   Group := PropertySet.PropComponent('Background', Component);
   Layer := Component.Layer;
   PropertySet.PropInt('Layer', @Layer, Group, @OnChangeLayer);
@@ -28024,6 +28118,7 @@ begin
   Enum.AddValue('Linear', Byte(tfLinear));
   Enum.SetValue(Byte(Component.Filter));
   PropertySet.PropBlendMode('Blend Mode', @Component.BlendMode, Group);
+  PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
 end;
 
 procedure TScene2DComponentDataBackground.OnChangeLayer(const Sender: Pointer);
@@ -28034,6 +28129,12 @@ end;
 procedure TScene2DComponentDataBackground.OnChangeTexture(const Sender: Pointer);
 begin
   Component.Texture := App.AssetManager.GetTexture(TexturePath);
+end;
+
+procedure TScene2DComponentDataBackground.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
 end;
 //TScene2DComponentDataBackground END
 
@@ -28187,6 +28288,7 @@ procedure TScene2DComponentDataPoly.UpdateGroup;
   var Properties: TPropertySet;
   var LayerGroup: TPropertySet.TProperty;
 begin
+  SyncTags(Component);
   Properties := TScene2DEntityData(Component.Owner.UserData).Properties;
   Group.Clear;
   for i := 0 to Layers.Count - 1 do
@@ -28200,6 +28302,7 @@ begin
     Layers[i].ScaleProp := Properties.PropVec2('Scale', @Layers[i].Scale, LayerGroup, @OnChangeParam);
     Layers[i].LayerProp := Properties.PropInt('Layer', @Layers[i].Layer, LayerGroup, @OnChangeParam);
   end;
+  Properties.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   Properties.PropButton('Add Layer', @OnAddLayer, Group);
   Properties.PropButton('Edit', @OnEdit, Group);
 end;
@@ -28481,6 +28584,12 @@ procedure TScene2DComponentDataPoly.OnChangeParam(const Sender: Pointer);
 begin
   UpdateComponent;
 end;
+
+procedure TScene2DComponentDataPoly.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
+end;
 //TScene2DComponentDataPoly END
 
 //TScene2DComponentDataEffect BEGIN
@@ -28497,6 +28606,7 @@ end;
 procedure TScene2DComponentDataEffect.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TProperty;
 begin
+  SyncTags(Component);
   Group := PropertySet.PropComponent('Effect', Component);
   if Component.Effect <> nil then
   EffectPath := Component.Effect.AssetName
@@ -28516,6 +28626,7 @@ begin
   PropertySet.PropBool('Local Space', @LocalSpace, Group, @OnChangeLocalSpace);
   PropertySet.PropBool('Fixed Orientation', @FixedOrientation, Group, @OnChangeFixedOrientation);
   PropertySet.PropBool('Auto Play', @Component.AutoPlay, Group);
+  PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   PropertySet.PropButton('Play', @OnPlay, Group);
   PropertySet.PropButton('Stop', @OnStop, Group);
 end;
@@ -28565,6 +28676,12 @@ begin
   end;
 end;
 
+procedure TScene2DComponentDataEffect.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
+end;
+
 procedure TScene2DComponentDataEffect.OnPlay;
 begin
   Component.Play;
@@ -28591,19 +28708,25 @@ procedure TScene2DComponentDataRigidBody.AddToProperties(const PropertySet: TPro
   var Group: TPropertySet.TProperty;
   var Enum: TPropertySet.TPropertyEnum;
 begin
+  SyncTags(Component);
   _Position := Component.Position;
   _Rotation := Component.Rotation * G2RadToDeg;
+  _LinearDamping := Component.LinearDamping;
+  _AngularDamping := Component.AngularDamping;
   _FixedRotation := Component.FixedRotation;
   _BodyType := Component.BodyType;
   Group := PropertySet.PropComponent('Rigid Body', Component);
   PropertySet.PropVec2('Position', @_Position, Group, @OnChangePosition);
   PropertySet.PropFloat('Rotation', @_Rotation, Group, @OnChangeRotation);
+  PropertySet.PropFloat('Linear Damping', @_LinearDamping, Group, @OnChangeLinearDamping);
+  PropertySet.PropFloat('Angular Damping', @_AngularDamping, Group, @OnChangeAngularDamping);
   PropertySet.PropBool('Fixed Rotation', @_FixedRotation, Group, @OnChangeFixedRotation);
   Enum := PropertySet.PropEnum('Type', @_BodyType, Group, @OnChangeBodyType);
   Enum.AddValue('Static', Byte(g2_s2d_rbt_static_body));
   Enum.AddValue('Kinematic', Byte(g2_s2d_rbt_kinematic_body));
   Enum.AddValue('Dynamic', Byte(g2_s2d_rbt_dynamic_body));
   Enum.SetValue(Byte(_BodyType));
+  PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
 end;
 
 function TScene2DComponentDataRigidBody.GetLocalPoint(const WorldPoint: TG2Vec2): TG2Vec2;
@@ -28634,6 +28757,16 @@ begin
   Component.Rotation := _Rotation * G2DegToRad;
 end;
 
+procedure TScene2DComponentDataRigidBody.OnChangeLinearDamping(const Sender: Pointer);
+begin
+  Component.LinearDamping := _LinearDamping;
+end;
+
+procedure TScene2DComponentDataRigidBody.OnChangeAngularDamping(const Sender: Pointer);
+begin
+  Component.AngularDamping := _AngularDamping;
+end;
+
 procedure TScene2DComponentDataRigidBody.OnChangeFixedRotation(const Sender: Pointer);
 begin
   Component.FixedRotation := _FixedRotation;
@@ -28642,6 +28775,12 @@ end;
 procedure TScene2DComponentDataRigidBody.OnChangeBodyType(const Sender: Pointer);
 begin
   Component.BodyType := _BodyType;
+end;
+
+procedure TScene2DComponentDataRigidBody.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
 end;
 //TScene2DComponentDataRigidBody END
 
@@ -28659,8 +28798,10 @@ end;
 procedure TScene2DComponentDataCharacter.AddToProperties(const PropertySet: TPropertySet);
   var Group: TPropertySet.TPropertyComponent;
 begin
+  SyncTags(Component);
   Group := PropertySet.PropComponent('Character', Component);
   PropertySet.PropFloat('Max Glide Speed', @Component.MaxGlideSpeed, Group);
+  PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
 end;
 
 procedure TScene2DComponentDataCharacter.DebugDraw(const Display: TG2Display2D);
@@ -28692,6 +28833,12 @@ begin
   v[i] := xf.Transform(v[i]);
   for i := 0 to High(v) do
   Display.PrimLine(v[i], v[(i + 1) mod Length(v)], $ff0000ff);
+end;
+
+procedure TScene2DComponentDataCharacter.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
 end;
 //TScene2DComponentDataCharacter END
 
@@ -28770,13 +28917,17 @@ procedure TScene2DComponentDataShapePoly.AddToProperties(const PropertySet: TPro
   var Group: TPropertySet.TProperty;
   var EventGroup: TPropertySet.TProperty;
 begin
+  SyncTags(Component);
   Group := PropertySet.PropComponent('Collision Polygon', Component);
   _Friction := Component.Fricton;
   _Density := Component.Density;
+  _Restitution := Component.Restitution;
   _Sensor := Component.IsSensor;
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
+  PropertySet.PropFloat('Restitution', @_Restitution, Group, @OnChangeRestitution);
   PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
+  PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   PropertySet.PropButton('Edit', @OnEdit, Group);
   EventGroup := PropertySet.PropGroup('Events', Group);
   PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
@@ -28796,9 +28947,20 @@ begin
   Component.Density := _Density;
 end;
 
+procedure TScene2DComponentDataShapePoly.OnChangeRestitution(const Sender: Pointer);
+begin
+  Component.Restitution := _Restitution;
+end;
+
 procedure TScene2DComponentDataShapePoly.OnChangeSensor(const Sender: Pointer);
 begin
   Component.IsSensor := _Sensor;
+end;
+
+procedure TScene2DComponentDataShapePoly.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
 end;
 
 procedure TScene2DComponentDataShapePoly.OnEdit;
@@ -28888,12 +29050,14 @@ procedure TScene2DComponentDataShapeBox.AddToProperties(const PropertySet: TProp
   var Group: TPropertySet.TProperty;
   var EventGroup: TPropertySet.TProperty;
 begin
+  SyncTags(Component);
   _Width := Component.Width;
   _Height := Component.Height;
   _Offset := Component.Offset;
   _Angle := Component.Angle * G2RadToDeg;
   _Friction := Component.Fricton;
   _Density := Component.Density;
+  _Restitution := Component.Restitution;
   _Sensor := Component.IsSensor;
   Group := PropertySet.PropComponent('Collision Box', Component);
   PropertySet.PropFloat('Width', @_Width, Group, @OnChangeWidth);
@@ -28902,7 +29066,9 @@ begin
   PropertySet.PropFloat('Rotation', @_Angle, Group, @OnChangeAngle);
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
+  PropertySet.PropFloat('Restitution', @_Restitution, Group, @OnChangeRestitution);
   PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
+  PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   EventGroup := PropertySet.PropGroup('Events', Group);
   PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
   PropertySet.PropString('Event Contact End', @Component.EventEndContact.Name, EventGroup);
@@ -28940,9 +29106,20 @@ begin
   Component.Density := _Density;
 end;
 
+procedure TScene2DComponentDataShapeBox.OnChangeRestitution(const Sender: Pointer);
+begin
+  Component.Restitution := _Restitution;
+end;
+
 procedure TScene2DComponentDataShapeBox.OnChangeSensor(const Sender: Pointer);
 begin
+  Component.IsSensor := _Sensor;
+end;
 
+procedure TScene2DComponentDataShapeBox.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
 end;
 //TScene2DComponentDataShapeBox END
 
@@ -29000,17 +29177,21 @@ procedure TScene2DComponentDataShapeCircle.AddToProperties(const PropertySet: TP
   var Group: TPropertySet.TProperty;
   var EventGroup: TPropertySet.TProperty;
 begin
+  SyncTags(Component);
   _Offset := Component.Center;
   _Radius := Component.Radius;
   _Friction := Component.Fricton;
   _Density := Component.Density;
+  _Restitution := Component.Restitution;
   _Sensor := Component.IsSensor;
   Group := PropertySet.PropComponent('Collision Circle', Component);
   PropertySet.PropVec2('Offset', @_Offset, Group, @OnChangeOffset);
   PropertySet.PropFloat('Radius', @_Radius, Group, @OnChangeRadius);
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
+  PropertySet.PropFloat('Restitution', @_Restitution, Group, @OnChangeRestitution);
   PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
+  PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   EventGroup := PropertySet.PropGroup('Events', Group);
   PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
   PropertySet.PropString('Event Contact End', @Component.EventEndContact.Name, EventGroup);
@@ -29038,9 +29219,20 @@ begin
   Component.Density := _Density;
 end;
 
+procedure TScene2DComponentDataShapeCircle.OnChangeRestitution(const Sender: Pointer);
+begin
+  Component.Restitution := _Restitution;
+end;
+
 procedure TScene2DComponentDataShapeCircle.OnChangeSensor(const Sender: Pointer);
 begin
+  Component.IsSensor := _Sensor;
+end;
 
+procedure TScene2DComponentDataShapeCircle.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
 end;
 //TScene2DComponentDataShapeCircle END
 
@@ -29081,13 +29273,17 @@ procedure TScene2DComponentDataShapeEdge.AddToProperties(const PropertySet: TPro
   var Group: TPropertySet.TProperty;
   var EventGroup: TPropertySet.TProperty;
 begin
+  SyncTags(Component);
   _Friction := Component.Fricton;
   _Density := Component.Density;
+  _Restitution := Component.Restitution;
   _Sensor := Component.IsSensor;
   Group := PropertySet.PropComponent('Collision Edge', Component);
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
+  PropertySet.PropFloat('Restitution', @_Restitution, Group, @OnChangeRestitution);
   PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
+  PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   PropertySet.PropButton('Edit', @OnEdit, Group);
   EventGroup := PropertySet.PropGroup('Events', Group);
   PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
@@ -29117,9 +29313,20 @@ begin
   Component.Density := _Density;
 end;
 
+procedure TScene2DComponentDataShapeEdge.OnChangeRestitution(const Sender: Pointer);
+begin
+  Component.Restitution := _Restitution;
+end;
+
 procedure TScene2DComponentDataShapeEdge.OnChangeSensor(const Sender: Pointer);
 begin
+  Component.IsSensor := _Sensor;
+end;
 
+procedure TScene2DComponentDataShapeEdge.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
 end;
 //TScene2DComponentDataShapeEdge END
 
@@ -29169,13 +29376,17 @@ procedure TScene2DComponentDataShapeChain.AddToProperties(const PropertySet: TPr
   var Group: TPropertySet.TProperty;
   var EventGroup: TPropertySet.TProperty;
 begin
+  SyncTags(Component);
   _Friction := Component.Fricton;
   _Density := Component.Density;
+  _Restitution := Component.Restitution;
   _Sensor := Component.IsSensor;
   Group := PropertySet.PropComponent('Collision Chain', Component);
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
+  PropertySet.PropFloat('Restitution', @_Restitution, Group, @OnChangeRestitution);
   PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
+  PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   PropertySet.PropButton('Edit', @OnEdit, Group);
   EventGroup := PropertySet.PropGroup('Events', Group);
   PropertySet.PropString('Event Contact Begin', @Component.EventBeginContact.Name, EventGroup);
@@ -29205,9 +29416,20 @@ begin
   Component.Density := _Density;
 end;
 
+procedure TScene2DComponentDataShapeChain.OnChangeRestitution(const Sender: Pointer);
+begin
+  Component.Restitution := _Restitution;
+end;
+
 procedure TScene2DComponentDataShapeChain.OnChangeSensor(const Sender: Pointer);
 begin
+  Component.IsSensor := _Sensor;
+end;
 
+procedure TScene2DComponentDataShapeChain.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
 end;
 //TScene2DComponentDataShapeChain END
 

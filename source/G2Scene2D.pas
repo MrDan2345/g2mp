@@ -54,10 +54,13 @@ type
     var _Scene: TG2Scene2D;
     var _Owner: TG2Scene2DEntity;
     var _UserData: Pointer;
+    var _Tags: TG2QuickListAnsiString;
     var _ProcOnAttach: TG2Scene2DComponentCallbackObj;
     var _ProcOnDetach: TG2Scene2DComponentCallbackObj;
     var _ProcOnFinalize: TG2Scene2DComponentCallbackObj;
     procedure SetOwner(const Value: TG2Scene2DEntity); inline;
+    function GetTag(const Index: TG2IntS32): AnsiString; inline;
+    function GetTagCount: TG2IntS32; inline;
   protected
     var _EventDispatchers: specialize TG2QuickListG<TG2Scene2DEventDispatcher>;
     procedure OnInitialize; virtual;
@@ -65,6 +68,8 @@ type
     procedure OnAttach; virtual;
     procedure OnDetach; virtual;
     procedure SaveClassType(const dm: TG2DataManager);
+    procedure SaveTags(const dm: TG2DataManager);
+    procedure LoadTags(const dm: TG2DataManager);
   public
     class constructor CreateClass;
     class function GetName: String; virtual;
@@ -72,11 +77,17 @@ type
     property UserData: Pointer read _UserData write _UserData;
     property Scene: TG2Scene2D read _Scene;
     property Owner: TG2Scene2DEntity read _Owner write SetOwner;
+    property Tags[const Index: TG2IntS32]: AnsiString read GetTag;
+    property TagCount: TG2IntS32 read GetTagCount;
     property CallbackOnAttach: TG2Scene2DComponentCallbackObj read _ProcOnAttach write _ProcOnAttach;
     property CallbackOnDetach: TG2Scene2DComponentCallbackObj read _ProcOnDetach write _ProcOnDetach;
     property CallbackOnFinalize: TG2Scene2DComponentCallbackObj read _ProcOnFinalize write _ProcOnFinalize;
     constructor Create(const OwnerScene: TG2Scene2D); virtual;
     destructor Destroy; override;
+    function HasTag(const Tag: AnsiString): Boolean;
+    procedure AddTag(const Tag: AnsiString);
+    procedure RemoveTag(const Tag: AnsiString);
+    procedure ParseTags(const TagsString: AnsiString);
     procedure Attach(const Entity: TG2Scene2DEntity);
     procedure Detach;
     procedure AddEvent(const EventName: String; const Event: TG2Scene2DEvent);
@@ -87,11 +98,13 @@ type
 
   TG2Scene2DComponentList = specialize TG2QuickListG<TG2Scene2DComponent>;
   TG2Scene2DEntityList = specialize TG2QuickListG<TG2Scene2DEntity>;
+  PG2Scene2DEntityList = ^TG2Scene2DEntityList;
 
   TG2Scene2DEntity = class
   private
     var _UserData: Pointer;
     var _GUID: String;
+    var _Tags: TG2QuickListAnsiString;
     var _EventDispatchers: specialize TG2QuickListG<TG2Scene2DEventDispatcher>;
     function GetChild(const Index: TG2IntS32): TG2Scene2DEntity; inline;
     function GetChildCount: TG2IntS32; inline;
@@ -102,6 +115,8 @@ type
     procedure SetParent(const Value: TG2Scene2DEntity); inline;
     procedure AddComponent(const Component: TG2Scene2DComponent); inline;
     procedure RemoveComponent(const Component: TG2Scene2DComponent); inline;
+    function GetTag(const Index: TG2IntS32): AnsiString; inline;
+    function GetTagCount: TG2IntS32; inline;
   protected
     var _Scene: TG2Scene2D;
     var _Parent: TG2Scene2DEntity;
@@ -124,11 +139,17 @@ type
     property Components[const Index: TG2IntS32]: TG2Scene2DComponent read GetComponent;
     property ComponentCount: TG2IntS32 read GetComponentCount;
     property ComponentOfType[const ComponentType: CG2Scene2DComponent]: TG2Scene2DComponent read GetComponentOfType;
+    property Tags[const Index: TG2IntS32]: AnsiString read GetTag;
+    property TagCount: TG2IntS32 read GetTagCount;
     property Name: AnsiString read _Name write _Name;
     property Transform: TG2Transform2 read _Transform write SetTransform;
     constructor Create(const OwnerScene: TG2Scene2D); virtual;
     destructor Destroy; override;
     procedure NewGUID;
+    function HasTag(const Tag: AnsiString): Boolean;
+    procedure AddTag(const Tag: AnsiString);
+    procedure RemoveTag(const Tag: AnsiString);
+    procedure ParseTags(const TagsString: AnsiString);
     procedure DebugDraw(const Display: TG2Display2D);
     procedure Render(const Display: TG2Display2D);
     procedure AddEvent(const EventName: String; const Event: TG2Scene2DEvent);
@@ -258,6 +279,9 @@ type
     var _GridSizeYRcp: TG2Float;
     var _GridOffsetX: TG2Float;
     var _GridOffsetY: TG2Float;
+    var _QueryPoint: tb2_vec2;
+    var _QueryTarget: PG2Scene2DEntityList;
+    function ProcessQuery(const fixture: pb2_fixture): Boolean;
     procedure Update;
     function GetEntity(const Index: TG2IntS32): TG2Scene2DEntity; inline;
     function GetEntityCount: TG2IntS32; inline;
@@ -296,6 +320,7 @@ type
     procedure RenderHookRemove(var Hook: TG2Scene2DRenderHook);
     function FindEntity(const GUID: String): TG2Scene2DEntity;
     function FindEntityByName(const EntityName: String): TG2Scene2DEntity;
+    procedure QueryPoint(const p: TG2Vec2; var EntityList: TG2Scene2DEntityList);
     function AdjustToGrid(const v: TG2Vec2): TG2Vec2;
     function GridPos(const v: TG2Vec2): TPoint;
     procedure Save(const dm: TG2DataManager);
@@ -516,6 +541,10 @@ type
     function GetTransform: TG2Transform2; inline;
     procedure SetGravityScale(const Value: TG2Float); inline;
     function GetGravityScale: TG2Float; inline;
+    procedure SetLinearDamping(const Value: TG2Float); inline;
+    function GetLinearDamping: TG2Float; inline;
+    procedure SetAngularDamping(const Value: TG2Float); inline;
+    function GetAngularDamping: TG2Float; inline;
   protected
     procedure OnInitialize; override;
     procedure OnFinalize; override;
@@ -534,6 +563,8 @@ type
     property Rotation: TG2Float read GetRotation write SetRotation;
     property FixedRotation: Boolean read GetFixedRotation write SetFixedRotation;
     property GravityScale: TG2Float read GetGravityScale write SetGravityScale;
+    property LinearDamping: TG2Float read GetLinearDamping write SetLinearDamping;
+    property AngularDamping: TG2Float read GetAngularDamping write SetAngularDamping;
     property Enabled: Boolean read _Enabled write SetEnabled;
     property PhysBody: pb2_body read _Body;
     procedure MakeStatic; inline;
@@ -595,6 +626,8 @@ type
     procedure SetFriction(const Value: TG2Float); inline;
     function GetDensity: TG2Float; inline;
     procedure SetDensity(const Value: TG2Float); inline;
+    function GetRestitution: TG2Float; inline;
+    procedure SetRestitution(const Value: TG2Float); inline;
     function GetIsSensor: Boolean; inline;
     procedure SetIsSensor(const Value: Boolean); inline;
     procedure OnBeginContact(
@@ -623,7 +656,9 @@ type
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
     property Fricton: TG2Float read GetFriction write SetFriction;
     property Density: TG2Float read GetDensity write SetDensity;
+    property Restitution: TG2Float read GetRestitution write SetRestitution;
     property IsSensor: Boolean read GetIsSensor write SetIsSensor;
+    property PhysFixture: pb2_fixture read _Fixture;
     property EventBeginContact: TG2Scene2DEventDispatcher read _EventBeginContact;
     property EventEndContact: TG2Scene2DEventDispatcher read _EventEndContact;
     property EventBeforeContactSolve: TG2Scene2DEventDispatcher read _EventBeforeContactSolve;
@@ -995,6 +1030,16 @@ begin
   end;
 end;
 
+function TG2Scene2DComponent.GetTag(const Index: TG2IntS32): AnsiString;
+begin
+  Result := _Tags[Index];
+end;
+
+function TG2Scene2DComponent.GetTagCount: TG2IntS32;
+begin
+  Result := _Tags.Count;
+end;
+
 procedure TG2Scene2DComponent.OnInitialize;
 begin
 
@@ -1018,6 +1063,27 @@ end;
 procedure TG2Scene2DComponent.SaveClassType(const dm: TG2DataManager);
 begin
   dm.WriteStringA(ClassName);
+end;
+
+procedure TG2Scene2DComponent.SaveTags(const dm: TG2DataManager);
+  var i: TG2IntS32;
+begin
+  dm.WriteIntS32(_Tags.Count);
+  for i := 0 to _Tags.Count - 1 do
+  begin
+    dm.WriteStringA(_Tags[i]);
+  end;
+end;
+
+procedure TG2Scene2DComponent.LoadTags(const dm: TG2DataManager);
+  var i, n: TG2IntS32;
+begin
+  n := dm.ReadIntS32;
+  _Tags.Clear;
+  for i := 0 to n - 1 do
+  begin
+    _Tags.Add(dm.ReadStringA);
+  end;
 end;
 
 class constructor TG2Scene2DComponent.CreateClass;
@@ -1046,6 +1112,7 @@ begin
   _ProcOnDetach := nil;
   _ProcOnFinalize := nil;
   _EventDispatchers.Clear;
+  _Tags.Clear;
   OnInitialize;
 end;
 
@@ -1054,6 +1121,45 @@ begin
   OnFinalize;
   if Assigned(_ProcOnFinalize) then _ProcOnFinalize(Self);
   inherited Destroy;
+end;
+
+function TG2Scene2DComponent.HasTag(const Tag: AnsiString): Boolean;
+  var i: TG2IntS32;
+begin
+  for i := 0 to _Tags.Count - 1 do
+  if _Tags[i] = Tag then
+  begin
+    Result := True;
+    Exit;
+  end;
+  Result := False;
+end;
+
+procedure TG2Scene2DComponent.AddTag(const Tag: AnsiString);
+  var CurTag: AnsiString;
+begin
+  if HasTag(Tag) then Exit;
+  CurTag := G2StrTrim(LowerCase(Tag));
+  if Length(CurTag) > 0 then _Tags.Add(CurTag);
+end;
+
+procedure TG2Scene2DComponent.RemoveTag(const Tag: AnsiString);
+begin
+  _Tags.Remove(Tag);
+end;
+
+procedure TG2Scene2DComponent.ParseTags(const TagsString: AnsiString);
+  var StrArr: TG2StrArrA;
+  var CurTag: AnsiString;
+  var i: TG2IntS32;
+begin
+  _Tags.Clear;
+  StrArr := G2StrExplode(LowerCase(TagsString), ',');
+  for i := 0 to High(StrArr) do
+  begin
+    CurTag := G2StrTrim(StrArr[i]);
+    if Length(CurTag) > 0 then _Tags.Add(CurTag);
+  end;
 end;
 
 procedure TG2Scene2DComponent.Attach(const Entity: TG2Scene2DEntity);
@@ -1091,14 +1197,12 @@ end;
 {$Hints off}
 procedure TG2Scene2DComponent.Save(const dm: TG2DataManager);
 begin
-
 end;
 {$Hints on}
 
 {$Hints off}
 procedure TG2Scene2DComponent.Load(const dm: TG2DataManager);
 begin
-
 end;
 {$Hints on}
 //TG2Scene2DComponent END
@@ -1165,6 +1269,16 @@ begin
   _Components.Remove(Component);
 end;
 
+function TG2Scene2DEntity.GetTag(const Index: TG2IntS32): AnsiString;
+begin
+  Result := _Tags[Index];
+end;
+
+function TG2Scene2DEntity.GetTagCount: TG2IntS32;
+begin
+  Result := _Tags.Count;
+end;
+
 procedure TG2Scene2DEntity.SetTransform(const Value: TG2Transform2);
   var Origin: TG2Vec2;
   var xfm: TG2Transform2;
@@ -1225,6 +1339,7 @@ begin
   _Name := 'Entity';
   _Scene := OwnerScene;
   _EventDispatchers.Clear;
+  _Tags.Clear;
   NewGUID;
   _Scene.EntityAdd(Self);
 end;
@@ -1254,6 +1369,45 @@ procedure TG2Scene2DEntity.NewGUID;
 begin
   CreateGUID(new_guid);
   _GUID := GUIDToString(new_guid);
+end;
+
+function TG2Scene2DEntity.HasTag(const Tag: AnsiString): Boolean;
+  var i: TG2IntS32;
+begin
+  for i := 0 to _Tags.Count - 1 do
+  if _Tags[i] = Tag then
+  begin
+    Result := True;
+    Exit;
+  end;
+  Result := False;
+end;
+
+procedure TG2Scene2DEntity.AddTag(const Tag: AnsiString);
+  var CurTag: AnsiString;
+begin
+  if HasTag(Tag) then Exit;
+  CurTag := G2StrTrim(LowerCase(Tag));
+  if Length(CurTag) > 0 then _Tags.Add(CurTag);
+end;
+
+procedure TG2Scene2DEntity.RemoveTag(const Tag: AnsiString);
+begin
+  _Tags.Remove(Tag);
+end;
+
+procedure TG2Scene2DEntity.ParseTags(const TagsString: AnsiString);
+  var StrArr: TG2StrArrA;
+  var CurTag: AnsiString;
+  var i: TG2IntS32;
+begin
+  _Tags.Clear;
+  StrArr := G2StrExplode(LowerCase(TagsString), ',');
+  for i := 0 to High(StrArr) do
+  begin
+    CurTag := G2StrTrim(StrArr[i]);
+    if Length(CurTag) > 0 then _Tags.Add(CurTag);
+  end;
 end;
 
 procedure TG2Scene2DEntity.DebugDraw(const Display: TG2Display2D);
@@ -1304,6 +1458,11 @@ begin
   dm.WriteBuffer(@_Transform, SizeOf(_Transform));
   dm.WriteStringA(_Name);
   dm.WriteStringA(_GUID);
+  dm.WriteIntS32(_Tags.Count);
+  for i := 0 to _Tags.Count - 1 do
+  begin
+    dm.WriteStringA(_Tags[i]);
+  end;
   dm.WriteIntS32(_Children.Count);
   for i := 0 to _Children.Count - 1 do
   begin
@@ -1317,7 +1476,7 @@ begin
 end;
 
 procedure TG2Scene2DEntity.Load(const dm: TG2DataManager);
-  var i, j, ec, cc: TG2IntS32;
+  var i, j, tc, ec, cc: TG2IntS32;
   var e: TG2Scene2DEntity;
   var c: TG2Scene2DComponent;
   var CName: String;
@@ -1325,6 +1484,12 @@ begin
   dm.ReadBuffer(@_Transform, SizeOf(_Transform));
   _Name := dm.ReadStringA;
   _GUID := dm.ReadStringA;
+  tc := dm.ReadIntS32;
+  _Tags.Clear;
+  for i := 0 to tc - 1 do
+  begin
+    _Tags.Add(dm.ReadStringA);
+  end;
   ec := dm.ReadIntS32;
   for i := 0 to ec - 1 do
   begin
@@ -1921,6 +2086,16 @@ begin
 end;
 {$Hints on}
 
+function TG2Scene2D.ProcessQuery(const fixture: pb2_fixture): Boolean;
+  var rb: TG2Scene2DComponentRigidBody;
+begin
+  Result := True;
+  if fixture^.get_body^.get_user_data = nil then Exit;
+  if not fixture^.test_point(_QueryPoint) then Exit;
+  rb := TG2Scene2DComponentRigidBody(fixture^.get_body^.get_user_data);
+  _QueryTarget^.Add(rb.Owner);
+end;
+
 procedure TG2Scene2D.Update;
 begin
   if _Simulate then
@@ -2110,7 +2285,7 @@ begin
 end;
 
 function TG2Scene2D.FindEntity(const GUID: String): TG2Scene2DEntity;
-  var i: Integer;
+  var i: TG2IntS32;
 begin
   for i := 0 to _Entities.Count - 1 do
   if _Entities[i].GUID = GUID then
@@ -2119,12 +2294,23 @@ begin
 end;
 
 function TG2Scene2D.FindEntityByName(const EntityName: String): TG2Scene2DEntity;
-  var i: Integer;
+  var i: TG2IntS32;
 begin
   for i := 0 to _Entities.Count - 1 do
   if _Entities[i].Name = EntityName then
   Exit(_Entities[i]);
   Result := nil;
+end;
+
+procedure TG2Scene2D.QueryPoint(const p: TG2Vec2; var EntityList: TG2Scene2DEntityList);
+  var aabb: tb2_aabb;
+begin
+  aabb.lower_bound := p;
+  aabb.upper_bound := p;
+  _QueryPoint := p;
+  EntityList.Clear;
+  _QueryTarget := @EntityList;
+  _PhysWorld.query_aabb(@ProcessQuery, aabb);
 end;
 
 function TG2Scene2D.AdjustToGrid(const v: TG2Vec2): TG2Vec2;
@@ -2326,6 +2512,7 @@ end;
 procedure TG2Scene2DComponentSprite.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveTags(dm);
   if Assigned(_Picture)
   and (_Picture.IsShared) then
   begin
@@ -2351,6 +2538,7 @@ procedure TG2Scene2DComponentSprite.Load(const dm: TG2DataManager);
   var Usage: TG2TextureUsage;
   var TexFile: String;
 begin
+  LoadTags(dm);
   TexFile := dm.ReadStringA;
   if Length(TexFile) > 0 then
   begin
@@ -2550,6 +2738,7 @@ procedure TG2Scene2DComponentEffect.Save(const dm: TG2DataManager);
   var b: Boolean;
 begin
   SaveClassType(dm);
+  SaveTags(dm);
   if Assigned(_EffectInst)
   and _EffectInst.Effect.IsShared then
   begin
@@ -2577,6 +2766,7 @@ end;
 procedure TG2Scene2DComponentEffect.Load(const dm: TG2DataManager);
   var EffectFile: String;
 begin
+  LoadTags(dm);
   EffectFile := dm.ReadStringA;
   Layer := dm.ReadIntS32;
   _Scale := dm.ReadFloat;
@@ -2813,6 +3003,7 @@ end;
 procedure TG2Scene2DComponentBackground.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveTags(dm);
   if Assigned(_Texture)
   and _Texture.IsShared then
   begin
@@ -2836,6 +3027,7 @@ end;
 procedure TG2Scene2DComponentBackground.Load(const dm: TG2DataManager);
   var TexFile: String;
 begin
+  LoadTags(dm);
   TexFile := dm.ReadStringA;
   if Length(TexFile) > 0 then
   begin
@@ -3021,6 +3213,7 @@ end;
 procedure TG2Scene2DComponentSpineAnimation.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveTags(dm);
   if Assigned(_Skeleton) then
   begin
     dm.WriteStringA(_Skeleton.Data.Name);
@@ -3048,6 +3241,7 @@ procedure TG2Scene2DComponentSpineAnimation.Load(const dm: TG2DataManager);
   var sd: TSpineSkeletonData;
   var al: TSpineAtlasList;
 begin
+  LoadTags(dm);
   SkeletonPath := dm.ReadStringA;
   Layer := dm.ReadIntS32;
   _Offset := dm.ReadVec2;
@@ -3093,6 +3287,7 @@ begin
     bd := _BodyDef;
     bd.angle := bd.angle + Owner.Transform.r.Angle;
     bd.position := bd.position + Owner.Transform.p;
+    bd.user_data := Self;
     _Body := Scene.PhysWorld.create_body(bd);
     for i := 0 to Owner.ComponentCount - 1 do
     if Owner.Components[i] is TG2Scene2DComponentCollisionShape then
@@ -3218,6 +3413,36 @@ begin
   Result := _BodyDef.gravity_scale;
 end;
 
+procedure TG2Scene2DComponentRigidBody.SetLinearDamping(const Value: TG2Float);
+begin
+  _BodyDef.linear_damping := Value;
+  if _Enabled then
+  _Body^.set_linear_damping(Value);
+end;
+
+function TG2Scene2DComponentRigidBody.GetLinearDamping: TG2Float;
+begin
+  if _Enabled then
+  Result := _Body^.get_linear_damping
+  else
+  Result := _BodyDef.linear_damping;
+end;
+
+procedure TG2Scene2DComponentRigidBody.SetAngularDamping(const Value: TG2Float);
+begin
+  _BodyDef.angular_damping := Value;
+  if _Enabled then
+  _Body^.set_angular_damping(Value);
+end;
+
+function TG2Scene2DComponentRigidBody.GetAngularDamping: TG2Float;
+begin
+  if _Enabled then
+  Result := _Body^.get_angular_damping
+  else
+  Result := _BodyDef.angular_damping;
+end;
+
 procedure TG2Scene2DComponentRigidBody.OnInitialize;
 begin
   _Enabled := False;
@@ -3297,6 +3522,7 @@ procedure TG2Scene2DComponentRigidBody.Save(const dm: TG2DataManager);
   var xf: TG2Transform2;
 begin
   SaveClassType(dm);
+  SaveTags(dm);
   xf := Transform;
   dm.WriteBuffer(@xf, SizeOf(xf));
   dm.WriteBuffer(@_BodyDef, SizeOf(_BodyDef));
@@ -3306,6 +3532,7 @@ end;
 procedure TG2Scene2DComponentRigidBody.Load(const dm: TG2DataManager);
   var xf: TG2Transform2;
 begin
+  LoadTags(dm);
   {$Hints off}
   dm.ReadBuffer(@xf, SizeOf(xf));
   {$Hints on}
@@ -3420,6 +3647,17 @@ procedure TG2Scene2DComponentCollisionShape.SetDensity(const Value: TG2Float);
 begin
   _FixtureDef.density := Value;
   if _Fixture <> nil then _Fixture^.set_density(Value);
+end;
+
+function TG2Scene2DComponentCollisionShape.GetRestitution: TG2Float;
+begin
+  Result := _FixtureDef.restitution;
+end;
+
+procedure TG2Scene2DComponentCollisionShape.SetRestitution(const Value: TG2Float);
+begin
+  _FixtureDef.restitution := Value;
+  if _Fixture <> nil then _Fixture^.set_restitution(Value);
 end;
 
 function TG2Scene2DComponentCollisionShape.GetIsSensor: Boolean;
@@ -3603,6 +3841,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapeEdge.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveTags(dm);
   dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   dm.WriteBuffer(@_EdgeShape.vertex0, SizeOf(_EdgeShape.vertex0));
   dm.WriteBuffer(@_EdgeShape.vertex1, SizeOf(_EdgeShape.vertex1));
@@ -3618,6 +3857,7 @@ end;
 
 procedure TG2Scene2DComponentCollisionShapeEdge.Load(const dm: TG2DataManager);
 begin
+  LoadTags(dm);
   dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_EdgeShape;
   dm.ReadBuffer(@_EdgeShape.vertex0, SizeOf(_EdgeShape.vertex0));
@@ -3696,6 +3936,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapePoly.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveTags(dm);
   dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   dm.WriteIntS32(_PolyShape.count);
   dm.WriteBuffer(@_PolyShape.vertices, SizeOf(_PolyShape.vertices));
@@ -3709,6 +3950,7 @@ end;
 
 procedure TG2Scene2DComponentCollisionShapePoly.Load(const dm: TG2DataManager);
 begin
+  LoadTags(dm);
   dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_PolyShape;
   _PolyShape.count := dm.ReadIntS32;
@@ -3803,6 +4045,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapeBox.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveTags(dm);
   dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   dm.WriteFloat(_Width);
   dm.WriteFloat(_Height);
@@ -3816,6 +4059,7 @@ end;
 
 procedure TG2Scene2DComponentCollisionShapeBox.Load(const dm: TG2DataManager);
 begin
+  LoadTags(dm);
   dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_PolyShape;
   _Width := dm.ReadFloat;
@@ -3891,6 +4135,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapeCircle.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveTags(dm);
   dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   dm.WriteBuffer(@_CircleShape.center, SizeOf(_CircleShape.center));
   dm.WriteFloat(_CircleShape.radius);
@@ -3902,6 +4147,7 @@ end;
 
 procedure TG2Scene2DComponentCollisionShapeCircle.Load(const dm: TG2DataManager);
 begin
+  LoadTags(dm);
   dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_CircleShape;
   dm.ReadBuffer(@_CircleShape.center, SizeOf(_CircleShape.center));
@@ -3979,6 +4225,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapeChain.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveTags(dm);
   dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   dm.WriteIntS32(_ChainShape.count);
   dm.WriteBuffer(_ChainShape.vertices, TG2IntS64(SizeOf(_ChainShape.vertices^[0])) * _ChainShape.count);
@@ -3996,6 +4243,7 @@ end;
 
 procedure TG2Scene2DComponentCollisionShapeChain.Load(const dm: TG2DataManager);
 begin
+  LoadTags(dm);
   dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_ChainShape;
   _ChainShape.clear;
@@ -4322,6 +4570,7 @@ procedure TG2Scene2DComponentCharacter.Save(const dm: TG2DataManager);
   var xf: TG2Transform2;
 begin
   SaveClassType(dm);
+  SaveTags(dm);
   xf := Transform;
   dm.WriteBuffer(@xf, SizeOf(xf));
   dm.WriteFloat(_Width);
@@ -4338,6 +4587,7 @@ procedure TG2Scene2DComponentCharacter.Load(const dm: TG2DataManager);
   var b: Boolean;
   var xf: TG2Transform2;
 begin
+  LoadTags(dm);
   {$Hints off}
   dm.ReadBuffer(@xf, SizeOf(xf));
   {$Hints on}
@@ -4679,6 +4929,7 @@ procedure TG2Scene2DComponentPoly.Save(const dm: TG2DataManager);
   var i: TG2IntS32;
 begin
   SaveClassType(dm);
+  SaveTags(dm);
   dm.WriteIntS32(Length(_Vertices));
   dm.WriteBuffer(@_Vertices[0], TG2IntS64(SizeOf(TG2Scene2DComponentPolyVertex)) * Length(_Vertices));
   dm.WriteIntS32(Length(_Faces));
@@ -4706,6 +4957,7 @@ procedure TG2Scene2DComponentPoly.Load(const dm: TG2DataManager);
   var i, n: TG2IntS32;
   var TexFile: String;
 begin
+  LoadTags(dm);
   n := dm.ReadIntS32;
   SetLength(_Vertices, n);
   dm.ReadBuffer(@_Vertices[0], TG2IntS64(SizeOf(TG2Scene2DComponentPolyVertex)) * Length(_Vertices));

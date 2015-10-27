@@ -366,6 +366,7 @@ type
   function G2StrParamCount(const Str: AnsiString; const Separator: AnsiString): TG2IntS32;
   function G2StrInStr(const Str: AnsiString; SubStr: AnsiString): TG2IntS32;
   function G2StrReplace(const Str, PatternOld, PatternNew: AnsiString): AnsiString;
+  function G2StrTrim(const Str: AnsiString): AnsiString;
   procedure G2EncDec(const Ptr: PG2IntU8Arr; const Count: TG2IntS32; const Key: AnsiString);
   function G2CmpObjFuncPtr(const Ptr0, Ptr1: Pointer): Boolean;
 
@@ -753,7 +754,7 @@ end;
 
 function TG2Array.GetItem(const Index: TG2IntS32): TItemPtr;
 begin
-  Result := _Items[Index];
+  Result := @_Items[Index];
 end;
 
 procedure TG2Array.SetCapacity(const Value: TG2IntS32);
@@ -2479,6 +2480,29 @@ begin
   end
   else
   Result := Str;
+end;
+
+function G2StrTrim(const Str: AnsiString): AnsiString;
+  var i, i0, i1: TG2IntS32;
+begin
+  i0 := 0;
+  for i := 1 to Length(Str) do
+  if Str[i] <> ' ' then
+  begin
+    i0 := i;
+    Break;
+  end;
+  if i0 = 0 then Exit('');
+  i1 := Length(Str);
+  for i := Length(Str) downto 1 do
+  if Str[i] <> ' ' then
+  begin
+    i1 := i;
+    Break;
+  end;
+  i := i1 - i0 + 1;
+  SetLength(Result, i);
+  Move(Str[i0], Result[1], );
 end;
 
 procedure G2EncDec(const Ptr: PG2IntU8Arr; const Count: TG2IntS32; const Key: AnsiString);
