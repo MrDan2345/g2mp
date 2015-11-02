@@ -15,6 +15,8 @@ uses
   box2d;
 
 type
+  TGameState = (gs_game, gs_goal);
+
   TGame = class
   protected
   public
@@ -23,13 +25,19 @@ type
     Scene: TG2Scene2D;
     PickList: TG2Scene2DEntityList;
     Players: array[0..7] of TG2Scene2DEntity;
-    Field, Ball: TG2Scene2DEntity;
+    Gates: array[0..1] of TG2Scene2DEntity;
+    Field, Ball, TeamMarker: TG2Scene2DEntity;
+    Score: array[0..1] of Integer;
     SelectPlayer: Integer;
     PicArrow: TG2Picture;
     PushBallUp: Boolean;
     PushBallRight: Boolean;
     PushBallLeft: Boolean;
     PushBallDown: Boolean;
+    State: TGameState;
+    ResetBall: TG2Transform2;
+    ResetPlayers: array[0..7] of TG2Transform2;
+    Team: Byte;
     constructor Create;
     destructor Destroy; override;
     procedure Initialize;
@@ -50,6 +58,11 @@ type
     procedure OnPushBallLeftEnd(const EventData: TG2Scene2DEventData);
     procedure OnPushBallDownBegin(const EventData: TG2Scene2DEventData);
     procedure OnPushBallDownEnd(const EventData: TG2Scene2DEventData);
+    procedure OnGoalLeft(const EventData: TG2Scene2DEventData);
+    procedure OnGoalRight(const EventData: TG2Scene2DEventData);
+    procedure OnGoal;
+    procedure UpdateTeamMarker;
+    function ResetGoalTimer(const Interval: Integer): Integer;
   end;
 
 var
@@ -93,10 +106,9 @@ end;
 
 procedure TGame.Initialize;
   var i, j: Integer;
-  var rb: TG2Scene2DComponentRigidBody;
-  var Shape: TG2Scene2DComponentCollisionShape;
   var Sprite: TG2Scene2DComponentSprite;
-  var md: tb2_mass_data;
+  var e: TG2Scene2DEntity;
+  var ct: TG2Scene2DComponentText;
 begin
   Font1 := TG2Font.Create;
   Font1.Make(16);
@@ -110,9 +122,12 @@ begin
   Scene.Load('Scene0.g2s2d');
   Scene.EnablePhysics;
   Scene.Simulate := True;
+  Score[0] := 0;
+  Score[1] := 0;
   for i := 0 to High(Players) do
   begin
     Players[i] := Scene.FindEntityByName('Player' + IntToStr(i + 1));
+    ResetPlayers[i] := Players[i].Transform;
     for j := 0 to Players[i].ComponentCount - 1 do
     if Players[i].Components[j] is TG2Scene2DComponentSprite then
     begin
@@ -130,7 +145,12 @@ begin
       end;
     end;
   end;
+  for i := 0 to High(Gates) do
+  Gates[i] := Scene.FindEntityByName('Gate' + IntToStr(i + 1));
+  Gates[0].AddEvent('OnGoal', @OnGoalLeft);
+  Gates[1].AddEvent('OnGoal', @OnGoalRight);
   Ball := Scene.FindEntityByName('Ball');
+  ResetBall := Ball.Transform;
   Field := Scene.FindEntityByName('Field');
   Field.AddEvent('OnPushBallUpBegin', @OnPushBallUpBegin);
   Field.AddEvent('OnPushBallUpEnd', @OnPushBallUpEnd);
@@ -140,7 +160,20 @@ begin
   Field.AddEvent('OnPushBallLeftEnd', @OnPushBallLeftEnd);
   Field.AddEvent('OnPushBallDownBegin', @OnPushBallDownBegin);
   Field.AddEvent('OnPushBallDownEnd', @OnPushBallDownEnd);
+  TeamMarker := Scene.FindEntityByName('TeamMarker');
   PickList.Clear;
+  e := Scene.FindEntityByName('Goal');
+  if Assigned(e) then
+  begin
+    ct := TG2Scene2DComponentText(e.ComponentOfType[TG2Scene2DComponentText]);
+    if Assigned(ct) then
+    begin
+      ct.Visible := False;
+    end;
+  end;
+  Team := Random(2);
+  UpdateTeamMarker;
+  State := gs_game;
   SelectPlayer := -1;
 end;
 
@@ -169,7 +202,6 @@ end;
 procedure TGame.Render;
   var mc, v, p, p0: TG2Vec2;
   var l: TG2Float;
-  var rb: TG2Scene2DComponentRigidBody;
 begin
   Scene.Render(Display);
   if SelectPlayer > -1 then
@@ -191,7 +223,6 @@ begin
       );
     end;
   end;
-  Font1.Print(10, 10, 1, 1, $ff000000, IntToStr(PickList.Count), bmNormal, tfPoint);
 end;
 
 procedure TGame.KeyDown(const Key: Integer);
@@ -215,6 +246,7 @@ begin
         for j := 0 to High(Players) do
         if Players[j] = PickList[i] then
         begin
+          if (j >= Team * 4) and (j < (Team + 1) * 4) then
           SelectPlayer := j;
           Break;
         end;
@@ -225,6 +257,7 @@ begin
 end;
 
 procedure TGame.MouseUp(const Button, x, y: Integer);
+  var l: TG2Float;
   var mc, v: TG2Vec2;
   var rb: TG2Scene2DComponentRigidBody;
 begin
@@ -235,11 +268,17 @@ begin
       begin
         mc := Display.CoordToDisplay(g2.MousePos);
         v := mc - Players[SelectPlayer].Transform.p;
-        if v.Len > 2 then v := v.Norm * 2;
-        rb := TG2Scene2DComponentRigidBody(Players[SelectPlayer].ComponentOfType[TG2Scene2DComponentRigidBody]);
-        if Assigned(rb) then
+        l := v.Len;
+        if l > 0.5 then
         begin
-          rb.PhysBody^.apply_force_to_center(v * 70, True);
+          if l > 2 then v := v.Norm * 2;
+          rb := TG2Scene2DComponentRigidBody(Players[SelectPlayer].ComponentOfType[TG2Scene2DComponentRigidBody]);
+          if Assigned(rb) then
+          begin
+            rb.PhysBody^.apply_force_to_center(v * 70, True);
+            Team := (Team + 1) mod 2;
+            UpdateTeamMarker;
+          end;
         end;
       end;
       SelectPlayer := -1;
@@ -327,6 +366,84 @@ begin
   begin
     PushBallDown := False;
   end;
+end;
+
+procedure TGame.OnGoalLeft(const EventData: TG2Scene2DEventData);
+  var Data: TG2Scene2DEventBeginContactData absolute EventData;
+begin
+  if State <> gs_game then Exit;
+  if Assigned(Data.Shapes[1]) and (Data.Shapes[1].Owner.Name = 'Ball') then
+  begin
+    Inc(Score[1]);
+    OnGoal;
+  end;
+end;
+
+procedure TGame.OnGoalRight(const EventData: TG2Scene2DEventData);
+  var Data: TG2Scene2DEventBeginContactData absolute EventData;
+begin
+  if State <> gs_game then Exit;
+  if Assigned(Data.Shapes[1]) and (Data.Shapes[1].Owner.Name = 'Ball') then
+  begin
+    Inc(Score[0]);
+    OnGoal;
+  end;
+end;
+
+procedure TGame.OnGoal;
+  var e: TG2Scene2DEntity;
+  var c: TG2Scene2DComponentText;
+begin
+  e := Scene.FindEntityByName('Score');
+  if Assigned(e) then
+  begin
+    c := TG2Scene2DComponentText(e.ComponentOfType[TG2Scene2DComponentText]);
+    if Assigned(c) then
+    begin
+      c.Text := IntToStr(Score[0]) + ':' + IntToStr(Score[1]);
+    end;
+  end;
+  e := Scene.FindEntityByName('Goal');
+  if Assigned(e) then
+  begin
+    c := TG2Scene2DComponentText(e.ComponentOfType[TG2Scene2DComponentText]);
+    if Assigned(c) then
+    begin
+      c.Visible := True;
+    end;
+  end;
+  State := gs_goal;
+  g2.CustomTimer(@ResetGoalTimer, 3000);
+end;
+
+procedure TGame.UpdateTeamMarker;
+begin
+  TeamMarker.Transform.p.x := Team * 2 - 1;
+end;
+
+function TGame.ResetGoalTimer(const Interval: Integer): Integer;
+  var e: TG2Scene2DEntity;
+  var c: TG2Scene2DComponentText;
+  var i: Integer;
+begin
+  e := Scene.FindEntityByName('Goal');
+  if Assigned(e) then
+  begin
+    c := TG2Scene2DComponentText(e.ComponentOfType[TG2Scene2DComponentText]);
+    if Assigned(c) then
+    begin
+      c.Visible := False;
+    end;
+  end;
+  Scene.DisablePhysics;
+  Ball.Transform := ResetBall;
+  for i := 0 to High(Players) do
+  Players[i].Transform := ResetPlayers[i];
+  Scene.EnablePhysics;
+  Team := Random(2);
+  UpdateTeamMarker;
+  State := gs_game;
+  Result := 0;
 end;
 
 //TGame END

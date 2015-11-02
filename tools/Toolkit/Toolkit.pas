@@ -3540,6 +3540,28 @@ type
   end;
 //TScene2DComponentDataSprite END
 
+//TScene2DComponentDataText BEIGN
+  TScene2DComponentDataText = class (TScene2DComponentData)
+  private
+    var Layer: TG2IntS32;
+    var FontPath: String;
+    var Position: TG2Vec2;
+    var Rotation: TG2Float;
+  public
+    var Component: TG2Scene2DComponentText;
+    class function GetName: String; override;
+    destructor Destroy; override;
+    function PickLayer: Integer; override;
+    function Pick(const x, y: TG2Float): Boolean; override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
+    procedure OnChangeLayer(const Sender: Pointer);
+    procedure OnChangeFont(const Sender: Pointer);
+    procedure OnChangePosition(const Sender: Pointer);
+    procedure OnChangeRotation(const Sender: Pointer);
+    procedure OnTagsChange(const Sender: Pointer);
+  end;
+//TScene2DComponentDataText END
+
 //TScene2DComponentDataSpineAnimation BEGIN
   TScene2DComponentDataSpineAnimation = class (TScene2DComponentData)
   private
@@ -3989,6 +4011,7 @@ type
     function CreateJointRevolute(const Position: TG2Vec2): TG2Scene2DRevoluteJoint;
     procedure DeleteJoint(var Joint: TG2Scene2DJoint);
     function CreateComponentSprite: TG2Scene2DComponentSprite;
+    function CreateComponentText: TG2Scene2DComponentText;
     function CreateComponentBackground: TG2Scene2DComponentBackground;
     function CreateComponentSpineAnimation: TG2Scene2DComponentSpineAnimation;
     function CreateComponentEffect: TG2Scene2DComponentEffect;
@@ -4007,6 +4030,7 @@ type
     procedure UpdateSelectionPos;
     procedure BtnAddComponent;
     procedure BtnComponentSprite;
+    procedure BtnComponentText;
     procedure BtnComponentBackground;
     procedure BtnComponentSpineAnimation;
     procedure BtnComponentEffect;
@@ -4087,6 +4111,15 @@ type
   end;
 //TAssetImage END
 
+//TAssetImage BEGIN
+  TAssetFont = class (TAsset)
+  public
+    class function GetAssetName: String; override;
+    class function CheckExtension(const Ext: String): Boolean; override;
+    class function ProcessFile(const FilePath: String): TG2QuickListString; override;
+  end;
+//TAssetImage END
+
 //TAssetEffect2D BEGIN
   TAssetEffect2D = class (TAsset)
   public
@@ -4133,6 +4166,7 @@ type
     function VerifyPath(const Path: String): String;
   public
     function GetTexture(const Path: String): TG2Texture2D;
+    function GetFont(const Path: String): TG2Font;
     function GetImage(const Path: String): TG2Picture;
     function GetEffect(const Path: String): TG2Effect2D;
     procedure Initialize;
@@ -5116,6 +5150,7 @@ begin
   AddAssetType(TAssetAny);
   AddAssetType(TAssetImage);
   AddAssetType(TAssetTexture);
+  AddAssetType(TAssetFont);
   AddAssetType(TAssetEffect2D);
   AddAssetType(TAssetScene2D);
   AddAssetType(TAssetPrefab2D);
@@ -27621,6 +27656,12 @@ begin
       Component.UserData := ComponentData;
       TScene2DComponentDataSprite(ComponentData).Component := TG2Scene2DComponentSprite(Component);
     end
+    else if Component is TG2Scene2DComponentText then
+    begin
+      ComponentData := TScene2DComponentDataText.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataText(ComponentData).Component := TG2Scene2DComponentText(Component);
+    end
     else if Component is TG2Scene2DComponentBackground then
     begin
       ComponentData := TScene2DComponentDataBackground.Create;
@@ -28013,7 +28054,7 @@ begin
   Layer := Component.Layer;
   PropertySet.PropInt('Layer', @Layer, Group, @OnChangeLayer);
   if Assigned(Component.Picture) then
-  ImagePath := Component.Picture.Texture.AssetName
+  ImagePath := Component.Picture.AssetName
   else
   ImagePath := '';
   PropertySet.PropPath('Image', @ImagePath, TAssetImage, Group, @OnChangeImage);
@@ -28083,6 +28124,116 @@ begin
   SyncTags(Component);
 end;
 //TScene2DComponentDataSprite END
+
+//TScene2DComponentDataText BEGIN
+class function TScene2DComponentDataText.GetName: String;
+begin
+  Result := 'Text';
+end;
+
+destructor TScene2DComponentDataText.Destroy;
+begin
+  inherited Destroy;
+end;
+
+function TScene2DComponentDataText.PickLayer: Integer;
+begin
+  Result := Component.Layer;
+end;
+
+function TScene2DComponentDataText.Pick(const x, y: TG2Float): Boolean;
+  var xf: TG2Transform2;
+  var v: array[0..3] of TG2Vec2;
+  var w, h: TG2Float;
+  var j: Integer;
+begin
+  if not Assigned(Component.Font) or (Length(Component.Text) = 0) then Exit(False);
+  xf := Component.Owner.Transform;
+  G2Transform2Mul(@xf, @Component.Transform, @xf);
+  w := Component.Width;
+  h := Component.Height;
+  case Component.AlignH of
+    g2al_left: v[0].x := 0;
+    g2al_right: v[0].x := -w;
+    else v[0].x := -w * 0.5;
+  end;
+  case Component.AlignV of
+    g2al_top: v[0].y := 0;
+    g2al_bottom: v[0].y := -h;
+    else v[0].y := -h * 0.5;
+  end;
+  v[2].x := v[0].x + w; v[2].y := v[0].y + h;
+  v[1].x := v[2].x; v[1].y := v[0].y;
+  v[3].x := v[0].x; v[3].y := v[2].y;
+  for j := 0 to 3 do v[j] := xf.Transform(v[j]);
+  Result := G2Vec2InPoly(G2Vec2(x, y), @v, 4);
+end;
+
+procedure TScene2DComponentDataText.AddToProperties(const PropertySet: TPropertySet);
+  var Group: TPropertySet.TProperty;
+  var Enum: TPropertySet.TPropertyEnum;
+begin
+  SyncTags(Component);
+  Group := PropertySet.PropComponent('Text', Component);
+  Layer := Component.Layer;
+  PropertySet.PropInt('Layer', @Layer, Group, @OnChangeLayer);
+  if Assigned(Component.Font) then
+  FontPath := Component.Font.AssetName
+  else
+  FontPath := '';
+  PropertySet.PropPath('Font', @FontPath, TAssetFont, Group, @OnChangeFont);
+  PropertySet.PropString('Text', @Component.Text, Group).AllowEmpty := True;
+  PropertySet.PropFloat('Scale X', @Component.ScaleX, Group);
+  PropertySet.PropFloat('Scale Y', @Component.ScaleY, Group);
+  Enum := PropertySet.PropEnum('Align H', @Component.AlignH, Group);
+  Enum.AddValue('Left', Byte(g2al_left));
+  Enum.AddValue('Center', Byte(g2al_center));
+  Enum.AddValue('Right', Byte(g2al_right));
+  Enum.SetValue(Byte(Component.AlignH));
+  Enum := PropertySet.PropEnum('Align V', @Component.AlignV, Group);
+  Enum.AddValue('Top', Byte(g2al_top));
+  Enum.AddValue('Middle', Byte(g2al_middle));
+  Enum.AddValue('Bottom', Byte(g2al_bottom));
+  Enum.SetValue(Byte(Component.AlignV));
+  Position := Component.Transform.p;
+  Rotation := Component.Transform.r.Angle * G2RadToDeg;
+  while Rotation < 0 do Rotation := 360 + Rotation;
+  PropertySet.PropVec2('Offset', @Position, Group, @OnChangePosition);
+  PropertySet.PropFloat('Rotation', @Rotation, Group, @OnChangeRotation);
+  Enum := PropertySet.PropEnum('Filter', @Component.Filter, Group);
+  Enum.AddValue('Point', Byte(tfPoint));
+  Enum.AddValue('Linear', Byte(tfLinear));
+  Enum.SetValue(Byte(Component.Filter));
+  PropertySet.PropBlendMode('Blend Mode', @Component.BlendMode, Group);
+  PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
+end;
+
+procedure TScene2DComponentDataText.OnChangeLayer(const Sender: Pointer);
+begin
+  Component.Layer := Layer;
+end;
+
+procedure TScene2DComponentDataText.OnChangeFont(const Sender: Pointer);
+begin
+  Component.Font := App.AssetManager.GetFont(FontPath);
+end;
+
+procedure TScene2DComponentDataText.OnChangePosition(const Sender: Pointer);
+begin
+  Component.Transform.p := Position;
+end;
+
+procedure TScene2DComponentDataText.OnChangeRotation(const Sender: Pointer);
+begin
+  Component.Transform.r.Angle := Rotation * G2DegToRad;
+end;
+
+procedure TScene2DComponentDataText.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
+end;
+//TScene2DComponentDataText END
 
 //TScene2DComponentDataBackground BEGIN
 class function TScene2DComponentDataBackground.GetName: String;
@@ -30349,6 +30500,13 @@ begin
   TScene2DComponentDataSprite(Result.UserData).Component := Result;
 end;
 
+function TScene2DData.CreateComponentText: TG2Scene2DComponentText;
+begin
+  Result := TG2Scene2DComponentText.Create(_Scene);
+  Result.UserData := TScene2DComponentDataText.Create;
+  TScene2DComponentDataText(Result.UserData).Component := Result;
+end;
+
 function TScene2DData.CreateComponentBackground: TG2Scene2DComponentBackground;
 begin
   Result := TG2Scene2DComponentBackground.Create(_Scene);
@@ -30532,6 +30690,18 @@ begin
   if Selection.Count = 1 then
   begin
     Component := CreateComponentSprite;
+    Component.Attach(Selection[0]);
+    SelectionUpdateStart;
+    SelectionUpdateEnd;
+  end;
+end;
+
+procedure TScene2DData.BtnComponentText;
+  var Component: TG2Scene2DComponentText;
+begin
+  if Selection.Count = 1 then
+  begin
+    Component := CreateComponentText;
     Component.Attach(Selection[0]);
     SelectionUpdateStart;
     SelectionUpdateEnd;
@@ -30791,6 +30961,7 @@ begin
   _Editor := nil;
   ScenePath := '';
   AddComponentTypePair(TG2Scene2DComponentSprite, TScene2DComponentDataSprite, @BtnComponentSprite);
+  AddComponentTypePair(TG2Scene2DComponentText, TScene2DComponentDataText, @BtnComponentText);
   AddComponentTypePair(TG2Scene2DComponentBackground, TScene2DComponentDataBackground, @BtnComponentBackground);
   AddComponentTypePair(TG2Scene2DComponentSpineAnimation, TScene2DComponentDataSpineAnimation, @BtnComponentSpineAnimation);
   AddComponentTypePair(TG2Scene2DComponentEffect, TScene2DComponentDataEffect, @BtnComponentEffect);
@@ -31096,6 +31267,32 @@ begin
 end;
 //TAssetImage END
 
+//TAssetFont BEGIN
+class function TAssetFont.GetAssetName: String;
+begin
+  Result := 'Font';
+end;
+
+class function TAssetFont.CheckExtension(const Ext: String): Boolean;
+begin
+  Result := (LowerCase(Ext) = 'g2f');
+end;
+
+class function TAssetFont.ProcessFile(const FilePath: String): TG2QuickListString;
+  var Ext: String;
+begin
+  Ext := ExtractFileExt(FilePath);
+  Delete(Ext, 1, 1);
+  if LowerCase(Ext) = 'g2f' then
+  begin
+    {$Warnings off}
+    Result.Clear;
+    {$Warnings on}
+    Result.Add(FilePath);
+  end;
+end;
+//TAssetFont END
+
 //TAssetEffect2D BEGIN
 class function TAssetEffect2D.GetAssetName: String;
 begin
@@ -31186,6 +31383,11 @@ end;
 function TAssetManager.GetTexture(const Path: String): TG2Texture2D;
 begin
   Result := TG2Texture2D.SharedAsset(Path);
+end;
+
+function TAssetManager.GetFont(const Path: String): TG2Font;
+begin
+  Result := TG2Font.SharedAsset(Path);
 end;
 
 function TAssetManager.GetImage(const Path: String): TG2Picture;

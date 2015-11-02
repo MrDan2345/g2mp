@@ -163,6 +163,7 @@ type
   TG2S3DMeshInst = class;
   TG2S3DParticle = class;
   TG2Scene3D = class;
+  TG2CustomTimer = class;
 
   TG2Proc = procedure;
   TG2ProcObj = procedure of Object;
@@ -326,6 +327,24 @@ type
     procedure WriteLn(const LogMessage: String); inline;
   end;
 
+  TG2CustomTimerFunc = function (const PrevInterval: TG2IntS32): TG2IntS32;
+  TG2CustomTimerFuncObj = function (const PrevInterval: TG2IntS32): TG2IntS32 of Object;
+
+  TG2CustomTimer = class
+  private
+    var _Interval: TG2IntS32;
+    var _TimeLeft: TG2Float;
+    var _Obj: Boolean;
+    var _Func: TG2CustomTimerFunc;
+    var _FuncObj: TG2CustomTimerFuncObj;
+  public
+    constructor Create(const NewFunc: TG2CustomTimerFunc; const NewInterval: TG2IntS32);
+    constructor Create(const NewFunc: TG2CustomTimerFuncObj; const NewInterval: TG2IntS32);
+    function Update: Boolean;
+  end;
+
+  TG2CustomTimerList = specialize TG2QuickListG<TG2CustomTimer>;
+
   TG2TargetPlatform = (tpUndefined, tpWindows, tpLinux, tpMacOSX, tpAndroid, tpiOS);
 
   TG2Core = class
@@ -364,6 +383,7 @@ type
     _LinkMouseUp: TG2LinkMouseList;
     _LinkScroll: TG2LinkScrollList;
     _LinkResize: TG2LinkResizeList;
+    _CustomTimers: TG2CustomTimerList;
     _KeyDown: array[0..255] of Boolean;
     _MBDown: array[0..31] of Boolean;
     _MDPos: array[0..31] of TPoint;
@@ -476,6 +496,8 @@ type
     procedure CallbackResizeAdd(const ProcResize: TG2ProcResizeObj); overload;
     procedure CallbackResizeRemove(const ProcResize: TG2ProcResize); overload;
     procedure CallbackResizeRemove(const ProcResize: TG2ProcResizeObj); overload;
+    procedure CustomTimer(const Func: TG2CustomTimerFuncObj; const IntervalMs: TG2IntS32); overload;
+    procedure CustomTimer(const Func: TG2CustomTimerFunc; const IntervalMs: TG2IntS32); overload;
     procedure PicQuadCol(
       const Pos0, Pos1, Pos2, Pos3, Tex0, Tex1, Tex2, Tex3: TG2Vec2;
       const Col0, Col1, Col2, Col3: TG2Color;
@@ -1920,7 +1942,7 @@ type
     OffsetY: TG2IntS32;
   end;
 
-  TG2Font = class (TG2Res)
+  TG2Font = class (TG2Asset)
   protected
     _Props: array[TG2IntU8] of TG2FontCharProps;
     _CharSpaceX: TG2IntS32;
@@ -1930,6 +1952,7 @@ type
     procedure Finalize; override;
     function GetProps(const Index: TG2IntU8): TG2FontCharProps; inline;
   public
+    class function SharedAsset(const SharedAssetName: String): TG2Font;
     property Texture: TG2Texture2D read _Texture;
     property Props[const Index: TG2IntU8]: TG2FontCharProps read GetProps;
     function TextWidth(const Text: AnsiString): TG2IntS32; overload;
@@ -4129,6 +4152,50 @@ begin
 end;
 //TG2Log END
 
+//TG2CustomTimer BEGIN
+constructor TG2CustomTimer.Create(const NewFunc: TG2CustomTimerFunc; const NewInterval: TG2IntS32);
+begin
+  inherited Create;
+  _Obj := False;
+  _Interval := NewInterval;
+  _TimeLeft := _Interval * 0.001;
+  _Func := NewFunc;
+end;
+
+constructor TG2CustomTimer.Create(const NewFunc: TG2CustomTimerFuncObj; const NewInterval: TG2IntS32);
+begin
+  inherited Create;
+  _Obj := True;
+  _Interval := NewInterval;
+  _TimeLeft := _Interval * 0.001;
+  _FuncObj := NewFunc;
+end;
+
+function TG2CustomTimer.Update: Boolean;
+  var n: TG2IntS32;
+begin
+  _TimeLeft -= g2.DeltaTimeSec;
+  if _TimeLeft <= 0 then
+  begin
+    if _Obj then
+    n := _FuncObj(_Interval)
+    else
+    n := _Func(_Interval);
+    if n <= 0 then
+    begin
+      Exit(True);
+    end
+    else
+    begin
+      _Interval := n;
+      _TimeLeft := _Interval * 0.001;
+      Exit(False);
+    end;
+  end;
+  Result := False;
+end;
+//TG2CustomTimer END
+
 //TG2Core BEGIN
 procedure TG2Core.Render;
 begin
@@ -4163,6 +4230,12 @@ begin
   begin
     Dispose(_LinkUpdate[i]);
     _LinkUpdate.Delete(i);
+  end;
+  for i := _CustomTimers.Count - 1 downto 0 do
+  if _CustomTimers[i].Update then
+  begin
+    _CustomTimers[i].Free;
+    _CustomTimers.Delete(i);
   end;
 end;
 
@@ -5146,6 +5219,20 @@ begin
   end;
 end;
 
+procedure TG2Core.CustomTimer(const Func: TG2CustomTimerFuncObj; const IntervalMs: TG2IntS32);
+  var ct: TG2CustomTimer;
+begin
+  ct := TG2CustomTimer.Create(Func, IntervalMs);
+  _CustomTimers.Add(ct);
+end;
+
+procedure TG2Core.CustomTimer(const Func: TG2CustomTimerFunc; const IntervalMs: TG2IntS32);
+  var ct: TG2CustomTimer;
+begin
+  ct := TG2CustomTimer.Create(Func, IntervalMs);
+  _CustomTimers.Add(ct);
+end;
+
 procedure TG2Core.PicQuadCol(
   const Pos0, Pos1, Pos2, Pos3, Tex0, Tex1, Tex2, Tex3: TG2Vec2;
   const Col0, Col1, Col2, Col3: TG2Color;
@@ -6009,6 +6096,7 @@ begin
   _LinkMouseUp.Clear;
   _LinkScroll.Clear;
   _LinkResize.Clear;
+  _CustomTimers.Clear;
   _ShowCursor := True;
   {$if defined(G2Target_Android) or defined(G2Target_iOS)}
   _CursorPos := Point(0, 0);
@@ -6019,6 +6107,7 @@ destructor TG2Core.Destroy;
   var i: TG2IntS32;
   var Res: TG2Res;
 begin
+  for i := 0 to _CustomTimers.Count - 1 do _CustomTimers[i].Free;
   for i := 0 to _LinkInitialize.Count - 1 do Dispose(_LinkInitialize[i]);
   for i := 0 to _LinkFinalize.Count - 1 do Dispose(_LinkFinalize[i]);
   for i := 0 to _LinkUpdate.Count - 1 do Dispose(_LinkUpdate[i]);
@@ -12436,6 +12525,29 @@ begin
   Result := _Props[Index];
 end;
 
+class function TG2Font.SharedAsset(const SharedAssetName: String): TG2Font;
+  var Res: TG2Res;
+  var dm: TG2DataManager;
+begin
+  Res := TG2Res.List;
+  while Res <> nil do
+  begin
+    if (Res is TG2Font)
+    and (TG2Texture2D(Res).AssetName = SharedAssetName)
+    and (Res.RefCount > 0) then
+    begin
+      Result := TG2Font(Res);
+      Exit;
+    end;
+    Res := Res.Next;
+  end;
+  dm := TG2DataManager.Create(SharedAssetName, dmAsset);
+  Result := TG2Font.Create;
+  Result.AssetName := SharedAssetName;
+  Result.Load(dm);
+  dm.Free;
+end;
+
 function TG2Font.TextWidth(const Text: AnsiString): TG2IntS32;
   var i: TG2IntS32;
 begin
@@ -12488,6 +12600,7 @@ procedure TG2Font.Make(const Size: TG2IntS32; const Face: AnsiString = {$ifdef G
   var TextureData: Pointer;
   {$endif}
 begin
+  AssetName := '';
   {$ifdef G2Gfx_D3D9}
   MaxWidth := TG2GfxD3D9(g2.Gfx).Caps.MaxTextureWidth; if MaxWidth > 2048 then MaxWidth := 2048;
   MaxHeight := TG2GfxD3D9(g2.Gfx).Caps.MaxTextureHeight; if MaxHeight > 2048 then MaxHeight := 2048;

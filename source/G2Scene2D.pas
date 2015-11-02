@@ -316,6 +316,7 @@ type
     procedure DebugDraw(const Display: TG2Display2D);
     procedure Render(const Display: TG2Display2D);
     procedure EnablePhysics;
+    procedure DisablePhysics;
     function RenderHookAdd(const HookProc: TG2Scene2DRenderHookProc; const Layer: TG2IntS32): TG2Scene2DRenderHook;
     procedure RenderHookRemove(var Hook: TG2Scene2DRenderHook);
     function FindEntity(const GUID: String): TG2Scene2DEntity;
@@ -363,6 +364,57 @@ type
     property Scale: TG2Float read _Scale write _Scale;
     property FlipX: Boolean read _FlipX write _FlipX;
     property FlipY: Boolean read _FlipY write _FlipY;
+    property Filter: TG2Filter read _Filter write _Filter;
+    property Color: TG2Color read _Color write _Color;
+    property BlendMode: TG2BlendMode read _BlendMode write _BlendMode;
+    property Visible: Boolean read _Visible write _Visible;
+    property Transform: TG2Transform2 read _Transform write _Transform;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
+  end;
+
+  TG2Scene2DAlignH = (g2al_left, g2al_center, g2al_right);
+  TG2Scene2DAlignV = (g2al_top, g2al_middle, g2al_bottom);
+
+  TG2Scene2DComponentText = class (TG2Scene2DComponent)
+  private
+    var _Font: TG2Font;
+    var _Text: String;
+    var _AlignH: TG2Scene2DAlignH;
+    var _AlignV: TG2Scene2DAlignV;
+    var _RenderHook: TG2Scene2DRenderHook;
+    var _ScaleX: TG2Float;
+    var _ScaleY: TG2Float;
+    var _Transform: TG2Transform2;
+    var _Filter: TG2Filter;
+    var _Layer: TG2IntS32;
+    var _Color: TG2Color;
+    var _BlendMode: TG2BlendMode;
+    var _Visible: Boolean;
+    function GetLayer: TG2IntS32; inline;
+    procedure SetLayer(const Value: TG2IntS32); inline;
+    procedure SetFont(const Value: TG2Font); inline;
+    function GetWidth: TG2Float; inline;
+    function GetHeight: TG2Float; inline;
+  protected
+    procedure OnInitialize; override;
+    procedure OnFinalize; override;
+    procedure OnAttach; override;
+    procedure OnDetach; override;
+    procedure OnRender(const Display: TG2Display2D);
+  public
+    class constructor CreateClass;
+    class function GetName: String; override;
+    class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
+    property Layer: TG2IntS32 read GetLayer write SetLayer;
+    property Font: TG2Font read _Font write SetFont;
+    property Text: String read _Text write _Text;
+    property AlignH: TG2Scene2DAlignH read _AlignH write _AlignH;
+    property AlignV: TG2Scene2DAlignV read _AlignV write _AlignV;
+    property Width: TG2Float read GetWidth;
+    property Height: TG2Float read GetHeight;
+    property ScaleX: TG2Float read _ScaleX write _ScaleX;
+    property ScaleY: TG2Float read _ScaleY write _ScaleY;
     property Filter: TG2Filter read _Filter write _Filter;
     property Color: TG2Color read _Color write _Color;
     property BlendMode: TG2BlendMode read _BlendMode write _BlendMode;
@@ -2268,6 +2320,20 @@ begin
   _Joints[i].Enabled := True;
 end;
 
+procedure TG2Scene2D.DisablePhysics;
+  var i: TG2IntS32;
+  var rb: TG2Scene2DComponentRigidBody;
+begin
+  for i := 0 to _Entities.Count - 1 do
+  begin
+    rb := TG2Scene2DComponentRigidBody(_Entities[i].ComponentOfType[TG2Scene2DComponentRigidBody]);
+    if rb <> nil then
+    rb.Enabled := False;
+  end;
+  for i := 0 to _Joints.Count - 1 do
+  _Joints[i].Enabled := False;
+end;
+
 function TG2Scene2D.RenderHookAdd(
   const HookProc: TG2Scene2DRenderHookProc;
   const Layer: TG2IntS32
@@ -2556,6 +2622,189 @@ begin
   Layer := dm.ReadIntS32;
 end;
 //TG2Scene2DComponentSprite END
+
+//TG2Scene2DComponentText BEGIN
+function TG2Scene2DComponentText.GetLayer: TG2IntS32;
+begin
+  Result := _Layer;
+end;
+
+procedure TG2Scene2DComponentText.SetLayer(const Value: TG2IntS32);
+begin
+  _Layer := Value;
+  if _RenderHook <> nil then _RenderHook.Layer := _Layer;
+end;
+
+procedure TG2Scene2DComponentText.SetFont(const Value: TG2Font);
+begin
+  if _Font <> Value then
+  begin
+    if Assigned(_Font) then _Font.RefDec;
+    _Font := Value;
+    if Assigned(_Font) then _Font.RefInc;
+  end;
+end;
+
+function TG2Scene2DComponentText.GetWidth: TG2Float;
+begin
+  if Assigned(_Font) then Exit(_Font.TextWidth(_Text) * _ScaleX);
+  Result := 0;
+end;
+
+function TG2Scene2DComponentText.GetHeight: TG2Float;
+begin
+  if Assigned(_Font) then Exit(_Font.TextHeight('A') * _ScaleY);
+  Result := 0;
+end;
+
+procedure TG2Scene2DComponentText.OnInitialize;
+begin
+  _RenderHook := nil;
+  _Font := nil;
+  _Text := '';
+  _AlignH := g2al_left;
+  _AlignV := g2al_top;
+  _ScaleX := 0.01;
+  _ScaleY := 0.01;
+  _Filter := tfPoint;
+  _BlendMode := bmNormal;
+  _Layer := 0;
+  _Color := $ffffffff;
+  _Visible := True;
+  _Transform.SetIdentity;
+end;
+
+procedure TG2Scene2DComponentText.OnFinalize;
+begin
+  Font := nil;
+end;
+
+procedure TG2Scene2DComponentText.OnAttach;
+begin
+  _RenderHook := Scene.RenderHookAdd(@OnRender, _Layer);
+end;
+
+procedure TG2Scene2DComponentText.OnDetach;
+begin
+  Scene.RenderHookRemove(_RenderHook);
+end;
+
+procedure TG2Scene2DComponentText.OnRender(const Display: TG2Display2D);
+  var xf: TG2Transform2;
+  var i, j, CharSpaceX, CharSpaceY: TG2IntS32;
+  var c: TG2IntU8;
+  var x0, y0, tu1, tv1, tu2, tv2: TG2Float;
+  var v: array[0..3] of TG2Vec2;
+  var CharTU, CharTV, CurPos: TG2Float;
+begin
+  if not _Visible
+  or not Assigned(_Font)
+  or not Assigned(_Font.Texture)
+  or (Length(_Text) = 0) then Exit;
+  xf := _Owner.Transform;
+  G2Transform2Mul(@xf, @_Transform, @xf);
+  CharSpaceX := _Font.Texture.Width shr 4;
+  CharSpaceY := _Font.Texture.Height shr 4;
+  CharTU := CharSpaceX / _Font.Texture.RealWidth;
+  CharTV := CharSpaceY / _Font.Texture.RealHeight;
+  case _AlignH of
+    g2al_left: x0 := 0;
+    g2al_right: x0 := -GetWidth;
+    else x0 := -GetWidth * 0.5;
+  end;
+  case _AlignV of
+    g2al_top: y0 := 0;
+    g2al_bottom: y0 := -GetHeight;
+    else y0 := -GetHeight * 0.5;
+  end;
+  CurPos := x0;
+  for i := 0 to Length(_Text) - 1 do
+  begin
+    c := Ord(_Text[i + 1]);
+    tu1 := (c mod 16) * CharTU;
+    tv1 := (c div 16) * CharTV;
+    tu2 := tu1 + CharTU;
+    tv2 := tv1 + CharTV;
+    v[0].x := CurPos - _Font.Props[c].OffsetX * _ScaleX;
+    v[0].y := y0 - _Font.Props[c].OffsetY * _ScaleY;
+    v[3].x := v[0].x + CharSpaceX * _ScaleX;
+    v[3].y := v[0].y + CharSpaceY * _ScaleY;
+    v[1].x := v[3].x; v[1].y := v[0].y;
+    v[2].x := v[0].x; v[2].y := v[3].y;
+    CurPos := CurPos + _Font.Props[c].Width * _ScaleX;
+    for j := 0 to 3 do v[j] := xf.Transform(v[j]);
+    Display.PicQuadCol(
+      v[0].x, v[0].y, v[1].x, v[1].y,
+      v[2].x, v[2].y, v[3].x, v[3].y,
+      tu1, tv1, tu2, tv1,
+      tu1, tv2, tu2, tv2,
+      Color, Color, Color, Color,
+      Font.Texture,
+      BlendMode, Filter
+    );
+  end;
+end;
+
+class constructor TG2Scene2DComponentText.CreateClass;
+begin
+  SetLength(ComponentList, Length(ComponentList) + 1);
+  ComponentList[High(ComponentList)] := CG2Scene2DComponent(ClassType);
+end;
+
+class function TG2Scene2DComponentText.GetName: String;
+begin
+  Result := 'Text';
+end;
+
+class function TG2Scene2DComponentText.CanAttach(const Node: TG2Scene2DEntity): Boolean;
+begin
+  Result := True;
+end;
+
+procedure TG2Scene2DComponentText.Save(const dm: TG2DataManager);
+begin
+  SaveClassType(dm);
+  SaveTags(dm);
+  if Assigned(_Font)
+  and (_Font.IsShared) then
+  begin
+    dm.WriteStringA(_Font.AssetName);
+  end
+  else
+  begin
+    dm.WriteIntS32(0);
+  end;
+  dm.WriteStringA(_Text);
+  dm.WriteFloat(_ScaleX);
+  dm.WriteFloat(_ScaleY);
+  dm.WriteIntU8(TG2IntU8(_AlignH));
+  dm.WriteIntU8(TG2IntU8(_AlignV));
+  dm.WriteBuffer(@_Transform, SizeOf(_Transform));
+  dm.WriteBuffer(@_Filter, SizeOf(_Filter));
+  dm.WriteBuffer(@_BlendMode, SizeOf(_BlendMode));
+  dm.WriteIntS32(_Layer);
+end;
+
+procedure TG2Scene2DComponentText.Load(const dm: TG2DataManager);
+  var FontFile: String;
+begin
+  LoadTags(dm);
+  FontFile := dm.ReadStringA;
+  if Length(FontFile) > 0 then
+  begin
+    Font := TG2Font.SharedAsset(FontFile);
+  end;
+  _Text := dm.ReadStringA;
+  _ScaleX := dm.ReadFloat;
+  _ScaleY := dm.ReadFloat;
+  _AlignH := TG2Scene2DAlignH(dm.ReadIntU8);
+  _AlignV := TG2Scene2DAlignV(dm.ReadIntU8);
+  dm.ReadBuffer(@_Transform, SizeOf(_Transform));
+  dm.ReadBuffer(@_Filter, SizeOf(_Filter));
+  dm.ReadBuffer(@_BlendMode, SizeOf(_BlendMode));
+  Layer := dm.ReadIntS32;
+end;
+//TG2Scene2DComponentText END
 
 //TG2Scene2DComponentEffect BEGIN
 {$Hints off}
