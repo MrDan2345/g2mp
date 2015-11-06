@@ -139,14 +139,13 @@ begin
   Scene.EnablePhysics;
   PlayerEntity := Scene.FindEntityByName('Player');
   BackgroundEntity := Scene.FindEntityByName('Background');
-  Character := TG2Scene2DComponentCharacter.Create(Scene);
-  Character.Attach(PlayerEntity);
+  Character := TG2Scene2DComponentCharacter(PlayerEntity.ComponentOfType[TG2Scene2DComponentCharacter]);
   Character.Enabled := True;
   Character.MaxGlideSpeed := 3;
   //Wheel0 := Scene.FindEntityByName('Wheel0');
   //Wheel1 := Scene.FindEntityByName('Wheel1');
-  TG2Picture.SharedAsset('atlas.g2atlas#TestCharB.png').RefInc;
-  TG2Picture.SharedAsset('atlas.g2atlas#TestCharC.png').RefInc;
+  //TG2Picture.SharedAsset('atlas.g2atlas#TestCharB.png').RefInc;
+  //TG2Picture.SharedAsset('atlas.g2atlas#TestCharC.png').RefInc;
   rt := TG2Texture2DRT.Create;
   rt.Make(64, 64);
   ShotDelay := 0;
@@ -154,8 +153,8 @@ end;
 
 procedure TGame.Finalize;
 begin
-  TG2Picture.SharedAsset('atlas.g2atlas#TestCharB.png').RefDec;
-  TG2Picture.SharedAsset('atlas.g2atlas#TestCharC.png').RefDec;
+  //TG2Picture.SharedAsset('atlas.g2atlas#TestCharB.png').RefDec;
+  //TG2Picture.SharedAsset('atlas.g2atlas#TestCharC.png').RefDec;
   rt.Free;
   Scene.Free;
   Display.Free;

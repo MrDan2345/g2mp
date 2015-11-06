@@ -23942,6 +23942,7 @@ begin
   GraphScale := sm.Subset[1].NumberFloat;
   GraphScale.NumberMin := 1;
   GraphScale.NumberMax := 100;
+  GraphScale.Increment := 1;
   GraphScale.Number := 3;
   GraphScale.Width := 64;
   GraphScale.OnChange := @OnGraphScaleChange;
@@ -28547,6 +28548,8 @@ end;
 
 destructor TScene2DComponentDataPoly.Destroy;
 begin
+  if App.Scene2DData.Editor = TScene2DEditorPoly.Instance then
+  App.Scene2DData.Editor := nil;
   TScene2DEditorPoly.Instance.RefDec;
   Clear;
   inherited Destroy;

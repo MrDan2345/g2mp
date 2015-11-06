@@ -23942,7 +23942,8 @@ begin
   GraphScale := sm.Subset[1].NumberFloat;
   GraphScale.NumberMin := 1;
   GraphScale.NumberMax := 100;
-  GraphScale.Number := 3;
+  GraphScale.Increment := 1;
+  GraphScale.Number := 360;
   GraphScale.Width := 64;
   GraphScale.OnChange := @OnGraphScaleChange;
   Graph := TUIWorkspaceCustomGraph.Create;
@@ -28154,7 +28155,7 @@ begin
   h := Component.Height;
   case Component.AlignH of
     g2al_left: v[0].x := 0;
-    g2al_right: v[0].x := w;
+    g2al_right: v[0].x := -w;
     else v[0].x := -w * 0.5;
   end;
   case Component.AlignV of
@@ -28547,6 +28548,8 @@ end;
 
 destructor TScene2DComponentDataPoly.Destroy;
 begin
+  if App.Scene2DData.Editor = TScene2DEditorPoly.Instance then
+  App.Scene2DData.Editor := nil;
   TScene2DEditorPoly.Instance.RefDec;
   Clear;
   inherited Destroy;
