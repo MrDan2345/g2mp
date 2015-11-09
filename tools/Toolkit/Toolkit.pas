@@ -1027,7 +1027,7 @@ type
 //TUIWorkspaceProjectBrowser END
 
   TUIWorkspaceCustomSizing = (csFixed, csStretch);
-  TUIWorkspaceCustomAlignment = (caLeft, caRight, caCenter, caTop, caBottom, caMiddle);
+  TUIWorkspaceCustomAlignment = (caLeft, caRight, caCenter, caTop, caBottom, caMiddle, caClientH, caClientV);
   TUIWorkspaceCustomAlignmentSet = set of TUIWorkspaceCustomAlignment;
 
 //TUIWorkspaceCustomObject BEGIN
@@ -1616,7 +1616,12 @@ type
     _BtnBuild: TUIWorkspaceCustomButton;
     _BtnBuildHTML5: TUIWorkspaceCustomButton;
     _BtnLpr: TUIWorkspaceCustomButton;
+    _EditJDK: TUIWorkspaceCustomEdit;
+    _EditASDK: TUIWorkspaceCustomEdit;
+    _EditANDK: TUIWorkspaceCustomEdit;
     _Options: TUIWorkspaceCustomPages;
+    _Target: TUIWorkspaceCustomComboBox;
+    _TargetOptions: TUIWorkspaceCustomPages;
     _OptEmpty: TUIWorkspaceCustom;
     _OptBuild: TUIWorkspaceCustom;
     _LabelProjectPath: TUIWorkspaceCustomLabel;
@@ -1626,6 +1631,7 @@ type
     procedure OnBtnBuild;
     procedure OnBtnBuildHTML5;
     procedure OnBtnLpr;
+    procedure OnChangeTarget(const Index: TG2IntS32);
   protected
     procedure OnInitialize; override;
     procedure OnUpdate; override;
@@ -9392,18 +9398,42 @@ begin
 end;
 
 procedure TUIWorkspaceFixedSplitterMulti.OnAdjust;
-  var i: Integer;
-  var w: Single;
+  var i, fn: Integer;
+  var tmp, FreeSize, FixedSize, w: Single;
   var f, r: TG2Rect;
 begin
   if _SubsetCount < 1 then Exit;
   f := Frame;
   w := _SplitRatio * f.w;
   f.w := w;
+  if not _EqualSized then
+  begin
+    FixedSize := 0;
+    FreeSize := Frame.w;
+    fn := 0;
+    for i := 0 to _SubsetCount - 1 do
+    begin
+      if caClientH in _Subsets[i].Alignemnt then
+      begin
+        fn += 1;
+      end
+      else
+      begin
+        FixedSize += _Subsets[i].GetMinWidth + _Subsets[i].SpacingLeft + _Subsets[i].SpacingRight;
+      end;
+    end;
+    FreeSize -= FixedSize;
+    if (FreeSize > 0) and (fn > 0) then FreeSize := FreeSize / fn else FreeSize := 0;
+  end;
   for i := 0 to _SubsetCount - 1 do
   begin
     if not _EqualSized then
-    f.w := _Subsets[i].GetMinWidth + _Subsets[i].SpacingLeft + _Subsets[i].SpacingRight;
+    begin
+      if caClientH in _Subsets[i].Alignemnt then
+      f.w := FreeSize
+      else
+      f.w := _Subsets[i].GetMinWidth + _Subsets[i].SpacingLeft + _Subsets[i].SpacingRight;
+    end;
     _Subsets[i].Frame := f;
     f.x := f.x + f.w;
   end;
@@ -9737,7 +9767,7 @@ end;
 
 function TUIWorkspaceCustomLabel.GetMinWidth: Single;
 begin
-  Result := App.UI.Font1.TextWidth(_Caption);
+  Result := G2Max(App.UI.Font1.TextWidth(_Caption), _Width);
 end;
 
 function TUIWorkspaceCustomLabel.GetMinHeight: Single;
@@ -11419,6 +11449,7 @@ end;
 
 procedure TUIWorkspaceCustom.OnInitialize;
 begin
+  _Alignment := [caLeft, caTop];
   _ScrollV.OnChange := @OnSlide;
   _Scrollable := False;
   _SpacingTop := 0;
@@ -11788,11 +11819,20 @@ begin
   App.Project.CreateLPR;
 end;
 
+procedure TUIWorkspaceProject.OnChangeTarget(const Index: TG2IntS32);
+begin
+  _TargetOptions.PageIndex := _Target.ItemIndex;
+end;
+
 procedure TUIWorkspaceProject.OnInitialize;
   var p: TUIWorkspaceCustomPanel;
   var sh: TUIWorkspaceFixedSplitterH;
   var sv: TUIWorkspaceFixedSplitterV;
   var sm: TUIWorkspaceFixedSplitterMulti;
+  var cb: TUIWorkspaceCustomComboBox;
+  var lbl: TUIWorkspaceCustomLabel;
+  var pg: TUIWorkspaceCustom;
+  var btn: TUIWorkspaceCustomButton;
 begin
   inherited OnInitialize;
   Scrollable := True;
@@ -11818,6 +11858,74 @@ begin
   _BtnLpr.OnClick := @OnBtnLpr;
   _LabelProjectPath.Color := $ffffffff;
   _LabelProjectPath.Align := [caLeft, caMiddle];
+  sm := _OptBuild.SplitterM(2);
+  sm.PaddingTop := 8;
+  sm.EqualSized := False;
+  lbl := sm.Subset[0].Text('Target:');
+  lbl.Color := $ffffffff;
+  lbl.PaddingRight := 8;
+  _Target := sm.Subset[1].ComboBox;
+  _Target.Width := 150;
+  _Target.Add('Windows x32');
+  _Target.Add('Android');
+  _Target.OnChange := @OnChangeTarget;
+  _TargetOptions := _OptBuild.Pages;
+  _TargetOptions.SizingH := csStretch;
+  pg := _TargetOptions.AddPage;
+  pg := _TargetOptions.AddPage;
+  pg.SetSpacing(4);
+  sm := pg.SplitterM(3);
+  sm.SizingH := csStretch;
+  sm.EqualSized := False;
+  sm.Subset[0].SpacingRight := 8;
+  with sm.Subset[0].Text('JDK') do
+  begin
+    Width := 100;
+    Color := $ffffffff;
+    Align := [caLeft, caMiddle];
+  end;
+  sm.Subset[1].Alignemnt := [caTop, caClientH];
+  _EditJDK := sm.Subset[1].Edit;
+  _EditJDK.Width := 300;
+  _EditJDK.Height := 24;
+  _EditJDK.SizingH := csStretch;
+  btn := sm.Subset[2].Button('...');
+  btn.Width := 40;
+  btn.Height := 24;
+  sm := pg.SplitterM(3);
+  sm.EqualSized := False;
+  sm.Subset[0].SpacingRight := 8;
+  with sm.Subset[0].Text('Android SDK') do
+  begin
+    Width := 100;
+    Color := $ffffffff;
+    Align := [caLeft, caMiddle];
+  end;
+  sm.Subset[1].Alignemnt := [caTop, caClientH];
+  _EditASDK := sm.Subset[1].Edit;
+  _EditASDK.Width := 300;
+  _EditASDK.Height := 24;
+  btn := sm.Subset[2].Button('...');
+  btn.Width := 40;
+  btn.Height := 24;
+  sm := pg.SplitterM(3);
+  sm.EqualSized := False;
+  sm.Subset[0].SpacingRight := 8;
+  with sm.Subset[0].Text('Android NDK') do
+  begin
+    Width := 100;
+    Color := $ffffffff;
+    Align := [caLeft, caMiddle];
+  end;
+  sm.Subset[1].Alignemnt := [caTop, caClientH];
+  _EditANDK := sm.Subset[1].Edit;
+  _EditANDK.SizingH := csStretch;
+  _EditANDK.Width := 300;
+  _EditANDK.Height := 24;
+  btn := sm.Subset[2].Button('...');
+  btn.Width := 40;
+  btn.Height := 24;
+  _TargetOptions.PageIndex := 0;
 end;
 
 procedure TUIWorkspaceProject.OnUpdate;
@@ -11838,7 +11946,7 @@ end;
 
 function TUIWorkspaceProject.GetMinWidth: Single;
 begin
-  Result := G2Max(inherited GetMinWidth, 256);
+  Result := 350;
 end;
 
 function TUIWorkspaceProject.GetMinHeight: Single;
