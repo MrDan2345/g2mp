@@ -56,31 +56,31 @@ type
   {$ifdef G2Target_Android}
   TG2DataControlAndroidAsset = class (TG2DataControl)
   private
-    _Position: IntS64;
-    _Size: IntS64;
+    _Position: TG2IntS64;
+    _Size: TG2IntS64;
   protected
-    function GetPosition: IntS64; override;
-    procedure SetPosition(const Value: IntS64); override;
-    function GetSize: IntS64; override;
+    function GetPosition: TG2IntS64; override;
+    procedure SetPosition(const Value: TG2IntS64); override;
+    function GetSize: TG2IntS64; override;
   public
-    function ReadBuffer(const Buffer: Pointer; const Count: IntS64): IntS64; override;
-    function WriteBuffer(const Buffer: Pointer; const Count: IntS64): IntS64; override;
-    constructor Create(const FileName: FileString; const Mode: TG2DataMode);
+    function ReadBuffer(const Buffer: Pointer; const Count: TG2IntS64): TG2IntS64; override;
+    function WriteBuffer(const Buffer: Pointer; const Count: TG2IntS64): TG2IntS64; override;
+    constructor Create(const FileName: String; const Mode: TG2DataMode);
     destructor Destroy; override;
   end;
 
   TG2DataControlAndroidFile = class (TG2DataControl)
   private
-    _Position: IntS64;
-    _Size: IntS64;
+    _Position: TG2IntS64;
+    _Size: TG2IntS64;
   protected
-    function GetPosition: IntS64; override;
-    procedure SetPosition(const Value: IntS64); override;
-    function GetSize: IntS64; override;
+    function GetPosition: TG2IntS64; override;
+    procedure SetPosition(const Value: TG2IntS64); override;
+    function GetSize: TG2IntS64; override;
   public
-    function ReadBuffer(const Buffer: Pointer; const Count: IntS64): IntS64; override;
-    function WriteBuffer(const Buffer: Pointer; const Count: IntS64): IntS64; override;
-    constructor Create(const FileName: FileString; const Mode: TG2DataMode);
+    function ReadBuffer(const Buffer: Pointer; const Count: TG2IntS64): TG2IntS64; override;
+    function WriteBuffer(const Buffer: Pointer; const Count: TG2IntS64): TG2IntS64; override;
+    constructor Create(const FileName: String; const Mode: TG2DataMode);
     destructor Destroy; override;
   end;
   {$endif}
@@ -464,34 +464,34 @@ end;
 
 {$ifdef G2Target_Android}
 //TG2DataControlAndroidAsset BEGIN
-function TG2DataControlAndroidAsset.GetPosition: IntS64;
+function TG2DataControlAndroidAsset.GetPosition: TG2IntS64;
 begin
   Result := _Position;
 end;
 
-procedure TG2DataControlAndroidAsset.SetPosition(const Value: IntS64);
+procedure TG2DataControlAndroidAsset.SetPosition(const Value: TG2IntS64);
 begin
   _Position := Value;
   AndroidBinding.FASetPos(_Position);
 end;
 
-function TG2DataControlAndroidAsset.GetSize: IntS64;
+function TG2DataControlAndroidAsset.GetSize: TG2IntS64;
 begin
   Result := _Size;
 end;
 
-function TG2DataControlAndroidAsset.ReadBuffer(const Buffer: Pointer; const Count: IntS64): IntS64;
+function TG2DataControlAndroidAsset.ReadBuffer(const Buffer: Pointer; const Count: TG2IntS64): TG2IntS64;
 begin
   Result := AndroidBinding.FARead(Buffer, Count);
   Inc(_Position, Result);
 end;
 
-function TG2DataControlAndroidAsset.WriteBuffer(const Buffer: Pointer; const Count: IntS64): IntS64;
+function TG2DataControlAndroidAsset.WriteBuffer(const Buffer: Pointer; const Count: TG2IntS64): TG2IntS64;
 begin
   //Cannot write to android assets
 end;
 
-constructor TG2DataControlAndroidAsset.Create(const FileName: FileString; const Mode: TG2DataMode);
+constructor TG2DataControlAndroidAsset.Create(const FileName: String; const Mode: TG2DataMode);
 begin
   _Position := 0;
   _Size := AndroidBinding.FAOpen(FileName, Length(FileName));
@@ -504,35 +504,35 @@ end;
 //TG2DataControlAndroidAsset END
 
 //TG2DataControlAndroidFile BEGIN
-function TG2DataControlAndroidFile.GetPosition: IntS64;
+function TG2DataControlAndroidFile.GetPosition: TG2IntS64;
 begin
   Result := _Position;
 end;
 
-procedure TG2DataControlAndroidFile.SetPosition(const Value: IntS64);
+procedure TG2DataControlAndroidFile.SetPosition(const Value: TG2IntS64);
 begin
   _Position := Value;
   AndroidBinding.FSetPos(_Position);
 end;
 
-function TG2DataControlAndroidFile.GetSize: IntS64;
+function TG2DataControlAndroidFile.GetSize: TG2IntS64;
 begin
   Result := _Size;
 end;
 
-function TG2DataControlAndroidFile.ReadBuffer(const Buffer: Pointer; const Count: IntS64): IntS64;
+function TG2DataControlAndroidFile.ReadBuffer(const Buffer: Pointer; const Count: TG2IntS64): TG2IntS64;
 begin
   Result := AndroidBinding.FRead(Buffer, Count);
   Inc(_Position, Result);
 end;
 
-function TG2DataControlAndroidFile.WriteBuffer(const Buffer: Pointer; const Count: IntS64): IntS64;
+function TG2DataControlAndroidFile.WriteBuffer(const Buffer: Pointer; const Count: TG2IntS64): TG2IntS64;
 begin
   AndroidBinding.FWrite(Buffer, Count);
   Inc(_Position, Count);
 end;
 
-constructor TG2DataControlAndroidFile.Create(const FileName: FileString; const Mode: TG2DataMode);
+constructor TG2DataControlAndroidFile.Create(const FileName: String; const Mode: TG2DataMode);
 begin
   _Position := 0;
   _Size := 0;
@@ -1646,7 +1646,7 @@ begin
   Result := '';
 end;
 {$elseif defined(G2Target_iOS)}
-  var FullPath: FileString;
+  var FullPath: String;
   var i: TG2IntS32;
 begin
   FullPath := ParamStr(0);

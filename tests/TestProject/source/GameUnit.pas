@@ -167,14 +167,16 @@ procedure TGame.Update;
   var Animation: TG2Scene2DComponentSpineAnimation;
   var Sprite: TG2Scene2DComponentSprite;
   var GunBone: TSpineBone;
-  var gxf: TG2Transform2;
+  var xf, gxf: TG2Transform2;
   var Shot: TG2Scene2DEntity;
   var sc: TG2Scene2DComponentCollisionShapeCircle;
   var ShotComponent: TShotComponent;
 begin
   if Assigned(BackgroundEntity) then
   begin
-    BackgroundEntity.Transform.p := Display.Position;
+    xf := BackgroundEntity.Transform;
+    xf.p := Display.Position;
+    BackgroundEntity.Transform := xf;
   end;
   if PlayerEntity <> nil then
   begin

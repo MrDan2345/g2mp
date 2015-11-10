@@ -2932,10 +2932,10 @@ begin
 end;
 {$elseif defined(UNIX)}
 type timeval = packed record
- tv_sec: TG2IntU32;
- tv_usec: TG2IntU32;
+ tv_sec: tb2_uint32;
+ tv_usec: tb2_uint32;
 end;
-function gettimeofday(timeval, timezone: Pointer): TG2IntS32; cdecl; external 'libc';
+function gettimeofday(timeval, timezone: Pointer): tb2_int32; cdecl; external 'libc';
 
 constructor tb2_timer.create;
 begin
@@ -2945,15 +2945,15 @@ end;
 procedure tb2_timer.reset;
   var t: timeval;
 begin
-  gettimeofday(@t, 0);
-  _start_sec = t.tv_sec;
-  _start_usec = t.tv_usec;
+  gettimeofday(@t, nil);
+  _start_sec := t.tv_sec;
+  _start_usec := t.tv_usec;
 end;
 
 function tb2_timer.get_milliseconds: tb2_float32;
   var t: timeval;
 begin
-  gettimeofday(@t, 0);
+  gettimeofday(@t, nil);
   result := 1000.0 * (t.tv_sec - _start_sec) + 0.001 * (t.tv_usec - _start_usec);
 end;
 {$else}

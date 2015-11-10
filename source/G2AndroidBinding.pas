@@ -32,16 +32,16 @@ type
   public
     procedure Init(const Env: PJNIEnv; const Mgr: JObject);
     procedure AppClose;
-    function FOpenInput(const FileName: FileString; const Len: Integer): Integer;
-    procedure FOpenOutput(const FileName: FileString; const Len: Integer);
+    function FOpenInput(const FileName: String; const Len: Integer): Integer;
+    procedure FOpenOutput(const FileName: String; const Len: Integer);
     procedure FClose;
-    procedure FSetPos(const Pos: IntS64);
+    procedure FSetPos(const Pos: TG2IntS64);
     procedure FWrite(const Buffer: Pointer; const Count: Integer);
     function FRead(const Buffer: Pointer; const Count: Integer): Integer;
-    function FExists(const FileName: FileString; const Len: Integer): Boolean;
-    function FAOpen(const FileName: FileString; const Len: Integer): Integer;
+    function FExists(const FileName: String; const Len: Integer): Boolean;
+    function FAOpen(const FileName: String; const Len: Integer): Integer;
     procedure FAClose;
-    procedure FASetPos(const Pos: IntS64);
+    procedure FASetPos(const Pos: TG2IntS64);
     function FARead(const Buffer: Pointer; const Count: Integer): Integer;
     procedure FontMake(var Buffer: Pointer; var tw, th: Integer; const Size: Integer; const chw, chh: PInteger);
   end;
@@ -86,7 +86,7 @@ begin
   (_Env^)^.CallVoidMethod(_Env, _Mgr, _MIDAppClose);
 end;
 
-function TG2AndroidBinding.FOpenInput(const FileName: FileString; const Len: Integer): Integer;
+function TG2AndroidBinding.FOpenInput(const FileName: String; const Len: Integer): Integer;
   var JStr: JString;
   var Ptr: Pointer;
   var i: Integer;
@@ -97,13 +97,13 @@ begin
     PByteArray(Ptr)^[i * 2] := Byte(FileName[i + 1]);
     PByteArray(Ptr)^[i * 2 + 1] := 0;
   end;
-  JStr := (_Env^)^.NewString(_Env, PJChar(FileName), Len);
+  JStr := (_Env^)^.NewString(_Env, PJChar(@FileName[1]), Len);
   Result := (_Env^)^.CallIntMethodV(_Env, _Mgr, _MIDFOpenInput, va_list(@JStr));
   (_Env^)^.DeleteLocalRef(_Env, JStr);
   FreeMem(Ptr, Len * 2);
 end;
 
-procedure TG2AndroidBinding.FOpenOutput(const FileName: FileString; const Len: Integer);
+procedure TG2AndroidBinding.FOpenOutput(const FileName: String; const Len: Integer);
   var JStr: JString;
   var Ptr: Pointer;
   var i: Integer;
@@ -114,7 +114,7 @@ begin
     PByteArray(Ptr)^[i * 2] := Byte(FileName[i + 1]);
     PByteArray(Ptr)^[i * 2 + 1] := 0;
   end;
-  JStr := (_Env^)^.NewString(_Env, PJChar(FileName), Len);
+  JStr := (_Env^)^.NewString(_Env, PJChar(@FileName[1]), Len);
   (_Env^)^.CallVoidMethodV(_Env, _Mgr, _MIDFOpenOutput, va_list(@JStr));
   (_Env^)^.DeleteLocalRef(_Env, JStr);
   FreeMem(Ptr, Len * 2);
@@ -125,7 +125,7 @@ begin
   (_Env^)^.CallVoidMethod(_Env, _Mgr, _MIDFClose);
 end;
 
-procedure TG2AndroidBinding.FSetPos(const Pos: IntS64);
+procedure TG2AndroidBinding.FSetPos(const Pos: TG2IntS64);
   var PosInt: Integer;
 begin
   PosInt := Pos;
@@ -174,7 +174,7 @@ begin
   (_Env^)^.DeleteGlobalRef(_Env, ArgArr.Buffer);
 end;
 
-function TG2AndroidBinding.FExists(const FileName: FileString; const Len: Integer): Boolean;
+function TG2AndroidBinding.FExists(const FileName: String; const Len: Integer): Boolean;
   var JStr: JString;
   var Res: JBoolean;
   var Ptr: Pointer;
@@ -193,7 +193,7 @@ begin
   FreeMem(Ptr, Len * 2);
 end;
 
-function TG2AndroidBinding.FAOpen(const FileName: FileString; const Len: Integer): Integer;
+function TG2AndroidBinding.FAOpen(const FileName: String; const Len: Integer): Integer;
   var JStr: JString;
   var Ptr: Pointer;
   var i: Integer;
@@ -215,7 +215,7 @@ begin
   (_Env^)^.CallVoidMethod(_Env, _Mgr, _MIDFAClose);
 end;
 
-procedure TG2AndroidBinding.FASetPos(const Pos: IntS64);
+procedure TG2AndroidBinding.FASetPos(const Pos: TG2IntS64);
   var PosInt: Integer;
 begin
   PosInt := Pos;

@@ -4,7 +4,7 @@
   {#workspace
    type = "TUIWorkspaceSplitter"
    orientation = "vertical"
-   split = 0.1546391725
+   split = 0.3113402128
    {#workspace
     type = "TUIWorkspaceSplitter"
     orientation = "horizontal"

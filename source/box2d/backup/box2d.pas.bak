@@ -2932,10 +2932,10 @@ begin
 end;
 {$elseif defined(UNIX)}
 type timeval = packed record
- tv_sec: TG2IntU32;
- tv_usec: TG2IntU32;
+ tv_sec: tb2_uint32;
+ tv_usec: tb2_uint32;
 end;
-function gettimeofday(timeval, timezone: Pointer): TG2IntS32; cdecl; external 'libc';
+function gettimeofday(timeval, timezone: Pointer): tb2_int32; cdecl; external 'libc';
 
 constructor tb2_timer.create;
 begin
@@ -2945,9 +2945,9 @@ end;
 procedure tb2_timer.reset;
   var t: timeval;
 begin
-  gettimeofday(@t, 0);
-  _start_sec = t.tv_sec;
-  _start_usec = t.tv_usec;
+  gettimeofday(@t, nil);
+  _start_sec := t.tv_sec;
+  _start_usec := t.tv_usec;
 end;
 
 function tb2_timer.get_milliseconds: tb2_float32;
@@ -4991,7 +4991,6 @@ end;
 
 function tb2_broad_phase.query_callback(const proxy_id: tb2_int32): boolean;
   var old_buffer: pb2_pair_arr;
-  var h, m, i: tb2_int32;
 begin
   if proxy_id = _query_proxy_id then
   begin

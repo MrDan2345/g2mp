@@ -1,0 +1,10 @@
+Name=fppkg
+Version=3.0
+Checksum=1197255873
+CPU=i386
+OS=win32
+SourcePath=F:\lazsvn\3RC2\fpc-source\packages\fppkg\
+FPMakeOptions=-o -Ur -o -Xs -o -O2 -o -n -o -Ur -o -CX -o -di386 -o -dRELEASE
+Depends=rtl,fcl-base|1197255823,fcl-xml|1197255828,fcl-process|1197255859,paszlib|1197255820,fpmkunit|1197255872,fcl-net|1197255859,fcl-web|1197255866,httpd22|1197255865
+NeedLibC=N
+FPMakeAddIn=N

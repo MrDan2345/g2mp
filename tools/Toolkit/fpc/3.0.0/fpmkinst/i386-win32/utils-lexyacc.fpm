@@ -1,0 +1,10 @@
+Name=utils-lexyacc
+Version=3.0
+Checksum=1197255911
+CPU=i386
+OS=win32
+SourcePath=F:\lazsvn\3RC2\fpc-source\utils\tply\
+FPMakeOptions=-o -Ur -o -Xs -o -O2 -o -n -o -CX -o -XX -o -Xs -o -di386 -o -dRELEASE
+Depends=rtl
+NeedLibC=N
+FPMakeAddIn=N

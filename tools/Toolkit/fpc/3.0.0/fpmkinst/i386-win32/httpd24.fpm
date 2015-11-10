@@ -1,0 +1,10 @@
+Name=httpd24
+Version=3.0
+Checksum=1197255865
+CPU=i386
+OS=win32
+SourcePath=F:\lazsvn\3RC2\fpc-source\packages\httpd24\
+FPMakeOptions=-o -Ur -o -Xs -o -O2 -o -n -o -Ur -o -CX -o -di386 -o -dRELEASE
+Depends=rtl,rtl-extra|1197255816
+NeedLibC=Y
+FPMakeAddIn=N

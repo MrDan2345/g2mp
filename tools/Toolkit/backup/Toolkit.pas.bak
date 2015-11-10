@@ -1632,6 +1632,12 @@ type
     procedure OnBtnBuildHTML5;
     procedure OnBtnLpr;
     procedure OnChangeTarget(const Index: TG2IntS32);
+    procedure OnSearchJDK;
+    procedure OnSearchASDK;
+    procedure OnSearchANDK;
+    procedure OnChangePathJDK;
+    procedure OnChangePathASDK;
+    procedure OnChangePathANDK;
   protected
     procedure OnInitialize; override;
     procedure OnUpdate; override;
@@ -2674,6 +2680,7 @@ type
     var ColorSecondary: TG2Color;
     var ClipRects: array of TRect;
     var Hint: TUIHint;
+    procedure AdjustHierarchy(const WorkspaceInHierarchy: TUIWorkspace);
     procedure RegisterWorkspace(const WorkspaceClass: CUIWorkspace);
     procedure RegisterWorkspaceConstructor(const WorkspaceConstructor: TUIWorkspaceConstructor);
     procedure Initialize;
@@ -2756,10 +2763,11 @@ type
     _LineCount: Integer;
     _CurLine: Integer;
     function GetLine(const Index: Integer): AnsiString; inline;
-    procedure AddLine(const Line: AnsiString);
   public
     property Lines[const Index: Integer]: AnsiString read GetLine;
     property LineCount: Integer read _LineCount;
+    procedure AddLine(const Line: AnsiString);
+    procedure Dump(const Path: String);
     procedure Initialize;
     procedure Finalize;
     procedure Clear;
@@ -2770,6 +2778,7 @@ type
 //TProject BEGIN
   TProject = object
   private
+    _TargetPlatform: Integer;
     _Open: Boolean;
     _FilePath: String;
     _FileName: String;
@@ -2783,6 +2792,8 @@ type
     function GetProjectIncludeSource(const Index: Integer): AnsiString; inline;
     function GetProjectIncludeSourceCount: Integer; inline;
   public
+    AvailablePlatforms: array of TG2TargetPlatform;
+    property TargetPlatform: Integer read _TargetPlatform write _TargetPlatform;
     property Open: Boolean read _Open;
     property FilePath: String read _FilePath;
     property FileName: String read _FileName;
@@ -2791,6 +2802,7 @@ type
     property ProjectCode: AnsiString read _ProjectCode;
     property ProjectIncludeSource[const Index: Integer]: AnsiString read GetProjectIncludeSource;
     property ProjectIncludeSourceCount: Integer read GetProjectIncludeSourceCount;
+    function GetPlatformName(const Platform: TG2TargetPlatform): String;
     procedure Initialize;
     procedure Finalize;
     procedure Update;
@@ -2800,6 +2812,8 @@ type
     procedure Close;
     procedure ReLoad;
     procedure Build;
+    procedure BuildWindows32;
+    procedure BuildAndroid;
     procedure BuildHTML5;
     procedure CreateLPR;
     procedure UpdateSettings;
@@ -4266,6 +4280,23 @@ type
   end;
 //TCodeInsight END
 
+//TGlobalSettings BEGIN
+  TGlobalSettings = class
+  private
+    var _PathJDK: String;
+    var _PathASDK: String;
+    var _PathANDK: String;
+  public
+    property PathJDK: String read _PathJDK write _PathJDK;
+    property PathASDK: String read _PathASDK write _PathASDK;
+    property PathANDK: String read _PathANDK write _PathANDK;
+    constructor Create;
+    destructor Destroy; override;
+    procedure LoadSettings(const Path: String);
+    procedure SaveSettings(const Path: String);
+  end;
+//TGlobalSettings END
+
 //TG2Toolkit BEGIN
   TG2Toolkit = object
   public
@@ -4278,6 +4309,7 @@ type
     var Scene2DData: TScene2DData;
     var CodeInsight: TCodeInsight;
     var AssetManager: TAssetManager;
+    var Settings: TGlobalSettings;
     var cbf_scene2d_object: TClipboardFormat;
     procedure Initialize;
     procedure Finalize;
@@ -4290,6 +4322,8 @@ type
     procedure Scroll(const y: Integer);
     procedure Print(const Char: AnsiChar);
     procedure Resize(const OldWidth, OldHeight, NewWidth, NewHeight: Integer);
+    procedure SaveSettings;
+    procedure LoadSettings;
     function LoadFile(const f: String): AnsiString;
   end;
 //TG2Toolkit END
@@ -10769,7 +10803,7 @@ procedure TUIWorkspaceCustomPages.SetPageIndex(const Value: Integer);
 begin
   if _PageIndex = Value then Exit;
   _PageIndex := Value;
-  OnAdjust;
+  App.UI.AdjustHierarchy(Self);
 end;
 
 procedure TUIWorkspaceCustomPages.OnInitialize;
@@ -10827,21 +10861,17 @@ begin
 end;
 
 function TUIWorkspaceCustomPages.GetMinWidth: Single;
-  var i: Integer;
 begin
-  Result := 0;
-  for i := 0 to ChildCount - 1 do
-  Result := G2Max(Result, Children[i].GetMinWidth);
-  Result := G2Max(Result, 32);
+  Result := 32;
+  if PageIndex > -1 then
+  Result := G2Max(Children[PageIndex].GetMinWidth, Result);
 end;
 
 function TUIWorkspaceCustomPages.GetMinHeight: Single;
-  var i: Integer;
 begin
-  Result := 0;
-  for i := 0 to ChildCount - 1 do
-  Result := G2Max(Result, Children[i].GetMinHeight);
-  Result := G2Max(Result, 32);
+  Result := 32;
+  if PageIndex > -1 then
+  Result := G2Max(Children[PageIndex].GetMinHeight, Result);
 end;
 //TUIWorkspaceCustomPages END
 
@@ -11822,6 +11852,76 @@ end;
 procedure TUIWorkspaceProject.OnChangeTarget(const Index: TG2IntS32);
 begin
   _TargetOptions.PageIndex := _Target.ItemIndex;
+  if App.Project.TargetPlatform <> _TargetOptions.PageIndex then
+  begin
+    App.Project.TargetPlatform := _TargetOptions.PageIndex;
+  end;
+end;
+
+procedure TUIWorkspaceProject.OnSearchJDK;
+  var od: TSelectDirectoryDialog;
+begin
+  od := TSelectDirectoryDialog.Create(nil);
+  od.FileName := _EditJDK.Text;
+  if od.Execute then
+  begin
+    _EditJDK.Text := od.FileName;
+    OnChangePathJDK;
+  end;
+  od.Free;
+end;
+
+procedure TUIWorkspaceProject.OnSearchASDK;
+  var od: TSelectDirectoryDialog;
+begin
+  od := TSelectDirectoryDialog.Create(nil);
+  od.FileName := _EditASDK.Text;
+  if od.Execute then
+  begin
+    _EditASDK.Text := od.FileName;
+    OnChangePathASDK;
+  end;
+  od.Free;
+end;
+
+procedure TUIWorkspaceProject.OnSearchANDK;
+  var od: TSelectDirectoryDialog;
+begin
+  od := TSelectDirectoryDialog.Create(nil);
+  od.FileName := _EditANDK.Text;
+  if od.Execute then
+  begin
+    _EditANDK.Text := od.FileName;
+    OnChangePathANDK;
+  end;
+  od.Free;
+end;
+
+procedure TUIWorkspaceProject.OnChangePathJDK;
+begin
+  if _EditJDK.Text <> App.Settings.PathJDK then
+  begin
+    App.Settings.PathJDK := _EditJDK.Text;
+    App.SaveSettings;
+  end;
+end;
+
+procedure TUIWorkspaceProject.OnChangePathASDK;
+begin
+  if _EditASDK.Text <> App.Settings.PathASDK then
+  begin
+    App.Settings.PathASDK := _EditASDK.Text;
+    App.SaveSettings;
+  end;
+end;
+
+procedure TUIWorkspaceProject.OnChangePathANDK;
+begin
+  if _EditANDK.Text <> App.Settings.PathANDK then
+  begin
+    App.Settings.PathANDK := _EditANDK.Text;
+    App.SaveSettings;
+  end;
 end;
 
 procedure TUIWorkspaceProject.OnInitialize;
@@ -11833,6 +11933,7 @@ procedure TUIWorkspaceProject.OnInitialize;
   var lbl: TUIWorkspaceCustomLabel;
   var pg: TUIWorkspaceCustom;
   var btn: TUIWorkspaceCustomButton;
+  var i: Integer;
 begin
   inherited OnInitialize;
   Scrollable := True;
@@ -11866,66 +11967,83 @@ begin
   lbl.PaddingRight := 8;
   _Target := sm.Subset[1].ComboBox;
   _Target.Width := 150;
-  _Target.Add('Windows 32');
-  _Target.Add('Android');
-  _Target.OnChange := @OnChangeTarget;
-  _TargetOptions := _OptBuild.Pages;
-  _TargetOptions.SizingH := csStretch;
-  pg := _TargetOptions.AddPage;
-  pg := _TargetOptions.AddPage;
-  pg.SetSpacing(4);
-  sm := pg.SplitterM(3);
-  sm.SizingH := csStretch;
-  sm.EqualSized := False;
-  sm.Subset[0].SpacingRight := 8;
-  with sm.Subset[0].Text('JDK') do
+  for i := 0 to High(App.Project.AvailablePlatforms) do
   begin
-    Width := 100;
-    Color := $ffffffff;
-    Align := [caLeft, caMiddle];
+    _Target.Add(App.Project.GetPlatformName(App.Project.AvailablePlatforms[i]));
+    case App.Project.AvailablePlatforms[i] of
+      tpAndroid:
+      begin
+        _Target.OnChange := @OnChangeTarget;
+        _TargetOptions := _OptBuild.Pages;
+        _TargetOptions.SizingH := csStretch;
+        pg := _TargetOptions.AddPage;
+        pg := _TargetOptions.AddPage;
+        pg.SetSpacing(4);
+        sm := pg.SplitterM(3);
+        sm.SizingH := csStretch;
+        sm.EqualSized := False;
+        sm.Subset[0].SpacingRight := 8;
+        with sm.Subset[0].Text('JDK') do
+        begin
+          Width := 100;
+          Color := $ffffffff;
+          Align := [caLeft, caMiddle];
+        end;
+        sm.Subset[1].Alignemnt := [caTop, caClientH];
+        _EditJDK := sm.Subset[1].Edit;
+        _EditJDK.Width := 300;
+        _EditJDK.Height := 24;
+        _EditJDK.SizingH := csStretch;
+        _EditJDK.OnFinishProc := @OnChangePathJDK;
+        btn := sm.Subset[2].Button('...');
+        btn.Width := 40;
+        btn.Height := 24;
+        btn.OnClick := @OnSearchJDK;
+        sm := pg.SplitterM(3);
+        sm.EqualSized := False;
+        sm.Subset[0].SpacingRight := 8;
+        with sm.Subset[0].Text('Android SDK') do
+        begin
+          Width := 100;
+          Color := $ffffffff;
+          Align := [caLeft, caMiddle];
+        end;
+        sm.Subset[1].Alignemnt := [caTop, caClientH];
+        _EditASDK := sm.Subset[1].Edit;
+        _EditASDK.Width := 300;
+        _EditASDK.Height := 24;
+        _EditASDK.SizingH := csStretch;
+        _EditASDK.OnFinishProc := @OnChangePathASDK;
+        btn := sm.Subset[2].Button('...');
+        btn.Width := 40;
+        btn.Height := 24;
+        btn.OnClick := @OnSearchASDK;
+        sm := pg.SplitterM(3);
+        sm.EqualSized := False;
+        sm.Subset[0].SpacingRight := 8;
+        with sm.Subset[0].Text('Android NDK') do
+        begin
+          Width := 100;
+          Color := $ffffffff;
+          Align := [caLeft, caMiddle];
+        end;
+        sm.Subset[1].Alignemnt := [caTop, caClientH];
+        _EditANDK := sm.Subset[1].Edit;
+        _EditANDK.Width := 300;
+        _EditANDK.Height := 24;
+        _EditANDK.SizingH := csStretch;
+        _EditANDK.OnFinishProc := @OnChangePathANDK;
+        btn := sm.Subset[2].Button('...');
+        btn.Width := 40;
+        btn.Height := 24;
+        btn.OnClick := @OnSearchANDK;
+        _TargetOptions.PageIndex := 0;
+        _EditJDK.Text := App.Settings.PathJDK;
+        _EditASDK.Text := App.Settings.PathASDK;
+        _EditANDK.Text := App.Settings.PathANDK;
+      end;
+    end;
   end;
-  sm.Subset[1].Alignemnt := [caTop, caClientH];
-  _EditJDK := sm.Subset[1].Edit;
-  _EditJDK.Width := 300;
-  _EditJDK.Height := 24;
-  _EditJDK.SizingH := csStretch;
-  btn := sm.Subset[2].Button('...');
-  btn.Width := 40;
-  btn.Height := 24;
-  sm := pg.SplitterM(3);
-  sm.EqualSized := False;
-  sm.Subset[0].SpacingRight := 8;
-  with sm.Subset[0].Text('Android SDK') do
-  begin
-    Width := 100;
-    Color := $ffffffff;
-    Align := [caLeft, caMiddle];
-  end;
-  sm.Subset[1].Alignemnt := [caTop, caClientH];
-  _EditASDK := sm.Subset[1].Edit;
-  _EditASDK.Width := 300;
-  _EditASDK.Height := 24;
-  btn := sm.Subset[2].Button('...');
-  btn.Width := 40;
-  btn.Height := 24;
-  sm := pg.SplitterM(3);
-  sm.EqualSized := False;
-  sm.Subset[0].SpacingRight := 8;
-  with sm.Subset[0].Text('Android NDK') do
-  begin
-    Width := 100;
-    Color := $ffffffff;
-    Align := [caLeft, caMiddle];
-  end;
-  sm.Subset[1].Alignemnt := [caTop, caClientH];
-  _EditANDK := sm.Subset[1].Edit;
-  _EditANDK.SizingH := csStretch;
-  _EditANDK.Width := 300;
-  _EditANDK.Height := 24;
-  btn := sm.Subset[2].Button('...');
-  btn.Width := 40;
-  btn.Height := 24;
-  _TargetOptions.PageIndex := 0;
 end;
 
 procedure TUIWorkspaceProject.OnUpdate;
@@ -11936,6 +12054,10 @@ begin
   begin
     _Options.PageIndex := 1;
     _LabelProjectPath.Caption := 'Project Path: ' + App.Project.GetProjectPath;
+    if App.Project.TargetPlatform <> _Target.ItemIndex then
+    begin
+      _Target.ItemIndex := App.Project.TargetPlatform;
+    end;
   end
   else
   begin
@@ -17869,12 +17991,97 @@ begin
 end;
 //TUIWorkspaceParticles2DTimeline END
 
+//TGlobalSettings BEGIN
+constructor TGlobalSettings.Create;
+begin
+  inherited Create;
+  _PathJDK := '';
+  _PathASDK := '';
+  _PathANDK := '';
+end;
+
+destructor TGlobalSettings.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TGlobalSettings.LoadSettings(const Path: String);
+  var g2ml: TG2ML;
+  var fs: TFileStream;
+  var SettingsData: AnsiString;
+  var Data: PG2MLObject;
+  var i, i0: Integer;
+  var n, n0: PG2MLObject;
+begin
+  fs := TFileStream.Create(Path, fmOpenRead);
+  try
+    SetLength(SettingsData, fs.Size);
+    fs.Read(SettingsData[1], fs.Size);
+    g2ml := TG2ML.Create;
+    Data := g2ml.Read(SettingsData);
+    for i := 0 to Data^.Children.Count - 1 do
+    begin
+      n := Data^.Children[i];
+      if n^.Name = 'g2mp_toolkit' then
+      begin
+        for i0 := 0 to n^.Children.Count - 1 do
+        begin
+          n0 := n^.Children[i0];
+          if n0^.Name = 'jdk_path' then
+          begin
+            _PathJDK := n0^.AsString;
+          end
+          else if n0^.Name = 'asdk_path' then
+          begin
+            _PathASDK := n0^.AsString;
+          end
+          else if n0^.Name = 'andk_path' then
+          begin
+            _PathANDK := n0^.AsString;
+          end;
+        end;
+      end;
+    end;
+    g2ml.FreeObject(Data);
+    g2ml.Free;
+  finally
+    fs.Free;
+  end;
+end;
+
+procedure TGlobalSettings.SaveSettings(const Path: String);
+  var g2ml: TG2MLWriter;
+  var fs: TFileStream;
+  var SettingsData: AnsiString;
+begin
+  g2ml := TG2MLWriter.Create;
+  g2ml.NodeOpen('g2mp_toolkit');
+  g2ml.NodeValue('jdk_path', _PathJDK);
+  g2ml.NodeValue('asdk_path', _PathASDK);
+  g2ml.NodeValue('andk_path', _PathANDK);
+  g2ml.NodeClose;
+  SettingsData := g2ml.G2ML;
+  g2ml.Free;
+  fs := TFileStream.Create(Path, fmCreate);
+  try
+    fs.Write(SettingsData[1], Length(SettingsData));
+  finally
+    fs.Free;
+  end;
+end;
+//TGlobalSettings END
+
 //TG2Toolkit BEGIN
 procedure TG2Toolkit.Initialize;
 begin
   g2.Window.Caption := 'g2mp toolkit v0.2';
   g2.AssetSourceManager.SourceFile.ClearPaths;
   cbf_scene2d_object := RegisterClipboardFormat('g2mp toolkit scene2d object');
+  Settings := TGlobalSettings.Create;
+  if FileExists(g2.AppPath + 'settings.g2ml') then
+  begin
+    Settings.LoadSettings(g2.AppPath + 'settings.g2ml');
+  end;
   AssetManager.Initialize;
   UI.Initialize;
   Project.Initialize;
@@ -17922,6 +18129,8 @@ begin
   Project.Finalize;
   UI.Finalize;
   AssetManager.Finalize;
+  Settings.SaveSettings(g2.AppPath + 'settings.g2ml');
+  Settings.Free;
 end;
 
 procedure TG2Toolkit.Update;
@@ -17982,6 +18191,19 @@ end;
 procedure TG2Toolkit.Resize(const OldWidth, OldHeight, NewWidth, NewHeight: Integer);
 begin
   UI.Resize;
+end;
+
+procedure TG2Toolkit.SaveSettings;
+begin
+  Settings.SaveSettings(g2.AppPath + 'settings.g2ml');
+end;
+
+procedure TG2Toolkit.LoadSettings;
+begin
+  if FileExists(g2.AppPath + 'settings.g2ml') then
+  begin
+    Settings.LoadSettings(g2.AppPath + 'settings.g2ml');
+  end;
 end;
 
 function TG2Toolkit.LoadFile(const f: String): AnsiString;
@@ -20792,6 +21014,16 @@ end;
 //TUIHint END
 
 //TUI BEGIN
+procedure TUI.AdjustHierarchy(const WorkspaceInHierarchy: TUIWorkspace);
+  procedure AdjustWorkspace(const Workspace: TUIWorkspace);
+  begin
+    if Workspace.Parent = nil then Workspace.OnAdjust
+    else AdjustWorkspace(Workspace.Parent);
+  end;
+begin
+  AdjustWorkspace(WorkspaceInHierarchy);
+end;
+
 procedure TUI.RegisterWorkspace(const WorkspaceClass: CUIWorkspace);
   var wc: TUIWorkspaceConstructor;
 begin
@@ -22008,6 +22240,23 @@ begin
   Inc(_LineCount);
 end;
 
+procedure TConsole.Dump(const Path: String);
+  var fs: TFileStream;
+  var i: TG2IntS32;
+begin
+  fs := TFileStream.Create(Path, fmCreate);
+  try
+    for i := 0 to LineCount - 1 do
+    begin
+      fs.WriteBuffer(Lines[i][1], Length(Lines[i]));
+      fs.WriteByte($D);
+      fs.WriteByte($A);
+    end;
+  finally
+    fs.Free;
+  end;
+end;
+
 procedure TConsole.Initialize;
 begin
   Clear;
@@ -22118,6 +22367,18 @@ begin
   Result := Length(_ProjectIncludeSource);
 end;
 
+function TProject.GetPlatformName(const Platform: TG2TargetPlatform): String;
+begin
+  case Platform of
+    tpWindows: Result := 'Windows x32';
+    tpLinux: Result := 'Linux x32';
+    tpMacOSX: Result := 'Mac OSX x32';
+    tpAndroid: Result := 'Android';
+    tpiOS: Result := 'iOS';
+    else Result := 'Undefined';
+  end;
+end;
+
 function TProject.GetProjectName: AnsiString;
   var Ext: AnsiString;
 begin
@@ -22133,6 +22394,16 @@ end;
 
 procedure TProject.Initialize;
 begin
+  SetLength(AvailablePlatforms, 1);
+  AvailablePlatforms[0] := g2.TargetPlatform;
+  _TargetPlatform := 0;
+  case g2.TargetPlatform of
+    tpWindows:
+    begin
+      SetLength(AvailablePlatforms, Length(AvailablePlatforms) + 1);
+      AvailablePlatforms[High(AvailablePlatforms)] := tpAndroid;
+    end;
+  end;
   _Open := False;
   _FileName := '';
   _FilePath := '';
@@ -22371,6 +22642,16 @@ begin
 end;
 
 procedure TProject.Build;
+begin
+  if not _Open then Exit;
+  UpdateSettings;
+  case AvailablePlatforms[TargetPlatform] of
+    tpWindows: BuildWindows32;
+    tpAndroid: BuildAndroid;
+  end;
+end;
+
+procedure TProject.BuildWindows32;
   var CommandLine: String;
   procedure AddUnit(const UnitPath: String);
   begin
@@ -22392,11 +22673,9 @@ procedure TProject.Build;
   var i: Integer;
   const READ_BYTES = 2048;
 begin
-  if not _Open then Exit;
-  UpdateSettings;
   App.Log.Log('Build Started');
   App.Console.AddLine('Build Started');
-  CompilerPath := g2.AppPath + 'fpc' + G2PathSep + 'i386-win32' + G2PathSep + 'fpc.exe';
+  CompilerPath := g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'bin' + G2PathSep + 'i386-win32' + G2PathSep + 'fpc.exe';
   if not DirectoryExists(_FilePath + 'build') then
   CreateDir(_FilePath + 'build');
   if not DirectoryExists(_FilePath + 'build' + G2PathSep + 'obj') then
@@ -22501,6 +22780,184 @@ begin
   CompilerProcess.sl.Free;
   //App.Log.Log(Deploy.Build(CompilerPath, ProjectPath));
   G2RemoveDir(_FilePath + 'build');
+end;
+
+procedure TProject.BuildAndroid;
+  var CommandLine: String;
+  procedure AddUnit(const UnitPath: String);
+  begin
+    CommandLine := CommandLine + ' -Fu"' + UnitPath + '"';
+  end;
+  procedure AddOption(const Option: String);
+  begin
+    CommandLine := CommandLine + ' ' + Option;
+  end;
+  type TOutputProcess = record
+    sl: TStringList;
+    ProcOutput: TMemoryStream;
+    Proc: TProcessUTF8;
+    ReadBytes, NumBytes: Integer;
+  end;
+  var CompilerProcess, ExeProcess: TOutputProcess;
+  var cf: TCodeFile;
+  var CompilerPath: String;
+  var pc, ProjStr, LibStr: AnsiString;
+  var i, j, n: Integer;
+  var b: Boolean;
+  const READ_BYTES = 2048;
+begin
+  App.Log.Log('Build Started');
+  App.Console.AddLine('Build Started');
+  CompilerPath := g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'bin' + G2PathSep + 'i386-win32' + G2PathSep + 'fpc.exe';
+  if not DirectoryExists(_FilePath + 'build') then
+  CreateDir(_FilePath + 'build');
+  if not DirectoryExists(_FilePath + 'build' + G2PathSep + 'obj') then
+  CreateDir(_FilePath + 'build' + G2PathSep + 'obj');
+  if not DirectoryExists(_FilePath + 'bin') then
+  CreateDir(_FilePath + 'bin');
+  cf.Initialize;
+  pc := _ProjectCode;
+  i := G2StrInStr(pc, '{#project_name#}');
+  ProjStr := 'project';
+  LibStr := 'library';
+  if i > -1 then
+  begin
+    j := i - Length(ProjStr);
+    b := True;
+    while b and (j >= 1) do
+    begin
+      b := False;
+      for n := j to G2Min(j + Length(ProjStr), Length(pc)) do
+      if LowerCase(pc[n]) <> ProjStr[n - j + 1] then
+      begin
+        b := True;
+        Break;
+      end;
+      Dec(j);
+    end;
+    if not b then
+    begin
+      Move(LibStr[1], pc[j], Length(LibStr));
+    end;
+  end;
+  cf.SetCode(G2StrReplace(pc, '{#project_name#}', GetProjectName));
+  cf.Save(_FilePath + 'build' + G2PathSep + _FileName);
+  cf.Finalize;
+  CommandLine := '';
+  AddOption('-Tandroid');
+  AddOption('-Parm');
+  AddOption('-Mobjfpc');
+  AddOption('-Sc');
+  AddOption('-XX');
+  AddOption('-Xs');
+  AddOption('-Xd');
+  AddOption('-ve');
+  AddOption('-vt');
+  AddOption('-vu');
+  AddOption('-va');
+  AddOption('-vv');
+  AddOption('-Sgic');
+  AddOption('-dANDROID');
+  AddOption('-Xd');
+  AddOption('-CpARMV6');
+  AddOption('-dG2Output');
+  AddOption('-dG2Debug');
+  AddOption('-FE' + '"' + _FilePath + 'bin' + '"');
+  AddOption('-FU' + '"' + _FilePath + 'build' + G2PathSep + 'obj' + '"');
+  AddOption('-FLlibdl.so');
+  AddOption('-FL"' + App.Settings.PathANDK + '\platforms\android-8\arch-arm\usr\lib"');
+  AddOption('-FL"' + g2.AppPath + '\fpc\3.0.0\lib\eabi');
+  //AddOption('-FL"' + App.Settings.PathANDK + '\toolchains\arm-linux-androideabi-4.6\prebuilt\windows\lib\gcc\arm-linux-androideabi\4.6"');
+  //AddUnit(g2.AppPath + '\fpc\3.0.0\bin\i386-win32\rtl');
+  //AddUnit(g2.AppPath + '\fpc\3.0.0\bin\i386-win32\winunits-base');
+  //AddUnit(g2.AppPath + '\fpc\3.0.0\bin\i386-win32\paszlib');
+  AddUnit(g2.AppPath + '\fpc\3.0.0\units\arm-android');
+  AddUnit(g2.AppPath + '\fpc\3.0.0\units\arm-android\rtl');
+  AddUnit(g2.AppPath + '\fpc\3.0.0\source\packages\paszlib\src');
+  AddUnit(App.Settings.PathANDK + '\platforms\android-8\arch-arm\usr\lib');
+  AddUnit(g2.AppPath + '..\..\source');//g2mp
+  AddUnit(g2.AppPath + '..\..\source\box2d');
+  AddUnit(g2.AppPath + '..\..\source\spine');
+  AddOption('-FD' + g2.AppPath + '\fpc\3.0.0\bin\i386-win32');
+  for i := 0 to High(_ProjectIncludeSource) do
+  AddUnit(G2StrReplace(_ProjectIncludeSource[i], '$(project_root)', _FilePath));
+  CommandLine := CommandLine + ' "' + _FilePath + 'build' + G2PathSep + _FileName + '"';
+  CompilerProcess.sl := TStringList.Create;
+  CompilerProcess.ProcOutput := TMemoryStream.Create;
+  CompilerProcess.Proc := TProcessUTF8.Create(nil);
+  CompilerProcess.Proc.Executable := CompilerPath;
+  CompilerProcess.Proc.CommandLine := CompilerProcess.Proc.Executable + CommandLine;
+  CompilerProcess.Proc.Options := CompilerProcess.Proc.Options + [poUsePipes];
+  CompilerProcess.Proc.ShowWindow := swoHIDE;
+  CompilerProcess.ReadBytes := 0;
+  CompilerProcess.Proc.Execute;
+  while True do
+  begin
+    CompilerProcess.ProcOutput.SetSize(CompilerProcess.ReadBytes + READ_BYTES);
+    CompilerProcess.NumBytes := CompilerProcess.Proc.Output.Read((CompilerProcess.ProcOutput.Memory + CompilerProcess.ReadBytes)^, READ_BYTES);
+    if CompilerProcess.NumBytes > 0 then
+    begin
+      Inc(CompilerProcess.ReadBytes, CompilerProcess.NumBytes);
+    end
+    else
+    Break;
+  end;
+  CompilerProcess.Proc.WaitOnExit;
+  CompilerProcess.ProcOutput.SetSize(CompilerProcess.ReadBytes);
+  CompilerProcess.sl.LoadFromStream(CompilerProcess.ProcOutput);
+  if CompilerProcess.Proc.ExitStatus = 0 then
+  begin
+    for i := 0 to CompilerProcess.sl.Count - 1 do
+    App.Console.AddLine(CompilerProcess.sl[i]);
+    App.Log.Log('Build Succeeded');
+    App.Console.AddLine('Build Succeeded');
+    if FileExists(_FilePath + 'bin' + G2PathSep + ProjectName + '.exe') then
+    begin
+      ExeProcess.sl := TStringList.Create;
+      ExeProcess.ProcOutput := TMemoryStream.Create;
+      ExeProcess.Proc := TProcessUTF8.Create(nil);
+      ExeProcess.Proc.Executable := _FilePath + 'bin' + G2PathSep + ProjectName + '.exe';
+      ExeProcess.Proc.CurrentDirectory := _FilePath + 'bin' + G2PathSep;
+      ExeProcess.Proc.CommandLine := ExeProcess.Proc.Executable;
+      ExeProcess.Proc.Options := ExeProcess.Proc.Options + [poUsePipes];
+      ExeProcess.Proc.ShowWindow := swoShowDefault;
+      ExeProcess.ReadBytes := 0;
+      ExeProcess.Proc.Execute;
+      while True do
+      begin
+        ExeProcess.ProcOutput.SetSize(ExeProcess.ReadBytes + READ_BYTES);
+        ExeProcess.NumBytes := ExeProcess.Proc.Output.Read((ExeProcess.ProcOutput.Memory + ExeProcess.ReadBytes)^, READ_BYTES);
+        if ExeProcess.NumBytes > 0 then
+        begin
+          Inc(ExeProcess.ReadBytes, ExeProcess.NumBytes);
+        end
+        else
+        Break;
+      end;
+      ExeProcess.Proc.WaitOnExit;
+      ExeProcess.ProcOutput.SetSize(ExeProcess.ReadBytes);
+      ExeProcess.sl.LoadFromStream(ExeProcess.ProcOutput);
+      for i := 0 to ExeProcess.sl.Count - 1 do
+      App.Console.AddLine(ExeProcess.sl[i]);
+      ExeProcess.Proc.Free;
+      ExeProcess.ProcOutput.Free;
+      ExeProcess.sl.Free;
+      //SysUtils.ExecuteProcess(UTF8ToSys(_FilePath + 'bin' + G2PathSep + ProjectName + '.exe'), '', []);
+    end;
+  end
+  else
+  begin
+    for i := 0 to CompilerProcess.sl.Count - 2 do
+    App.Console.AddLine(CompilerProcess.sl[i]);
+    App.Log.Log('Build Failed');
+    App.Console.AddLine('Build Failed');
+    App.Console.Dump(g2.AppPath + 'g2console_dump.txt');
+  end;
+  CompilerProcess.Proc.Free;
+  CompilerProcess.ProcOutput.Free;
+  CompilerProcess.sl.Free;
+  //App.Log.Log(Deploy.Build(CompilerPath, ProjectPath));
+  //G2RemoveDir(_FilePath + 'build');
 end;
 
 procedure TProject.BuildHTML5;

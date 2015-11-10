@@ -231,6 +231,7 @@ type
     procedure SwapColorAlpha;
   end;
   PG2BlendMode = ^TG2BlendMode;
+  TG2BlendModeRef = TG2IntU32;
 
   TG2Ref = class
   private

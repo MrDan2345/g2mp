@@ -403,7 +403,7 @@ procedure TG2Image.Load(const FileName: String);
   var dm: TG2DataManager;
   {$if defined(G2Target_Android)}
   var Buffer: Pointer;
-  var Size: IntS64;
+  var Size: TG2IntS64;
   {$endif}
 begin
   dm := TG2DataManager.Create(FileName, dmAsset);

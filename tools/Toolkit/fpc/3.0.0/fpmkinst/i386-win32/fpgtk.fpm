@@ -1,0 +1,10 @@
+Name=fpgtk
+Version=3.0
+Checksum=1197255869
+CPU=i386
+OS=win32
+SourcePath=F:\lazsvn\3RC2\fpc-source\packages\fpgtk\
+FPMakeOptions=-o -Ur -o -Xs -o -O2 -o -n -o -Ur -o -CX -o -di386 -o -dRELEASE
+Depends=rtl,gtk1|1197255868
+NeedLibC=Y
+FPMakeAddIn=N

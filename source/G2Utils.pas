@@ -74,7 +74,6 @@ type
     procedure Sort(const CmpFunc: TCmpFunc); overload;
     procedure Sort(const CmpFunc: TCmpFuncObj); overload;
   end;
-  PG2QuickListG = ^TG2QuickListG;
 
   generic TG2QuickSortListG<T> = object
   private
@@ -103,7 +102,6 @@ type
     procedure Remove(const Item: T);
     procedure Clear;
   end;
-  PG2QuickSortListG = ^TG2QuickSortListG;
 
   generic TG2Array<T> = object
   public

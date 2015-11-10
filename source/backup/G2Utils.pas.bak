@@ -74,7 +74,6 @@ type
     procedure Sort(const CmpFunc: TCmpFunc); overload;
     procedure Sort(const CmpFunc: TCmpFuncObj); overload;
   end;
-  PG2QuickListG = ^TG2QuickListG;
 
   generic TG2QuickSortListG<T> = object
   private
@@ -2502,7 +2501,7 @@ begin
   end;
   i := i1 - i0 + 1;
   SetLength(Result, i);
-  Move(Str[i0], Result[1], );
+  Move(Str[i0], Result[1], i);
 end;
 
 procedure G2EncDec(const Ptr: PG2IntU8Arr; const Count: TG2IntS32; const Key: AnsiString);

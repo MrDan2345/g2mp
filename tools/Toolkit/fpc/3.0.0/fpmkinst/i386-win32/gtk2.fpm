@@ -1,0 +1,10 @@
+Name=gtk2
+Version=3.0
+Checksum=1197255879
+CPU=i386
+OS=win32
+SourcePath=F:\lazsvn\3RC2\fpc-source\packages\gtk2\
+FPMakeOptions=-o -Ur -o -Xs -o -O2 -o -n -o -Ur -o -CX -o -di386 -o -dRELEASE
+Depends=rtl,cairo|1197255826
+NeedLibC=Y
+FPMakeAddIn=N

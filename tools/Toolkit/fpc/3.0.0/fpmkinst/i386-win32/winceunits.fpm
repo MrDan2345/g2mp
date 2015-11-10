@@ -1,0 +1,10 @@
+Name=winceunits
+Version=3.0
+Checksum=1197255890
+CPU=i386
+OS=win32
+SourcePath=F:\lazsvn\3RC2\fpc-source\packages\winceunits\
+FPMakeOptions=-o -Ur -o -Xs -o -O2 -o -n -o -Ur -o -CX -o -di386 -o -dRELEASE
+Depends=rtl,rtl-objpas|1197255819,rtl-extra|1197255816
+NeedLibC=N
+FPMakeAddIn=N

@@ -417,8 +417,11 @@ begin
 end;
 
 procedure TGame.UpdateTeamMarker;
+  var xf: TG2Transform2;
 begin
-  TeamMarker.Transform.p.x := Team * 2 - 1;
+  xf := TeamMarker.Transform;
+  xf.p.x := Team * 2 - 1;
+  TeamMarker.Transform := xf;
 end;
 
 function TGame.ResetGoalTimer(const Interval: Integer): Integer;

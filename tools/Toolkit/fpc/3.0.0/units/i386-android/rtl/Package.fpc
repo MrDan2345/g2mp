@@ -1,0 +1,5 @@
+[package]
+name=rtl
+version=3.0.0rc2
+[require]
+packages_android_i386=

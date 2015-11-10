@@ -146,7 +146,9 @@ type
   TG2RenderControl = class;
   TG2RenderControlStateChange = class;
   TG2RenderControlManaged = class;
+  {$if defined(G2RM_SM2)}
   TG2RenderControlBuffer = class;
+  {$endif}
   TG2RenderControlPic2D = class;
   TG2RenderControlPrim2D = class;
   TG2RenderControlPrim3D = class;
@@ -508,21 +510,21 @@ type
       const x0, y0, x1, y1, x2, y2, x3, y3, tu0, tv0, tu1, tv1, tu2, tv2, tu3, tv3: TG2Float;
       const Col0, Col1, Col2, Col3: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicQuad(
       const Pos0, Pos1, Pos2, Pos3, Tex0, Tex1, Tex2, Tex3: TG2Vec2;
       const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicQuad(
       const x0, y0, x1, y1, x2, y2, x3, y3, tu0, tv0, tu1, tv1, tu2, tv2, tu3, tv3: TG2Float;
       const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRectCol(
@@ -531,7 +533,7 @@ type
       const Col0, Col1, Col2, Col3: TG2Color;
       const TexRect: TG2Vec4;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRectCol(
@@ -540,7 +542,7 @@ type
       const Col0, Col1, Col2, Col3: TG2Color;
       const tu0, tv0, tu1, tv1: TG2Float;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRectCol(
@@ -548,7 +550,7 @@ type
       const Width, Height: TG2Float;
       const Col0, Col1, Col2, Col3: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRectCol(
@@ -556,21 +558,21 @@ type
       const Width, Height: TG2Float;
       const Col0, Col1, Col2, Col3: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRectCol(
       const Pos: TG2Vec2;
       const Col0, Col1, Col2, Col3: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRectCol(
       const x, y: TG2Float;
       const Col0, Col1, Col2, Col3: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRectCol(
@@ -582,7 +584,7 @@ type
       const Texture: TG2Texture2DBase;
       const FrameWidth, FrameHeight: TG2IntS32;
       const FrameID: TG2IntS32;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRectCol(
@@ -594,19 +596,19 @@ type
       const Texture: TG2Texture2DBase;
       const FrameWidth, FrameHeight: TG2IntS32;
       const FrameID: TG2IntS32;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRect(
       const Pos: TG2Vec2; const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRect(
       const x, y: TG2Float; const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRect(
@@ -614,7 +616,7 @@ type
       const Width, Height: TG2Float;
       const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRect(
@@ -622,7 +624,7 @@ type
       const Width, Height: TG2Float;
       const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRect(
@@ -631,7 +633,7 @@ type
       const TexRect: TG2Vec4;
       const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRect(
@@ -640,7 +642,7 @@ type
       const tu0, tv0, tu1, tv1: TG2Float;
       const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRect(
@@ -652,7 +654,7 @@ type
       const Texture: TG2Texture2DBase;
       const FrameWidth, FrameHeight: TG2IntS32;
       const FrameID: TG2IntS32;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRect(
@@ -664,36 +666,36 @@ type
       const Texture: TG2Texture2DBase;
       const FrameWidth, FrameHeight: TG2IntS32;
       const FrameID: TG2IntS32;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PrimBegin(const PrimType: TG2PrimType; const BlendMode: TG2BlendMode); inline;
     procedure PrimEnd; inline;
     procedure PrimAdd(const x, y: TG2Float; const Color: TG2Color); inline;
     procedure PrimAdd(const Pos: TG2Vec2; const Color: TG2Color); inline;
-    procedure PrimLineCol(const Pos0, Pos1: TG2Vec2; const Col0, Col1: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimLineCol(const x0, y0, x1, y1: TG2Float; const Col0, Col1: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimLine(const Pos0, Pos1: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimLine(const x0, y0, x1, y1: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimTriCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimTriCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimQuadCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimQuadCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimQuad(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimQuad(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimRectCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
-    procedure PrimRect(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
-    procedure PrimRectHollowCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
-    procedure PrimRectHollow(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
-    procedure PrimCircleCol(const Pos: TG2Vec2; const Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimCircleCol(const x, y, Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimTriHollowCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimTriHollowCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimQuadHollowCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimQuadHollowCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimCircleHollow(const Pos: TG2Vec2; const Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimCircleHollow(const x, y, Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PolyBegin(const PolyType: TG2PrimType; const Texture: TG2Texture2DBase; const BlendMode: TG2BlendMode = bmNormal; const Filter: TG2Filter = tfPoint);
+    procedure PrimLineCol(const Pos0, Pos1: TG2Vec2; const Col0, Col1: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimLineCol(const x0, y0, x1, y1: TG2Float; const Col0, Col1: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimLine(const Pos0, Pos1: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimLine(const x0, y0, x1, y1: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimTriCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimTriCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimQuadCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimQuadCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimQuad(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimQuad(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimRectCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
+    procedure PrimRect(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
+    procedure PrimRectHollowCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
+    procedure PrimRectHollow(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
+    procedure PrimCircleCol(const Pos: TG2Vec2; const Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimCircleCol(const x, y, Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimTriHollowCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimTriHollowCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimQuadHollowCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimQuadHollowCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimCircleHollow(const Pos: TG2Vec2; const Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimCircleHollow(const x, y, Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PolyBegin(const PolyType: TG2PrimType; const Texture: TG2Texture2DBase; const BlendMode: TG2BlendModeRef = bmNormal; const Filter: TG2Filter = tfPoint);
     procedure PolyEnd;
     procedure PolyAdd(const x, y, u, v: TG2Float; const Color: TG2Color); inline; overload;
     procedure PolyAdd(const Pos, TexCoord: TG2Vec2; const Color: TG2Color); inline; overload;
@@ -703,7 +705,7 @@ type
     procedure Prim3DAdd(const Pos: TG2Vec3; const Color: TG2Color); inline;
     procedure Prim3DAddTri(const v0, v1, v2: TG2Vec3; const c0, c1, c2: TG2Color); inline;
     procedure Prim3DAddQuad(const v0, v1, v2, v3: TG2Vec3; const c0, c1, c2, c3: TG2Color); inline;
-    procedure Poly3DBegin(const PolyType: TG2PrimType; const Texture: TG2Texture2DBase; const WVP: TG2Mat; const BlendMode: TG2BlendMode = bmNormal; const Filter: TG2Filter = tfPoint); inline;
+    procedure Poly3DBegin(const PolyType: TG2PrimType; const Texture: TG2Texture2DBase; const WVP: TG2Mat; const BlendMode: TG2BlendModeRef = bmNormal; const Filter: TG2Filter = tfPoint); inline;
     procedure Poly3DEnd; inline;
     procedure Poly3DAdd(const x, y, z, u, v: TG2Float; const Color: TG2Color); inline;
     procedure Poly3DAdd(const Pos: TG2Vec3; const TexCoord: TG2Vec2; const Color: TG2Color); inline;
@@ -778,12 +780,14 @@ type
     {$elseif defined(G2Target_iOS)}
     _View: TG2OpenGLView;
     {$endif}
+    {$if not defined(G2Target_Mobile)}
     _CursorArrow: TG2Cursor;
     _CursorText: TG2Cursor;
     _CursorHand: TG2Cursor;
     _CursorSizeNS: TG2Cursor;
     _CursorSizeWE: TG2Cursor;
     _Cursor: TG2Cursor;
+    {$endif}
     _Loop: Boolean;
     _Caption: AnsiString;
     _MessageStack: array of TG2WindowMessage;
@@ -806,7 +810,9 @@ type
     );
     procedure Stop; inline;
     procedure SetCaption(const Value: AnsiString); inline;
+    {$if not defined(G2Target_Mobile)}
     procedure SetCursor(const Value: TG2Cursor);
+    {$endif}
   public
     {$if defined(G2Target_Windows)}
     property Handle: THandle read _Handle;
@@ -819,12 +825,14 @@ type
     {$elseif defined(G2Target_iOS)}
     property View: TG2OpenGLView read _View write _View;
     {$endif}
+    {$if not defined(G2Target_Mobile)}
     property Cursor: TG2Cursor read _Cursor write SetCursor;
     property CursorArrow: TG2Cursor read _CursorArrow;
     property CursorText: TG2Cursor read _CursorText;
     property CursorHand: TG2Cursor read _CursorHand;
     property CursorSizeNS: TG2Cursor read _CursorSizeNS;
     property CursorSizeWE: TG2Cursor read _CursorSizeWE;
+    {$endif}
     property Caption: AnsiString read _Caption write SetCaption;
     property IsLooping: Boolean read _Loop;
     procedure Loop;
@@ -908,7 +916,9 @@ type
     _NeedToSwap: Boolean;
     _CanSwap: Boolean;
     _ControlStateChange: TG2RenderControlStateChange;
+    {$if defined(G2RM_SM2)}
     _ControlBuffer: TG2RenderControlBuffer;
+    {$endif}
     _ControlPic2D: TG2RenderControlPic2D;
     _ControlPrim2D: TG2RenderControlPrim2D;
     _ControlPrim3D: TG2RenderControlPrim3D;
@@ -949,7 +959,9 @@ type
   public
     SizeRT: TPoint;
     property StateChange: TG2RenderControlStateChange read _ControlStateChange;
+    {$if defined(G2RM_SM2)}
     property Buffer: TG2RenderControlBuffer read _ControlBuffer;
+    {$endif}
     property Pic2D: TG2RenderControlPic2D read _ControlPic2D;
     property Prim2D: TG2RenderControlPrim2D read _ControlPrim2D;
     property Prim3D: TG2RenderControlPrim3D read _ControlPrim3D;
@@ -1113,7 +1125,11 @@ type
     procedure Initialize; override;
     procedure Finalize; override;
     procedure Render; override;
-    procedure Clear(const Color: TG2Color); override;
+    procedure Clear(
+      const Color: Boolean; const ColorValue: TG2Color;
+      const Depth: Boolean; const DepthValue: TG2Float;
+      const Stencil: Boolean; const StencilValue: TG2IntU8
+    ); override;
     procedure SetProj2D;
     procedure SetDefaults;
     procedure SwapBlendMode;
@@ -2185,6 +2201,7 @@ type
     destructor Destroy; override;
   end;
 
+  {$if defined(G2RM_SM2)}
   TG2RenderControlBuffer = class (TG2RenderControl)
   private
     type TParamType = (
@@ -2264,6 +2281,7 @@ type
     constructor Create; override;
     destructor Destroy; override;
   end;
+  {$endif}
 
   TG2Pic2D = record
     Pos0, Pos1, Pos2, Pos3: TG2Vec2;
@@ -2333,7 +2351,7 @@ type
       const Tex0, Tex1, Tex2, Tex3: TG2Vec2;
       const c0, c1, c2, c3: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filter: TG2Filter = tfPoint
     );
     procedure RenderBegin; override;
@@ -2562,7 +2580,7 @@ type
     procedure CheckCapacity;
     procedure Flush;
   public
-    procedure PolyBegin(const PolyType: TG2PrimType; const Texture: TG2Texture2DBase; const BlendMode: TG2BlendMode = bmNormal; const Filter: TG2Filter = tfPoint);
+    procedure PolyBegin(const PolyType: TG2PrimType; const Texture: TG2Texture2DBase; const BlendMode: TG2BlendModeRef = bmNormal; const Filter: TG2Filter = tfPoint);
     procedure PolyEnd;
     procedure PolyAdd(const x, y, u, v: TG2Float; const Color: TG2Color); overload;
     procedure PolyAdd(const Pos, TexCoord: TG2Vec2; const Color: TG2Color); inline; overload;
@@ -2640,7 +2658,7 @@ type
       const PrimType: TG2PrimType;
       const Texture: TG2Texture2DBase;
       const WVP: TG2Mat;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filter: TG2Filter = tfLinear
     ); inline;
     procedure PolyEnd; inline;
@@ -2715,21 +2733,21 @@ type
       const x0, y0, x1, y1, x2, y2, x3, y3, tu0, tv0, tu1, tv1, tu2, tv2, tu3, tv3: TG2Float;
       const Col0, Col1, Col2, Col3: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicQuad(
       const Pos0, Pos1, Pos2, Pos3, Tex0, Tex1, Tex2, Tex3: TG2Vec2;
       const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicQuad(
       const x0, y0, x1, y1, x2, y2, x3, y3, tu0, tv0, tu1, tv1, tu2, tv2, tu3, tv3: TG2Float;
       const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRectCol(
@@ -2738,7 +2756,7 @@ type
       const Col0, Col1, Col2, Col3: TG2Color;
       const TexRect: TG2Vec4;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRectCol(
@@ -2747,7 +2765,7 @@ type
       const Col0, Col1, Col2, Col3: TG2Color;
       const tu0, tv0, tu1, tv1: TG2Float;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRectCol(
@@ -2755,7 +2773,7 @@ type
       const w, h: TG2Float;
       const Col0, Col1, Col2, Col3: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRectCol(
@@ -2763,21 +2781,21 @@ type
       const w, h: TG2Float;
       const Col0, Col1, Col2, Col3: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRectCol(
       const Pos: TG2Vec2;
       const Col0, Col1, Col2, Col3: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRectCol(
       const x, y: TG2Float;
       const Col0, Col1, Col2, Col3: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRectCol(
@@ -2789,7 +2807,7 @@ type
       const Texture: TG2Texture2DBase;
       const FrameWidth, FrameHeight: TG2IntS32;
       const FrameID: TG2IntS32;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRectCol(
@@ -2801,7 +2819,7 @@ type
       const Texture: TG2Texture2DBase;
       const FrameWidth, FrameHeight: TG2IntS32;
       const FrameID: TG2IntS32;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRectCol(
@@ -2812,7 +2830,7 @@ type
       const CenterX, CenterY, ScaleX, ScaleY, Angle: TG2Float;
       const FlipU, FlipV: Boolean;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRectCol(
@@ -2823,19 +2841,19 @@ type
       const CenterX, CenterY, ScaleX, ScaleY, Angle: TG2Float;
       const FlipU, FlipV: Boolean;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload;
     procedure PicRect(
       const Pos: TG2Vec2; const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRect(
       const x, y: TG2Float; const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRect(
@@ -2843,7 +2861,7 @@ type
       const w, h: TG2Float;
       const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRect(
@@ -2851,7 +2869,7 @@ type
       const w, h: TG2Float;
       const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRect(
@@ -2860,7 +2878,7 @@ type
       const TexRect: TG2Vec4;
       const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRect(
@@ -2869,7 +2887,7 @@ type
       const tu0, tv0, tu1, tv1: TG2Float;
       const Col: TG2Color;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRect(
@@ -2881,7 +2899,7 @@ type
       const Texture: TG2Texture2DBase;
       const FrameWidth, FrameHeight: TG2IntS32;
       const FrameID: TG2IntS32;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRect(
@@ -2893,7 +2911,7 @@ type
       const Texture: TG2Texture2DBase;
       const FrameWidth, FrameHeight: TG2IntS32;
       const FrameID: TG2IntS32;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRect(
@@ -2904,7 +2922,7 @@ type
       const CenterX, CenterY, ScaleX, ScaleY, Angle: TG2Float;
       const FlipU, FlipV: Boolean;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); inline; overload;
     procedure PicRect(
@@ -2915,38 +2933,38 @@ type
       const CenterX, CenterY, ScaleX, ScaleY, Angle: TG2Float;
       const FlipU, FlipV: Boolean;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
     ); overload; inline;
     procedure PrimBegin(const PrimType: TG2PrimType; const BlendMode: TG2BlendMode); inline;
     procedure PrimEnd; inline;
     procedure PrimAdd(const x, y: TG2Float; const Color: TG2Color); inline; overload;
     procedure PrimAdd(const v: TG2Vec2; const Color: TG2Color); inline; overload;
-    procedure PrimLineCol(const Pos0, Pos1: TG2Vec2; const Col0, Col1: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimLineCol(const x0, y0, x1, y1: TG2Float; const Col0, Col1: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimTriCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimTriCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimQuadCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimQuadCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimQuad(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimQuad(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimRectCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
-    procedure PrimRect(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
-    procedure PrimRectHollowCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
-    procedure PrimRectHollow(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
-    procedure PrimCircleCol(const Pos: TG2Vec2; const Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimCircleCol(const x, y, Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimRingCol(const Pos: TG2Vec2; const Radius0, Radius1: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal);
-    procedure PrimRingCol(const x, y: TG2Float; const Radius0, Radius1: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal);
-    procedure PrimTriHollowCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimTriHollowCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimQuadHollowCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimQuadHollowCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimCircleHollow(const Pos: TG2Vec2; const Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimCircleHollow(const x, y, Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimLine(const Pos0, Pos1: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PrimLine(const x0, y0, x1, y1: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal); overload;
-    procedure PolyBegin(const PolyType: TG2PrimType; const Texture: TG2Texture2DBase; const BlendMode: TG2BlendMode = bmNormal; const Filter: TG2Filter = tfPoint);
+    procedure PrimLineCol(const Pos0, Pos1: TG2Vec2; const Col0, Col1: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimLineCol(const x0, y0, x1, y1: TG2Float; const Col0, Col1: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimTriCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimTriCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimQuadCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimQuadCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimQuad(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimQuad(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimRectCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
+    procedure PrimRect(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
+    procedure PrimRectHollowCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
+    procedure PrimRectHollow(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
+    procedure PrimCircleCol(const Pos: TG2Vec2; const Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimCircleCol(const x, y, Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimRingCol(const Pos: TG2Vec2; const Radius0, Radius1: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal);
+    procedure PrimRingCol(const x, y: TG2Float; const Radius0, Radius1: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal);
+    procedure PrimTriHollowCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimTriHollowCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimQuadHollowCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimQuadHollowCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimCircleHollow(const Pos: TG2Vec2; const Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimCircleHollow(const x, y, Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimLine(const Pos0, Pos1: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimLine(const x0, y0, x1, y1: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PolyBegin(const PolyType: TG2PrimType; const Texture: TG2Texture2DBase; const BlendMode: TG2BlendModeRef = bmNormal; const Filter: TG2Filter = tfPoint);
     procedure PolyEnd;
     procedure PolyAdd(const x, y, u, v: TG2Float; const Color: TG2Color); inline; overload;
     procedure PolyAdd(const Pos, TexCoord: TG2Vec2; const Color: TG2Color); inline; overload;
@@ -3722,7 +3740,7 @@ function G2MessageHandler(inHandlerCallRef: EventHandlerCallRef; inEvent: EventR
   var EventClass: MacOSAll.OSType;
   var EventKind: MacOSAll.UInt32;
   var Command: MacOSAll.HICommand;
-  var Key: IntU32;
+  var Key: TG2IntU32;
   var Button: EventMouseButton;
   var CursorPos: TPoint;
 begin
@@ -3865,7 +3883,7 @@ function KeyRemap(const Key: TG2IntS32): TG2IntS32;
     G2K_SlashR, G2K_BrktR, G2K_Quote
   );
 {$elseif defined(G2Target_Linux)}
-  const Remap: array[0..135] of IntS32 = (
+  const Remap: array[0..135] of TG2IntS32 = (
     $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, G2K_Escape,
     G2K_1, G2K_2, G2K_3, G2K_4, G2K_5, G2K_6, G2K_7, G2K_8, G2K_9, G2K_0,
     G2K_Minus, G2K_Plus, G2K_Back, G2K_Tab, G2K_Q, G2K_W, G2K_E, G2K_R, G2K_T, G2K_Y,
@@ -3882,7 +3900,7 @@ function KeyRemap(const Key: TG2IntS32): TG2IntS32;
     $ff, $ff, $ff, G2K_WinL, G2K_WinR, G2K_Menu
   );
 {$elseif defined(G2Target_OSX)}
-  const Remap: array[0..126] of IntS32 = (
+  const Remap: array[0..126] of TG2IntS32 = (
     G2K_A, G2K_S, G2K_D, G2K_F, G2K_H, G2K_G, G2K_Z, G2K_X, G2K_C, G2K_V,
     $ff, G2K_B, G2K_Q, G2K_W, G2K_E, G2K_R, G2K_Y, G2K_T, G2K_1, G2K_2,
     G2K_3, G2K_4, G2K_6, G2K_5, G2K_Plus, G2K_9, G2K_7, G2K_Minus, G2K_8, G2K_0,
@@ -3898,7 +3916,7 @@ function KeyRemap(const Key: TG2IntS32): TG2IntS32;
     G2K_F2, G2K_PgDown, G2K_F1, G2K_Left, G2K_Right, G2K_Down, G2K_Up
   );
 {$elseif defined(G2Target_Android)}
-  const Remap: array[0..255] of IntS32 = (
+  const Remap: array[0..255] of TG2IntS32 = (
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
     10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
@@ -5253,7 +5271,7 @@ procedure TG2Core.PicQuadCol(
   const x0, y0, x1, y1, x2, y2, x3, y3, tu0, tv0, tu1, tv1, tu2, tv2, tu3, tv3: TG2Float;
   const Col0, Col1, Col2, Col3: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -5268,7 +5286,7 @@ end;
 procedure TG2Core.PicQuad(
   const Pos0, Pos1, Pos2, Pos3, Tex0, Tex1, Tex2, Tex3: TG2Vec2;
   const Col: TG2Color;
-  const Texture: TG2Texture2DBase; const BlendMode: TG2BlendMode = bmNormal;
+  const Texture: TG2Texture2DBase; const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -5284,7 +5302,7 @@ end;
 procedure TG2Core.PicQuad(
   const x0, y0, x1, y1, x2, y2, x3, y3, tu0, tv0, tu1, tv1, tu2, tv2, tu3, tv3: TG2Float;
   const Col: TG2Color;
-  const Texture: TG2Texture2DBase; const BlendMode: TG2BlendMode = bmNormal;
+  const Texture: TG2Texture2DBase; const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -5303,7 +5321,7 @@ procedure TG2Core.PicRectCol(
       const Col0, Col1, Col2, Col3: TG2Color;
       const TexRect: TG2Vec4;
       const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
+      const BlendMode: TG2BlendModeRef = bmNormal;
       const Filtering: TG2Filter = tfPoint
 ); overload;
 begin
@@ -5316,7 +5334,7 @@ procedure TG2Core.PicRectCol(
   const Col0, Col1, Col2, Col3: TG2Color;
   const tu0, tv0, tu1, tv1: TG2Float;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 ); overload;
   var x0, y0, x1, y1: TG2Float;
@@ -5339,7 +5357,7 @@ procedure TG2Core.PicRectCol(
   const Width, Height: TG2Float;
   const Col0, Col1, Col2, Col3: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -5351,7 +5369,7 @@ procedure TG2Core.PicRectCol(
   const Width, Height: TG2Float;
   const Col0, Col1, Col2, Col3: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -5362,7 +5380,7 @@ procedure TG2Core.PicRectCol(
   const Pos: TG2Vec2;
   const Col0, Col1, Col2, Col3: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -5373,7 +5391,7 @@ procedure TG2Core.PicRectCol(
   const x, y: TG2Float;
   const Col0, Col1, Col2, Col3: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -5389,7 +5407,7 @@ procedure TG2Core.PicRectCol(
   const Texture: TG2Texture2DBase;
   const FrameWidth, FrameHeight: TG2IntS32;
   const FrameID: TG2IntS32;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -5412,7 +5430,7 @@ procedure TG2Core.PicRectCol(
   const Texture: TG2Texture2DBase;
   const FrameWidth, FrameHeight: TG2IntS32;
   const FrameID: TG2IntS32;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
   var Pts: array[0..3] of TG2Vec2;
@@ -5478,7 +5496,7 @@ end;
 procedure TG2Core.PicRect(
   const Pos: TG2Vec2; const Col: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -5488,7 +5506,7 @@ end;
 procedure TG2Core.PicRect(
   const x, y: TG2Float; const Col: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -5500,7 +5518,7 @@ procedure TG2Core.PicRect(
   const Width, Height: TG2Float;
   const Col: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -5512,7 +5530,7 @@ procedure TG2Core.PicRect(
   const Width, Height: TG2Float;
   const Col: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -5520,13 +5538,13 @@ begin
 end;
 
 procedure TG2Core.PicRect(
-      const Pos: TG2Vec2;
-      const Width, Height: TG2Float;
-      const TexRect: TG2Vec4;
-      const Col: TG2Color;
-      const Texture: TG2Texture2DBase;
-      const BlendMode: TG2BlendMode = bmNormal;
-      const Filtering: TG2Filter = tfPoint
+  const Pos: TG2Vec2;
+  const Width, Height: TG2Float;
+  const TexRect: TG2Vec4;
+  const Col: TG2Color;
+  const Texture: TG2Texture2DBase;
+  const BlendMode: TG2BlendModeRef = bmNormal;
+  const Filtering: TG2Filter = tfPoint
 ); overload;
 begin
   PicRectCol(Pos, Width, Height, Col, Col, Col, Col, TexRect, Texture, BlendMode, Filtering);
@@ -5538,7 +5556,7 @@ procedure TG2Core.PicRect(
   const tu0, tv0, tu1, tv1: TG2Float;
   const Col: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 ); overload;
 begin
@@ -5546,16 +5564,16 @@ begin
 end;
 
 procedure TG2Core.PicRect(
-      const Pos: TG2Vec2;
-      const Width, Height: TG2Float;
-      const Col: TG2Color;
-      const CenterX, CenterY, ScaleX, ScaleY, Rotation: TG2Float;
-      const FlipU, FlipV: Boolean;
-      const Texture: TG2Texture2DBase;
-      const FrameWidth, FrameHeight: TG2IntS32;
-      const FrameID: TG2IntS32;
-      const BlendMode: TG2BlendMode = bmNormal;
-      const Filtering: TG2Filter = tfPoint
+  const Pos: TG2Vec2;
+  const Width, Height: TG2Float;
+  const Col: TG2Color;
+  const CenterX, CenterY, ScaleX, ScaleY, Rotation: TG2Float;
+  const FlipU, FlipV: Boolean;
+  const Texture: TG2Texture2DBase;
+  const FrameWidth, FrameHeight: TG2IntS32;
+  const FrameID: TG2IntS32;
+  const BlendMode: TG2BlendModeRef = bmNormal;
+  const Filtering: TG2Filter = tfPoint
 );
 begin
   PicRectCol(Pos, Width, Height, Col, Col, Col, Col, CenterX, CenterY, ScaleX, ScaleY, Rotation, FlipU, FlipV, Texture, FrameWidth, FrameHeight, FrameID, BlendMode, Filtering);
@@ -5570,7 +5588,7 @@ procedure TG2Core.PicRect(
   const Texture: TG2Texture2DBase;
   const FrameWidth, FrameHeight: TG2IntS32;
   const FrameID: TG2IntS32;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -5597,7 +5615,7 @@ begin
   _Gfx.Prim2D.PrimAdd(Pos.x, Pos.y, Color);
 end;
 
-procedure TG2Core.PrimLineCol(const Pos0, Pos1: TG2Vec2; const Col0, Col1: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimLineCol(const Pos0, Pos1: TG2Vec2; const Col0, Col1: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(Pos0, Col0);
@@ -5605,7 +5623,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimLineCol(const x0, y0, x1, y1: TG2Float; const Col0, Col1: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimLineCol(const x0, y0, x1, y1: TG2Float; const Col0, Col1: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(x0, y0, Col0);
@@ -5613,7 +5631,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimLine(const Pos0, Pos1: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimLine(const Pos0, Pos1: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(Pos0, Col);
@@ -5621,7 +5639,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimLine(const x0, y0, x1, y1: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimLine(const x0, y0, x1, y1: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(x0, y0, Col);
@@ -5629,7 +5647,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimTriCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimTriCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(Pos0, Col0);
@@ -5638,7 +5656,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimTriCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimTriCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(x0, y0, Col0);
@@ -5647,7 +5665,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimQuadCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimQuadCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(Pos0, Col0);
@@ -5659,7 +5677,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimQuadCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimQuadCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(x0, y0, Col0);
@@ -5671,7 +5689,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimQuad(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimQuad(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(Pos0, Col);
@@ -5683,7 +5701,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimQuad(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimQuad(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(x0, y0, Col);
@@ -5695,7 +5713,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimRectCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimRectCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
   var x1, y1: TG2Float;
 begin
   x1 := x + w;
@@ -5710,7 +5728,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimRect(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimRect(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
   var x1, y1: TG2Float;
 begin
   x1 := x + w;
@@ -5725,7 +5743,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimRectHollowCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimRectHollowCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
   var x1, y1: TG2Float;
 begin
   x1 := x + w;
@@ -5742,7 +5760,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimRectHollow(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimRectHollow(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
   var x1, y1: TG2Float;
 begin
   x1 := x + w;
@@ -5759,7 +5777,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimCircleCol(const Pos: TG2Vec2; const Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimCircleCol(const Pos: TG2Vec2; const Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal);
   var a, s, c: TG2Float;
   var v, v2: TG2Vec2;
   var i: TG2IntS32;
@@ -5785,7 +5803,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimCircleCol(const x, y, Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimCircleCol(const x, y, Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal);
   var a, s, c, cx, cy: TG2Float;
   var v: TG2Vec2;
   var i: TG2IntS32;
@@ -5811,7 +5829,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimTriHollowCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimTriHollowCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(Pos0, Col0);
@@ -5823,7 +5841,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimTriHollowCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimTriHollowCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(x0, y0, Col0);
@@ -5835,7 +5853,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimQuadHollowCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimQuadHollowCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(Pos0, Col0);
@@ -5849,7 +5867,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimQuadHollowCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimQuadHollowCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(x0, y0, Col0);
@@ -5863,7 +5881,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimCircleHollow(const Pos: TG2Vec2; const Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimCircleHollow(const Pos: TG2Vec2; const Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal);
   var a, s, c: TG2Float;
   var v, v2: TG2Vec2;
   var i: TG2IntS32;
@@ -5887,7 +5905,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Core.PrimCircleHollow(const x, y, Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Core.PrimCircleHollow(const x, y, Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal);
   var a, s, c, cx, cy: TG2Float;
   var v: TG2Vec2;
   var i: TG2IntS32;
@@ -5914,7 +5932,7 @@ end;
 procedure TG2Core.PolyBegin(
   const PolyType: TG2PrimType;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode;
+  const BlendMode: TG2BlendModeRef;
   const Filter: TG2Filter
 );
 begin
@@ -5987,7 +6005,7 @@ procedure TG2Core.Poly3DBegin(
   const PolyType: TG2PrimType;
   const Texture: TG2Texture2DBase;
   const WVP: TG2Mat;
-  const BlendMode: TG2BlendMode;
+  const BlendMode: TG2BlendModeRef;
   const Filter: TG2Filter
 );
 begin
@@ -6288,6 +6306,7 @@ end;
 procedure TG2Window.OnResize(const Mode, NewWidth, NewHeight: TG2IntS32);
   var R: TRect;
 begin
+  {$if defined(G2Target_Windows)}
   if not _ProcessResize then Exit;
   GetClientRect(_Handle, R);
   g2.Params.Width := R.Right - R.Left;
@@ -6298,6 +6317,7 @@ begin
     1: g2.Params.ScreenMode := smMaximized;
   end;
   g2.Params.Apply;
+  {$endif}
 end;
 
 procedure TG2Window.Adjust(
@@ -6422,6 +6442,7 @@ begin
   end;
 end;
 
+{$if not defined(G2Target_Mobile)}
 procedure TG2Window.SetCursor(const Value: TG2Cursor);
 begin
   if _Cursor <> Value then
@@ -6432,6 +6453,7 @@ begin
     {$endif}
   end;
 end;
+{$endif}
 
 {$Hints off}
 procedure TG2Window.Loop;
@@ -6520,13 +6542,13 @@ constructor TG2Window.Create(const Width: TG2IntS32 = 0; const Height: TG2IntS32
   var WndStyle: TG2IntU32;
 {$elseif defined(G2Target_Linux)}
   type THints = record
-    Flags: IntU32;
-    Functions: IntU32;
-    Decorations: IntU32;
-    InputMode: IntS32;
-    Status: IntU32;
+    Flags: TG2IntU32;
+    Functions: TG2IntU32;
+    Decorations: TG2IntU32;
+    InputMode: TG2IntS32;
+    Status: TG2IntU32;
   end;
-  var w, h: IntS32;
+  var w, h: TG2IntS32;
   var WndParams: TXWindowChanges;
   var WndHints: THints;
   var WndProps: TAtom;
@@ -6537,11 +6559,11 @@ constructor TG2Window.Create(const Width: TG2IntS32 = 0; const Height: TG2IntS32
   var WndMaxH: TAtom;
   var WndAttribs: TXSetWindowAttributes;
   var WndGetAttr: TXWindowAttributes;
-  var WndValueMask: IntU32;
+  var WndValueMask: TG2IntU32;
   var event: TXEvent;
-  var VisualAttribs: array[0..17] of IntS32;
+  var VisualAttribs: array[0..17] of TG2IntS32;
 {$elseif defined(G2Target_OSX)}
-  var w, h: IntS32;
+  var w, h: TG2IntS32;
   var R: MacOSAll.Rect;
   var WndAttribs: MacOSAll.WindowAttributes;
   var WndEvents: array[0..5] of MacOSAll.EventTypeSpec;
@@ -6839,8 +6861,10 @@ begin
   {$elseif defined(G2Target_iOS)}
   _Loop := True;
   {$endif}
+  {$if not defined(G2Target_Mobile)}
   _Cursor := 0;
   Cursor := _CursorArrow;
+  {$endif}
 end;
 {$if defined(G2Target_Android)}
 {$Hints on}
@@ -7054,7 +7078,9 @@ begin
   InitShaders;
   {$endif}
   _ControlStateChange := TG2RenderControlStateChange(AddRenderControl(TG2RenderControlStateChange));
+  {$if defined(G2RM_SM2)}
   _ControlBuffer := TG2RenderControlBuffer(AddRenderControl(TG2RenderControlBuffer));
+  {$endif}
   _ControlPic2D := TG2RenderControlPic2D(AddRenderControl(TG2RenderControlPic2D));
   _ControlPrim2D := TG2RenderControlPrim2D(AddRenderControl(TG2RenderControlPrim2D));
   _ControlPrim3D := TG2RenderControlPrim3D(AddRenderControl(TG2RenderControlPrim3D));
@@ -7667,7 +7693,7 @@ procedure TG2GfxOGL.Initialize;
   var pf: TG2IntS32;
   {$elseif defined(G2Target_Linux)}
   {$elseif defined(G2Target_OSX)}
-  var OglAttribs: array[0..5] of IntS32;
+  var OglAttribs: array[0..5] of TG2IntS32;
   var PixelFormat: TAGLPixelFormat;
   {$endif}
 begin
@@ -8008,7 +8034,7 @@ procedure TG2GfxGLES.Initialize;
 begin
   {$if defined(G2Target_Android)}
   InitOpenGLES;
-  {$elseid defined(G2Target_iOS)}
+  {$elseif defined(G2Target_iOS)}
   _EAGLLayer := CAEAGLLayer(g2.Delegate.View.layer);
   _EAGLLayer.setOpaque(True);
   _EAGLLayer.setDrawableProperties(
@@ -8044,17 +8070,36 @@ end;
 
 procedure TG2GfxGLES.Render;
 begin
-  Clear(ClearColor);
   ProcessRenderQueue;
   {$if defined(G2Target_iOS)}
   _Context.presentRenderbuffer(GL_RENDERBUFFER);
   {$endif}
 end;
 
-procedure TG2GfxGLES.Clear(const Color: TG2Color);
+procedure TG2GfxGLES.Clear(
+  const Color: Boolean; const ColorValue: TG2Color;
+  const Depth: Boolean; const DepthValue: TG2Float;
+  const Stencil: Boolean; const StencilValue: TG2IntU8
+);
+  var Target: TGLbitfield;
 begin
-  glClearColor(Color.r * Rcp255, Color.g * Rcp255, Color.b * Rcp255, Color.a * Rcp255);
-  glClear(GL_DEPTH_BUFFER_BIT or GL_COLOR_BUFFER_BIT);
+  Target := 0;
+  if Color then
+  begin
+    Target := GL_COLOR_BUFFER_BIT;
+    glClearColor(ColorValue.r * G2Rcp255, ColorValue.g * G2Rcp255, ColorValue.b * G2Rcp255, ColorValue.a * G2Rcp255);
+  end;
+  if Depth then
+  begin
+    Target := Target or GL_DEPTH_BUFFER_BIT;
+    glClearDepthf(DepthValue);
+  end;
+  if Stencil then
+  begin
+    Target := Target or GL_STENCIL_BUFFER_BIT;
+    glClearStencil(StencilValue);
+  end;
+  if Target > 0 then glClear(Target);
 end;
 
 procedure TG2GfxGLES.SetProj2D;
@@ -8822,7 +8867,9 @@ begin
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  {$if defined(G2Gfx_OGL)}
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+  {$endif}
   glBindTexture(GL_TEXTURE_2D, 0);
   {$endif}
   case _Usage of
@@ -8830,7 +8877,7 @@ begin
     begin
       _SizeTU := 1;
       _SizeTV := 1;
-      {$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
+      {$if defined(G2Gfx_OGL)}
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
       {$endif}
     end;
@@ -8838,7 +8885,7 @@ begin
     begin
       _SizeTU := 1;
       _SizeTV := 1;
-      {$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
+      {$if defined(G2Gfx_OGL)}
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, Levels - 1);
       {$endif}
     end;
@@ -8846,7 +8893,7 @@ begin
     begin
       _SizeTU := _Width / _RealWidth;
       _SizeTV := _Height / _RealHeight;
-      {$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
+      {$if defined(G2Gfx_OGL)}
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
       {$endif}
     end;
@@ -12956,7 +13003,7 @@ begin
     _Props[i].OffsetX := (_CharSpaceX - _Props[i].Width) div 2;
     _Props[i].OffsetY := (_CharSpaceY - _Props[i].Height) div 2;
   end;
-  _Gfx.ThreadAttach;
+  TG2GfxGLES(g2.Gfx).ThreadAttach;
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glGenTextures(1, @_Texture._Texture);
   glBindTexture(GL_TEXTURE_2D, _Texture._Texture);
@@ -12975,7 +13022,7 @@ begin
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  _Gfx.ThreadDetach;
+  TG2GfxGLES(g2.Gfx).ThreadDetach;
   FreeMem(Data, TexWidth * TexHeight * 4);
 {$Hints on}
 {$elseif defined(G2Target_iOS)}
@@ -14067,6 +14114,7 @@ begin
 end;
 //TG2RenderControlManaged END
 
+{$if defined(G2RM_SM2)}
 //TG2RenderControlBuffer BEGIN
 procedure TG2RenderControlBuffer.CheckCapacity;
   var n, i: TG2IntS32;
@@ -14330,6 +14378,7 @@ begin
   inherited Destroy;
 end;
 //TG2RenderControlBuffer END
+{$endif}
 
 //TG2RenderControlPic2D BEGIN
 procedure TG2RenderControlPic2D.CheckCapacity;
@@ -14376,7 +14425,7 @@ procedure TG2RenderControlPic2D.DrawQuad(
   const Tex0, Tex1, Tex2, Tex3: TG2Vec2;
   const c0, c1, c2, c3: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode;
+  const BlendMode: TG2BlendModeRef;
   const Filter: TG2Filter = tfPoint
 );
   var p: PG2Pic2D;
@@ -14482,7 +14531,9 @@ begin
       {$elseif defined(G2RM_SM2)}
       _ShaderGroup.Sampler('Tex0', _CurTexture);
       {$endif}
+      {$if not defined(G2Gfx_GLES)}
       _Gfx.EnableMipMaps(_CurTexture.Usage = tu3D);
+      {$endif}
       _CurFilter := p^.Filter;
       _Gfx.Filter := _CurFilter;
       {$endif}
@@ -14545,16 +14596,16 @@ begin
   {$elseif defined(G2Gfx_GLES)}
   v := _CurQuad * 4;
   _VertPositions[v].SetValue(p^.Pos0.x, p^.Pos0.y, 0);
-  _VertColors[v].SetValue(p^.c0.r * Rcp255, p^.c0.g * Rcp255, p^.c0.b * Rcp255, p^.c0.a * Rcp255);
+  _VertColors[v].SetValue(p^.c0.r * G2Rcp255, p^.c0.g * G2Rcp255, p^.c0.b * G2Rcp255, p^.c0.a * G2Rcp255);
   _VertTexCoords[v] := p^.Tex0; Inc(v);
   _VertPositions[v].SetValue(p^.Pos1.x, p^.Pos1.y, 0);
-  _VertColors[v].SetValue(p^.c1.r * Rcp255, p^.c1.g * Rcp255, p^.c1.b * Rcp255, p^.c1.a * Rcp255);
+  _VertColors[v].SetValue(p^.c1.r * G2Rcp255, p^.c1.g * G2Rcp255, p^.c1.b * G2Rcp255, p^.c1.a * G2Rcp255);
   _VertTexCoords[v] := p^.Tex1; Inc(v);
   _VertPositions[v].SetValue(p^.Pos2.x, p^.Pos2.y, 0);
-  _VertColors[v].SetValue(p^.c2.r * Rcp255, p^.c2.g * Rcp255, p^.c2.b * Rcp255, p^.c2.a * Rcp255);
+  _VertColors[v].SetValue(p^.c2.r * G2Rcp255, p^.c2.g * G2Rcp255, p^.c2.b * G2Rcp255, p^.c2.a * G2Rcp255);
   _VertTexCoords[v] := p^.Tex2; Inc(v);
   _VertPositions[v].SetValue(p^.Pos3.x, p^.Pos3.y, 0);
-  _VertColors[v].SetValue(p^.c3.r * Rcp255, p^.c3.g * Rcp255, p^.c3.b * Rcp255, p^.c3.a * Rcp255);
+  _VertColors[v].SetValue(p^.c3.r * G2Rcp255, p^.c3.g * G2Rcp255, p^.c3.b * G2Rcp255, p^.c3.a * G2Rcp255);
   _VertTexCoords[v] := p^.Tex3; Inc(v);
   {$endif}
   Inc(_CurQuad);
@@ -14857,10 +14908,10 @@ begin
     _VertPositions[_CurPoint].y := p^.Points[i].y;
     _VertPositions[_CurPoint].z := 0;
     _VertColors[_CurPoint].SetValue(
-      p^.Points[i].Color.r * Rcp255,
-      p^.Points[i].Color.g * Rcp255,
-      p^.Points[i].Color.b * Rcp255,
-      p^.Points[i].Color.a * Rcp255
+      p^.Points[i].Color.r * G2Rcp255,
+      p^.Points[i].Color.g * G2Rcp255,
+      p^.Points[i].Color.b * G2Rcp255,
+      p^.Points[i].Color.a * G2Rcp255
     );
     Inc(_CurPoint);
   end;
@@ -15045,7 +15096,7 @@ begin
 end;
 
 procedure TG2RenderControlPrim3D.RenderBegin;
-{$if defined(G2Gfx_D3D9) and defined(G2Gfx_FF)}
+{$if defined(G2Gfx_D3D9) and defined(G2RM_FF)}
   var m: TG2Mat;
 {$endif}
 {$if defined(G2RM_SM2)}
@@ -15179,10 +15230,10 @@ begin
     _VertPositions[_CurPoint].y := p^.Points[i].y;
     _VertPositions[_CurPoint].z := 0;
     _VertColors[_CurPoint].SetValue(
-      p^.Points[i].Color.r * Rcp255,
-      p^.Points[i].Color.g * Rcp255,
-      p^.Points[i].Color.b * Rcp255,
-      p^.Points[i].Color.a * Rcp255
+      p^.Points[i].Color.r * G2Rcp255,
+      p^.Points[i].Color.g * G2Rcp255,
+      p^.Points[i].Color.b * G2Rcp255,
+      p^.Points[i].Color.a * G2Rcp255
     );
     Inc(_CurPoint);
   end;
@@ -15303,7 +15354,7 @@ begin
   _CurIndex := 0;
 end;
 
-procedure TG2RenderControlPoly2D.PolyBegin(const PolyType: TG2PrimType; const Texture: TG2Texture2DBase; const BlendMode: TG2BlendMode = bmNormal; const Filter: TG2Filter = tfPoint);
+procedure TG2RenderControlPoly2D.PolyBegin(const PolyType: TG2PrimType; const Texture: TG2Texture2DBase; const BlendMode: TG2BlendModeRef = bmNormal; const Filter: TG2Filter = tfPoint);
 begin
   if _CurPoly <> nil then PolyEnd;
   CheckCapacity;
@@ -15436,7 +15487,9 @@ begin
       {$elseif defined(G2RM_SM2)}
       _ShaderGroup.Sampler('Tex0', _CurTexture, 0);
       {$endif}
+      {$if not defined(G2Gfx_GLES)}
       _Gfx.EnableMipMaps(_CurTexture.Usage = tu3D);
+      {$endif}
       _CurFilter := p^.Filter;
       _Gfx.Filter := _CurFilter;
       {$endif}
@@ -15493,7 +15546,7 @@ begin
     _VertPositions[_CurPoint].x := p^.Points[i].x;
     _VertPositions[_CurPoint].y := p^.Points[i].y;
     _VertPositions[_CurPoint].z := 0;
-    _VertColors[_CurPoint].SetValue(p^.Points[i].Color.r * Rcp255, p^.Points[i].Color.g * Rcp255, p^.Points[i].Color.b * Rcp255, p^.Points[i].Color.a * Rcp255);
+    _VertColors[_CurPoint].SetValue(p^.Points[i].Color.r * G2Rcp255, p^.Points[i].Color.g * G2Rcp255, p^.Points[i].Color.b * G2Rcp255, p^.Points[i].Color.a * G2Rcp255);
     _VertTexCoords[_CurPoint].x := p^.Points[i].u;
     _VertTexCoords[_CurPoint].y := p^.Points[i].v;
     Inc(_CurPoint);
@@ -15627,7 +15680,7 @@ procedure TG2RenderControlPoly3D.PolyBegin(
   const PrimType: TG2PrimType;
   const Texture: TG2Texture2DBase;
   const WVP: TG2Mat;
-  const BlendMode: TG2BlendMode;
+  const BlendMode: TG2BlendModeRef;
   const Filter: TG2Filter
 );
 begin
@@ -15684,7 +15737,7 @@ begin
 end;
 
 procedure TG2RenderControlPoly3D.RenderBegin;
-{$if defined(G2Gfx_D3D9) and defined(G2Gfx_FF)}
+{$if defined(G2Gfx_D3D9) and defined(G2RM_FF)}
   var m: TG2Mat;
 {$endif}
 begin
@@ -15775,7 +15828,9 @@ begin
       {$elseif defined(G2RM_SM2)}
       _ShaderGroup.Sampler('Tex0', _CurTexture, 0);
       {$endif}
+      {$if not defined(G2Gfx_GLES)}
       _Gfx.EnableMipMaps(_CurTexture.Usage = tu3D);
+      {$endif}
       _CurFilter := p^.Filter;
       _Gfx.Filter := _CurFilter;
       {$endif}
@@ -15840,10 +15895,10 @@ begin
     _VertPositions[_CurPoint].y := p^.Points[i].y;
     _VertPositions[_CurPoint].z := p^.Points[i].z;
     _VertColors[_CurPoint].SetValue(
-      p^.Points[i].Color.r * Rcp255,
-      p^.Points[i].Color.g * Rcp255,
-      p^.Points[i].Color.b * Rcp255,
-      p^.Points[i].Color.a * Rcp255
+      p^.Points[i].Color.r * G2Rcp255,
+      p^.Points[i].Color.g * G2Rcp255,
+      p^.Points[i].Color.b * G2Rcp255,
+      p^.Points[i].Color.a * G2Rcp255
     );
     Inc(_CurPoint);
   end;
@@ -16134,7 +16189,7 @@ procedure TG2Display2D.PicQuadCol(
   const x0, y0, x1, y1, x2, y2, x3, y3, tu0, tv0, tu1, tv1, tu2, tv2, tu3, tv3: TG2Float;
   const Col0, Col1, Col2, Col3: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -16152,7 +16207,7 @@ procedure TG2Display2D.PicQuad(
   const Pos0, Pos1, Pos2, Pos3, Tex0, Tex1, Tex2, Tex3: TG2Vec2;
   const Col: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -16168,7 +16223,7 @@ procedure TG2Display2D.PicQuad(
   const x0, y0, x1, y1, x2, y2, x3, y3, tu0, tv0, tu1, tv1, tu2, tv2, tu3, tv3: TG2Float;
   const Col: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -16186,7 +16241,7 @@ procedure TG2Display2D.PicRectCol(
   const Col0, Col1, Col2, Col3: TG2Color;
   const TexRect: TG2Vec4;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
   var Pos2: TG2Vec2;
@@ -16207,7 +16262,7 @@ procedure TG2Display2D.PicRectCol(
   const Col0, Col1, Col2, Col3: TG2Color;
   const tu0, tv0, tu1, tv1: TG2Float;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
   var x2, y2: TG2Float;
@@ -16226,7 +16281,7 @@ procedure TG2Display2D.PicRectCol(
   const w, h: TG2Float;
   const Col0, Col1, Col2, Col3: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
   var Pos2: TG2Vec2;
@@ -16246,7 +16301,7 @@ procedure TG2Display2D.PicRectCol(
   const w, h: TG2Float;
   const Col0, Col1, Col2, Col3: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
   var x2, y2: TG2Float;
@@ -16265,7 +16320,7 @@ procedure TG2Display2D.PicRectCol(
   const Pos: TG2Vec2;
   const Col0, Col1, Col2, Col3: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
   var Pos2: TG2Vec2;
@@ -16284,7 +16339,7 @@ procedure TG2Display2D.PicRectCol(
   const x, y: TG2Float;
   const Col0, Col1, Col2, Col3: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
   var x2, y2: TG2Float;
@@ -16308,7 +16363,7 @@ procedure TG2Display2D.PicRectCol(
   const Texture: TG2Texture2DBase;
   const FrameWidth, FrameHeight: TG2IntS32;
   const FrameID: TG2IntS32;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -16331,7 +16386,7 @@ procedure TG2Display2D.PicRectCol(
   const Texture: TG2Texture2DBase;
   const FrameWidth, FrameHeight: TG2IntS32;
   const FrameID: TG2IntS32;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
   var v0, v1, v2, v3: TG2Vec2;
@@ -16391,7 +16446,7 @@ procedure TG2Display2D.PicRectCol(
   const CenterX, CenterY, ScaleX, ScaleY, Angle: TG2Float;
   const FlipU, FlipV: Boolean;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -16413,7 +16468,7 @@ procedure TG2Display2D.PicRectCol(
   const CenterX, CenterY, ScaleX, ScaleY, Angle: TG2Float;
   const FlipU, FlipV: Boolean;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
   var v0, v1, v2, v3: TG2Vec2;
@@ -16462,7 +16517,7 @@ end;
 procedure TG2Display2D.PicRect(
   const Pos: TG2Vec2; const Col: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -16472,7 +16527,7 @@ end;
 procedure TG2Display2D.PicRect(
   const x, y: TG2Float; const Col: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -16484,7 +16539,7 @@ procedure TG2Display2D.PicRect(
   const w, h: TG2Float;
   const Col: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -16496,7 +16551,7 @@ procedure TG2Display2D.PicRect(
   const w, h: TG2Float;
   const Col: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -16509,7 +16564,7 @@ procedure TG2Display2D.PicRect(
   const TexRect: TG2Vec4;
   const Col: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -16522,7 +16577,7 @@ procedure TG2Display2D.PicRect(
   const tu0, tv0, tu1, tv1: TG2Float;
   const Col: TG2Color;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -16538,7 +16593,7 @@ procedure TG2Display2D.PicRect(
   const Texture: TG2Texture2DBase;
   const FrameWidth, FrameHeight: TG2IntS32;
   const FrameID: TG2IntS32;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -16561,7 +16616,7 @@ procedure TG2Display2D.PicRect(
   const Texture: TG2Texture2DBase;
   const FrameWidth, FrameHeight: TG2IntS32;
   const FrameID: TG2IntS32;
-  const BlendMode: TG2BlendMode = bmNormal;
+  const BlendMode: TG2BlendModeRef = bmNormal;
   const Filtering: TG2Filter = tfPoint
 );
 begin
@@ -16581,7 +16636,7 @@ procedure TG2Display2D.PicRect(
   const CenterX, CenterY, ScaleX, ScaleY, Angle: TG2Float;
   const FlipU, FlipV: Boolean;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode;
+  const BlendMode: TG2BlendModeRef;
   const Filtering: TG2Filter
 );
 begin
@@ -16599,7 +16654,7 @@ procedure TG2Display2D.PicRect(
   const CenterX, CenterY, ScaleX, ScaleY, Angle: TG2Float;
   const FlipU, FlipV: Boolean;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode;
+  const BlendMode: TG2BlendModeRef;
   const Filtering: TG2Filter
 );
 begin
@@ -16631,7 +16686,7 @@ begin
   g2.PrimAdd(CoordToScreen(v), Color);
 end;
 
-procedure TG2Display2D.PrimLineCol(const Pos0, Pos1: TG2Vec2; const Col0, Col1: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimLineCol(const Pos0, Pos1: TG2Vec2; const Col0, Col1: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(Pos0, Col0);
@@ -16639,7 +16694,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimLineCol(const x0, y0, x1, y1: TG2Float; const Col0, Col1: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimLineCol(const x0, y0, x1, y1: TG2Float; const Col0, Col1: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(x0, y0, Col0);
@@ -16647,7 +16702,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimTriCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimTriCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(Pos0, Col0);
@@ -16656,7 +16711,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimTriCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimTriCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(x0, y0, Col0);
@@ -16665,7 +16720,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimQuadCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimQuadCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(Pos0, Col0);
@@ -16677,7 +16732,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimQuadCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimQuadCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(x0, y0, Col0);
@@ -16689,7 +16744,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimQuad(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimQuad(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(Pos0, Col);
@@ -16701,7 +16756,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimQuad(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimQuad(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(x0, y0, Col);
@@ -16713,7 +16768,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimRectCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimRectCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
   var x1, y1: TG2Float;
 begin
   x1 := x + w;
@@ -16728,7 +16783,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimRect(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimRect(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
   var x1, y1: TG2Float;
 begin
   x1 := x + w;
@@ -16743,7 +16798,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimRectHollowCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimRectHollowCol(const x, y, w, h: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
   var x1, y1: TG2Float;
 begin
   x1 := x + w;
@@ -16760,7 +16815,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimRectHollow(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimRectHollow(const x, y, w, h: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
   var x1, y1: TG2Float;
 begin
   x1 := x + w;
@@ -16777,7 +16832,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimCircleCol(const Pos: TG2Vec2; const Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimCircleCol(const Pos: TG2Vec2; const Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal);
   var a, s, c: TG2Float;
   var v, v2: TG2Vec2;
   var i: TG2IntS32;
@@ -16803,7 +16858,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimCircleCol(const x, y, Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimCircleCol(const x, y, Radius: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal);
   var a, s, c, cx, cy: TG2Float;
   var v: TG2Vec2;
   var i: TG2IntS32;
@@ -16832,7 +16887,7 @@ end;
 procedure TG2Display2D.PrimRingCol(
   const Pos: TG2Vec2; const Radius0, Radius1: TG2Float;
   const Col0, Col1: TG2Color; const Segments: TG2IntS32;
-  const BlendMode: TG2BlendMode
+  const BlendMode: TG2BlendModeRef
 );
   var a, s, c: TG2Float;
   var v0, v1, pv0, pv1: TG2Vec2;
@@ -16863,13 +16918,13 @@ end;
 procedure TG2Display2D.PrimRingCol(
   const x, y: TG2Float; const Radius0, Radius1: TG2Float;
   const Col0, Col1: TG2Color; const Segments: TG2IntS32;
-  const BlendMode: TG2BlendMode
+  const BlendMode: TG2BlendModeRef
 );
 begin
   PrimRingCol(G2Vec2(x, y), Radius0, Radius1, Col0, Col1, Segments, BlendMode);
 end;
 
-procedure TG2Display2D.PrimTriHollowCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimTriHollowCol(const Pos0, Pos1, Pos2: TG2Vec2; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(Pos0, Col0);
@@ -16881,7 +16936,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimTriHollowCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimTriHollowCol(const x0, y0, x1, y1, x2, y2: TG2Float; const Col0, Col1, Col2: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(x0, y0, Col0);
@@ -16893,7 +16948,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimQuadHollowCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimQuadHollowCol(const Pos0, Pos1, Pos2, Pos3: TG2Vec2; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(Pos0, Col0);
@@ -16907,7 +16962,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimQuadHollowCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimQuadHollowCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(x0, y0, Col0);
@@ -16921,7 +16976,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimCircleHollow(const Pos: TG2Vec2; const Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimCircleHollow(const Pos: TG2Vec2; const Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32; const BlendMode: TG2BlendModeRef = bmNormal);
   var a, s, c: TG2Float;
   var v, v2: TG2Vec2;
   var i: TG2IntS32;
@@ -16947,7 +17002,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimCircleHollow(const x, y, Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimCircleHollow(const x, y, Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32; const BlendMode: TG2BlendModeRef = bmNormal);
   var a, s, c, cx, cy: TG2Float;
   var v: TG2Vec2;
   var i: TG2IntS32;
@@ -16973,7 +17028,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimLine(const Pos0, Pos1: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimLine(const Pos0, Pos1: TG2Vec2; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(Pos0, Col);
@@ -16981,7 +17036,7 @@ begin
   PrimEnd;
 end;
 
-procedure TG2Display2D.PrimLine(const x0, y0, x1, y1: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendMode = bmNormal);
+procedure TG2Display2D.PrimLine(const x0, y0, x1, y1: TG2Float; const Col: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal);
 begin
   PrimBegin(ptLines, BlendMode);
   PrimAdd(x0, y0, Col);
@@ -16992,7 +17047,7 @@ end;
 procedure TG2Display2D.PolyBegin(
   const PolyType: TG2PrimType;
   const Texture: TG2Texture2DBase;
-  const BlendMode: TG2BlendMode;
+  const BlendMode: TG2BlendModeRef;
   const Filter: TG2Filter
 );
 begin
@@ -19196,7 +19251,7 @@ begin
   glMatrixMode(GL_PROJECTION);
   glLoadMatrixf(@VP);
   glMatrixMode(GL_MODELVIEW);
-  EnvColor.SetValue(_Ambient.r * Rcp255, _Ambient.g * Rcp255, _Ambient.b * Rcp255, 1);
+  EnvColor.SetValue(_Ambient.r * G2Rcp255, _Ambient.g * G2Rcp255, _Ambient.b * G2Rcp255, 1);
   glLightModelfv(GL_LIGHT_MODEL_AMBIENT, @EnvColor);
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, @EnvColor);
   for i := 0 to _MeshInst.Count - 1 do
@@ -19328,7 +19383,7 @@ end;
 procedure TG2Scene3D.RenderGLES;
   var i, g, m: TG2IntS32;
   var f: TG2Float;
-  var CurStage: IntU32;
+  var CurStage: TG2IntU32;
   var W, VP, WVP: TG2Mat;
   var Mesh: TG2S3DMesh;
   var Inst: TG2S3DMeshInst;

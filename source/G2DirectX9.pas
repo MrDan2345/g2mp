@@ -1190,7 +1190,7 @@ type
     function GetData(pData: Pointer; dwSize: DWORD; dwGetDataFlags: DWORD): HResult; stdcall;
   end;
 
-  function Direct3DCreate9(SDKVersion: LongWord): IDirect3D9; stdcall;
+  function Direct3DCreate9(const SDKVersion: LongWord): IDirect3D9; stdcall;
 
   function D3DFVF_TEXCOORDSIZE3(const CoordIndex: DWord): DWord; inline;
   function D3DFVF_TEXCOORDSIZE2(const CoordIndex: DWord): DWord; inline;
@@ -1208,9 +1208,9 @@ type
 
 implementation
 
-function _Direct3DCreate9(SDKVersion: LongWord): Pointer; external Direct3D9dll name 'Direct3DCreate9';
+function _Direct3DCreate9(SDKVersion: LongWord): Pointer; stdcall external Direct3D9dll name 'Direct3DCreate9';
 
-function Direct3DCreate9(SDKVersion: LongWord): IDirect3D9; stdcall;
+function Direct3DCreate9(const SDKVersion: LongWord): IDirect3D9; stdcall;
 begin
   Result := IDirect3D9(_Direct3DCreate9(SDKVersion));
   if Assigned(Result) then Result._Release;

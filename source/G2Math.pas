@@ -2524,7 +2524,7 @@ asm
 end;
 {$Warnings on}
 {$else}
-function G2ArcCos(const x: G2Float): G2Float;
+function G2ArcCos(const x: TG2Float): TG2Float;
 begin
   Result := G2ArcTan2(Sqrt((1 + x) * (1 - x)), x);
 end;
@@ -2539,20 +2539,20 @@ asm
   fwait
 end;
 {$else}
-function G2ArcTan2(const y, x: G2Float): G2Float;
+function G2ArcTan2(const y, x: TG2Float): TG2Float;
 begin
   if x = 0 then
   begin
     if y = 0 then Result := 0
-    else if y > 0 then Result := HalfPi
-    else if y < 0 then Result := -HalfPi;
+    else if y > 0 then Result := G2HalfPi
+    else if y < 0 then Result := -G2HalfPi;
   end
   else
   Result := ArcTan(y / x);
   if x < 0 then
   Result := Result + pi;
   if Result > pi then
-  Result := Result - TwoPi;
+  Result := Result - G2TwoPi;
 end;
 {$endif}
 
@@ -2566,7 +2566,7 @@ asm
   fwait
 end;
 {$else}
-procedure G2SinCos(const Angle: G2Float; var s, c: G2Float);
+procedure G2SinCos(const Angle: TG2Float; var s, c: TG2Float);
 begin
   s := Sin(Angle);
   c := Cos(Angle);
