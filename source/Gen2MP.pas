@@ -4352,7 +4352,7 @@ begin
      begin
        {$if defined(G2Output)}
        WriteLn('g2mp exception: ' + e.Message);
-       {$else}
+       {$elseif not defined(G2Target_Mobile)}
        MessageBoxA(Window.Handle, PAnsiChar(e.Message), 'Error', 0);
        {$endif}
      end;
