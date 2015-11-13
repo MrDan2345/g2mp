@@ -1619,6 +1619,7 @@ type
     _EditJDK: TUIWorkspaceCustomEdit;
     _EditASDK: TUIWorkspaceCustomEdit;
     _EditANDK: TUIWorkspaceCustomEdit;
+    _EditDomain: TUIWorkspaceCustomEdit;
     _Options: TUIWorkspaceCustomPages;
     _Target: TUIWorkspaceCustomComboBox;
     _TargetOptions: TUIWorkspaceCustomPages;
@@ -1638,6 +1639,7 @@ type
     procedure OnChangePathJDK;
     procedure OnChangePathASDK;
     procedure OnChangePathANDK;
+    procedure OnChangeDomain;
   protected
     procedure OnInitialize; override;
     procedure OnUpdate; override;
@@ -4286,10 +4288,12 @@ type
     var _PathJDK: String;
     var _PathASDK: String;
     var _PathANDK: String;
+    var _Domain: String;
   public
     property PathJDK: String read _PathJDK write _PathJDK;
     property PathASDK: String read _PathASDK write _PathASDK;
     property PathANDK: String read _PathANDK write _PathANDK;
+    property Domain: String read _Domain write _Domain;
     constructor Create;
     destructor Destroy; override;
     procedure LoadSettings(const Path: String);
@@ -11924,6 +11928,15 @@ begin
   end;
 end;
 
+procedure TUIWorkspaceProject.OnChangeDomain;
+begin
+  if _EditDomain.Text <> App.Settings.Domain then
+  begin
+    App.Settings.Domain := _EditDomain.Text;
+    App.SaveSettings;
+  end;
+end;
+
 procedure TUIWorkspaceProject.OnInitialize;
   var p: TUIWorkspaceCustomPanel;
   var sh: TUIWorkspaceFixedSplitterH;
@@ -11979,6 +11992,7 @@ begin
         pg := _TargetOptions.AddPage;
         pg := _TargetOptions.AddPage;
         pg.SetSpacing(4);
+
         sm := pg.SplitterM(3);
         sm.SizingH := csStretch;
         sm.EqualSized := False;
@@ -11999,6 +12013,7 @@ begin
         btn.Width := 40;
         btn.Height := 24;
         btn.OnClick := @OnSearchJDK;
+
         sm := pg.SplitterM(3);
         sm.EqualSized := False;
         sm.Subset[0].SpacingRight := 8;
@@ -12018,6 +12033,7 @@ begin
         btn.Width := 40;
         btn.Height := 24;
         btn.OnClick := @OnSearchASDK;
+
         sm := pg.SplitterM(3);
         sm.EqualSized := False;
         sm.Subset[0].SpacingRight := 8;
@@ -12037,6 +12053,23 @@ begin
         btn.Width := 40;
         btn.Height := 24;
         btn.OnClick := @OnSearchANDK;
+
+        sm := pg.SplitterM(2);
+        sm.EqualSized := False;
+        sm.Subset[0].SpacingRight := 8;
+        with sm.Subset[0].Text('Domain') do
+        begin
+          Width := 100;
+          Color := $ffffffff;
+          Align := [caLeft, caMiddle];
+        end;
+        sm.Subset[1].Alignemnt := [caTop, caClientH];
+        _EditDomain := sm.Subset[1].Edit;
+        _EditDomain.Width := 300;
+        _EditDomain.Height := 24;
+        _EditDomain.SizingH := csStretch;
+        _EditDomain.OnFinishProc := @OnChangeDomain;
+
         _TargetOptions.PageIndex := 0;
         _EditJDK.Text := App.Settings.PathJDK;
         _EditASDK.Text := App.Settings.PathASDK;
@@ -17998,6 +18031,7 @@ begin
   _PathJDK := '';
   _PathASDK := '';
   _PathANDK := '';
+  _Domain := 'pascode.com';
 end;
 
 destructor TGlobalSettings.Destroy;
@@ -18038,6 +18072,10 @@ begin
           else if n0^.Name = 'andk_path' then
           begin
             _PathANDK := n0^.AsString;
+          end
+          else if n0^.Name = 'domain' then
+          begin
+            _Domain := n0^.AsString;
           end;
         end;
       end;
@@ -18059,6 +18097,7 @@ begin
   g2ml.NodeValue('jdk_path', _PathJDK);
   g2ml.NodeValue('asdk_path', _PathASDK);
   g2ml.NodeValue('andk_path', _PathANDK);
+  g2ml.NodeValue('domain', _Domain);
   g2ml.NodeClose;
   SettingsData := g2ml.G2ML;
   g2ml.Free;
@@ -22783,6 +22822,79 @@ begin
 end;
 
 procedure TProject.BuildAndroid;
+  var Code: AnsiString;
+  procedure ModifyCode;
+    var i: TG2IntS32;
+    var Parser: TG2Parser;
+    var tt: TG2TokenType;
+    var Token, JNIFunc, JNIName: AnsiString;
+    var DomainArr: TG2StrArrA;
+  begin
+    Parser := TG2Parser.Create(Code);
+    Parser.AddCommentLine('//');
+    Parser.AddComment('{', '}');
+    Parser.AddComment('(*', '*)');
+    Parser.AddString('''');
+    Parser.AddKeyWord('program');
+    Parser.AddKeyWord('uses');
+    Parser.AddKeyWord('begin');
+    Parser.AddKeyWord('end.');
+    tt := ttError;
+    while not Parser.IsAtEOF do
+    begin
+      Token := Parser.NextToken(tt);
+      if (tt = ttKeyword) and (Token = 'program') then
+      begin
+        Code := G2StrSubstitute(Code, Parser.Position - Length(Token) + 1, Length(Token), 'library');
+        Break;
+      end;
+    end;
+    Parser.Parse(Code);
+    while not Parser.IsAtEOF do
+    begin
+      Token := Parser.NextToken(tt);
+      if (tt = ttKeyword) and (Token = 'uses') then
+      begin
+        Code := G2StrSubstitute(Code, Parser.Position + 1, 0, #$D#$A'  G2AndroidJNI,');
+        Break;
+      end;
+    end;
+    Parser.Parse(Code);
+    while not Parser.IsAtEOF do
+    begin
+      Token := Parser.NextToken(tt);
+      if (tt = ttKeyword) and (Token = 'begin') then
+      begin
+        Code := G2StrSubstitute(Code, Parser.Position - Length(Token), 0, 'procedure g2_main;');
+        Break;
+      end;
+    end;
+    Parser.Parse(Code);
+    while not Parser.IsAtEOF do
+    begin
+      Token := Parser.NextToken(tt);
+      if (tt = ttKeyword) and (Token = 'end.') then
+      begin
+        DomainArr := G2StrExplode(App.Settings.Domain, '.');
+        JNIName := 'Java';
+        for i := High(DomainArr) downto 0 do
+        begin
+          JNIName += '_' + DomainArr[i];
+        end;
+        JNIName += '_' + LowerCase(App.Project.ProjectName) + '_' + LowerCase(App.Project.ProjectName) + '_MessageJNI';
+        JNIFunc := 'end;'#$D#$A#$D#$A;
+        JNIFunc += 'procedure ' + JNIName + '(Env: PJNIEnv; Obj: JObject; MessageType, Param0, Param1, Param2: Integer);'#$D#$A;
+        JNIFunc += 'begin'#$D#$A;
+        JNIFunc += '  TG2Core.AndroidMessage(Env, Obj, MessageType, Param0, Param1, Param2);'#$D#$A;
+        JNIFunc += '  if MessageType = 1 then g2_main;'#$D#$A;
+        JNIFunc += 'end;'#$D#$A#$D#$A;
+        JNIFunc += 'exports ' + JNIName + ';'#$D#$A#$D#$A;
+        Code := G2StrSubstitute(Code, Parser.Position - Length(Token) + 1, 0, JNIFunc);
+        Break;
+      end;
+    end;
+    Parser.Free;
+  end;
   var CommandLine: String;
   procedure AddUnit(const UnitPath: String);
   begin
@@ -22798,17 +22910,16 @@ procedure TProject.BuildAndroid;
     Proc: TProcessUTF8;
     ReadBytes, NumBytes: Integer;
   end;
-  var CompilerProcess, ExeProcess: TOutputProcess;
+  var CompilerProcess: TOutputProcess;
   var cf: TCodeFile;
   var CompilerPath: String;
-  var pc, ProjStr, LibStr: AnsiString;
   var i, j, n: Integer;
   var b: Boolean;
   const READ_BYTES = 2048;
 begin
   App.Log.Log('Build Started');
   App.Console.AddLine('Build Started');
-  CompilerPath := g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'bin' + G2PathSep + 'i386-win32' + G2PathSep + 'fpc.exe';
+  CompilerPath := g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'bin' + G2PathSep + 'i386-win32' + G2PathSep + 'ppcrossarm.exe';
   if not DirectoryExists(_FilePath + 'build') then
   CreateDir(_FilePath + 'build');
   if not DirectoryExists(_FilePath + 'build' + G2PathSep + 'obj') then
@@ -22816,72 +22927,41 @@ begin
   if not DirectoryExists(_FilePath + 'bin') then
   CreateDir(_FilePath + 'bin');
   cf.Initialize;
-  pc := _ProjectCode;
-  i := G2StrInStr(pc, '{#project_name#}');
-  ProjStr := 'project';
-  LibStr := 'library';
-  if i > -1 then
-  begin
-    j := i - Length(ProjStr);
-    b := True;
-    while b and (j >= 1) do
-    begin
-      b := False;
-      for n := j to G2Min(j + Length(ProjStr), Length(pc)) do
-      if LowerCase(pc[n]) <> ProjStr[n - j + 1] then
-      begin
-        b := True;
-        Break;
-      end;
-      Dec(j);
-    end;
-    if not b then
-    begin
-      Move(LibStr[1], pc[j], Length(LibStr));
-    end;
-  end;
-  cf.SetCode(G2StrReplace(pc, '{#project_name#}', GetProjectName));
+  Code := _ProjectCode;
+  ModifyCode;
+  cf.SetCode(G2StrReplace(Code, '{#project_name#}', GetProjectName));
   cf.Save(_FilePath + 'build' + G2PathSep + _FileName);
   cf.Finalize;
   CommandLine := '';
   AddOption('-Tandroid');
   AddOption('-Parm');
-  AddOption('-Mobjfpc');
-  AddOption('-Sc');
-  AddOption('-XX');
+  AddOption('-MObjFPC');
+  AddOption('-Scghi');
+  AddOption('-O1');
   AddOption('-Xs');
-  AddOption('-Xd');
-  AddOption('-ve');
-  AddOption('-vt');
-  AddOption('-vu');
-  AddOption('-va');
-  AddOption('-vv');
-  AddOption('-Sgic');
-  AddOption('-dANDROID');
+  AddOption('-XX');
   AddOption('-Xd');
   AddOption('-CpARMV6');
-  AddOption('-dG2Output');
-  AddOption('-dG2Debug');
-  AddOption('-FE' + '"' + _FilePath + 'bin' + '"');
-  AddOption('-FU' + '"' + _FilePath + 'build' + G2PathSep + 'obj' + '"');
   AddOption('-FLlibdl.so');
-  AddOption('-FL"' + App.Settings.PathANDK + '\platforms\android-8\arch-arm\usr\lib"');
-  AddOption('-FL"' + g2.AppPath + '\fpc\3.0.0\lib\eabi');
-  //AddOption('-FL"' + App.Settings.PathANDK + '\toolchains\arm-linux-androideabi-4.6\prebuilt\windows\lib\gcc\arm-linux-androideabi\4.6"');
-  //AddUnit(g2.AppPath + '\fpc\3.0.0\bin\i386-win32\rtl');
-  //AddUnit(g2.AppPath + '\fpc\3.0.0\bin\i386-win32\winunits-base');
-  //AddUnit(g2.AppPath + '\fpc\3.0.0\bin\i386-win32\paszlib');
-  AddUnit(g2.AppPath + '\fpc\3.0.0\units\arm-android');
-  AddUnit(g2.AppPath + '\fpc\3.0.0\units\arm-android\rtl');
-  AddUnit(g2.AppPath + '\fpc\3.0.0\source\packages\paszlib\src');
-  AddUnit(App.Settings.PathANDK + '\platforms\android-8\arch-arm\usr\lib');
-  AddUnit(g2.AppPath + '..\..\source');//g2mp
-  AddUnit(g2.AppPath + '..\..\source\box2d');
-  AddUnit(g2.AppPath + '..\..\source\spine');
-  AddOption('-FD' + g2.AppPath + '\fpc\3.0.0\bin\i386-win32');
+  AddOption('-vewnhibq');
+  AddOption('-dANDROID');
+  AddOption('-Fl"' + App.Settings.PathANDK + G2PathSep + 'platforms' + G2PathSep + 'android-8' + G2PathSep + 'arch-arm' + G2PathSep + 'usr' + G2PathSep + 'lib' + '"');
+  AddOption('-Fl"' + App.Settings.PathANDK + G2PathSep + 'toolchains' + G2PathSep + 'arm-linux-androideabi-4.6' + G2PathSep + 'prebuilt' + G2PathSep + 'windows' + G2PathSep + 'lib' + G2PathSep + 'gcc' + G2PathSep + 'arm-linux-androideabi' + G2PathSep + '4.6' + '"');
+  AddOption('-Fl"' + g2.AppPath + '..' + G2PathSep + '..' + G2PathSep + 'libs' + G2PathSep + 'OpenAL' + G2PathSep + 'Android' + '"');
+  AddOption('-Fi"' + _FilePath + 'build' + G2PathSep + 'obj' + '"');
+  AddOption('-Fi"' + g2.AppPath + '..' + G2PathSep + '..' + G2PathSep + 'source' + '"');
+  AddOption('-FU"' + _FilePath + 'build' + G2PathSep + 'obj' + '"');
+  AddUnit(_FilePath + 'build' + G2PathSep + 'obj');
+  AddUnit(_FilePath);
+  AddUnit(g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'units' + G2PathSep + 'arm-android');
+  AddUnit(g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'units' + G2PathSep + 'arm-android' + G2PathSep + 'rtl');
+  AddUnit(g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'source' + G2PathSep + 'packages' + G2PathSep + 'paszlib' + G2PathSep + 'src');
+  AddUnit(g2.AppPath + '..' + G2PathSep + '..' + G2PathSep + 'source');
+  AddOption('-FE' + '"' + _FilePath + 'bin' + '"');
   for i := 0 to High(_ProjectIncludeSource) do
   AddUnit(G2StrReplace(_ProjectIncludeSource[i], '$(project_root)', _FilePath));
   CommandLine := CommandLine + ' "' + _FilePath + 'build' + G2PathSep + _FileName + '"';
+  WriteLn(CommandLine);
   CompilerProcess.sl := TStringList.Create;
   CompilerProcess.ProcOutput := TMemoryStream.Create;
   CompilerProcess.Proc := TProcessUTF8.Create(nil);
@@ -22911,39 +22991,6 @@ begin
     App.Console.AddLine(CompilerProcess.sl[i]);
     App.Log.Log('Build Succeeded');
     App.Console.AddLine('Build Succeeded');
-    if FileExists(_FilePath + 'bin' + G2PathSep + ProjectName + '.exe') then
-    begin
-      ExeProcess.sl := TStringList.Create;
-      ExeProcess.ProcOutput := TMemoryStream.Create;
-      ExeProcess.Proc := TProcessUTF8.Create(nil);
-      ExeProcess.Proc.Executable := _FilePath + 'bin' + G2PathSep + ProjectName + '.exe';
-      ExeProcess.Proc.CurrentDirectory := _FilePath + 'bin' + G2PathSep;
-      ExeProcess.Proc.CommandLine := ExeProcess.Proc.Executable;
-      ExeProcess.Proc.Options := ExeProcess.Proc.Options + [poUsePipes];
-      ExeProcess.Proc.ShowWindow := swoShowDefault;
-      ExeProcess.ReadBytes := 0;
-      ExeProcess.Proc.Execute;
-      while True do
-      begin
-        ExeProcess.ProcOutput.SetSize(ExeProcess.ReadBytes + READ_BYTES);
-        ExeProcess.NumBytes := ExeProcess.Proc.Output.Read((ExeProcess.ProcOutput.Memory + ExeProcess.ReadBytes)^, READ_BYTES);
-        if ExeProcess.NumBytes > 0 then
-        begin
-          Inc(ExeProcess.ReadBytes, ExeProcess.NumBytes);
-        end
-        else
-        Break;
-      end;
-      ExeProcess.Proc.WaitOnExit;
-      ExeProcess.ProcOutput.SetSize(ExeProcess.ReadBytes);
-      ExeProcess.sl.LoadFromStream(ExeProcess.ProcOutput);
-      for i := 0 to ExeProcess.sl.Count - 1 do
-      App.Console.AddLine(ExeProcess.sl[i]);
-      ExeProcess.Proc.Free;
-      ExeProcess.ProcOutput.Free;
-      ExeProcess.sl.Free;
-      //SysUtils.ExecuteProcess(UTF8ToSys(_FilePath + 'bin' + G2PathSep + ProjectName + '.exe'), '', []);
-    end;
   end
   else
   begin
@@ -22951,7 +22998,6 @@ begin
     App.Console.AddLine(CompilerProcess.sl[i]);
     App.Log.Log('Build Failed');
     App.Console.AddLine('Build Failed');
-    App.Console.Dump(g2.AppPath + 'g2console_dump.txt');
   end;
   CompilerProcess.Proc.Free;
   CompilerProcess.ProcOutput.Free;

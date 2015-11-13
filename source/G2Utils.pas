@@ -365,6 +365,7 @@ type
   function G2StrInStr(const Str: AnsiString; SubStr: AnsiString): TG2IntS32;
   function G2StrReplace(const Str, PatternOld, PatternNew: AnsiString): AnsiString;
   function G2StrTrim(const Str: AnsiString): AnsiString;
+  function G2StrSubstitute(const Str: AnsiString; const Start, ReplaceCount: TG2IntS32; const ReplaceStr: AnsiString): AnsiString;
   procedure G2EncDec(const Ptr: PG2IntU8Arr; const Count: TG2IntS32; const Key: AnsiString);
   function G2CmpObjFuncPtr(const Ptr0, Ptr1: Pointer): Boolean;
 
@@ -2501,6 +2502,15 @@ begin
   i := i1 - i0 + 1;
   SetLength(Result, i);
   Move(Str[i0], Result[1], i);
+end;
+
+function G2StrSubstitute(const Str: AnsiString; const Start, ReplaceCount: TG2IntS32; const ReplaceStr: AnsiString): AnsiString;
+  var i, n: TG2IntS32;
+begin
+  SetLength(Result, Length(Str) - ReplaceCount + Length(ReplaceStr));
+  Move(Str[1], Result[1], Start - 1);
+  Move(ReplaceStr[1], Result[Start], Length(ReplaceStr));
+  Move(Str[Start + ReplaceCount], Result[Start + Length(ReplaceStr)], Length(Str) - (Start + ReplaceCount));
 end;
 
 procedure G2EncDec(const Ptr: PG2IntU8Arr; const Count: TG2IntS32; const Key: AnsiString);
