@@ -10,8 +10,7 @@ uses
   GameUnit;
 
 begin
-  WriteLn('Hello G2MP');
-  //Game := TGame.Create;
-  //g2.Start;
-  //Game.Free;
+  Game := TGame.Create;
+  g2.Start;
+  Game.Free;
 end.

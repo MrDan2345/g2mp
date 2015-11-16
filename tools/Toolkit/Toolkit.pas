@@ -12074,6 +12074,7 @@ begin
         _EditJDK.Text := App.Settings.PathJDK;
         _EditASDK.Text := App.Settings.PathASDK;
         _EditANDK.Text := App.Settings.PathANDK;
+        _EditDomain.Text := App.Settings.Domain;
       end;
     end;
   end;
@@ -22822,7 +22823,7 @@ begin
 end;
 
 procedure TProject.BuildAndroid;
-  var Code: AnsiString;
+  var Code, TargetName: AnsiString;
   procedure ModifyCode;
     var i: TG2IntS32;
     var Parser: TG2Parser;
@@ -22845,7 +22846,7 @@ procedure TProject.BuildAndroid;
       Token := Parser.NextToken(tt);
       if (tt = ttKeyword) and (Token = 'program') then
       begin
-        Code := G2StrSubstitute(Code, Parser.Position - Length(Token) + 1, Length(Token), 'library');
+        Code := G2StrSubstitute(Code, Parser.Position - Length(Token), Length(Token), 'library');
         Break;
       end;
     end;
@@ -22855,7 +22856,7 @@ procedure TProject.BuildAndroid;
       Token := Parser.NextToken(tt);
       if (tt = ttKeyword) and (Token = 'uses') then
       begin
-        Code := G2StrSubstitute(Code, Parser.Position + 1, 0, #$D#$A'  G2AndroidJNI,');
+        Code := G2StrSubstitute(Code, Parser.Position, 0, #$D#$A'  G2AndroidJNI,');
         Break;
       end;
     end;
@@ -22865,7 +22866,7 @@ procedure TProject.BuildAndroid;
       Token := Parser.NextToken(tt);
       if (tt = ttKeyword) and (Token = 'begin') then
       begin
-        Code := G2StrSubstitute(Code, Parser.Position - Length(Token), 0, 'procedure g2_main;');
+        Code := G2StrSubstitute(Code, Parser.Position - Length(Token), 0, 'procedure g2_main;'#$D#$A);
         Break;
       end;
     end;
@@ -22881,7 +22882,7 @@ procedure TProject.BuildAndroid;
         begin
           JNIName += '_' + DomainArr[i];
         end;
-        JNIName += '_' + LowerCase(App.Project.ProjectName) + '_' + LowerCase(App.Project.ProjectName) + '_MessageJNI';
+        JNIName += '_' + LowerCase(TargetName) + '_' + LowerCase(TargetName) + '_MessageJNI';
         JNIFunc := 'end;'#$D#$A#$D#$A;
         JNIFunc += 'procedure ' + JNIName + '(Env: PJNIEnv; Obj: JObject; MessageType, Param0, Param1, Param2: Integer);'#$D#$A;
         JNIFunc += 'begin'#$D#$A;
@@ -22910,22 +22911,33 @@ procedure TProject.BuildAndroid;
     Proc: TProcessUTF8;
     ReadBytes, NumBytes: Integer;
   end;
+  var DomainArr: TG2StrArrA;
   var CompilerProcess: TOutputProcess;
   var cf: TCodeFile;
-  var CompilerPath: String;
+  var CompilerPath, JavaSrcPath: String;
   var i, j, n: Integer;
   var b: Boolean;
   const READ_BYTES = 2048;
 begin
+  TargetName := G2StrReplace(G2PathNoExt(_FileName), ' ', '_');
   App.Log.Log('Build Started');
   App.Console.AddLine('Build Started');
   CompilerPath := g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'bin' + G2PathSep + 'i386-win32' + G2PathSep + 'ppcrossarm.exe';
   if not DirectoryExists(_FilePath + 'build') then
   CreateDir(_FilePath + 'build');
+  if not DirectoryExists(_FilePath + 'build' + G2PathSep + 'libs') then
+  CreateDir(_FilePath + 'build' + G2PathSep + 'libs');
+  if not DirectoryExists(_FilePath + 'build' + G2PathSep + 'libs' + G2PathSep + 'armeabi') then
+  CreateDir(_FilePath + 'build' + G2PathSep + 'libs' + G2PathSep + 'armeabi');
   if not DirectoryExists(_FilePath + 'build' + G2PathSep + 'obj') then
   CreateDir(_FilePath + 'build' + G2PathSep + 'obj');
   if not DirectoryExists(_FilePath + 'bin') then
   CreateDir(_FilePath + 'bin');
+  CopyFile(
+    g2.AppPath + '..' + G2PathSep + '..' + G2PathSep + 'libs' + G2PathSep + 'OpenAL' + G2PathSep + 'Android' +  G2PathSep + 'libopenal.so',
+    _FilePath + 'build' + G2PathSep + 'libs' + G2PathSep + 'armeabi' + G2PathSep + 'libopenal.so',
+    [cffCreateDestDirectory, cffOverwriteFile]
+  );
   cf.Initialize;
   Code := _ProjectCode;
   ModifyCode;
@@ -22957,7 +22969,8 @@ begin
   AddUnit(g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'units' + G2PathSep + 'arm-android' + G2PathSep + 'rtl');
   AddUnit(g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'source' + G2PathSep + 'packages' + G2PathSep + 'paszlib' + G2PathSep + 'src');
   AddUnit(g2.AppPath + '..' + G2PathSep + '..' + G2PathSep + 'source');
-  AddOption('-FE' + '"' + _FilePath + 'bin' + '"');
+  AddOption('-FE' + '"' + _FilePath + 'build' + G2PathSep + 'libs' + G2PathSep + 'armeabi' + '"');
+  AddOption('-olibg2mp.so');
   for i := 0 to High(_ProjectIncludeSource) do
   AddUnit(G2StrReplace(_ProjectIncludeSource[i], '$(project_root)', _FilePath));
   CommandLine := CommandLine + ' "' + _FilePath + 'build' + G2PathSep + _FileName + '"';
@@ -23003,6 +23016,25 @@ begin
   CompilerProcess.ProcOutput.Free;
   CompilerProcess.sl.Free;
   //App.Log.Log(Deploy.Build(CompilerPath, ProjectPath));
+  if DirectoryExistsUTF8(_FilePath + 'assets') then
+  begin
+    if not DirectoryExists(_FilePath + 'build' + G2PathSep + 'assets') then
+    CreateDir(_FilePath + 'build' + G2PathSep + 'assets');
+    CopyDirTree(_FilePath + 'assets', _FilePath + 'build' + G2PathSep + 'assets');
+  end;
+  DomainArr := G2StrExplode(App.Settings.Domain, '.');
+  JavaSrcPath := _FilePath + 'build' + G2PathSep + 'src';
+  if not DirectoryExists(JavaSrcPath) then
+  CreateDir(JavaSrcPath);
+  for i := High(DomainArr) downto 0 do
+  begin
+    JavaSrcPath += G2PathSep + DomainArr[i];
+    if not DirectoryExists(JavaSrcPath) then
+    CreateDir(JavaSrcPath);
+  end;
+  JavaSrcPath += G2PathSep + TargetName;
+  if not DirectoryExists(JavaSrcPath) then
+  CreateDir(JavaSrcPath);
   //G2RemoveDir(_FilePath + 'build');
 end;
 

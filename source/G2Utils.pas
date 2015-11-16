@@ -2505,12 +2505,14 @@ begin
 end;
 
 function G2StrSubstitute(const Str: AnsiString; const Start, ReplaceCount: TG2IntS32; const ReplaceStr: AnsiString): AnsiString;
-  var i, n: TG2IntS32;
 begin
   SetLength(Result, Length(Str) - ReplaceCount + Length(ReplaceStr));
-  Move(Str[1], Result[1], Start - 1);
-  Move(ReplaceStr[1], Result[Start], Length(ReplaceStr));
-  Move(Str[Start + ReplaceCount], Result[Start + Length(ReplaceStr)], Length(Str) - (Start + ReplaceCount));
+  if Start > 0 then
+  begin
+    Move(Str[1], Result[1], Start);
+  end;
+  Move(ReplaceStr[1], Result[Start + 1], Length(ReplaceStr));
+  Move(Str[Start + ReplaceCount + 1], Result[Start + Length(ReplaceStr) + 1], Length(Str) - (Start + ReplaceCount));
 end;
 
 procedure G2EncDec(const Ptr: PG2IntU8Arr; const Count: TG2IntS32; const Key: AnsiString);
