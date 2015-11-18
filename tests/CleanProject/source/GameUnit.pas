@@ -85,7 +85,7 @@ end;
 
 procedure TGame.Render;
 begin
-
+  g2.Clear($ffc0c0c0);
 end;
 
 procedure TGame.KeyDown(const Key: Integer);

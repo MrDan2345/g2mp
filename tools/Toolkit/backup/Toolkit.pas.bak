@@ -22732,13 +22732,16 @@ begin
   AddOption('-XX');
   AddOption('-Xs');
   AddOption('-ve');
+  AddOption('-vu');
+  AddOption('-vt');
   AddOption('-dG2Output');
   AddOption('-dG2Debug');
   AddOption('-FE' + '"' + _FilePath + 'bin' + '"');
   AddOption('-FU' + '"' + _FilePath + 'build' + G2PathSep + 'obj' + '"');
-  AddUnit(g2.AppPath + '\fpc\i386-win32\rtl');
-  AddUnit(g2.AppPath + '\fpc\i386-win32\winunits-base');
-  AddUnit(g2.AppPath + '\fpc\i386-win32\paszlib');
+  AddUnit(g2.AppPath + '\fpc\3.0.0\units\i386-win32\rtl');
+  AddUnit(g2.AppPath + '\fpc\3.0.0\units\i386-win32\rtl');
+  AddUnit(g2.AppPath + '\fpc\3.0.0\units\i386-win32\winunits-base');
+  AddUnit(g2.AppPath + '\fpc\3.0.0\units\i386-win32\paszlib');
   AddUnit(g2.AppPath + '..\..\source');//g2mp
   AddUnit(g2.AppPath + '..\..\source\box2d');
   AddUnit(g2.AppPath + '..\..\source\spine');
@@ -22911,34 +22914,33 @@ procedure TProject.BuildAndroid;
     Proc: TProcessUTF8;
     ReadBytes, NumBytes: Integer;
   end;
+  procedure VerifyDir(const Path: String);
+  begin
+    if not DirectoryExists(Path) then
+    begin
+      CreateDir(Path);
+    end;
+  end;
   var DomainArr: TG2StrArrA;
   var CompilerProcess: TOutputProcess;
   var cf: TCodeFile;
-  var CompilerPath, JavaSrcPath, JavaDomain: String;
+  var CompilerPath, JavaSrcPath, JavaDomain, CurPath: String;
   var i, j, n: Integer;
   var b: Boolean;
   var JavaSource, MiscFile: TStringList;
+  var CompileSucceeded: Boolean;
   const READ_BYTES = 2048;
 begin
   TargetName := G2StrReplace(G2PathNoExt(_FileName), ' ', '_');
   App.Log.Log('Build Started');
   App.Console.AddLine('Build Started');
   CompilerPath := g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'bin' + G2PathSep + 'i386-win32' + G2PathSep + 'ppcrossarm.exe';
-  if not DirectoryExists(_FilePath + 'build') then
-  CreateDir(_FilePath + 'build');
-  if not DirectoryExists(_FilePath + 'build' + G2PathSep + 'libs') then
-  CreateDir(_FilePath + 'build' + G2PathSep + 'libs');
-  if not DirectoryExists(_FilePath + 'build' + G2PathSep + 'libs' + G2PathSep + 'armeabi') then
-  CreateDir(_FilePath + 'build' + G2PathSep + 'libs' + G2PathSep + 'armeabi');
-  if not DirectoryExists(_FilePath + 'build' + G2PathSep + 'obj') then
-  CreateDir(_FilePath + 'build' + G2PathSep + 'obj');
-  if not DirectoryExists(_FilePath + 'bin') then
-  CreateDir(_FilePath + 'bin');
-  CopyFile(
-    g2.AppPath + '..' + G2PathSep + '..' + G2PathSep + 'libs' + G2PathSep + 'OpenAL' + G2PathSep + 'Android' +  G2PathSep + 'libopenal.so',
-    _FilePath + 'build' + G2PathSep + 'libs' + G2PathSep + 'armeabi' + G2PathSep + 'libopenal.so',
-    [cffCreateDestDirectory, cffOverwriteFile]
-  );
+  VerifyDir(_FilePath + 'bin');
+  VerifyDir(_FilePath + 'build');
+  VerifyDir(_FilePath + 'build' + G2PathSep + 'obj');
+  VerifyDir(_FilePath + 'build' + G2PathSep + 'raw');
+  VerifyDir(_FilePath + 'build' + G2PathSep + 'raw' + G2PathSep + 'lib');
+  VerifyDir(_FilePath + 'build' + G2PathSep + 'raw' + G2PathSep + 'lib' + G2PathSep + 'armeabi');
   cf.Initialize;
   Code := _ProjectCode;
   ModifyCode;
@@ -22970,7 +22972,7 @@ begin
   AddUnit(g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'units' + G2PathSep + 'arm-android' + G2PathSep + 'rtl');
   AddUnit(g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'source' + G2PathSep + 'packages' + G2PathSep + 'paszlib' + G2PathSep + 'src');
   AddUnit(g2.AppPath + '..' + G2PathSep + '..' + G2PathSep + 'source');
-  AddOption('-FE' + '"' + _FilePath + 'build' + G2PathSep + 'libs' + G2PathSep + 'armeabi' + '"');
+  AddOption('-FE' + '"' + _FilePath + 'build' + G2PathSep + 'raw' + G2PathSep + 'lib' + G2PathSep + 'armeabi' + '"');
   AddOption('-olibg2mp.so');
   for i := 0 to High(_ProjectIncludeSource) do
   AddUnit(G2StrReplace(_ProjectIncludeSource[i], '$(project_root)', _FilePath));
@@ -23005,6 +23007,7 @@ begin
     App.Console.AddLine(CompilerProcess.sl[i]);
     App.Log.Log('Build Succeeded');
     App.Console.AddLine('Build Succeeded');
+    CompileSucceeded := True;
   end
   else
   begin
@@ -23012,18 +23015,40 @@ begin
     App.Console.AddLine(CompilerProcess.sl[i]);
     App.Log.Log('Build Failed');
     App.Console.AddLine('Build Failed');
+    CompileSucceeded := False;
   end;
   CompilerProcess.Proc.Free;
   CompilerProcess.ProcOutput.Free;
   CompilerProcess.sl.Free;
-  //App.Log.Log(Deploy.Build(CompilerPath, ProjectPath));
+  if not CompileSucceeded then
+  begin
+    //G2RemoveDir(_FilePath + 'build');
+    Exit;
+  end;
+  DomainArr := G2StrExplode(App.Settings.Domain, '.');
+  CurPath := _FilePath + 'build' + G2PathSep + 'gen';
+  VerifyDir(CurPath);
+  for i := High(DomainArr) downto 0 do
+  begin
+    CurPath += G2PathSep + DomainArr[i];
+    VerifyDir(CurPath);
+  end;
+  CurPath += G2PathSep + TargetName;
+  VerifyDir(CurPath);
+  VerifyDir(_FilePath + 'build' + G2PathSep + 'res');
+  VerifyDir(_FilePath + 'build' + G2PathSep + 'bin');
+  VerifyDir(_FilePath + 'build' + G2PathSep + 'bin' + G2PathSep + 'classes');
+  CopyFile(
+    g2.AppPath + '..' + G2PathSep + '..' + G2PathSep + 'libs' + G2PathSep + 'OpenAL' + G2PathSep + 'Android' +  G2PathSep + 'libopenal.so',
+    _FilePath + 'build' + G2PathSep + 'raw' + G2PathSep + 'lib' + G2PathSep + 'armeabi' + G2PathSep + 'libopenal.so',
+    [cffCreateDestDirectory, cffOverwriteFile]
+  );
   if DirectoryExistsUTF8(_FilePath + 'assets') then
   begin
     if not DirectoryExists(_FilePath + 'build' + G2PathSep + 'assets') then
     CreateDir(_FilePath + 'build' + G2PathSep + 'assets');
     CopyDirTree(_FilePath + 'assets', _FilePath + 'build' + G2PathSep + 'assets');
   end;
-  DomainArr := G2StrExplode(App.Settings.Domain, '.');
   JavaSrcPath := _FilePath + 'build' + G2PathSep + 'src';
   if not DirectoryExists(JavaSrcPath) then
   CreateDir(JavaSrcPath);
@@ -23095,7 +23120,7 @@ begin
   JavaSource.Append('    GLView = new G2MPView(getApplication().getApplicationContext());');
   JavaSource.Append('    setContentView(GLView);');
   JavaSource.Append('    GLView.setKeepScreenOn(true);');
-  JavaSource.Append('    setTitle("G2MP");');
+  JavaSource.Append('    setTitle("' + TargetName + '");');
   JavaSource.Append('  }');
   JavaSource.Append('  @Override');
   JavaSource.Append('  public void onDestroy () {');
