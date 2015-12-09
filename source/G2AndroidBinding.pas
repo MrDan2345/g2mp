@@ -77,8 +77,8 @@ begin
   _MIDFontGetW := (_Env^)^.GetMethodID(_Env, _MgrClass, 'fontgetw', '()I');
   _MIDFontGetH := (_Env^)^.GetMethodID(_Env, _MgrClass, 'fontgeth', '()I');
   _MIDFontGetD := (_Env^)^.GetMethodID(_Env, _MgrClass, 'fontgetd', '([I)I');
-  G2AddImageFormat(TG2ImagePNG);
-  G2AddAudioFormat(TG2AudioWAV);
+  //G2AddImageFormat(TG2ImagePNG);
+  //G2AddAudioFormat(TG2AudioWAV);
 end;
 
 procedure TG2AndroidBinding.AppClose;

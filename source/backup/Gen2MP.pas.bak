@@ -45,7 +45,7 @@ unit Gen2MP;
 interface
 
 uses
-  {$if defined(UNIX)}
+  {$if defined(G2Target_Linux) or defined(G2Target_OSX)}
     cthreads,
   {$endif}
   {$if defined(G2Target_Windows)}
@@ -61,6 +61,7 @@ uses
   {$elseif defined(G2Target_Android)}
     G2AndroidJNI,
     G2AndroidBinding,
+    G2AndroidLog,
   {$elseif defined(G2Target_iOS)}
     iPhoneAll,
     CGGeometry,
@@ -4141,7 +4142,7 @@ end;
 constructor TG2Log.Create;
 begin
   inherited Create;
-  {$if defined(G2Log)}
+  {$if defined(G2Log) and not defined(G2Target_Mobile)}
   System.Assign(_LogFile, G2GetAppPath + 'G2Log.txt');
   System.Rewrite(_LogFile);
   {$endif}
@@ -4149,7 +4150,7 @@ end;
 
 destructor TG2Log.Destroy;
 begin
-  {$if defined(G2Log)}
+  {$if defined(G2Log) and not defined(G2Target_Mobile)}
   System.Close(_LogFile);
   {$endif}
   inherited Destroy;
@@ -4158,14 +4159,22 @@ end;
 procedure TG2Log.Write(const LogMessage: String);
 begin
   {$if defined(G2Log)}
+  {$if defined(G2Target_Windows) or defined(G2Target_Linux) or defined(G2Target_OSX)}
   System.Write(_LogFile, LogMessage);
+  {$elseif defined(G2Target_Android)}
+  LOGW(PChar(AnsiString(LogMessage)));
+  {$endif}
   {$endif}
 end;
 
 procedure TG2Log.WriteLn(const LogMessage: String);
 begin
   {$if defined(G2Log)}
+  {$if defined(G2Target_Windows) or defined(G2Target_Linux) or defined(G2Target_OSX)}
   System.WriteLn(_LogFile, LogMessage);
+  {$elseif defined(G2Target_Android)}
+  LOGW(PChar(AnsiString(LogMessage)));
+  {$endif}
   {$endif}
 end;
 //TG2Log END
@@ -4300,7 +4309,9 @@ procedure TG2Core.OnUpdate;
 begin
   if not _Pause then
   begin
+    {$if not defined(G2Target_Mobile)}
     _Window.ProcessMessages;
+    {$endif}
     CurTime := G2Time;
     _UpdateCount := _UpdateCount + TG2Float(CurTime - _UpdatePrevTime) * _TargetUPS * 0.001;
     NumUpdates := Trunc(_UpdateCount);
@@ -4354,7 +4365,6 @@ begin
        WriteLn('g2mp exception: ' + e.Message);
        {$elseif not defined(G2Target_Mobile)}
        MessageBoxA(Window.Handle, PAnsiChar(e.Message), 'Error', 0);
-       {$endif}
        {$endif}
      end;
   end;
@@ -4629,42 +4639,62 @@ begin
   case TG2AndroidMessageType(MessageType) of
     amConnect:
     begin
+      LOGW('amConnect - BEGIN');
       AndroidBinding.Init(Env, Obj);
+      LOGW('amConnect - END');
     end;
     amInit:
     begin
+      LOGW('amInit - BEGIN');
       G2InitializeMath;
       G2Initialize;
       g2.Params._ScreenWidth := Param0;
       g2.Params._ScreenHeight := Param1;
       g2.Params.Width := Param0;
       g2.Params.Height := Param1;
+      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
+      LOGW('amInit - END');
     end;
     amQuit:
     begin
+      LOGW('amQuit - BEGIN');
       g2.Stop;
       G2Finalize;
+      LOGW('amQuit - END');
     end;
     amResize:
     begin
+      LOGW('amResize - BEGIN');
+      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
       g2.Params.Width := Param0;
       g2.Params.Height := Param1;
       glViewport(0, 0, Param0, Param1);
+      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
+      LOGW('amResize - END');
     end;
     amDraw:
     begin
+      LOGW('amDraw - BEGIN');
+      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
       g2.OnUpdate;
+      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
       g2.OnRender;
+      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
+      LOGW('amDraw - END');
     end;
     amTouchDown:
     begin
+      LOGW('amTouchDown - BEGIN');
       g2.Window.AddMessage(@g2.Window.OnMouseDown, G2MB_Left, Param0, Param1);
       g2._CursorPos := Point(Param0, Param1);
+      LOGW('amTouchDown - END');
     end;
     amTouchUp:
     begin
+      LOGW('amTouchUp - BEGIN');
       g2.Window.AddMessage(@g2.Window.OnMouseUp, G2MB_Left, Param0, Param1);
       g2._CursorPos := Point(Param0, Param1);
+      LOGW('amTouchUp - END');
     end;
     amTouchMove:
     begin
@@ -7060,6 +7090,7 @@ begin
   end;
   if CurRenderControl <> nil then
   CurRenderControl.RenderEnd;
+  LOGW('ProcessRenderQueue - END');
 end;
 
 {$Hints off}
@@ -8084,6 +8115,7 @@ procedure TG2GfxGLES.Clear(
 );
   var Target: TGLbitfield;
 begin
+  LOGW('TG2GfxGLES.Clear');
   Target := 0;
   if Color then
   begin
@@ -20155,12 +20187,16 @@ end;
 
 initialization
 begin
+  {$if not defined(G2Target_Mobile)}
   G2Initialize;
+  {$endif}
 end;
 
 finalization
 begin
+  {$if not defined(G2Target_Mobile)}
   G2Finalize;
+  {$endif}
 end;
 
 end.

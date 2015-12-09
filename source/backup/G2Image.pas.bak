@@ -103,7 +103,6 @@ var G2ImageFormats: array of CG2ImageFormat;
 
 implementation
 
-
 //TG2Image BEIGN
 procedure TG2Image.SetFormat(const f: TG2ImageFormat);
 begin
@@ -403,7 +402,7 @@ procedure TG2Image.Load(const FileName: String);
   var dm: TG2DataManager;
   {$if defined(G2Target_Android)}
   var Buffer: Pointer;
-  var Size: IntS64;
+  var Size: TG2IntS64;
   {$endif}
 begin
   dm := TG2DataManager.Create(FileName, dmAsset);
@@ -494,36 +493,36 @@ begin
 end;
 //TG2Image END
 
-operator := (c0: TG2Color) cr: TG2ColorR8G8B8A8;
-begin
-  cr.r := c0.r;
-  cr.g := c0.g;
-  cr.b := c0.b;
-  cr.a := c0.a;
-end;
-
-operator := (c0: TG2ColorR8G8B8A8) cr: TG2Color;
-begin
-  cr.r := c0.r;
-  cr.g := c0.g;
-  cr.b := c0.b;
-  cr.a := c0.a;
-end;
-
-operator := (c0: TG2IntU32) cr: TG2ColorR8G8B8A8;
-begin
-  cr := TG2ColorR8G8B8A8(c0);
-end;
-
-operator := (c0: TG2ColorR8G8B8A8) cr: TG2IntU32;
-begin
-  cr := TG2IntU32(c0);
-end;
-
-procedure G2AddImageFormat(const Format: CG2ImageFormat);
-begin
-  SetLength(G2ImageFormats, Length(G2ImageFormats) + 1);
-  G2ImageFormats[High(G2ImageFormats)] := Format;
-end;
+//operator := (c0: TG2Color) cr: TG2ColorR8G8B8A8;
+//begin
+//  cr.r := c0.r;
+//  cr.g := c0.g;
+//  cr.b := c0.b;
+//  cr.a := c0.a;
+//end;
+//
+//operator := (c0: TG2ColorR8G8B8A8) cr: TG2Color;
+//begin
+//  cr.r := c0.r;
+//  cr.g := c0.g;
+//  cr.b := c0.b;
+//  cr.a := c0.a;
+//end;
+//
+//operator := (c0: TG2IntU32) cr: TG2ColorR8G8B8A8;
+//begin
+//  cr := TG2ColorR8G8B8A8(c0);
+//end;
+//
+//operator := (c0: TG2ColorR8G8B8A8) cr: TG2IntU32;
+//begin
+//  cr := TG2IntU32(c0);
+//end;
+//
+//procedure G2AddImageFormat(const Format: CG2ImageFormat);
+//begin
+//  SetLength(G2ImageFormats, Length(G2ImageFormats) + 1);
+//  G2ImageFormats[High(G2ImageFormats)] := Format;
+//end;
 
 end.

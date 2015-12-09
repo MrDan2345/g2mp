@@ -103,7 +103,6 @@ var G2ImageFormats: array of CG2ImageFormat;
 
 implementation
 
-
 //TG2Image BEIGN
 procedure TG2Image.SetFormat(const f: TG2ImageFormat);
 begin

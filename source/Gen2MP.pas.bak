@@ -45,7 +45,7 @@ unit Gen2MP;
 interface
 
 uses
-  {$if defined(UNIX)}
+  {$if defined(G2Target_Linux) or defined(G2Target_OSX)}
     cthreads,
   {$endif}
   {$if defined(G2Target_Windows)}
@@ -61,6 +61,7 @@ uses
   {$elseif defined(G2Target_Android)}
     G2AndroidJNI,
     G2AndroidBinding,
+    G2AndroidLog,
   {$elseif defined(G2Target_iOS)}
     iPhoneAll,
     CGGeometry,
@@ -146,7 +147,9 @@ type
   TG2RenderControl = class;
   TG2RenderControlStateChange = class;
   TG2RenderControlManaged = class;
+  {$if defined(G2RM_SM2)}
   TG2RenderControlBuffer = class;
+  {$endif}
   TG2RenderControlPic2D = class;
   TG2RenderControlPrim2D = class;
   TG2RenderControlPrim3D = class;
@@ -778,12 +781,14 @@ type
     {$elseif defined(G2Target_iOS)}
     _View: TG2OpenGLView;
     {$endif}
+    {$if not defined(G2Target_Mobile)}
     _CursorArrow: TG2Cursor;
     _CursorText: TG2Cursor;
     _CursorHand: TG2Cursor;
     _CursorSizeNS: TG2Cursor;
     _CursorSizeWE: TG2Cursor;
     _Cursor: TG2Cursor;
+    {$endif}
     _Loop: Boolean;
     _Caption: AnsiString;
     _MessageStack: array of TG2WindowMessage;
@@ -806,7 +811,9 @@ type
     );
     procedure Stop; inline;
     procedure SetCaption(const Value: AnsiString); inline;
+    {$if not defined(G2Target_Mobile)}
     procedure SetCursor(const Value: TG2Cursor);
+    {$endif}
   public
     {$if defined(G2Target_Windows)}
     property Handle: THandle read _Handle;
@@ -819,12 +826,14 @@ type
     {$elseif defined(G2Target_iOS)}
     property View: TG2OpenGLView read _View write _View;
     {$endif}
+    {$if not defined(G2Target_Mobile)}
     property Cursor: TG2Cursor read _Cursor write SetCursor;
     property CursorArrow: TG2Cursor read _CursorArrow;
     property CursorText: TG2Cursor read _CursorText;
     property CursorHand: TG2Cursor read _CursorHand;
     property CursorSizeNS: TG2Cursor read _CursorSizeNS;
     property CursorSizeWE: TG2Cursor read _CursorSizeWE;
+    {$endif}
     property Caption: AnsiString read _Caption write SetCaption;
     property IsLooping: Boolean read _Loop;
     procedure Loop;
@@ -908,7 +917,9 @@ type
     _NeedToSwap: Boolean;
     _CanSwap: Boolean;
     _ControlStateChange: TG2RenderControlStateChange;
+    {$if defined(G2RM_SM2)}
     _ControlBuffer: TG2RenderControlBuffer;
+    {$endif}
     _ControlPic2D: TG2RenderControlPic2D;
     _ControlPrim2D: TG2RenderControlPrim2D;
     _ControlPrim3D: TG2RenderControlPrim3D;
@@ -949,7 +960,9 @@ type
   public
     SizeRT: TPoint;
     property StateChange: TG2RenderControlStateChange read _ControlStateChange;
+    {$if defined(G2RM_SM2)}
     property Buffer: TG2RenderControlBuffer read _ControlBuffer;
+    {$endif}
     property Pic2D: TG2RenderControlPic2D read _ControlPic2D;
     property Prim2D: TG2RenderControlPrim2D read _ControlPrim2D;
     property Prim3D: TG2RenderControlPrim3D read _ControlPrim3D;
@@ -1113,7 +1126,11 @@ type
     procedure Initialize; override;
     procedure Finalize; override;
     procedure Render; override;
-    procedure Clear(const Color: TG2Color); override;
+    procedure Clear(
+      const Color: Boolean; const ColorValue: TG2Color;
+      const Depth: Boolean; const DepthValue: TG2Float;
+      const Stencil: Boolean; const StencilValue: TG2IntU8
+    ); override;
     procedure SetProj2D;
     procedure SetDefaults;
     procedure SwapBlendMode;
@@ -2185,6 +2202,7 @@ type
     destructor Destroy; override;
   end;
 
+  {$if defined(G2RM_SM2)}
   TG2RenderControlBuffer = class (TG2RenderControl)
   private
     type TParamType = (
@@ -2264,6 +2282,7 @@ type
     constructor Create; override;
     destructor Destroy; override;
   end;
+  {$endif}
 
   TG2Pic2D = record
     Pos0, Pos1, Pos2, Pos3: TG2Vec2;
@@ -3722,7 +3741,7 @@ function G2MessageHandler(inHandlerCallRef: EventHandlerCallRef; inEvent: EventR
   var EventClass: MacOSAll.OSType;
   var EventKind: MacOSAll.UInt32;
   var Command: MacOSAll.HICommand;
-  var Key: IntU32;
+  var Key: TG2IntU32;
   var Button: EventMouseButton;
   var CursorPos: TPoint;
 begin
@@ -3865,7 +3884,7 @@ function KeyRemap(const Key: TG2IntS32): TG2IntS32;
     G2K_SlashR, G2K_BrktR, G2K_Quote
   );
 {$elseif defined(G2Target_Linux)}
-  const Remap: array[0..135] of IntS32 = (
+  const Remap: array[0..135] of TG2IntS32 = (
     $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, G2K_Escape,
     G2K_1, G2K_2, G2K_3, G2K_4, G2K_5, G2K_6, G2K_7, G2K_8, G2K_9, G2K_0,
     G2K_Minus, G2K_Plus, G2K_Back, G2K_Tab, G2K_Q, G2K_W, G2K_E, G2K_R, G2K_T, G2K_Y,
@@ -3882,7 +3901,7 @@ function KeyRemap(const Key: TG2IntS32): TG2IntS32;
     $ff, $ff, $ff, G2K_WinL, G2K_WinR, G2K_Menu
   );
 {$elseif defined(G2Target_OSX)}
-  const Remap: array[0..126] of IntS32 = (
+  const Remap: array[0..126] of TG2IntS32 = (
     G2K_A, G2K_S, G2K_D, G2K_F, G2K_H, G2K_G, G2K_Z, G2K_X, G2K_C, G2K_V,
     $ff, G2K_B, G2K_Q, G2K_W, G2K_E, G2K_R, G2K_Y, G2K_T, G2K_1, G2K_2,
     G2K_3, G2K_4, G2K_6, G2K_5, G2K_Plus, G2K_9, G2K_7, G2K_Minus, G2K_8, G2K_0,
@@ -3898,7 +3917,7 @@ function KeyRemap(const Key: TG2IntS32): TG2IntS32;
     G2K_F2, G2K_PgDown, G2K_F1, G2K_Left, G2K_Right, G2K_Down, G2K_Up
   );
 {$elseif defined(G2Target_Android)}
-  const Remap: array[0..255] of IntS32 = (
+  const Remap: array[0..255] of TG2IntS32 = (
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
     10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
@@ -4123,7 +4142,7 @@ end;
 constructor TG2Log.Create;
 begin
   inherited Create;
-  {$if defined(G2Log)}
+  {$if defined(G2Log) and not defined(G2Target_Mobile)}
   System.Assign(_LogFile, G2GetAppPath + 'G2Log.txt');
   System.Rewrite(_LogFile);
   {$endif}
@@ -4131,7 +4150,7 @@ end;
 
 destructor TG2Log.Destroy;
 begin
-  {$if defined(G2Log)}
+  {$if defined(G2Log) and not defined(G2Target_Mobile)}
   System.Close(_LogFile);
   {$endif}
   inherited Destroy;
@@ -4140,14 +4159,22 @@ end;
 procedure TG2Log.Write(const LogMessage: String);
 begin
   {$if defined(G2Log)}
+  {$if defined(G2Target_Windows) or defined(G2Target_Linux) or defined(G2Target_OSX)}
   System.Write(_LogFile, LogMessage);
+  {$elseif defined(G2Target_Android)}
+  LOGW(PChar(AnsiString(LogMessage)));
+  {$endif}
   {$endif}
 end;
 
 procedure TG2Log.WriteLn(const LogMessage: String);
 begin
   {$if defined(G2Log)}
+  {$if defined(G2Target_Windows) or defined(G2Target_Linux) or defined(G2Target_OSX)}
   System.WriteLn(_LogFile, LogMessage);
+  {$elseif defined(G2Target_Android)}
+  LOGW(PChar(AnsiString(LogMessage)));
+  {$endif}
   {$endif}
 end;
 //TG2Log END
@@ -4242,10 +4269,12 @@ end;
 procedure TG2Core.UpdateRender;
   var i: TG2IntS32;
 begin
+  LOGW('UpdateRender - BEGIN');
   if not _CanRender then
   begin
     Gfx.Reset;
     Gfx.StateChange.StateRenderTarget := nil;
+    LOGW(PChar(SysUtils.IntToStr(_LinkRender.Count)));
     for i := 0 to _LinkRender.Count - 1 do
     if _LinkRender[i]^.Obj then
     _LinkRender[i]^.ProcObj
@@ -4255,6 +4284,7 @@ begin
     Gfx.Swap;
     _CanRender := True;
   end;
+  LOGW('UpdateRender - END');
 end;
 
 procedure TG2Core.OnRender;
@@ -4282,7 +4312,9 @@ procedure TG2Core.OnUpdate;
 begin
   if not _Pause then
   begin
+    {$if not defined(G2Target_Mobile)}
     _Window.ProcessMessages;
+    {$endif}
     CurTime := G2Time;
     _UpdateCount := _UpdateCount + TG2Float(CurTime - _UpdatePrevTime) * _TargetUPS * 0.001;
     NumUpdates := Trunc(_UpdateCount);
@@ -4334,7 +4366,7 @@ begin
      begin
        {$if defined(G2Output)}
        WriteLn('g2mp exception: ' + e.Message);
-       {$else}
+       {$elseif not defined(G2Target_Mobile)}
        MessageBoxA(Window.Handle, PAnsiChar(e.Message), 'Error', 0);
        {$endif}
      end;
@@ -4610,42 +4642,62 @@ begin
   case TG2AndroidMessageType(MessageType) of
     amConnect:
     begin
+      LOGW('amConnect - BEGIN');
       AndroidBinding.Init(Env, Obj);
+      LOGW('amConnect - END');
     end;
     amInit:
     begin
+      LOGW('amInit - BEGIN');
       G2InitializeMath;
       G2Initialize;
       g2.Params._ScreenWidth := Param0;
       g2.Params._ScreenHeight := Param1;
       g2.Params.Width := Param0;
       g2.Params.Height := Param1;
+      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
+      LOGW('amInit - END');
     end;
     amQuit:
     begin
+      LOGW('amQuit - BEGIN');
       g2.Stop;
       G2Finalize;
+      LOGW('amQuit - END');
     end;
     amResize:
     begin
+      LOGW('amResize - BEGIN');
+      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
       g2.Params.Width := Param0;
       g2.Params.Height := Param1;
       glViewport(0, 0, Param0, Param1);
+      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
+      LOGW('amResize - END');
     end;
     amDraw:
     begin
+      LOGW('amDraw - BEGIN');
+      LOGW(PChar(IntToStr(_LinkRender.Count)));
       g2.OnUpdate;
+      LOGW(PChar(IntToStr(_LinkRender.Count)));
       g2.OnRender;
+      LOGW(PChar(IntToStr(_LinkRender.Count)));
+      LOGW('amDraw - END');
     end;
     amTouchDown:
     begin
+      LOGW('amTouchDown - BEGIN');
       g2.Window.AddMessage(@g2.Window.OnMouseDown, G2MB_Left, Param0, Param1);
       g2._CursorPos := Point(Param0, Param1);
+      LOGW('amTouchDown - END');
     end;
     amTouchUp:
     begin
+      LOGW('amTouchUp - BEGIN');
       g2.Window.AddMessage(@g2.Window.OnMouseUp, G2MB_Left, Param0, Param1);
       g2._CursorPos := Point(Param0, Param1);
+      LOGW('amTouchUp - END');
     end;
     amTouchMove:
     begin
@@ -4814,19 +4866,23 @@ end;
 procedure TG2Core.CallbackRenderAdd(const ProcRender: TG2Proc; const Order: TG2Float = 0);
   var Link: PG2LinkProc;
 begin
+  LOGW('CallbackRenderAdd');
   New(Link);
   Link^.Obj := False;
   Link^.Proc := ProcRender;
   _LinkRender.Add(Link, Order);
+  LOGW(PChar(IntToStr(_LinkRender.Count)));
 end;
 
 procedure TG2Core.CallbackRenderAdd(const ProcRender: TG2ProcObj; const Order: TG2Float = 0);
   var Link: PG2LinkProc;
 begin
+  LOGW('CallbackRenderAdd');
   New(Link);
   Link^.Obj := True;
   Link^.ProcObj := ProcRender;
   _LinkRender.Add(Link, Order);
+  LOGW(PChar(IntToStr(_LinkRender.Count)));
 end;
 
 procedure TG2Core.CallbackRenderRemove(const ProcRender: TG2Proc);
@@ -6032,6 +6088,7 @@ end;
 
 procedure TG2Core.Clear(const Color: TG2Color);
 begin
+  LOGW('TG2Core.Clear');
   _Gfx.StateChange.StateClear(Color);
 end;
 
@@ -6041,6 +6098,7 @@ procedure TG2Core.Clear(
   const Stencil: Boolean; const StencilValue: TG2IntU8
 );
 begin
+  LOGW('TG2Core.Clear');
   _Gfx.StateChange.StateClear(Color, ColorValue, Depth, DepthValue, Stencil, StencilValue);
 end;
 
@@ -6288,6 +6346,7 @@ end;
 procedure TG2Window.OnResize(const Mode, NewWidth, NewHeight: TG2IntS32);
   var R: TRect;
 begin
+  {$if defined(G2Target_Windows)}
   if not _ProcessResize then Exit;
   GetClientRect(_Handle, R);
   g2.Params.Width := R.Right - R.Left;
@@ -6298,6 +6357,7 @@ begin
     1: g2.Params.ScreenMode := smMaximized;
   end;
   g2.Params.Apply;
+  {$endif}
 end;
 
 procedure TG2Window.Adjust(
@@ -6422,6 +6482,7 @@ begin
   end;
 end;
 
+{$if not defined(G2Target_Mobile)}
 procedure TG2Window.SetCursor(const Value: TG2Cursor);
 begin
   if _Cursor <> Value then
@@ -6432,6 +6493,7 @@ begin
     {$endif}
   end;
 end;
+{$endif}
 
 {$Hints off}
 procedure TG2Window.Loop;
@@ -6520,13 +6582,13 @@ constructor TG2Window.Create(const Width: TG2IntS32 = 0; const Height: TG2IntS32
   var WndStyle: TG2IntU32;
 {$elseif defined(G2Target_Linux)}
   type THints = record
-    Flags: IntU32;
-    Functions: IntU32;
-    Decorations: IntU32;
-    InputMode: IntS32;
-    Status: IntU32;
+    Flags: TG2IntU32;
+    Functions: TG2IntU32;
+    Decorations: TG2IntU32;
+    InputMode: TG2IntS32;
+    Status: TG2IntU32;
   end;
-  var w, h: IntS32;
+  var w, h: TG2IntS32;
   var WndParams: TXWindowChanges;
   var WndHints: THints;
   var WndProps: TAtom;
@@ -6537,11 +6599,11 @@ constructor TG2Window.Create(const Width: TG2IntS32 = 0; const Height: TG2IntS32
   var WndMaxH: TAtom;
   var WndAttribs: TXSetWindowAttributes;
   var WndGetAttr: TXWindowAttributes;
-  var WndValueMask: IntU32;
+  var WndValueMask: TG2IntU32;
   var event: TXEvent;
-  var VisualAttribs: array[0..17] of IntS32;
+  var VisualAttribs: array[0..17] of TG2IntS32;
 {$elseif defined(G2Target_OSX)}
-  var w, h: IntS32;
+  var w, h: TG2IntS32;
   var R: MacOSAll.Rect;
   var WndAttribs: MacOSAll.WindowAttributes;
   var WndEvents: array[0..5] of MacOSAll.EventTypeSpec;
@@ -6839,8 +6901,10 @@ begin
   {$elseif defined(G2Target_iOS)}
   _Loop := True;
   {$endif}
+  {$if not defined(G2Target_Mobile)}
   _Cursor := 0;
   Cursor := _CursorArrow;
+  {$endif}
 end;
 {$if defined(G2Target_Android)}
 {$Hints on}
@@ -7021,6 +7085,7 @@ procedure TG2Gfx.ProcessRenderQueue;
   var CurRenderControl: TG2RenderControl;
   var i: TG2IntS32;
 begin
+  LOGW('ProcessRenderQueue - BEGIN');
   CurRenderControl := nil;
   for i := 0 to _RenderQueueCount[_QueueDraw] - 1 do
   begin
@@ -7035,6 +7100,7 @@ begin
   end;
   if CurRenderControl <> nil then
   CurRenderControl.RenderEnd;
+  LOGW('ProcessRenderQueue - END');
 end;
 
 {$Hints off}
@@ -7054,7 +7120,9 @@ begin
   InitShaders;
   {$endif}
   _ControlStateChange := TG2RenderControlStateChange(AddRenderControl(TG2RenderControlStateChange));
+  {$if defined(G2RM_SM2)}
   _ControlBuffer := TG2RenderControlBuffer(AddRenderControl(TG2RenderControlBuffer));
+  {$endif}
   _ControlPic2D := TG2RenderControlPic2D(AddRenderControl(TG2RenderControlPic2D));
   _ControlPrim2D := TG2RenderControlPrim2D(AddRenderControl(TG2RenderControlPrim2D));
   _ControlPrim3D := TG2RenderControlPrim3D(AddRenderControl(TG2RenderControlPrim3D));
@@ -7452,7 +7520,7 @@ end;
 constructor TG2GfxD3D9.Create;
 begin
   inherited Create;
-  _D3D9 := IDirect3D9(Direct3DCreate9(D3D_SDK_VERSION));
+  _D3D9 := Direct3DCreate9(D3D_SDK_VERSION);
   _D3D9.GetDeviceCaps(0, D3DDEVTYPE_HAL, Caps);
 end;
 
@@ -7667,7 +7735,7 @@ procedure TG2GfxOGL.Initialize;
   var pf: TG2IntS32;
   {$elseif defined(G2Target_Linux)}
   {$elseif defined(G2Target_OSX)}
-  var OglAttribs: array[0..5] of IntS32;
+  var OglAttribs: array[0..5] of TG2IntS32;
   var PixelFormat: TAGLPixelFormat;
   {$endif}
 begin
@@ -8008,7 +8076,7 @@ procedure TG2GfxGLES.Initialize;
 begin
   {$if defined(G2Target_Android)}
   InitOpenGLES;
-  {$elseid defined(G2Target_iOS)}
+  {$elseif defined(G2Target_iOS)}
   _EAGLLayer := CAEAGLLayer(g2.Delegate.View.layer);
   _EAGLLayer.setOpaque(True);
   _EAGLLayer.setDrawableProperties(
@@ -8044,17 +8112,37 @@ end;
 
 procedure TG2GfxGLES.Render;
 begin
-  Clear(ClearColor);
   ProcessRenderQueue;
   {$if defined(G2Target_iOS)}
   _Context.presentRenderbuffer(GL_RENDERBUFFER);
   {$endif}
 end;
 
-procedure TG2GfxGLES.Clear(const Color: TG2Color);
+procedure TG2GfxGLES.Clear(
+  const Color: Boolean; const ColorValue: TG2Color;
+  const Depth: Boolean; const DepthValue: TG2Float;
+  const Stencil: Boolean; const StencilValue: TG2IntU8
+);
+  var Target: TGLbitfield;
 begin
-  glClearColor(Color.r * Rcp255, Color.g * Rcp255, Color.b * Rcp255, Color.a * Rcp255);
-  glClear(GL_DEPTH_BUFFER_BIT or GL_COLOR_BUFFER_BIT);
+  LOGW('TG2GfxGLES.Clear');
+  Target := 0;
+  if Color then
+  begin
+    Target := GL_COLOR_BUFFER_BIT;
+    glClearColor(ColorValue.r * G2Rcp255, ColorValue.g * G2Rcp255, ColorValue.b * G2Rcp255, ColorValue.a * G2Rcp255);
+  end;
+  if Depth then
+  begin
+    Target := Target or GL_DEPTH_BUFFER_BIT;
+    glClearDepthf(DepthValue);
+  end;
+  if Stencil then
+  begin
+    Target := Target or GL_STENCIL_BUFFER_BIT;
+    glClearStencil(StencilValue);
+  end;
+  if Target > 0 then glClear(Target);
 end;
 
 procedure TG2GfxGLES.SetProj2D;
@@ -8822,7 +8910,9 @@ begin
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  {$if defined(G2Gfx_OGL)}
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+  {$endif}
   glBindTexture(GL_TEXTURE_2D, 0);
   {$endif}
   case _Usage of
@@ -8830,7 +8920,7 @@ begin
     begin
       _SizeTU := 1;
       _SizeTV := 1;
-      {$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
+      {$if defined(G2Gfx_OGL)}
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
       {$endif}
     end;
@@ -8838,7 +8928,7 @@ begin
     begin
       _SizeTU := 1;
       _SizeTV := 1;
-      {$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
+      {$if defined(G2Gfx_OGL)}
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, Levels - 1);
       {$endif}
     end;
@@ -8846,7 +8936,7 @@ begin
     begin
       _SizeTU := _Width / _RealWidth;
       _SizeTV := _Height / _RealHeight;
-      {$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
+      {$if defined(G2Gfx_OGL)}
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
       {$endif}
     end;
@@ -12956,7 +13046,7 @@ begin
     _Props[i].OffsetX := (_CharSpaceX - _Props[i].Width) div 2;
     _Props[i].OffsetY := (_CharSpaceY - _Props[i].Height) div 2;
   end;
-  _Gfx.ThreadAttach;
+  TG2GfxGLES(g2.Gfx).ThreadAttach;
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glGenTextures(1, @_Texture._Texture);
   glBindTexture(GL_TEXTURE_2D, _Texture._Texture);
@@ -12975,7 +13065,7 @@ begin
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  _Gfx.ThreadDetach;
+  TG2GfxGLES(g2.Gfx).ThreadDetach;
   FreeMem(Data, TexWidth * TexHeight * 4);
 {$Hints on}
 {$elseif defined(G2Target_iOS)}
@@ -14067,6 +14157,7 @@ begin
 end;
 //TG2RenderControlManaged END
 
+{$if defined(G2RM_SM2)}
 //TG2RenderControlBuffer BEGIN
 procedure TG2RenderControlBuffer.CheckCapacity;
   var n, i: TG2IntS32;
@@ -14330,6 +14421,7 @@ begin
   inherited Destroy;
 end;
 //TG2RenderControlBuffer END
+{$endif}
 
 //TG2RenderControlPic2D BEGIN
 procedure TG2RenderControlPic2D.CheckCapacity;
@@ -14482,7 +14574,9 @@ begin
       {$elseif defined(G2RM_SM2)}
       _ShaderGroup.Sampler('Tex0', _CurTexture);
       {$endif}
+      {$if not defined(G2Gfx_GLES)}
       _Gfx.EnableMipMaps(_CurTexture.Usage = tu3D);
+      {$endif}
       _CurFilter := p^.Filter;
       _Gfx.Filter := _CurFilter;
       {$endif}
@@ -14545,16 +14639,16 @@ begin
   {$elseif defined(G2Gfx_GLES)}
   v := _CurQuad * 4;
   _VertPositions[v].SetValue(p^.Pos0.x, p^.Pos0.y, 0);
-  _VertColors[v].SetValue(p^.c0.r * Rcp255, p^.c0.g * Rcp255, p^.c0.b * Rcp255, p^.c0.a * Rcp255);
+  _VertColors[v].SetValue(p^.c0.r * G2Rcp255, p^.c0.g * G2Rcp255, p^.c0.b * G2Rcp255, p^.c0.a * G2Rcp255);
   _VertTexCoords[v] := p^.Tex0; Inc(v);
   _VertPositions[v].SetValue(p^.Pos1.x, p^.Pos1.y, 0);
-  _VertColors[v].SetValue(p^.c1.r * Rcp255, p^.c1.g * Rcp255, p^.c1.b * Rcp255, p^.c1.a * Rcp255);
+  _VertColors[v].SetValue(p^.c1.r * G2Rcp255, p^.c1.g * G2Rcp255, p^.c1.b * G2Rcp255, p^.c1.a * G2Rcp255);
   _VertTexCoords[v] := p^.Tex1; Inc(v);
   _VertPositions[v].SetValue(p^.Pos2.x, p^.Pos2.y, 0);
-  _VertColors[v].SetValue(p^.c2.r * Rcp255, p^.c2.g * Rcp255, p^.c2.b * Rcp255, p^.c2.a * Rcp255);
+  _VertColors[v].SetValue(p^.c2.r * G2Rcp255, p^.c2.g * G2Rcp255, p^.c2.b * G2Rcp255, p^.c2.a * G2Rcp255);
   _VertTexCoords[v] := p^.Tex2; Inc(v);
   _VertPositions[v].SetValue(p^.Pos3.x, p^.Pos3.y, 0);
-  _VertColors[v].SetValue(p^.c3.r * Rcp255, p^.c3.g * Rcp255, p^.c3.b * Rcp255, p^.c3.a * Rcp255);
+  _VertColors[v].SetValue(p^.c3.r * G2Rcp255, p^.c3.g * G2Rcp255, p^.c3.b * G2Rcp255, p^.c3.a * G2Rcp255);
   _VertTexCoords[v] := p^.Tex3; Inc(v);
   {$endif}
   Inc(_CurQuad);
@@ -14857,10 +14951,10 @@ begin
     _VertPositions[_CurPoint].y := p^.Points[i].y;
     _VertPositions[_CurPoint].z := 0;
     _VertColors[_CurPoint].SetValue(
-      p^.Points[i].Color.r * Rcp255,
-      p^.Points[i].Color.g * Rcp255,
-      p^.Points[i].Color.b * Rcp255,
-      p^.Points[i].Color.a * Rcp255
+      p^.Points[i].Color.r * G2Rcp255,
+      p^.Points[i].Color.g * G2Rcp255,
+      p^.Points[i].Color.b * G2Rcp255,
+      p^.Points[i].Color.a * G2Rcp255
     );
     Inc(_CurPoint);
   end;
@@ -15045,7 +15139,7 @@ begin
 end;
 
 procedure TG2RenderControlPrim3D.RenderBegin;
-{$if defined(G2Gfx_D3D9) and defined(G2Gfx_FF)}
+{$if defined(G2Gfx_D3D9) and defined(G2RM_FF)}
   var m: TG2Mat;
 {$endif}
 {$if defined(G2RM_SM2)}
@@ -15179,10 +15273,10 @@ begin
     _VertPositions[_CurPoint].y := p^.Points[i].y;
     _VertPositions[_CurPoint].z := 0;
     _VertColors[_CurPoint].SetValue(
-      p^.Points[i].Color.r * Rcp255,
-      p^.Points[i].Color.g * Rcp255,
-      p^.Points[i].Color.b * Rcp255,
-      p^.Points[i].Color.a * Rcp255
+      p^.Points[i].Color.r * G2Rcp255,
+      p^.Points[i].Color.g * G2Rcp255,
+      p^.Points[i].Color.b * G2Rcp255,
+      p^.Points[i].Color.a * G2Rcp255
     );
     Inc(_CurPoint);
   end;
@@ -15436,7 +15530,9 @@ begin
       {$elseif defined(G2RM_SM2)}
       _ShaderGroup.Sampler('Tex0', _CurTexture, 0);
       {$endif}
+      {$if not defined(G2Gfx_GLES)}
       _Gfx.EnableMipMaps(_CurTexture.Usage = tu3D);
+      {$endif}
       _CurFilter := p^.Filter;
       _Gfx.Filter := _CurFilter;
       {$endif}
@@ -15493,7 +15589,7 @@ begin
     _VertPositions[_CurPoint].x := p^.Points[i].x;
     _VertPositions[_CurPoint].y := p^.Points[i].y;
     _VertPositions[_CurPoint].z := 0;
-    _VertColors[_CurPoint].SetValue(p^.Points[i].Color.r * Rcp255, p^.Points[i].Color.g * Rcp255, p^.Points[i].Color.b * Rcp255, p^.Points[i].Color.a * Rcp255);
+    _VertColors[_CurPoint].SetValue(p^.Points[i].Color.r * G2Rcp255, p^.Points[i].Color.g * G2Rcp255, p^.Points[i].Color.b * G2Rcp255, p^.Points[i].Color.a * G2Rcp255);
     _VertTexCoords[_CurPoint].x := p^.Points[i].u;
     _VertTexCoords[_CurPoint].y := p^.Points[i].v;
     Inc(_CurPoint);
@@ -15684,7 +15780,7 @@ begin
 end;
 
 procedure TG2RenderControlPoly3D.RenderBegin;
-{$if defined(G2Gfx_D3D9) and defined(G2Gfx_FF)}
+{$if defined(G2Gfx_D3D9) and defined(G2RM_FF)}
   var m: TG2Mat;
 {$endif}
 begin
@@ -15775,7 +15871,9 @@ begin
       {$elseif defined(G2RM_SM2)}
       _ShaderGroup.Sampler('Tex0', _CurTexture, 0);
       {$endif}
+      {$if not defined(G2Gfx_GLES)}
       _Gfx.EnableMipMaps(_CurTexture.Usage = tu3D);
+      {$endif}
       _CurFilter := p^.Filter;
       _Gfx.Filter := _CurFilter;
       {$endif}
@@ -15840,10 +15938,10 @@ begin
     _VertPositions[_CurPoint].y := p^.Points[i].y;
     _VertPositions[_CurPoint].z := p^.Points[i].z;
     _VertColors[_CurPoint].SetValue(
-      p^.Points[i].Color.r * Rcp255,
-      p^.Points[i].Color.g * Rcp255,
-      p^.Points[i].Color.b * Rcp255,
-      p^.Points[i].Color.a * Rcp255
+      p^.Points[i].Color.r * G2Rcp255,
+      p^.Points[i].Color.g * G2Rcp255,
+      p^.Points[i].Color.b * G2Rcp255,
+      p^.Points[i].Color.a * G2Rcp255
     );
     Inc(_CurPoint);
   end;
@@ -19196,7 +19294,7 @@ begin
   glMatrixMode(GL_PROJECTION);
   glLoadMatrixf(@VP);
   glMatrixMode(GL_MODELVIEW);
-  EnvColor.SetValue(_Ambient.r * Rcp255, _Ambient.g * Rcp255, _Ambient.b * Rcp255, 1);
+  EnvColor.SetValue(_Ambient.r * G2Rcp255, _Ambient.g * G2Rcp255, _Ambient.b * G2Rcp255, 1);
   glLightModelfv(GL_LIGHT_MODEL_AMBIENT, @EnvColor);
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, @EnvColor);
   for i := 0 to _MeshInst.Count - 1 do
@@ -19328,7 +19426,7 @@ end;
 procedure TG2Scene3D.RenderGLES;
   var i, g, m: TG2IntS32;
   var f: TG2Float;
-  var CurStage: IntU32;
+  var CurStage: TG2IntU32;
   var W, VP, WVP: TG2Mat;
   var Mesh: TG2S3DMesh;
   var Inst: TG2S3DMeshInst;
@@ -20099,12 +20197,16 @@ end;
 
 initialization
 begin
+  {$if not defined(G2Target_Mobile)}
   G2Initialize;
+  {$endif}
 end;
 
 finalization
 begin
+  {$if not defined(G2Target_Mobile)}
   G2Finalize;
+  {$endif}
 end;
 
 end.

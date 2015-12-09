@@ -8,6 +8,7 @@ uses
   G2Math,
   G2Utils,
   G2DataManager,
+  SysUtils,
   Types,
   Classes;
 
@@ -15,6 +16,8 @@ type
   TGame = class
   protected
   public
+    var Tex: TG2Texture2D;
+    var Font1: TG2Font;
     constructor Create;
     destructor Destroy; override;
     procedure Initialize;
@@ -70,12 +73,15 @@ end;
 
 procedure TGame.Initialize;
 begin
-
+  //Tex := TG2Texture2D.Create;
+  //Tex.Load('assets/TestCharA.png', tu2D);
+  Font1 := TG2Font.Create;
+  Font1.Make(32);
 end;
 
 procedure TGame.Finalize;
 begin
-
+  Free;
 end;
 
 procedure TGame.Update;
@@ -85,7 +91,12 @@ end;
 
 procedure TGame.Render;
 begin
-  g2.Clear($ffc0c0c0);
+  g2.Clear($ffffc0c0);
+  g2.PrimRect(
+    10, 10, 100, 100, $ffff0000
+  );
+  Font1.Print(200, 200, 1, 1, $ff000000, 'FPS: ' + IntToStr(g2.FPS), bmNormal, tfPoint);
+  //g2.PicRect(200, 10, $ffffffff, Tex);
 end;
 
 procedure TGame.KeyDown(const Key: Integer);
