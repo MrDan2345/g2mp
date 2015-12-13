@@ -76,10 +76,9 @@
       </Unit4>
       <Unit5>
         <Filename Value="Toolkit.pas"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="23594"/>
-        <CursorPos X="69" Y="23616"/>
+        <TopLine Value="23696"/>
+        <CursorPos X="54" Y="23739"/>
         <UsageCount Value="114"/>
         <Loaded Value="True"/>
       </Unit5>
@@ -89,7 +88,7 @@
         <EditorIndex Value="5"/>
         <TopLine Value="202"/>
         <CursorPos X="21" Y="227"/>
-        <UsageCount Value="60"/>
+        <UsageCount Value="61"/>
         <Loaded Value="True"/>
       </Unit6>
       <Unit7>
@@ -199,8 +198,8 @@
       <Unit21>
         <Filename Value="..\..\source\G2DataManager.pas"/>
         <EditorIndex Value="15"/>
-        <TopLine Value="1622"/>
-        <CursorPos X="23" Y="1649"/>
+        <TopLine Value="486"/>
+        <CursorPos X="29" Y="466"/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
       </Unit21>
@@ -222,7 +221,7 @@
         <EditorIndex Value="4"/>
         <TopLine Value="676"/>
         <CursorPos Y="697"/>
-        <UsageCount Value="58"/>
+        <UsageCount Value="59"/>
         <Loaded Value="True"/>
       </Unit24>
       <Unit25>
@@ -323,22 +322,23 @@
         <EditorIndex Value="7"/>
         <TopLine Value="1179"/>
         <CursorPos X="7" Y="1197"/>
-        <UsageCount Value="99"/>
+        <UsageCount Value="100"/>
         <Loaded Value="True"/>
       </Unit38>
       <Unit39>
         <Filename Value="..\..\source\G2Audio.pas"/>
         <EditorIndex Value="16"/>
         <CursorPos X="12" Y="6"/>
-        <UsageCount Value="87"/>
+        <UsageCount Value="88"/>
         <Loaded Value="True"/>
       </Unit39>
       <Unit40>
         <Filename Value="..\..\source\G2AndroidBinding.pas"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="13"/>
-        <TopLine Value="94"/>
-        <CursorPos X="44" Y="117"/>
-        <UsageCount Value="27"/>
+        <TopLine Value="253"/>
+        <CursorPos X="70" Y="276"/>
+        <UsageCount Value="28"/>
         <Loaded Value="True"/>
       </Unit40>
       <Unit41>
@@ -347,7 +347,7 @@
         <EditorIndex Value="3"/>
         <TopLine Value="228"/>
         <CursorPos Y="247"/>
-        <UsageCount Value="14"/>
+        <UsageCount Value="15"/>
         <Loaded Value="True"/>
       </Unit41>
       <Unit42>
@@ -355,130 +355,130 @@
         <EditorIndex Value="2"/>
         <TopLine Value="11"/>
         <CursorPos X="85" Y="32"/>
-        <UsageCount Value="11"/>
+        <UsageCount Value="12"/>
         <Loaded Value="True"/>
       </Unit42>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23057" TopLine="23039"/>
+        <Caret Line="23066" TopLine="23039"/>
       </Position1>
       <Position2>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23058" TopLine="23039"/>
+        <Caret Line="23621" TopLine="23602"/>
       </Position2>
       <Position3>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23059" TopLine="23039"/>
+        <Caret Line="23054" TopLine="23037"/>
       </Position3>
       <Position4>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23061" TopLine="23039"/>
+        <Caret Line="23066" TopLine="23042"/>
       </Position4>
       <Position5>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23057" TopLine="23039"/>
+        <Caret Line="23050" Column="77" TopLine="23039"/>
       </Position5>
       <Position6>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23058" TopLine="23039"/>
+        <Caret Line="23057" Column="20" TopLine="23039"/>
       </Position6>
       <Position7>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23059" TopLine="23039"/>
+        <Caret Line="23632" Column="71" TopLine="23609"/>
       </Position7>
       <Position8>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23066" TopLine="23039"/>
+        <Caret Line="23049" Column="82" TopLine="23030"/>
       </Position8>
       <Position9>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23621" TopLine="23602"/>
+        <Caret Line="23051" Column="48" TopLine="23039"/>
       </Position9>
       <Position10>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="23054" TopLine="23037"/>
+        <Filename Value="C:\lazarus\components\lazutils\utf8process.pp"/>
+        <Caret Line="247" TopLine="228"/>
       </Position10>
       <Position11>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23066" TopLine="23042"/>
+        <Caret Line="23051" TopLine="23032"/>
       </Position11>
       <Position12>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23050" Column="77" TopLine="23039"/>
+        <Caret Line="23052" TopLine="23032"/>
       </Position12>
       <Position13>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23057" Column="20" TopLine="23039"/>
+        <Caret Line="23053" Column="16" TopLine="23032"/>
       </Position13>
       <Position14>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23632" Column="71" TopLine="23609"/>
+        <Caret Line="23055" TopLine="23032"/>
       </Position14>
       <Position15>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23049" Column="82" TopLine="23030"/>
+        <Caret Line="23056" TopLine="23032"/>
       </Position15>
       <Position16>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23051" Column="48" TopLine="23039"/>
+        <Caret Line="23057" TopLine="23032"/>
       </Position16>
       <Position17>
-        <Filename Value="C:\lazarus\components\lazutils\utf8process.pp"/>
-        <Caret Line="247" TopLine="228"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="23048" Column="24" TopLine="23026"/>
       </Position17>
       <Position18>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23051" TopLine="23032"/>
+        <Caret Line="23045" Column="46" TopLine="23032"/>
       </Position18>
       <Position19>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23052" TopLine="23032"/>
+        <Caret Line="23052" Column="32" TopLine="23039"/>
       </Position19>
       <Position20>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23053" Column="16" TopLine="23032"/>
+        <Caret Line="23746" Column="19" TopLine="23728"/>
       </Position20>
       <Position21>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23055" TopLine="23032"/>
+        <Caret Line="23194" Column="7" TopLine="23170"/>
       </Position21>
       <Position22>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23056" TopLine="23032"/>
+        <Caret Line="5876" TopLine="5857"/>
       </Position22>
       <Position23>
         <Filename Value="Toolkit.pas"/>
-        <Caret Line="23057" TopLine="23032"/>
+        <Caret Line="23126" TopLine="23099"/>
       </Position23>
       <Position24>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="23048" Column="24" TopLine="23026"/>
+        <Filename Value="..\..\source\G2DataManager.pas"/>
+        <Caret Line="1639" Column="40" TopLine="1661"/>
       </Position24>
       <Position25>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="23045" Column="46" TopLine="23032"/>
+        <Filename Value="..\..\source\G2DataManager.pas"/>
+        <Caret Line="284" Column="3" TopLine="267"/>
       </Position25>
       <Position26>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="23052" Column="32" TopLine="23039"/>
+        <Filename Value="..\..\source\G2DataManager.pas"/>
+        <Caret Line="302" Column="3" TopLine="285"/>
       </Position26>
       <Position27>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="23746" Column="19" TopLine="23728"/>
+        <Filename Value="..\..\source\G2DataManager.pas"/>
+        <Caret Line="291" Column="3" TopLine="274"/>
       </Position27>
       <Position28>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="23194" Column="7" TopLine="23170"/>
+        <Filename Value="..\..\source\G2DataManager.pas"/>
+        <Caret Line="331" Column="14" TopLine="314"/>
       </Position28>
       <Position29>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="5876" TopLine="5857"/>
+        <Filename Value="..\..\source\G2DataManager.pas"/>
+        <Caret Line="9" Column="88"/>
       </Position29>
       <Position30>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="23126" TopLine="23099"/>
+        <Filename Value="..\..\source\G2DataManager.pas"/>
+        <Caret Line="57" Column="29" TopLine="50"/>
       </Position30>
     </JumpHistory>
   </ProjectOptions>

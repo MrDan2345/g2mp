@@ -22790,7 +22790,7 @@ begin
   if not _Open then Exit;
   UpdateSettings;
   case AvailablePlatforms[TargetPlatform] of
-    tpWindows: TAsyncTask.StartTask(@BuildWindows32);
+    tpWindows: BuildWindows32;//TAsyncTask.StartTask(@BuildWindows32);
     tpAndroid: TAsyncTask.StartTask(@BuildAndroid);
   end;
 end;
@@ -22861,6 +22861,7 @@ begin
   CompilerProcess.Proc.Options := CompilerProcess.Proc.Options + [poUsePipes];
   CompilerProcess.Proc.ShowWindow := swoHIDE;
   CompilerProcess.ReadBytes := 0;
+  WriteLn(CompilerProcess.Proc.CommandLine);
   CompilerProcess.Proc.Execute;
   while True do
   begin

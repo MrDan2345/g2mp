@@ -22790,7 +22790,7 @@ begin
   if not _Open then Exit;
   UpdateSettings;
   case AvailablePlatforms[TargetPlatform] of
-    tpWindows: TAsyncTask.StartTask(@BuildWindows32);
+    tpWindows: BuildWindows32;//TAsyncTask.StartTask(@BuildWindows32);
     tpAndroid: TAsyncTask.StartTask(@BuildAndroid);
   end;
 end;
@@ -22843,10 +22843,17 @@ begin
   AddOption('-dG2Debug');
   AddOption('-FE' + '"' + _FilePath + 'bin' + '"');
   AddOption('-FU' + '"' + _FilePath + 'build' + G2PathSep + 'obj' + '"');
-  AddUnit(g2.AppPath + 'fpc\3.0.0\units\i386-win32\rtl');
-  AddUnit(g2.AppPath + 'fpc\3.0.0\units\i386-win32\rtl-objpas');
-  AddUnit(g2.AppPath + 'fpc\3.0.0\units\i386-win32\winunits-base');
-  AddUnit(g2.AppPath + 'fpc\3.0.0\units\i386-win32\paszlib');
+  AddUnit(g2.AppPath + 'fpc\3.0.0\source\rtl\win32');
+  AddOption('-Fi' + g2.AppPath + 'fpc\3.0.0\source\rtl\win32');
+  AddUnit(g2.AppPath + 'fpc\3.0.0\source\rtl\win');
+  AddOption('-Fi' + g2.AppPath + 'fpc\3.0.0\source\rtl\win');
+  AddUnit(g2.AppPath + 'fpc\3.0.0\source\rtl\i386');
+  AddOption('-Fi' + g2.AppPath + 'fpc\3.0.0\source\rtl\i386');
+  AddOption('-Fi' + g2.AppPath + 'fpc\3.0.0\source\rtl\inc');
+  //AddUnit(g2.AppPath + 'fpc\3.0.0\units\i386-win32\rtl');
+  //AddUnit(g2.AppPath + 'fpc\3.0.0\units\i386-win32\rtl-objpas');
+  //AddUnit(g2.AppPath + 'fpc\3.0.0\units\i386-win32\winunits-base');
+  //AddUnit(g2.AppPath + 'fpc\3.0.0\units\i386-win32\paszlib');
   AddUnit(g2.AppPath + '..\..\source');//g2mp
   AddUnit(g2.AppPath + '..\..\source\box2d');
   AddUnit(g2.AppPath + '..\..\source\spine');
@@ -22861,6 +22868,7 @@ begin
   CompilerProcess.Proc.Options := CompilerProcess.Proc.Options + [poUsePipes];
   CompilerProcess.Proc.ShowWindow := swoHIDE;
   CompilerProcess.ReadBytes := 0;
+  WriteLn(CompilerProcess.Proc.CommandLine);
   CompilerProcess.Proc.Execute;
   while True do
   begin
@@ -23750,7 +23758,7 @@ begin
   ExecuteProcess(
     App.Settings.PathASDK + G2PathSep + 'platform-tools' + G2PathSep + 'adb.exe',
     ' kill-server',
-    '', 'Install Failed'
+    '', ''
   );
 
   //G2RemoveDir(_FilePath + 'build');
