@@ -3,33 +3,33 @@
   name = "Main"
   {#workspace
    type = "TUIWorkspaceSplitter"
-   orientation = "vertical"
-   split = 0.3113402128
+   orientation = "horizontal"
+   split = 0.1973958206
    {#workspace
-    type = "TUIWorkspaceSplitter"
-    orientation = "horizontal"
-    split = 0.5
+    type = "TUIWorkspaceFrame"
     {#workspace
-     type = "TUIWorkspaceFrame"
-     {#workspace
-      type = "TUIWorkspaceProject"
-     #}
-    #}
-    {#workspace
-     type = "TUIWorkspaceFrame"
-     {#workspace
-      type = "TUIWorkspaceSettings"
-     #}
+     type = "TUIWorkspaceProjectBrowser"
     #}
    #}
    {#workspace
     type = "TUIWorkspaceSplitter"
-    orientation = "horizontal"
-    split = 0.1927083206
+    orientation = "vertical"
+    split = 0.3195875883
     {#workspace
-     type = "TUIWorkspaceFrame"
+     type = "TUIWorkspaceSplitter"
+     orientation = "horizontal"
+     split = 0.4983777046
      {#workspace
-      type = "TUIWorkspaceProjectBrowser"
+      type = "TUIWorkspaceFrame"
+      {#workspace
+       type = "TUIWorkspaceProject"
+      #}
+     #}
+     {#workspace
+      type = "TUIWorkspaceFrame"
+      {#workspace
+       type = "TUIWorkspaceSettings"
+      #}
      #}
     #}
     {#workspace

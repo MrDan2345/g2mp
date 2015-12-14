@@ -4317,6 +4317,7 @@ type
     var Func: TG2ProcObj;
     class procedure Initialize;
     class procedure Finalize;
+    class procedure Update;
   end;
 //TAsyncTask END
 
@@ -7670,6 +7671,7 @@ begin
   _ScrollV.Initialize;
   _ScrollV.Orientation := sbVertical;
   _ScrollV.OnChange := @OnSlide;
+  _ScrollV.PosRelative := 1;
   _CommandHeight := App.UI.Font1.TextHeight('A') + 4;
   _SeparatorHeight := 4;
   _Command := '';
@@ -18133,10 +18135,15 @@ end;
 //TAsyncTask BEGIN
 class procedure TAsyncTask.NextTask;
 begin
-  if (CurTask = nil) and (Tasks.Count > 0) then
-  begin
-    CurTask := TAsyncTask(Tasks.Pop);
-    CurTask.Start;
+  Lock.Enter;
+  try
+    if (CurTask = nil) and (Tasks.Count > 0) then
+    begin
+      CurTask := TAsyncTask(Tasks.Pop);
+      CurTask.Start;
+    end;
+  finally
+    Lock.Leave;
   end;
 end;
 
@@ -18146,8 +18153,6 @@ begin
   Lock.Enter;
   try
     CurTask := nil;
-    Free;
-    NextTask;
   finally
     Lock.Leave;
   end;
@@ -18161,7 +18166,6 @@ begin
     Task := TAsyncTask.Create;
     Task.Func := TaskProc;
     Tasks.Add(Task);
-    if CurTask = nil then NextTask;
   finally
     Lock.Leave;
   end;
@@ -18178,6 +18182,11 @@ class procedure TAsyncTask.Finalize;
 begin
   while (CurTask <> nil) do;
   Lock.Finalize;
+end;
+
+class procedure TAsyncTask.Update;
+begin
+  NextTask;
 end;
 //TAsyncTask END
 
@@ -18247,6 +18256,7 @@ end;
 
 procedure TG2Toolkit.Update;
 begin
+  TAsyncTask.Update;
   ParticleData.Update;
   AtlasPackerData.Update;
   Project.Update;
@@ -22790,7 +22800,7 @@ begin
   if not _Open then Exit;
   UpdateSettings;
   case AvailablePlatforms[TargetPlatform] of
-    tpWindows: BuildWindows32;//TAsyncTask.StartTask(@BuildWindows32);
+    tpWindows: TAsyncTask.StartTask(@BuildWindows32);
     tpAndroid: TAsyncTask.StartTask(@BuildAndroid);
   end;
 end;
@@ -22837,8 +22847,8 @@ begin
   AddOption('-XX');
   AddOption('-Xs');
   AddOption('-ve');
-  AddOption('-vu');
-  AddOption('-vt');
+  //AddOption('-vu');
+  //AddOption('-vt');
   AddOption('-dG2Output');
   AddOption('-dG2Debug');
   AddOption('-FE' + '"' + _FilePath + 'bin' + '"');
@@ -31844,6 +31854,7 @@ begin
   Data := TScene2DJointDataRevolute.Create;
   Data.Position := Position;
   Data.Joint := Result;
+  Result.Anchor := Position;
   Result.UserData := Data;
 end;
 

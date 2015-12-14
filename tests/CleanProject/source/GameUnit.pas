@@ -75,8 +75,8 @@ procedure TGame.Initialize;
 begin
   //Tex := TG2Texture2D.Create;
   //Tex.Load('assets/TestCharA.png', tu2D);
-  Font1 := TG2Font.Create;
-  Font1.Make(32);
+  //Font1 := TG2Font.Create;
+  //Font1.Make(32);
 end;
 
 procedure TGame.Finalize;
@@ -95,7 +95,7 @@ begin
   g2.PrimRect(
     10, 10, 100, 100, $ffff0000
   );
-  Font1.Print(200, 200, 1, 1, $ff000000, 'FPS: ' + IntToStr(g2.FPS), bmNormal, tfPoint);
+  //Font1.Print(200, 200, 1, 1, $ff000000, 'FPS: ' + IntToStr(g2.FPS), bmNormal, tfPoint);
   //g2.PicRect(200, 10, $ffffffff, Tex);
 end;
 
