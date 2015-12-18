@@ -3248,6 +3248,7 @@ type
     procedure KeyUp(const Key: Integer); virtual;
     procedure Initialize; virtual;
     procedure Finalize; virtual;
+    procedure BeforeDestruction; override;
   end;
 //TScene2DEditor END
 
@@ -26404,6 +26405,15 @@ end;
 procedure TScene2DEditor.Finalize;
 begin
 
+end;
+
+procedure TScene2DEditor.BeforeDestruction;
+begin
+  inherited BeforeDestruction;
+  if App.Scene2DData.Editor = Self then
+  begin
+    App.Scene2DData.Editor := nil;
+  end;
 end;
 //TScene2DEditor END
 
