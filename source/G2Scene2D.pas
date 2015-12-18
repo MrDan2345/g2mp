@@ -22,6 +22,7 @@ type
   TG2Scene2D = class;
   TG2Scene2DComponentRigidBody = class;
   TG2Scene2DComponentCollisionShape = class;
+  TG2Scene2DComponentSpineAnimation = class;
 
   CG2Scene2DComponent = class of TG2Scene2DComponent;
 
@@ -520,6 +521,9 @@ type
     procedure Load(const dm: TG2DataManager); override;
   end;
 
+  TG2SpineAnimationComponentProc = procedure (const SpineAnimation: TG2Scene2DComponentSpineAnimation);
+  TG2SpineAnimationComponentProcObj = procedure (const SpineAnimation: TG2Scene2DComponentSpineAnimation) of object;
+
   TG2Scene2DComponentSpineAnimation = class (TG2Scene2DComponent)
   private
     var _Layer: TG2IntS32;
@@ -534,6 +538,7 @@ type
     var _FlipX: Boolean;
     var _FlipY: Boolean;
     var _TimeScale: TG2Float;
+    var _OnUpdateAnimation: TG2SpineAnimationComponentProcObj;
     procedure SetAnimation(const Value: String);
     procedure SetLayer(const Value: TG2IntS32);
     procedure SetLoop(const Value: Boolean);
@@ -565,6 +570,8 @@ type
     property FlipY: Boolean read _FlipY write SetFlipY;
     property TimeScale: TG2Float read _TimeScale write SetTimeScale;
     property BoneTransform[const Bone: TSpineBone]: TG2Transform2 read GetBoneTransform;
+    property OnUpdateAnimation: TG2SpineAnimationComponentProcObj read _OnUpdateAnimation write _OnUpdateAnimation;
+    procedure UpdateAnimation(const DeltaTime: TG2Float);
     procedure Save(const dm: TG2DataManager); override;
     procedure Load(const dm: TG2DataManager); override;
   end;
@@ -3398,6 +3405,7 @@ begin
   _Animation := '';
   _Loop := True;
   _TimeScale := 1;
+  _OnUpdateAnimation := nil;
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.OnFinalize;
@@ -3429,16 +3437,8 @@ begin
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.OnUpdate;
-  var lt: TG2Vec2;
 begin
-  if not Assigned(Owner) or not Assigned(_Skeleton) then Exit;
-  _Skeleton.Rotation := Owner.Transform.r.Angle * G2RadToDeg;
-  lt := Owner.Transform.r.Transform(_Offset);
-  _Skeleton.x := Owner.Transform.p.x + lt.x;
-  _Skeleton.y := Owner.Transform.p.y + lt.y;
-  _State.Update(g2.DeltaTimeSec);
-  _State.Apply(_Skeleton);
-  _Skeleton.UpdateWorldTransform;
+  UpdateAnimation(g2.DeltaTimeSec);
 end;
 
 class constructor TG2Scene2DComponentSpineAnimation.CreateClass;
@@ -3456,6 +3456,20 @@ end;
 class function TG2Scene2DComponentSpineAnimation.CanAttach(const Node: TG2Scene2DEntity): Boolean;
 begin
   Result := True;
+end;
+
+procedure TG2Scene2DComponentSpineAnimation.UpdateAnimation(const DeltaTime: TG2Float);
+  var lt: TG2Vec2;
+begin
+  if not Assigned(Owner) or not Assigned(_Skeleton) then Exit;
+  _Skeleton.Rotation := Owner.Transform.r.Angle * G2RadToDeg;
+  lt := Owner.Transform.r.Transform(_Offset);
+  _Skeleton.x := Owner.Transform.p.x + lt.x;
+  _Skeleton.y := Owner.Transform.p.y + lt.y;
+  _State.Update(g2.DeltaTimeSec);
+  _State.Apply(_Skeleton);
+  if Assigned(_OnUpdateAnimation) then _OnUpdateAnimation(Self);
+  _Skeleton.UpdateWorldTransform;
 end;
 {$Hints on}
 

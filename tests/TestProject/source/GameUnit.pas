@@ -21,6 +21,7 @@ type
   TShotComponent = class (TG2Scene2DComponent)
   private
     var _Dead: Boolean;
+    var _Duration: TG2Float;
   public
     property Dead: Boolean read _Dead write _Dead;
     procedure OnInitialize; override;
@@ -53,6 +54,7 @@ type
     procedure Scroll(const y: Integer);
     procedure Print(const c: AnsiChar);
     procedure OnBulletHit(const Data: TG2Scene2DEventData);
+    procedure OnUpdatePlayerAnimation(const SpineAnimation: TG2Scene2DComponentSpineAnimation);
   end;
 
 var
@@ -67,6 +69,7 @@ procedure TShotComponent.OnInitialize;
 begin
   inherited OnInitialize;
   _Dead := False;
+  _Duration := 5;
 end;
 
 procedure TShotComponent.OnAttach;
@@ -83,6 +86,8 @@ end;
 
 procedure TShotComponent.OnUpdate;
 begin
+  _Duration -= g2.DeltaTimeSec;
+  if _Duration <= 0 then Dead := True;
   if Dead then Owner.Free;
 end;
 //TShotComponent END
@@ -124,6 +129,7 @@ end;
 procedure TGame.Initialize;
   var i: Integer;
   var Character: TG2Scene2DComponentCharacter;
+  var Animation: TG2Scene2DComponentSpineAnimation;
 begin
   Font := TG2Font.Create;
   Font.Make(32);
@@ -142,6 +148,11 @@ begin
   Character := TG2Scene2DComponentCharacter(PlayerEntity.ComponentOfType[TG2Scene2DComponentCharacter]);
   Character.Enabled := True;
   Character.MaxGlideSpeed := 3;
+  Animation := TG2Scene2DComponentSpineAnimation(PlayerEntity.ComponentOfType[TG2Scene2DComponentSpineAnimation]);
+  if Assigned(Animation) then
+  begin
+    Animation.OnUpdateAnimation := @OnUpdatePlayerAnimation;
+  end;
   //Wheel0 := Scene.FindEntityByName('Wheel0');
   //Wheel1 := Scene.FindEntityByName('Wheel1');
   //TG2Picture.SharedAsset('atlas.g2atlas#TestCharB.png').RefInc;
@@ -247,10 +258,15 @@ begin
     if g2.KeyDown[G2K_Ctrl] and (ShotDelay <= 0) then
     begin
       ShotDelay := 0.1;
-      Animation.AnimationState.SetAnimation(1, 'shoot', False).TimeScale := 2;
-      Animation.AnimationState.Update(0);
-      Animation.AnimationState.Apply(Animation.Skeleton);
-      Animation.Skeleton.UpdateWorldTransform;
+      if Assigned(Animation.AnimationState.GetCurrent(1)) then
+      begin
+        Animation.AnimationState.GetCurrent(1).Time := 0;
+      end
+      else
+      begin
+        Animation.AnimationState.SetAnimation(1, 'shoot', False).TimeScale := 2;
+      end;
+      Animation.UpdateAnimation(0);
       GunBone := Animation.Skeleton.FindBone('gun');
       gxf := Animation.BoneTransform[GunBone];
       if Animation.FlipX then
@@ -364,6 +380,18 @@ begin
         rb.PhysBody^.apply_force(e.Transform.r.AxisX * 100, e.Transform.p, True);
       end;
     end;
+  end;
+end;
+
+procedure TGame.OnUpdatePlayerAnimation(const SpineAnimation: TG2Scene2DComponentSpineAnimation);
+  var Bone: TSpineBone;
+begin
+  if (SpineAnimation.Animation = 'run')
+  and Assigned(SpineAnimation.AnimationState.GetCurrent(1)) then
+  begin
+    Bone := SpineAnimation.Skeleton.FindBone('rear_upper_arm');
+    Bone.Rotation := Bone.Rotation + 45;
+    Bone.RotationIK := Bone.Rotation;
   end;
 end;
 //TGame END
