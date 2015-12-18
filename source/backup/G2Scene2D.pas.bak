@@ -942,14 +942,18 @@ type
       var _Hook: TG2Scene2DRenderHook;
       var _Layer: TG2IntS32;
       var _Texture: TG2Texture2DBase;
+      var _Scale: TG2Vec2;
       function GetVisible: Boolean; inline;
       procedure SetVisible(const Value: Boolean); inline;
       procedure SetLayer(const Value: TG2IntS32); inline;
       procedure OnRender(const Display: TG2Display2D);
       procedure SetTexture(const Value: TG2Texture2DBase);
+      function GetScale: TG2Vec2;
+      procedure SetScale(const Value: TG2Vec2);
     public
       Color: array of TG2Color;
-      Scale: TG2Vec2;
+      property Scale: TG2Vec2 read GetScale write SetScale;
+      property ScaleRcp: TG2Vec2 read _Scale write _Scale;
       property Texture: TG2Texture2DBase read _Texture write SetTexture;
       property Visible: Boolean read GetVisible write SetVisible;
       property Layer: TG2IntS32 read _Layer write SetLayer;
@@ -3138,8 +3142,6 @@ procedure TG2Scene2DComponentBackground.OnRender(const Display: TG2Display2D);
         if t0 < tn then tn := t0;
         if t1 > tf then tf := t1;
       end;
-      //if t0 > tn then tn := t0;
-      //if t1 < tf then tf := t1;
     end;
     xp0 := lv0 + v * tn;
     xp1 := lv0 + v * tf;
@@ -3459,7 +3461,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.UpdateAnimation(const DeltaTime: TG2Float);
-  var
+  var lt: TG2Vec2;
 begin
   if not Assigned(Owner) or not Assigned(_Skeleton) then Exit;
   _Skeleton.Rotation := Owner.Transform.r.Angle * G2RadToDeg;
@@ -4183,7 +4185,7 @@ procedure TG2Scene2DComponentCollisionShapePoly.SetUpBox(
   const r: TG2Float
 );
 begin
-  _PolyShape.set_as_box(w, h, c, r);
+  _PolyShape.set_as_box(w * 0.5, h * 0.5, c, r);
   Reattach;
 end;
 
@@ -4907,6 +4909,17 @@ begin
   if Assigned(_Texture) then _Texture.RefInc;
 end;
 
+function TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.GetScale: TG2Vec2;
+begin
+  Result := G2Vec2(1 / _Scale.x; 1 / _Scale.y);
+end;
+
+procedure TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.SetScale(const Value: TG2Vec2);
+begin
+  if Value.x > 0 then _Scale.x := 1 / Value.x else _Scale.x := 1;
+  if Value.y > 0 then _Scale.y := 1 / Value.y else _Scale.y := 1;
+end;
+
 constructor TG2Scene2DComponentPoly.TG2Scene2DComponentPolyLayer.Create(const Component: TG2Scene2DComponentPoly);
 begin
   inherited Create;
@@ -5016,7 +5029,7 @@ begin
     begin
       v := G2Vec2(_Vertices[_Faces[i][j]].x, _Vertices[_Faces[i][j]].y);
       c := Layer.Color[_Faces[i][j]];
-      t := G2Vec2(v.x + _Vertices[_Faces[i][j]].u, v.y + _Vertices[_Faces[i][j]].v) * Layer.Scale;
+      t := G2Vec2(v.x + _Vertices[_Faces[i][j]].u, v.y + _Vertices[_Faces[i][j]].v) * Layer.ScaleRcp;
       v := Owner.Transform.Transform(v);
       Display.PolyAdd(v, t, c);
     end;
