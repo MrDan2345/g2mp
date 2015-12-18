@@ -4554,8 +4554,8 @@ begin
   _DuckCheckVerts[3] := b2_vec2(_BodyVerts[3].x, _BodyVerts[0].y);
   _GroundCheckVerts[0] := b2_vec2(qw + qw * 0.14, hh * 0.5);
   _GroundCheckVerts[1] := b2_vec2(-qw - qw * 0.14, hh * 0.5);
-  _GroundCheckVerts[2] := b2_vec2(-qw - qw * 0.14, hh + hh * 0.06);
-  _GroundCheckVerts[3] := b2_vec2(qw + qw * 0.14, hh + hh * 0.06);
+  _GroundCheckVerts[2] := b2_vec2(-qw - qw * 0.14, hh + hh * 0.12);
+  _GroundCheckVerts[3] := b2_vec2(qw + qw * 0.14, hh + hh * 0.12);
   _ShapeBody.set_polygon(@_BodyVerts, 7);
   _ShapeFeet.center := b2_vec2(0, 0);
   _ShapeFeet.radius := hw * 0.99;
@@ -4573,11 +4573,11 @@ begin
   _BodyFeetDef.body_type := b2_dynamic_body;
   _FixtureBodyDef := b2_fixture_def;
   _FixtureBodyDef.friction := 0;
-  _FixtureBodyDef.density := 2;
+  _FixtureBodyDef.density := 3;
   _FixtureBodyDef.user_data := Self;
   _FixtureFeetDef := b2_fixture_def;
   _FixtureFeetDef.friction := 4;
-  _FixtureFeetDef.density := 2;
+  _FixtureFeetDef.density := 3;
   _FixtureFeetDef.user_data := Self;
   _ShapeBody.create;
   _FixtureBodyDef.shape := @_ShapeBody;
