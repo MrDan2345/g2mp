@@ -538,6 +538,7 @@ type
     var _FlipX: Boolean;
     var _FlipY: Boolean;
     var _TimeScale: TG2Float;
+    var _Color: TG2Color;
     var _OnUpdateAnimation: TG2SpineAnimationComponentProcObj;
     procedure SetAnimation(const Value: String);
     procedure SetLayer(const Value: TG2IntS32);
@@ -547,6 +548,7 @@ type
     procedure SetScale(const Value: TG2Vec2);
     procedure SetSkeleton(const Value: TSpineSkeleton);
     procedure SetTimeScale(const Value: TG2Float);
+    procedure SetColor(const Value: TG2Color);
     function GetBoneTransform(const Bone: TSpineBone): TG2Transform2;
   protected
     procedure OnInitialize; override;
@@ -569,6 +571,7 @@ type
     property FlipX: Boolean read _FlipX write SetFlipX;
     property FlipY: Boolean read _FlipY write SetFlipY;
     property TimeScale: TG2Float read _TimeScale write SetTimeScale;
+    property Color: TG2Color read _Color write SetColor;
     property BoneTransform[const Bone: TSpineBone]: TG2Transform2 read GetBoneTransform;
     property OnUpdateAnimation: TG2SpineAnimationComponentProcObj read _OnUpdateAnimation write _OnUpdateAnimation;
     procedure UpdateAnimation(const DeltaTime: TG2Float);
@@ -637,6 +640,7 @@ type
   public
     var PhysContact: pb2_contact;
     var Shapes: array[0..1] of TG2Scene2DComponentCollisionShape;
+    var Entities: array[0..1] of TG2Scene2DEntity;
     constructor Create; override;
   end;
 
@@ -644,6 +648,7 @@ type
   public
     var PhysContact: pb2_contact;
     var Shapes: array[0..1] of TG2Scene2DComponentCollisionShape;
+    var Entities: array[0..1] of TG2Scene2DEntity;
     constructor Create; override;
   end;
 
@@ -651,6 +656,7 @@ type
   public
     var PhysContact: pb2_contact;
     var Shapes: array[0..1] of TG2Scene2DComponentCollisionShape;
+    var Entities: array[0..1] of TG2Scene2DEntity;
     constructor Create; override;
   end;
 
@@ -658,6 +664,7 @@ type
   public
     var PhysContact: pb2_contact;
     var Shapes: array[0..1] of TG2Scene2DComponentCollisionShape;
+    var Entities: array[0..1] of TG2Scene2DEntity;
     constructor Create; override;
   end;
 
@@ -1967,14 +1974,6 @@ procedure TG2Scene2D.TPhysContactListener.begin_contact(const contact: pb2_conta
   var Character0, Character1: TG2Scene2DComponentCharacter;
   var Entity0, Entity1: TG2Scene2DEntity;
 begin
-  //if contact^.get_fixture_a^.is_sensor then
-  //begin
-  //  Obj0 := nil;
-  //end
-  //else if contact^.get_fixture_b^.is_sensor then
-  //begin
-  //  Obj1 := nil;
-  //end;
   Obj0 := TObject(contact^.get_fixture_a^.get_user_data);
   Obj1 := TObject(contact^.get_fixture_b^.get_user_data);
   if (Obj0 <> nil) and (Obj1 <> nil) then
@@ -3334,6 +3333,15 @@ begin
   if Assigned(_State) then _State.TimeScale := _TimeScale;
 end;
 
+procedure TG2Scene2DComponentSpineAnimation.SetColor(const Value: TG2Color);
+begin
+  _Color := Value;
+  _SpineRender.r := _Color.r * G2Rcp255;
+  _SpineRender.g := _Color.g * G2Rcp255;
+  _SpineRender.b := _Color.b * G2Rcp255;
+  _SpineRender.a := _Color.a * G2Rcp255;
+end;
+
 function TG2Scene2DComponentSpineAnimation.GetBoneTransform(const Bone: TSpineBone): TG2Transform2;
   var p: TG2Vec2;
   var tx, ty, sx, sy, rx0, ry0, rx1, ry1: TG2Float;
@@ -3407,6 +3415,7 @@ begin
   _Animation := '';
   _Loop := True;
   _TimeScale := 1;
+  _Color := $ffffffff;
   _OnUpdateAnimation := nil;
 end;
 
@@ -3943,6 +3952,8 @@ procedure TG2Scene2DComponentCollisionShape.OnBeginContact(
   const Contact: pb2_contact
 );
 begin
+  _EventBeginContactData.Entities[0] := Self.Owner;
+  _EventBeginContactData.Entities[1] := OtherEntity;
   _EventBeginContactData.Shapes[0] := Self;
   _EventBeginContactData.Shapes[1] := OtherShape;
   _EventBeginContactData.PhysContact := Contact;
@@ -3957,6 +3968,8 @@ procedure TG2Scene2DComponentCollisionShape.OnEndContact(
   const Contact: pb2_contact
 );
 begin
+  _EventEndContactData.Entities[0] := Self.Owner;
+  _EventEndContactData.Entities[1] := OtherEntity;
   _EventEndContactData.Shapes[0] := Self;
   _EventEndContactData.Shapes[1] := OtherShape;
   _EventEndContactData.PhysContact := Contact;
@@ -3971,6 +3984,8 @@ procedure TG2Scene2DComponentCollisionShape.OnBeforeContactSolve(
   const Contact: pb2_contact
 );
 begin
+  _EventBeforeContactSolveData.Entities[0] := Self.Owner;
+  _EventBeforeContactSolveData.Entities[1] := OtherEntity;
   _EventBeforeContactSolveData.Shapes[0] := Self;
   _EventBeforeContactSolveData.Shapes[1] := OtherShape;
   _EventBeforeContactSolveData.PhysContact := Contact;
@@ -3985,6 +4000,8 @@ procedure TG2Scene2DComponentCollisionShape.OnAfterContactSolve(
   const Contact: pb2_contact
 );
 begin
+  _EventAfterContactSolveData.Entities[0] := Self.Owner;
+  _EventAfterContactSolveData.Entities[1] := OtherEntity;
   _EventAfterContactSolveData.Shapes[0] := Self;
   _EventAfterContactSolveData.Shapes[1] := OtherShape;
   _EventAfterContactSolveData.PhysContact := Contact;
@@ -4554,8 +4571,8 @@ begin
   _DuckCheckVerts[3] := b2_vec2(_BodyVerts[3].x, _BodyVerts[0].y);
   _GroundCheckVerts[0] := b2_vec2(qw + qw * 0.14, hh * 0.5);
   _GroundCheckVerts[1] := b2_vec2(-qw - qw * 0.14, hh * 0.5);
-  _GroundCheckVerts[2] := b2_vec2(-qw - qw * 0.14, hh + hh * 0.1);
-  _GroundCheckVerts[3] := b2_vec2(qw + qw * 0.14, hh + hh * 0.1);
+  _GroundCheckVerts[2] := b2_vec2(-qw - qw * 0.14, hh + hh * 0.12);
+  _GroundCheckVerts[3] := b2_vec2(qw + qw * 0.14, hh + hh * 0.12);
   _ShapeBody.set_polygon(@_BodyVerts, 7);
   _ShapeFeet.center := b2_vec2(0, 0);
   _ShapeFeet.radius := hw * 0.99;
@@ -4633,10 +4650,10 @@ begin
   begin
     n := _JumpSpeed.Norm;
     d := n.Dot(_Body^.get_linear_velocity);
-    if d < 0 then
-    _Body^.set_linear_velocity(_Body^.get_linear_velocity + n * Abs(d) + _JumpSpeed)
-    else
-    _Body^.set_linear_velocity(_Body^.get_linear_velocity + _JumpSpeed);
+    //if d < 0 then
+    _Body^.set_linear_velocity(_Body^.get_linear_velocity - n * Abs(d) + _JumpSpeed);
+    //else
+    //_Body^.set_linear_velocity(_Body^.get_linear_velocity + _JumpSpeed);
     _JumpDelay := 0.1;
   end;
   _JumpSpeed.SetZero;
