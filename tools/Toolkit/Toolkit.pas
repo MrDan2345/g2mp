@@ -2842,6 +2842,7 @@ type
     var ParentEffect: TParticleEffect;
     var ParentEmitter: TParticleEmitter;
     var Texture: TG2Texture2D;
+    var TextureName: String;
     var TimeStart: TG2Float;
     var TimeEnd: TG2Float;
     var Orientation: TG2Float;
@@ -16550,6 +16551,7 @@ begin
     Emitter := TParticleEmitter(App.ParticleData.Selection);
     if Emitter = nil then Exit;
     if Emitter.Texture <> nil then Emitter.Texture.Free;
+    Emitter.TextureName := ExtractFileName(_ParticleTextureFile.FilePath);
     Emitter.Texture := TG2Texture2D.Create;
     Emitter.Texture.Load(_ParticleTextureFile.FilePath);
     App.ParticleData.EffectChanged;
@@ -24013,6 +24015,7 @@ begin
   Emitters.Clear;
   ParentEffect := nil;
   ParentEmitter := nil;
+  TextureName := '';
   Texture := nil;
   TimeStart := 0;
   TimeEnd := 1;
@@ -24082,7 +24085,7 @@ begin
   dm.WriteBool(Texture <> nil);
   if Texture <> nil then
   begin
-    dm.WriteStringA(Texture.AssetName);
+    dm.WriteStringA(TextureName);
     Image := Texture.CreateImage;
     Image.Save(dm);
     Image.Free;
@@ -24138,17 +24141,20 @@ procedure TParticleEmitter.Load(const dm: TG2DataManager);
   var n, i, j: Integer;
   var pm: TParticleMod;
   var Emitter: TParticleEmitter;
-  var TexName: AnsiString;
 begin
   Name := dm.ReadStringA;
   b := dm.ReadBool;
   if b then
   begin
     Texture := TG2Texture2D.Create;
-    TexName := dm.ReadStringA;
+    TextureName := dm.ReadStringA;
     Texture.Load(dm);
-    Texture.AssetName := TexName;
     Texture.RefInc;
+  end
+  else
+  begin
+    TextureName := '';
+    Texture := nil;
   end;
   TimeStart := dm.ReadFloat;
   TimeEnd := dm.ReadFloat;
@@ -25837,7 +25843,7 @@ procedure TParticleData.Render;
     g2ml.NodeOpen('emitter');
     g2ml.NodeValue('name', e.Name);
     if e.Texture <> nil then
-    g2ml.NodeValue('frame', ExtractFileName(e.Texture.AssetName))
+    g2ml.NodeValue('frame', ExtractFileName(e.TextureName))
     else
     g2ml.NodeValue('frame', '');
     g2ml.NodeValue('time_start', e.TimeStart);
@@ -25893,6 +25899,7 @@ procedure TParticleData.Render;
     g2ml.NodeClose;
   end;
   var Textures: TG2QuickList;
+  var TextureNames: TG2QuickListAnsiString;
   procedure CollectTextures(const po: TParticleObject);
     var e: TParticleEmitter;
     var i: Integer;
@@ -25901,7 +25908,10 @@ procedure TParticleData.Render;
     begin
       e := TParticleEmitter(po);
       if e.Texture <> nil then
-      Textures.Add(e.Texture);
+      begin
+        Textures.Add(e.Texture);
+        TextureNames.Add(e.TextureName);
+      end;
     end;
     for i := 0 to po.Emitters.Count - 1 do
     CollectTextures(po.Emitters[i]);
@@ -25914,10 +25924,11 @@ begin
   if _ExportState = es_initiate then
   begin
     Textures.Clear;
+    TextureNames.Clear;
     CollectTextures(_ExportEffect);
     _ExportAtlas := TG2Atlas.Create;
     _ExportAtlas.RenderAtlas(
-      PG2Texture2DBase(Textures.Data), nil, Textures.Count,
+      PG2Texture2DBase(Textures.Data), @TextureNames.Data[0], Textures.Count,
       1024, 1024, 2, False, False, nil
     );
     _ExportState := es_render;
@@ -27872,7 +27883,9 @@ begin
       begin
         v := Component.Faces[i].v[j].v;
         c := Component.Faces[i].v[j].c[Layer.Index];
-        t := (v + Component.Faces[i].v[j].t) * Layer.Scale;
+        if Layer.Scale.x > 0 then v0.x := 1 / Layer.Scale.x else v0.x := 1;
+        if Layer.Scale.y > 0 then v0.y := 1 / Layer.Scale.y else v0.y := 1;
+        t := (v + Component.Faces[i].v[j].t) * v0;
         v := xf.Transform(v);
         Display.PolyAdd(v, t, c);
       end;
@@ -28935,7 +28948,7 @@ begin
     begin
       if (_ActionType = jrat_drag_joint) then
       begin
-        v := Display.CoordToDisplay(g2.MousePos);
+        v := App.Scene2DData.Scene.AdjustToGrid(Display.CoordToDisplay(g2.MousePos));
         _Joint.Position := v;
       end
       else if (_ActionType = jrat_drag_anchor_a)
@@ -31009,7 +31022,7 @@ end;
 function TScene2DJointData.Select(const Display: TG2Display2D; const x, y: TG2Float): Boolean;
   var v: TG2Vec2;
 begin
-  v := Display.CoordToScreen(_Position);
+  v := Display.CoordToScreen(Position);
   Result := G2Rect(v.x - 8, v.y - 8, 16, 16).Contains(G2Vec2(x, y));
 end;
 
@@ -32430,22 +32443,31 @@ begin
   if _Scene.Simulate then Exit;
   EntityPick := Pick(Display.CoordToDisplay(G2Vec2(x, y)));
   SelectJoint := nil;
-  SelectionUpdateStart;
-  if g2.KeyDown[G2K_CtrlL] or g2.KeyDown[G2K_CtrlR] then
-  begin
-    if EntityPick <> nil then Selection.Add(EntityPick);
-  end
-  else
-  begin
-    Selection.Clear;
-    if EntityPick <> nil then Selection.Add(EntityPick);
-  end;
   for i := 0 to _Scene.JointCount - 1 do
   if TScene2DJointData(_Scene.Joints[i].UserData).Select(Display, x, y) then
   SelectJoint := TScene2DJointData(_Scene.Joints[i].UserData);
+  SelectionUpdateStart;
+  if Assigned(SelectJoint) then
+  begin
+    Selection.Clear;
+  end
+  else
+  begin
+    if g2.KeyDown[G2K_CtrlL] or g2.KeyDown[G2K_CtrlR] then
+    begin
+      if EntityPick <> nil then Selection.Add(EntityPick);
+    end
+    else
+    begin
+      Selection.Clear;
+      if EntityPick <> nil then Selection.Add(EntityPick);
+    end;
+  end;
   SelectionUpdateEnd;
-  if SelectJoint <> nil then
-  Editor := SelectJoint.Editor;
+  if Assigned(SelectJoint) then
+  begin
+    Editor := SelectJoint.Editor;
+  end;
 end;
 
 procedure TScene2DData.Render(const Display: TG2Display2D);

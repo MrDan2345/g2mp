@@ -9404,6 +9404,15 @@ begin
     );
     Remap[j] := i;
   end;
+  for i := 0 to TextureCount - 1 do
+  begin
+    for j := 0 to TexturesSorted.Count - 1 do
+    if TexturesSorted[j] = PTextureArr(TextureArr)^[i] then
+    begin
+      Remap[j] := i;
+      Break;
+    end;
+  end;
   ImgList.Clear;
   for i := 0 to TexturesSorted.Count - 1 do
   begin
