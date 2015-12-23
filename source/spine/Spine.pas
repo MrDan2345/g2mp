@@ -45,7 +45,7 @@ type
     procedure Free; reintroduce;
   end;
 
-  generic TSpineList<T> = class (TSpineClass)
+  {$ifdef fpc}generic {$endif}TSpineList<T{$ifndef fpc}: class{$endif}> = class (TSpineClass)
   public
     type TItemPtr = ^T;
   private
@@ -127,22 +127,22 @@ type
   PSpineFloatArray = ^TSpineFloatArray;
   PSpineIntArray = ^TSpineIntArray;
 
-  TSpineBoneDataList = specialize TSpineList<TSpineBoneData>;
-  TSpineSlotDataList = specialize TSpineList<TSpineSlotData>;
-  TSpineEventDataList = specialize TSpineList<TSpineEventData>;
-  TSpineIKConstraintDataList = specialize TSpineList<TSpineIKConstraintData>;
-  TSpineBoneList = specialize TSpineList<TSpineBone>;
-  TSpineSlotList = specialize TSpineList<TspineSlot>;
-  TSpineSkinList = specialize TSpineList<TSpineSkin>;
-  TSpineAttachmentList = specialize TSpineList<TSpineAttachment>;
-  TSpineBoundingBoxAttachmentList = specialize TSpineList<TSpineBoundingBoxAttachment>;
-  TSpineAnimationList = specialize TSpineList<TSpineAnimation>;
-  TSpineIKConstraintList = specialize TSpineList<TSpineIKConstraint>;
-  TSpineAtlasPageList = specialize TSpineList<TSpineAtlasPage>;
-  TSpineAtlasRegionList = specialize TSpineList<TSpineAtlasRegion>;
-  TSpineAtlasList = specialize TSpineList<TSpineAtlas>;
-  TSpinePolygonList = specialize TSpineList<TSpinePolygon>;
-  TSpineEventList = specialize TSpineList<TSpineEvent>;
+  TSpineBoneDataList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineBoneData>;
+  TSpineSlotDataList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineSlotData>;
+  TSpineEventDataList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineEventData>;
+  TSpineIKConstraintDataList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineIKConstraintData>;
+  TSpineBoneList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineBone>;
+  TSpineSlotList = {$ifdef fpc}specialize {$endif}TSpineList<TspineSlot>;
+  TSpineSkinList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineSkin>;
+  TSpineAttachmentList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineAttachment>;
+  TSpineBoundingBoxAttachmentList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineBoundingBoxAttachment>;
+  TSpineAnimationList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineAnimation>;
+  TSpineIKConstraintList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineIKConstraint>;
+  TSpineAtlasPageList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineAtlasPage>;
+  TSpineAtlasRegionList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineAtlasRegion>;
+  TSpineAtlasList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineAtlas>;
+  TSpinePolygonList = {$ifdef fpc}specialize {$endif}TSpineList<TSpinePolygon>;
+  TSpineEventList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineEvent>;
 
   TSpineBlendMode = (
     sp_bm_normal,
@@ -404,7 +404,7 @@ type
     procedure SetToSetupPose; overload;
   end;
 
-  TSpineBoneCacheList = specialize TSpineList<TSpineBoneList>;
+  TSpineBoneCacheList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineBoneList>;
 
   TSpineSkeleton = class (TSpineClass)
   private
@@ -468,8 +468,8 @@ type
     function FindSlotIndex(const SlotName: String): Integer;
     function FindIKConstraint(const IKConstraintName: String): TSpineIKConstraint;
     procedure SetSkinByName(const SkinName: String);
-    function GetAttachment(const SlotName, AttachmentName: String): TSpineAttachment;
-    function GetAttachment(const SlotIndex: Integer; const AttachmentName: String): TSpineAttachment;
+    function GetAttachment(const SlotName, AttachmentName: String): TSpineAttachment; overload;
+    function GetAttachment(const SlotIndex: Integer; const AttachmentName: String): TSpineAttachment; overload;
     procedure SetAttachment(const SlotName, AttachmentName: String);
     procedure Update(const Delta: Single);
     procedure Draw(const Render: TSpineRender);
@@ -663,7 +663,7 @@ type
     procedure SetFlip(const Bone: TSpineBone; const Flip: Boolean); override;
   end;
 
-  TSpineTimelineList = specialize TSpineList<TSpineAnimationTimeline>;
+  TSpineTimelineList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineAnimationTimeline>;
 
   TSpineAnimation = class (TSpineClass)
   private
@@ -731,7 +731,7 @@ type
     constructor Create(const AState: TSpineAnimationState; const AAnimation: TSpineAnimation);
     destructor Destroy; override;
   end;
-  TSpineAnimationTrackEntryList = specialize TSpineList<TSpineAnimationTrackEntry>;
+  TSpineAnimationTrackEntryList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineAnimationTrackEntry>;
 
   TSpineAnimationState = class (TSpineClass)
   private
@@ -767,8 +767,8 @@ type
 
   TSpineAnimationMix0 = class;
   TSpineAnimationMix1 = class;
-  TSpineAnimationMix0List = specialize TSpineList<TSpineAnimationMix0>;
-  TSpineAnimationMix1List = specialize TSpineList<TSpineAnimationMix1>;
+  TSpineAnimationMix0List = {$ifdef fpc}specialize {$endif}TSpineList<TSpineAnimationMix0>;
+  TSpineAnimationMix1List = {$ifdef fpc}specialize {$endif}TSpineList<TSpineAnimationMix1>;
 
   TSpineAnimationMix1 = class (TSpineClass)
   public
@@ -836,7 +836,9 @@ type
     var _IntValue: Integer;
     var _FloatValue: Single;
     var _StringValue: String;
+    function GetName: String; inline;
   public
+    property Name: String read GetName;
     property IntValue: Integer read _IntValue write _IntValue;
     property FloatValue: Single read _FloatValue write _FloatValue;
     property StringValue: String read _StringValue write _StringValue;
@@ -860,10 +862,10 @@ type
     property Mix: Single read _Mix write _Mix;
     constructor Create(const AData: TSpineIKConstraintData; const ASkeleton: TSpineSkeleton);
     destructor Destroy; override;
-    procedure Apply;
+    procedure Apply; overload;
   end;
 
-  type TSpineSkinKey = class (TSpineClass)
+  TSpineSkinKey = class (TSpineClass)
   private
     var _Attachment: TSpineAttachment;
     procedure SetAttachment(const Value: TSpineAttachment);
@@ -875,7 +877,7 @@ type
     property Attachment: TSpineAttachment read _Attachment write SetAttachment;
   end;
 
-  TSpineSkinKeyList = specialize TSpineList<TSpineSkinKey>;
+  TSpineSkinKeyList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineSkinKey>;
 
   TSpineSkin = class (TSpineClass)
   private
@@ -1177,8 +1179,8 @@ type
     procedure SetAtlasList(const Value: TSpineAtlasList);
   public
     property AtlasList: TSpineAtlasList read _AtlasList write SetAtlasList;
-    constructor Create;
-    constructor Create(const AAtlasList: TSpineAtlasList);
+    constructor Create; overload;
+    constructor Create(const AAtlasList: TSpineAtlasList); overload;
     destructor Destroy; override;
     function NewRegionAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineRegionAttachment; override;
     function NewMeshAttachment(const Skin: TSpineSkin; const Name, Path: String): TSpineMeshAttachment; override;
@@ -1203,8 +1205,8 @@ type
     var _Chars: array of AnsiChar;
     var _Buffer: array[0..3] of Byte;
     var _Scale: Single;
-    function ReadInt(const Provider: TSpineDataProvider): Integer;
-    function ReadInt(const Provider: TSpineDataProvider; const OptimizePositive: Boolean): Integer;
+    function ReadInt(const Provider: TSpineDataProvider): Integer; overload;
+    function ReadInt(const Provider: TSpineDataProvider; const OptimizePositive: Boolean): Integer; overload;
     function ReadSByte(const Provider: TSpineDataProvider): ShortInt;
     function ReadBool(const Provider: TSpineDataProvider): Boolean;
     function ReadFloat(const Provider: TSpineDataProvider): Single;
@@ -1219,8 +1221,8 @@ type
     procedure ReadAnimation(const Provider: TSpineDataProvider; const Name: String; const SkeletonData: TSpineSkeletonData);
   public
     property Scale: Single read _Scale write _Scale;
-    constructor Create(const AtlasList: TSpineAtlasList);
-    constructor Create(const AttachmentLoader: TSpineAttachmentLoader);
+    constructor Create(const AtlasList: TSpineAtlasList); overload;
+    constructor Create(const AttachmentLoader: TSpineAttachmentLoader); overload;
     destructor Destroy; override;
     function ReadSkeletonData(const Path: String): TSpineSkeletonData; overload;
     function ReadSkeletonData(const Provider: TSpineDataProvider): TSpineSkeletonData; overload;
@@ -1244,7 +1246,7 @@ begin
   begin
     if y = 0 then Result := 0
     else if y > 0 then Result := HalfPi
-    else if y < 0 then Result := -HalfPi;
+    else Result := -HalfPi;
   end
   else
   Result := ArcTan(y / x);
@@ -1983,7 +1985,7 @@ end;
 
 procedure TSpineSkeleton.Update(const Delta: Single);
 begin
-  _Time += Delta;
+  _Time := _Time + Delta;
 end;
 
 procedure TSpineSkeleton.Draw(const Render: TSpineRender);
@@ -2068,12 +2070,12 @@ begin
   begin
     _Curves[i] := x;
     _Curves[i + 1] := y;
-    dfx += ddfx;
-    dfy += ddfy;
-    ddfx += dddfx;
-    ddfy += dddfy;
-    x += dfx;
-    y += dfy;
+    dfx := dfx + ddfx;
+    dfy := dfy + ddfy;
+    ddfx := ddfx + dddfx;
+    ddfy := ddfy + dddfy;
+    x := x + dfx;
+    y := y + dfy;
     Inc(i, 2);
   end;
 end;
@@ -2142,8 +2144,8 @@ begin
   if (Time >= _Frames[Length(_Frames) - 2]) then
   begin
     Amount := Bone.Data.Rotation + _Frames[Length(_Frames) - 1] - Bone.Rotation;
-    while Amount > 180 do Amount -= 360;
-    while Amount < -180 do amount += 360;
+    while Amount > 180 do Amount := Amount - 360;
+    while Amount < -180 do Amount := Amount + 360;
     Bone.Rotation := Bone.Rotation + (Amount * Alpha);
     Exit;
   end;
@@ -2155,11 +2157,11 @@ begin
   if Percent < 0 then Percent := 0 else if Percent > 1 then Percent := 1;
   Percent := GetCurvePercent((FrameIndex shr 1) - 1, Percent);
   Amount := _Frames[FrameIndex + FRAME_VALUE] - PrevFrameValue;
-  while Amount > 180 do Amount -= 360;
-  while Amount < -180 do Amount += 360;
+  while Amount > 180 do Amount := Amount - 360;
+  while Amount < -180 do Amount := Amount + 360;
   Amount := Bone.Data.Rotation + (PrevFrameValue + Amount * Percent) - Bone.Rotation;
-  while Amount > 180 do Amount -= 360;
-  while Amount < -180 do Amount += 360;
+  while Amount > 180 do Amount := Amount - 360;
+  while Amount < -180 do Amount := Amount + 360;
   Bone.Rotation := Bone.Rotation + (Amount * Alpha);
 end;
 {$Hints on}
@@ -3013,7 +3015,7 @@ begin
   if (d <= 0) then
   begin
     if Assigned(Last) then
-    d += Last.EndTime - _Data.GetMix(Last.Animation, Animation)
+    d := d + (Last.EndTime - _Data.GetMix(Last.Animation, Animation))
     else
     d := 0;
   end;
@@ -3177,7 +3179,6 @@ begin
     if not (Slot.Attachment is TSpineBoundingBoxAttachment) then Continue;
     BoundingBox := TSpineBoundingBoxAttachment(Slot.Attachment);
     _BoundingBoxes.Add(BoundingBox);
-    Polygon := nil;
     if _PolygonPool.Count > 0 then
     begin
       Polygon := _PolygonPool.Last;
@@ -3304,6 +3305,11 @@ end;
 //TSpineSkeletonBounds END
 
 //TSpineEvent BEGIN
+function TSpineEvent.GetName: String;
+begin
+  Result := _Data.Name;
+end;
+
 constructor TSpineEvent.Create(const AData: TSpineEventData);
 begin
   _Data := AData;
@@ -3317,7 +3323,7 @@ begin
   Rotation := Bone.Rotation;
   RotationIK := SpineArcTan2(TargetY - Bone.WorldY, TargetX - Bone.WorldX) * SP_RAD_TO_DEG;
   if (Bone.WorldFlipX <> (Bone.WorldFlipY <> TSpineBone.YDown)) then RotationIK := -RotationIK;
-  if Bone.Data.InheritRotation and Assigned(Bone.Parent) then RotationIK -= Bone.Parent.WorldRotation;
+  if Bone.Data.InheritRotation and Assigned(Bone.Parent) then RotationIK := RotationIK - Bone.Parent.WorldRotation;
   Bone.RotationIK := Rotation + (RotationIK - Rotation) * Alpha;
 end;
 
@@ -3343,8 +3349,8 @@ begin
   end
   else
   begin
-    NewTargetX -= Parent.x;
-    NewTargetY -= Parent.y;
+    NewTargetX := TargetX - Parent.x;
+    NewTargetY := TargetY - Parent.y;
   end;
   if Child.Parent = Parent then
   begin
@@ -3375,12 +3381,12 @@ begin
   Opposite := Len2 * Sin(ChildAngle);
   ParentAngle := SpineArcTan2(NewTargetY * Adjacent - NewTargetX * Opposite, NewTargetX * Adjacent + NewTargetY * Opposite);
   Rotation := (ParentAngle - Offset) * SP_RAD_TO_DEG - Parent.Rotation;
-  if Rotation > 180 then Rotation -= 360
-  else if Rotation < -180 then Rotation += 360;
+  if Rotation > 180 then Rotation := Rotation - 360
+  else if Rotation < -180 then Rotation := Rotation + 360;
   Parent.RotationIK := Parent.Rotation + Rotation * Alpha;
   Rotation := (ChildAngle + Offset) * SP_RAD_TO_DEG - Child.Rotation;
-  if Rotation > 180 then Rotation -= 360
-  else if Rotation < -180 then Rotation += 360;
+  if Rotation > 180 then Rotation := Rotation - 360
+  else if Rotation < -180 then Rotation := Rotation + 360;
   Child.RotationIK := Child.Rotation + (Rotation + Parent.WorldRotation - Child.Parent.WorldRotation) * Alpha;
 end;
 
@@ -4240,19 +4246,19 @@ begin
     begin
       wx := 0;
       wy := 0;
-      nn := _Bones[vi]; Inc(vi); nn += vi;
+      nn := _Bones[vi]; Inc(vi); nn := nn + vi;
       while vi < nn do
       begin
-	Bone := Skeleton.Bones[_Bones[vi]];
-	vx := _Weights[bi];
+	      Bone := Skeleton.Bones[_Bones[vi]];
+	      vx := _Weights[bi];
         vy := _Weights[bi + 1];
         wt := _Weights[bi + 2];
-	wx += (vx * Bone.m00 + vy * Bone.m01 + Bone.WorldX) * wt;
-	wy += (vx * Bone.m10 + vy * Bone.m11 + Bone.WorldY) * wt;
+	      wx := wx + (vx * Bone.m00 + vy * Bone.m01 + Bone.WorldX) * wt;
+	      wy := wy + (vx * Bone.m10 + vy * Bone.m11 + Bone.WorldY) * wt;
         Inc(vi);
         Inc(bi, 3);
       end;
-      wx *= sx; wy *= sy;
+      wx := wx * sx; wy := wy * sy;
       WorldVertices[wi] := wx * rx0 + wy * ry0 + x;
       WorldVertices[wi + 1] := wx * rx1 + wy * ry1 + y;
       Inc(wi, 2);
@@ -4265,20 +4271,20 @@ begin
     begin
       wx := 0;
       wy := 0;
-      nn := _Bones[vi]; Inc(vi); nn += vi;
+      nn := _Bones[vi]; Inc(vi); nn := nn + vi;
       while vi < nn do
       begin
-	Bone := Skeleton.Bones[_Bones[vi]];
-	vx := _Weights[bi] + Slot.AttachmentVertices[fi];
+	      Bone := Skeleton.Bones[_Bones[vi]];
+	      vx := _Weights[bi] + Slot.AttachmentVertices[fi];
         vy := _Weights[bi + 1] + Slot.AttachmentVertices[fi + 1];
         wt := _Weights[bi + 2];
-	wx += (vx * Bone.m00 + vy * Bone.m01 + Bone.WorldX) * wt;
-	wy += (vx * Bone.m10 + vy * Bone.m11 + Bone.WorldY) * wt;
+	      wx := wx + (vx * Bone.m00 + vy * Bone.m01 + Bone.WorldX) * wt;
+        wy := wy + (vx * Bone.m10 + vy * Bone.m11 + Bone.WorldY) * wt;
         Inc(vi);
         Inc(bi, 3);
         Inc(fi, 2);
       end;
-      wx *= sx; wy *= sy;
+      wx := wx * sx; wy := wy * sy;
       WorldVertices[wi] := wx * rx0 + wy * ry0 + x;
       WorldVertices[wi + 1] := wx * rx1 + wy * ry1 + y;
       Inc(wi, 2);
@@ -4533,13 +4539,18 @@ begin
 end;
 
 procedure TSpineSkeletonBinary.ReadUtf8Slow(const Provider: TSpineDataProvider; const CharCount: Integer; var CharIndex, b: Integer);
+  var bi: LongWord;
 begin
   while True do
   begin
     case (b shr 4) of
       0, 1, 2, 3, 4, 5, 6, 7: _Chars[CharIndex] := AnsiChar(b);
       12, 13: _Chars[CharIndex] := AnsiChar(((b and $1F) shl 6) or (Provider.ReadByte and $3F));
-      14: _Chars[CharIndex] := AnsiChar(((LongWord(b) and $0F) shl 12) or ((Provider.ReadByte and $3F) shl 6) or (Provider.ReadByte and $3F));
+      14:
+      begin
+        bi := ((LongWord(b) and $0F) shl 12) or ((Provider.ReadByte and $3F) shl 6) or (Provider.ReadByte and $3F);
+        _Chars[CharIndex] := AnsiChar(bi);
+      end;
     end;
     Inc(CharIndex);
     if CharIndex >= CharCount then Break;
@@ -4646,9 +4657,9 @@ begin
       Mesh.HullLength := ReadInt(Provider, True) * 2;
       if NonEssential then
       begin
-	Mesh.Edges := ReadIntArray(Provider);
-	Mesh.Width := ReadFloat(Provider) * _Scale;
-	Mesh.Height := ReadFloat(Provider) * _Scale;
+	      Mesh.Edges := ReadIntArray(Provider);
+	      Mesh.Width := ReadFloat(Provider) * _Scale;
+	      Mesh.Height := ReadFloat(Provider) * _Scale;
       end;
       Exit;
     end;
@@ -4667,17 +4678,17 @@ begin
       bi := 0; wi := 0; i := 0;
       while i < VertexCount do
       begin
-	BoneCount := Round(ReadFloat(Provider));
-	Skinned.Bones[bi] := BoneCount; Inc(bi);
+        BoneCount := Round(ReadFloat(Provider));
+        Skinned.Bones[bi] := BoneCount; Inc(bi);
         j := i + BoneCount * 4;
         while i < j do
         begin
-	  Skinned.Bones[bi] := Round(ReadFloat(Provider)); Inc(bi);
-	  Skinned.Weights[wi] := ReadFloat(Provider) * _Scale; Inc(wi);
-	  Skinned.Weights[wi] := ReadFloat(Provider) * _Scale; Inc(wi);
-	  Skinned.Weights[wi] := ReadFloat(Provider); Inc(wi);
+          Skinned.Bones[bi] := Round(ReadFloat(Provider)); Inc(bi);
+          Skinned.Weights[wi] := ReadFloat(Provider) * _Scale; Inc(wi);
+          Skinned.Weights[wi] := ReadFloat(Provider) * _Scale; Inc(wi);
+          Skinned.Weights[wi] := ReadFloat(Provider); Inc(wi);
           Inc(i, 4);
-	end;
+	      end;
         Inc(i);
       end;
       if Length(Skinned.Bones) <> bi then SetLength(Skinned.BonesPtr^,  bi);
@@ -4691,9 +4702,9 @@ begin
       Skinned.HullLength := ReadInt(Provider, True) * 2;
       if NonEssential then
       begin
-	Skinned.Edges := ReadIntArray(Provider);
-	Skinned.Width := ReadFloat(Provider) * _Scale;
-	Skinned.Height := ReadFloat(Provider) * _Scale;
+        Skinned.Edges := ReadIntArray(Provider);
+        Skinned.Width := ReadFloat(Provider) * _Scale;
+        Skinned.Height := ReadFloat(Provider) * _Scale;
       end;
       Exit;
     end;
@@ -4742,37 +4753,37 @@ begin
       case TimelineType of
         TIMELINE_COLOR:
         begin
-	  ColorTimeline := TSpineAnimationColorTimeline.Create(FrameCount);
-	  ColorTimeline.SlotIndex := SlotIndex;
-	  for FrameIndex := 0 to FrameCount - 1 do
+          ColorTimeline := TSpineAnimationColorTimeline.Create(FrameCount);
+          ColorTimeline.SlotIndex := SlotIndex;
+          for FrameIndex := 0 to FrameCount - 1 do
           begin
-	    Time := ReadFloat(Provider);
-	    Color := ReadInt(Provider);
-	    r := ((Color and $ff000000) shr 24) * SP_RCP_255;
-	    g := ((Color and $00ff0000) shr 16) * SP_RCP_255;
-	    b := ((Color and $0000ff00) shr 8) * SP_RCP_255;
-	    a := ((Color and $000000ff)) * SP_RCP_255;
-	    ColorTimeline.SetFrame(FrameIndex, Time, r, g, b, a);
-	    if (FrameIndex < FrameCount - 1) then ReadCurve(Provider, FrameIndex, ColorTimeline);
-	  end;
-	  Timelines.Add(ColorTimeline);
+            Time := ReadFloat(Provider);
+            Color := ReadInt(Provider);
+            r := ((Color and $ff000000) shr 24) * SP_RCP_255;
+            g := ((Color and $00ff0000) shr 16) * SP_RCP_255;
+            b := ((Color and $0000ff00) shr 8) * SP_RCP_255;
+            a := ((Color and $000000ff)) * SP_RCP_255;
+            ColorTimeline.SetFrame(FrameIndex, Time, r, g, b, a);
+            if (FrameIndex < FrameCount - 1) then ReadCurve(Provider, FrameIndex, ColorTimeline);
+          end;
+	        Timelines.Add(ColorTimeline);
           ColorTimeline.Free;
-	  Duration := SpineMax(Duration, ColorTimeline.Frames[FrameCount * 5 - 5]);
-	end;
+	        Duration := SpineMax(Duration, ColorTimeline.Frames[FrameCount * 5 - 5]);
+        end;
         TIMELINE_ATTACHMENT:
         begin
-	  AttachmentTimeline := TSpineAnimationAttachmentTimeline.Create(FrameCount);
-	  AttachmentTimeline.SlotIndex := SlotIndex;
-	  for FrameIndex := 0 to FrameCount - 1 do
+          AttachmentTimeline := TSpineAnimationAttachmentTimeline.Create(FrameCount);
+          AttachmentTimeline.SlotIndex := SlotIndex;
+          for FrameIndex := 0 to FrameCount - 1 do
           begin
             Time := ReadFloat(Provider);
             TmpName := ReadString(Provider);
-	    AttachmentTimeline.SetFrame(FrameIndex, Time, TmpName);
+	          AttachmentTimeline.SetFrame(FrameIndex, Time, TmpName);
           end;
-	  Timelines.Add(AttachmentTimeline);
+	        Timelines.Add(AttachmentTimeline);
           AttachmentTimeline.Free;
-	  Duration := SpineMax(Duration, AttachmentTimeline.Frames[FrameCount - 1]);
-	end;
+          Duration := SpineMax(Duration, AttachmentTimeline.Frames[FrameCount - 1]);
+        end;
       end;
     end;
   end;
@@ -4788,45 +4799,45 @@ begin
       case TimelineType of
         TIMELINE_ROTATE:
         begin
-	  RotateTimeline := TSpineAnimationRotateTimeline.Create(FrameCount);
-	  RotateTimeline.BoneIndex := BoneIndex;
-	  for FrameIndex := 0 to FrameCount - 1 do
+          RotateTimeline := TSpineAnimationRotateTimeline.Create(FrameCount);
+          RotateTimeline.BoneIndex := BoneIndex;
+          for FrameIndex := 0 to FrameCount - 1 do
           begin
             Time := ReadFloat(Provider);
             Angle := ReadFloat(Provider);
-	    RotateTimeline.SetFrame(FrameIndex, Time, Angle);
-	    if FrameIndex < FrameCount - 1 then ReadCurve(Provider, FrameIndex, RotateTimeline);
-	  end;
-	  Timelines.Add(RotateTimeline);
+            RotateTimeline.SetFrame(FrameIndex, Time, Angle);
+            if FrameIndex < FrameCount - 1 then ReadCurve(Provider, FrameIndex, RotateTimeline);
+          end;
+          Timelines.Add(RotateTimeline);
           RotateTimeline.Free;
-	  Duration := SpineMax(Duration, RotateTimeline.Frames[FrameCount * 2 - 2]);
-	end;
+          Duration := SpineMax(Duration, RotateTimeline.Frames[FrameCount * 2 - 2]);
+        end;
         TIMELINE_TRANSLATE,
         TIMELINE_SCALE:
         begin
-	  if TimelineType = TIMELINE_SCALE then
+	        if TimelineType = TIMELINE_SCALE then
           begin
             TranslateTimeline := TSpineAnimationScaleTimeline.Create(FrameCount);
             TimelineScale := 1;
           end
-	  else
+	        else
           begin
-	    TranslateTimeline := TSpineAnimationTranslateTimeline.Create(FrameCount);
-	    TimelineScale := _Scale;
-	  end;
-	  TranslateTimeline.BoneIndex := BoneIndex;
-	  for FrameIndex := 0 to FrameCount - 1 do
+            TranslateTimeline := TSpineAnimationTranslateTimeline.Create(FrameCount);
+            TimelineScale := _Scale;
+          end;
+          TranslateTimeline.BoneIndex := BoneIndex;
+          for FrameIndex := 0 to FrameCount - 1 do
           begin
             Time := ReadFloat(Provider);
             x := ReadFloat(Provider) * TimelineScale;
             y := ReadFloat(Provider) * TimelineScale;
-	    TranslateTimeline.SetFrame(FrameIndex, Time, x, y);
-	    if FrameIndex < FrameCount - 1 then ReadCurve(Provider, FrameIndex, TranslateTimeline);
-	  end;
-	  Timelines.Add(TranslateTimeline);
+            TranslateTimeline.SetFrame(FrameIndex, Time, x, y);
+            if FrameIndex < FrameCount - 1 then ReadCurve(Provider, FrameIndex, TranslateTimeline);
+          end;
+          Timelines.Add(TranslateTimeline);
           TranslateTimeline.Free;
-	  Duration := SpineMax(Duration, TranslateTimeline.Frames[FrameCount * 3 - 3]);
-	end;
+          Duration := SpineMax(Duration, TranslateTimeline.Frames[FrameCount * 3 - 3]);
+        end;
         TIMELINE_FLIPX,
         TIMELINE_FLIPY:
         begin
@@ -4838,17 +4849,17 @@ begin
           begin
             FlipXTimeline := TSpineAnimationFlipYTimeline.Create(FrameCount);
           end;
-	  FlipXTimeline.BoneIndex := BoneIndex;
-	  for FrameIndex := 0 to FrameCount - 1 do
+          FlipXTimeline.BoneIndex := BoneIndex;
+          for FrameIndex := 0 to FrameCount - 1 do
           begin
             Time := ReadFloat(Provider);
             Flip := ReadBool(Provider);
             FlipXTimeline.SetFrame(FrameIndex, Time, Flip);
           end;
-	  Timelines.Add(FlipXTimeline);
+	        Timelines.Add(FlipXTimeline);
           FlipXTimeline.Free;
-	  Duration := SpineMax(Duration, FlipXTimeline.Frames[FrameCount * 2 - 2]);
-	end;
+          Duration := SpineMax(Duration, FlipXTimeline.Frames[FrameCount * 2 - 2]);
+        end;
       end;
     end;
   end;
@@ -4882,57 +4893,57 @@ begin
       m := ReadInt(Provider, True);
       for l := 0 to m - 1 do
       begin
-	Attachment := Skin.GetAttachment(SlotIndex, ReadString(Provider));
-	FrameCount := ReadInt(Provider, True);
-	FFDTimeline := TSpineAnimationFFDTimeline.Create(FrameCount);
-	FFDTimeline.SlotIndex := SlotIndex;
-	FFDTimeline.Attachment := Attachment;
-	for FrameIndex := 0 to FrameCount - 1 do
+        Attachment := Skin.GetAttachment(SlotIndex, ReadString(Provider));
+        FrameCount := ReadInt(Provider, True);
+        FFDTimeline := TSpineAnimationFFDTimeline.Create(FrameCount);
+        FFDTimeline.SlotIndex := SlotIndex;
+        FFDTimeline.Attachment := Attachment;
+        for FrameIndex := 0 to FrameCount - 1 do
         begin
-	  Time := ReadFloat(Provider);
-	  if Attachment is TSpineMeshAttachment then
-	  VertexCount := Length(TSpineMeshAttachment(Attachment).Vertices)
-	  else
-	  VertexCount := Length(TSpineSkinnedMeshAttachment(attachment).Weights) div 3 * 2;
-	  Count := ReadInt(Provider, True);
-	  if Count = 0 then
+          Time := ReadFloat(Provider);
+          if Attachment is TSpineMeshAttachment then
+          VertexCount := Length(TSpineMeshAttachment(Attachment).Vertices)
+          else
+          VertexCount := Length(TSpineSkinnedMeshAttachment(attachment).Weights) div 3 * 2;
+          Count := ReadInt(Provider, True);
+          if Count = 0 then
           begin
-	    if Attachment is TSpineMeshAttachment then
-	    Vertices := @TSpineMeshAttachment(Attachment).Vertices
-	    else
+            if Attachment is TSpineMeshAttachment then
+            Vertices := @TSpineMeshAttachment(Attachment).Vertices
+            else
             begin
               SetLength(TmpVertices, VertexCount);
-	      Vertices := @TmpVertices;
+	            Vertices := @TmpVertices;
             end;
-	  end
+	        end
           else
           begin
             SetLength(TmpVertices, VertexCount);
-	    Vertices := @TmpVertices;
-	    Start := ReadInt(Provider, True);
-	    Count += Start;
-	    if _Scale = 1 then
+            Vertices := @TmpVertices;
+            Start := ReadInt(Provider, True);
+            Count := Count + Start;
+            if _Scale = 1 then
             begin
-	      for v := Start to Count - 1 do
-	      Vertices^[v] := ReadFloat(Provider);
-	    end
+              for v := Start to Count - 1 do
+              Vertices^[v] := ReadFloat(Provider);
+            end
             else
             begin
-	      for v := Start to Count - 1 do
-	      Vertices^[v] := ReadFloat(Provider) * _Scale;
-	    end;
-	    if Attachment is TSpineMeshAttachment then
+              for v := Start to Count - 1 do
+              Vertices^[v] := ReadFloat(Provider) * _Scale;
+            end;
+	          if Attachment is TSpineMeshAttachment then
             begin
-	      for v := 0 to High(Vertices^) do
-	      Vertices^[v] += TSpineMeshAttachment(Attachment).Vertices[v];
-	    end;
-	  end;
-	  FFDTimeline.SetFrame(FrameIndex, Time, Vertices^);
-	  if FrameIndex < FrameCount - 1 then ReadCurve(Provider, FrameIndex, FFDTimeline);
-	end;
-	Timelines.Add(FFDTimeline);
+              for v := 0 to High(Vertices^) do
+              Vertices^[v] := Vertices^[v] + TSpineMeshAttachment(Attachment).Vertices[v];
+            end;
+          end;
+          FFDTimeline.SetFrame(FrameIndex, Time, Vertices^);
+          if FrameIndex < FrameCount - 1 then ReadCurve(Provider, FrameIndex, FFDTimeline);
+        end;
+        Timelines.Add(FFDTimeline);
         FFDTimeline.Free;
-	Duration := SpineMax(Duration, FFDTimeline.Frames[FrameCount - 1]);
+	      Duration := SpineMax(Duration, FFDTimeline.Frames[FrameCount - 1]);
       end;
     end;
   end;
@@ -4952,14 +4963,14 @@ begin
       UnchangedIndex := 0;
       for j := 0 to OffsetCount - 1 do
       begin
-	SlotIndex := ReadInt(Provider, True);
-	while OriginalIndex <> SlotIndex do
+        SlotIndex := ReadInt(Provider, True);
+        while OriginalIndex <> SlotIndex do
         begin
-	  Unchanged[UnchangedIndex] := OriginalIndex;
+          Unchanged[UnchangedIndex] := OriginalIndex;
           Inc(UnchangedIndex);
           Inc(OriginalIndex);
         end;
-	DrawOrder[OriginalIndex + ReadInt(Provider, True)] := OriginalIndex;
+	      DrawOrder[OriginalIndex + ReadInt(Provider, True)] := OriginalIndex;
         Inc(OriginalIndex);
       end;
       while OriginalIndex < SlotCount do
@@ -5031,7 +5042,7 @@ function TSpineSkeletonBinary.ReadSkeletonData(const Path: String): TSpineSkelet
   var Provider: TSpineDataProvider;
 begin
   Provider := SpineDataProvider.FetchData(Path);
-  if Provider = nil then Exit;
+  if Provider = nil then Exit(nil);
   try
     Result := ReadSkeletonData(Provider);
   finally
@@ -5205,40 +5216,40 @@ end;
 
 //TG2QuickListG BEGIN
 {$Hints off}
-procedure TSpineList.SetItem(const Index: Integer; const Value: T);
+procedure TSpineList{$ifndef fpc}<T>{$endif}.SetItem(const Index: Integer; const Value: T);
 begin
   if _Items[Index] = Value then Exit;
-  if _Items[Index] <> nil then _Items[Index].RefDec;
+  if _Items[Index] <> nil then {$ifdef fpc}_Items[Index].RefDec{$else}TSpineClass(_Items[Index]).RefDec{$endif};
   _Items[Index] := Value;
-  if _Items[Index] <> nil then _Items[Index].RefInc;
+  if _Items[Index] <> nil then {$ifdef fpc}_Items[Index].RefInc{$else}TSpineClass(_Items[Index]).RefInc{$endif};
 end;
 
-function TSpineList.GetItem(const Index: Integer): T;
+function TSpineList{$ifndef fpc}<T>{$endif}.GetItem(const Index: Integer): T;
 begin
   Result := _Items[Index];
 end;
 
-procedure TSpineList.SetCapacity(const Value: Integer);
+procedure TSpineList{$ifndef fpc}<T>{$endif}.SetCapacity(const Value: Integer);
 begin
   SetLength(_Items, Value);
 end;
 
-function TSpineList.GetCapacity: Integer;
+function TSpineList{$ifndef fpc}<T>{$endif}.GetCapacity: Integer;
 begin
   Result := Length(_Items);
 end;
 
-function TSpineList.GetFirst: T;
+function TSpineList{$ifndef fpc}<T>{$endif}.GetFirst: T;
 begin
   if _ItemCount > 0 then Result := _Items[0];
 end;
 
-function TSpineList.GetLast: T;
+function TSpineList{$ifndef fpc}<T>{$endif}.GetLast: T;
 begin
   Result := _Items[_ItemCount - 1];
 end;
 
-function TSpineList.GetData: TItemPtr;
+function TSpineList{$ifndef fpc}<T>{$endif}.GetData: TItemPtr;
 begin
   if _ItemCount > 0 then
   Result := @_Items[0]
@@ -5246,24 +5257,24 @@ begin
   Result := nil;
 end;
 
-function TSpineList.GetItemPtr(const Index: Integer): TItemPtr;
+function TSpineList{$ifndef fpc}<T>{$endif}.GetItemPtr(const Index: Integer): TItemPtr;
 begin
   Result := @_Items[Index];
 end;
 
-constructor TSpineList.Create;
+constructor TSpineList{$ifndef fpc}<T>{$endif}.Create;
 begin
   inherited Create;
   _ItemCount := 0;
 end;
 
-destructor TSpineList.Destroy;
+destructor TSpineList{$ifndef fpc}<T>{$endif}.Destroy;
 begin
   Clear;
   inherited Destroy;
 end;
 
-function TSpineList.Find(const Item: T): Integer;
+function TSpineList{$ifndef fpc}<T>{$endif}.Find(const Item: T): Integer;
   var i: Integer;
 begin
   for i := 0 to _ItemCount - 1 do
@@ -5275,17 +5286,17 @@ begin
   Result := -1;
 end;
 
-function TSpineList.Add(const Item: T): Integer;
+function TSpineList{$ifndef fpc}<T>{$endif}.Add(const Item: T): Integer;
 begin
   if Length(_Items) <= _ItemCount then
   SetLength(_Items, Length(_Items) + 256);
   _Items[_ItemCount] := Item;
   Result := _ItemCount;
-  if Item <> nil then Item.RefInc;
+  if Item <> nil then {$ifdef fpc}Item.RefInc{$else}TSpineClass(Item).RefInc{$endif};
   Inc(_ItemCount);
 end;
 
-function TSpineList.Insert(const Index: Integer; const Item: T): Integer;
+function TSpineList{$ifndef fpc}<T>{$endif}.Insert(const Index: Integer; const Item: T): Integer;
   var i: Integer;
 begin
   if Length(_Items) <= _ItemCount then
@@ -5302,21 +5313,21 @@ begin
     _Items[_ItemCount] := Item;
     Result := _ItemCount;
   end;
-  if Item <> nil then Item.RefInc;
+  if Item <> nil then {$ifdef fpc}Item.RefInc{$else}TSpineClass(Item).RefInc{$endif};
   Inc(_ItemCount);
 end;
 
-procedure TSpineList.Delete(const Index: Integer; const ItemCount: Integer);
+procedure TSpineList{$ifndef fpc}<T>{$endif}.Delete(const Index: Integer; const ItemCount: Integer);
   var i: Integer;
 begin
   for i := Index to Index + ItemCount - 1 do
-  if _Items[i] <> nil then _Items[i].RefDec;
+  if _Items[i] <> nil then {$ifdef fpc}_Items[i].RefDec{$else}TSpineClass(_Items[i]).RefDec{$endif};
   for i := Index to _ItemCount - (1 + ItemCount) do
   _Items[i] := _Items[i + ItemCount];
   Dec(_ItemCount, ItemCount);
 end;
 
-procedure TSpineList.Remove(const Item: T);
+procedure TSpineList{$ifndef fpc}<T>{$endif}.Remove(const Item: T);
   var i: Integer;
 begin
   i := Find(Item);
@@ -5324,7 +5335,7 @@ begin
   Delete(i);
 end;
 
-procedure TSpineList.Clear;
+procedure TSpineList{$ifndef fpc}<T>{$endif}.Clear;
   var i: Integer;
 begin
   for i := 0 to _ItemCount - 1 do

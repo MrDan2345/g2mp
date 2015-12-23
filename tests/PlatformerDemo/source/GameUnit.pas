@@ -19,13 +19,29 @@ type
     var _Ready: Boolean;
     var _Character: TG2Scene2DComponentCharacter;
     var _Animation: TG2Scene2DComponentSpineAnimation;
+    var _Damage: TG2Float;
+    var _Dying: Boolean;
+    var _DyingTime: TG2Float;
+    var _Dead: Boolean;
+    var _DeadTime: TG2Float;
+    var _Health: Integer;
+    var _DurationDying: TG2Float;
+    var _DurationFade: TG2Float;
     procedure OnUpdateAnimation(const SpineAnimation: TG2Scene2DComponentSpineAnimation); virtual;
     function VerifyDependencies: Boolean; virtual;
     procedure OnInitialize; override;
     procedure OnAttach; override;
     procedure OnDetach; override;
     procedure OnUpdate; virtual;
+    procedure OnDie; virtual;
+    procedure OnAlive; virtual;
+    procedure OnDying; virtual;
+    procedure OnDead; virtual;
+    procedure OnFade; virtual;
+    procedure OnRemove; virtual;
   public
+    procedure DamageActor(const Amount: Integer);
+    procedure Die;
   end;
 
   TPlayerComponent = class (TActorComponent)
@@ -36,7 +52,12 @@ type
     procedure OnUpdateAnimation(const SpineAnimation: TG2Scene2DComponentSpineAnimation); override;
     procedure OnInitialize; override;
     procedure OnFinalize; override;
-    procedure OnUpdate; override;
+    procedure OnDie; override;
+    procedure OnAlive; override;
+    procedure OnDying; override;
+    procedure OnDead; override;
+    procedure OnFade; override;
+    procedure OnRemove; override;
   public
   end;
 
@@ -44,18 +65,31 @@ type
   private
     var _DirRight: Boolean;
     var _DirSwitchTime: TG2Float;
+    var _RandomTurnTime: TG2Float;
     var _FloorRightDetect: Integer;
     var _FloorLeftDetect: Integer;
-    var _IsFloorDetectSetup: Boolean;
+    var _BiteRightContacts: Integer;
+    var _BiteLeftContacts: Integer;
+    var _ContactCallbacksSetup: Boolean;
+    procedure OnBeginContactBiteRight(const Data: TG2Scene2DEventData);
+    procedure OnEndContactBiteRight(const Data: TG2Scene2DEventData);
+    procedure OnBeginContactBiteLeft(const Data: TG2Scene2DEventData);
+    procedure OnEndContactBiteLeft(const Data: TG2Scene2DEventData);
     procedure OnFloorRightDetectInc(const Data: TG2Scene2DEventData);
     procedure OnFloorRightDetectDec(const Data: TG2Scene2DEventData);
     procedure OnFloorLeftDetectInc(const Data: TG2Scene2DEventData);
     procedure OnFloorLeftDetectDec(const Data: TG2Scene2DEventData);
+    procedure OnAnimationEvent(const State: TSpineAnimationState; const TrackIndex: Integer; const Event: TSpineEvent);
   protected
     function VerifyDependencies: Boolean; override;
     procedure OnInitialize; override;
     procedure OnFinalize; override;
-    procedure OnUpdate; override;
+    procedure OnDie; override;
+    procedure OnAlive; override;
+    procedure OnDying; override;
+    procedure OnDead; override;
+    procedure OnFade; override;
+    procedure OnRemove; override;
   end;
 
   TShotComponent = class (TG2Scene2DComponent)
@@ -118,6 +152,12 @@ procedure TActorComponent.OnInitialize;
 begin
   inherited OnInitialize;
   _Ready := False;
+  _Damage := 0;
+  _Dying := False;
+  _Dead := False;
+  _Health := 100;
+  _DurationDying := 3;
+  _DurationFade := 3;
 end;
 
 procedure TActorComponent.OnAttach;
@@ -135,6 +175,107 @@ end;
 procedure TActorComponent.OnUpdate;
 begin
   if not _Ready then _Ready := VerifyDependencies;
+  if not _Ready then Exit;
+  if not _Dead then
+  begin
+    if _Damage > 0 then
+    begin
+      _Animation.Color := G2LerpColor($ffffffff, $ffff2020, _Damage);
+      _Damage -= 5 * g2.DeltaTimeSec;
+    end
+    else
+    begin
+      _Animation.Color := $ffffffff;
+    end;
+  end;
+  if _Dead then
+  begin
+    if _DeadTime > 0 then
+    begin
+      _DeadTime -= g2.DeltaTimeSec;
+      if _DeadTime <= 0 then
+      begin
+        OnRemove;
+      end
+      else
+      begin
+        OnFade;
+      end;
+    end;
+  end
+  else if _Dying then
+  begin
+    if _DyingTime > 0 then
+    begin
+      _DyingTime -= g2.DeltaTimeSec;
+      if _DyingTime <= 0 then
+      begin
+        _Dead := True;
+        _DeadTime := _DurationFade;
+        OnDead;
+      end
+      else
+      begin
+        OnDying;
+      end;
+    end;
+  end
+  else
+  begin
+    OnAlive;
+  end;
+end;
+
+procedure TActorComponent.OnDie;
+begin
+
+end;
+
+procedure TActorComponent.OnAlive;
+begin
+
+end;
+
+procedure TActorComponent.OnDying;
+begin
+
+end;
+
+procedure TActorComponent.OnDead;
+begin
+
+end;
+
+procedure TActorComponent.OnFade;
+begin
+
+end;
+
+procedure TActorComponent.OnRemove;
+begin
+
+end;
+
+procedure TActorComponent.DamageActor(const Amount: Integer);
+begin
+  _Damage := 1;
+  if _Health > 0 then
+  begin
+    _Health -= Amount;
+    if _Health <= 0 then
+    begin
+      _Health := 0;
+      Die;
+    end;
+  end;
+end;
+
+procedure TActorComponent.Die;
+begin
+  if _Dead or _Dying then Exit;
+  _Dying := True;
+  _DyingTime := _DurationDying;
+  OnDie;
 end;
 //TActorComponent END
 
@@ -142,11 +283,20 @@ end;
 procedure TPlayerComponent.OnUpdateAnimation(const SpineAnimation: TG2Scene2DComponentSpineAnimation);
   var Bone: TSpineBone;
 begin
-  if (SpineAnimation.Animation = 'run')
-  and Assigned(SpineAnimation.AnimationState.GetCurrent(1)) then
+  if Assigned(SpineAnimation.AnimationState.GetCurrent(1)) then
   begin
     Bone := SpineAnimation.Skeleton.FindBone('rear_upper_arm');
-    Bone.Rotation := Bone.Rotation + 45;
+    if (SpineAnimation.Animation = 'run') then
+    begin
+      if g2.KeyDown[G2K_W] then Bone.Rotation := Bone.Rotation + 70
+      else if g2.KeyDown[G2K_S] then Bone.Rotation := Bone.Rotation + 20
+      else Bone.Rotation := Bone.Rotation + 45;
+    end
+    else if (SpineAnimation.Animation = 'idle') then
+    begin
+      if g2.KeyDown[G2K_W] then Bone.Rotation := Bone.Rotation + 20
+      else if g2.KeyDown[G2K_S] then Bone.Rotation := Bone.Rotation - 20;
+    end;
     Bone.RotationIK := Bone.Rotation;
   end;
 end;
@@ -191,10 +341,14 @@ begin
 
 end;
 
-procedure TPlayerComponent.OnUpdate;
+procedure TPlayerComponent.OnDie;
 begin
-  inherited OnUpdate;
-  if not _Ready then Exit;
+  _Animation.Animation := 'death';
+  _Animation.Loop := False;
+end;
+
+procedure TPlayerComponent.OnAlive;
+begin
   if _Character.Standing then
   begin
     if g2.KeyDown[G2K_D] then
@@ -246,9 +400,80 @@ begin
     Shoot;
   end;
 end;
+
+procedure TPlayerComponent.OnDying;
+begin
+  inherited OnDying;
+end;
+
+procedure TPlayerComponent.OnDead;
+begin
+  _Character.Enabled := False;
+end;
+
+procedure TPlayerComponent.OnFade;
+begin
+  if _DeadTime < 1 then
+  begin
+    _Animation.Color := G2LerpColor(0, $ffffffff, _DeadTime);
+  end
+  else
+  begin
+    _Animation.Color := $ffffffff;
+  end;
+end;
+
+procedure TPlayerComponent.OnRemove;
+begin
+  inherited OnRemove;
+end;
 //TPlayerComponent END
 
 //TAlienComponent BEGIN
+procedure TAlienComponent.OnBeginContactBiteRight(const Data: TG2Scene2DEventData);
+  var EventData: TG2Scene2DEventBeginContactData absolute Data;
+begin
+  if EventData.Entities[1].ComponentOfType[TPlayerComponent] <> nil then
+  begin
+    Inc(_BiteRightContacts);
+  end
+  else if EventData.Entities[1].ComponentOfType[TAlienComponent] <> nil then
+  begin
+    if _DirRight then _RandomTurnTime := 0;
+  end;
+end;
+
+procedure TAlienComponent.OnEndContactBiteRight(const Data: TG2Scene2DEventData);
+  var EventData: TG2Scene2DEventEndContactData absolute Data;
+begin
+  if EventData.Entities[1].ComponentOfType[TPlayerComponent] <> nil then
+  begin
+    Dec(_BiteRightContacts);
+  end;
+end;
+
+procedure TAlienComponent.OnBeginContactBiteLeft(const Data: TG2Scene2DEventData);
+  var EventData: TG2Scene2DEventBeginContactData absolute Data;
+begin
+  if EventData.Entities[1].ComponentOfType[TPlayerComponent] <> nil then
+  begin
+    Inc(_BiteLeftContacts);
+  end
+  else if EventData.Entities[1].ComponentOfType[TAlienComponent] <> nil then
+  begin
+    if not _DirRight then _RandomTurnTime := 0;
+  end;
+end;
+
+procedure TAlienComponent.OnEndContactBiteLeft(const Data: TG2Scene2DEventData);
+  var EventData: TG2Scene2DEventEndContactData absolute Data;
+begin
+  if EventData.Entities[1].ComponentOfType[TPlayerComponent] <> nil then
+  begin
+    Dec(_BiteLeftContacts);
+  end;
+end;
+
 procedure TAlienComponent.OnFloorRightDetectInc(const Data: TG2Scene2DEventData);
   var EventData: TG2Scene2DEventBeginContactData absolute Data;
 begin
@@ -273,17 +498,34 @@ begin
   if EventData.Shapes[1] <> nil then Dec(_FloorLeftDetect);
 end;
 
+procedure TAlienComponent.OnAnimationEvent(const State: TSpineAnimationState; const TrackIndex: Integer; const Event: TSpineEvent);
+begin
+  if Event.Name = 'bite' then
+  begin
+    if (_DirRight and (_BiteRightContacts > 0))
+    or (not _DirRight and (_BiteLeftContacts > 0)) then
+    begin
+      TPlayerComponent(Game.Player.ComponentOfType[TPlayerComponent]).DamageActor(20);
+    end;
+  end;
+end;
+
 function TAlienComponent.VerifyDependencies: Boolean;
 begin
   Result := inherited VerifyDependencies;
   if not Result then Exit;
-  if not _IsFloorDetectSetup then
+  _Animation.AnimationState.OnEvent := @OnAnimationEvent;
+  if not _ContactCallbacksSetup then
   begin
-    _IsFloorDetectSetup := True;
+    _ContactCallbacksSetup := True;
     Owner.AddEvent('OnFloorRightDetectBegin', @OnFloorRightDetectInc);
     Owner.AddEvent('OnFloorRightDetectEnd', @OnFloorRightDetectDec);
     Owner.AddEvent('OnFloorLeftDetectBegin', @OnFloorLeftDetectInc);
     Owner.AddEvent('OnFloorLeftDetectEnd', @OnFloorLeftDetectDec);
+    Owner.AddEvent('OnBeginContactBiteRight', @OnBeginContactBiteRight);
+    Owner.AddEvent('OnEndContactBiteRight', @OnEndContactBiteRight);
+    Owner.AddEvent('OnBeginContactBiteLeft', @OnBeginContactBiteLeft);
+    Owner.AddEvent('OnEndContactBiteLeft', @OnEndContactBiteLeft);
   end;
 end;
 
@@ -294,7 +536,11 @@ begin
   _DirSwitchTime := 0;
   _FloorRightDetect := 0;
   _FloorLeftDetect := 0;
-  _IsFloorDetectSetup := False;
+  _BiteRightContacts := 0;
+  _BiteLeftContacts := 0;
+  _ContactCallbacksSetup := False;
+  _DurationDying := 1.5;
+  _RandomTurnTime := 20;
 end;
 
 procedure TAlienComponent.OnFinalize;
@@ -302,13 +548,18 @@ begin
   inherited OnFinalize;
 end;
 
-procedure TAlienComponent.OnUpdate;
+procedure TAlienComponent.OnDie;
+begin
+  _Animation.Animation := 'death';
+  _Animation.Loop := False;
+end;
+
+procedure TAlienComponent.OnAlive;
   var b, FloorDetect: Boolean;
   var pd: TG2Float;
 begin
-  inherited OnUpdate;
-  if not _Ready then Exit;
   if _DirSwitchTime > 0 then _DirSwitchTime -= g2.DeltaTimeSec;
+  if _RandomTurnTime > 0 then _RandomTurnTime -= g2.DeltaTimeSec;
   pd := (Game.Player.Transform.p - Owner.Transform.p).LenSq;
   if (_DirSwitchTime <= 0)
   and (pd < Sqr(5)) then
@@ -336,15 +587,46 @@ begin
   if _DirRight then FloorDetect := _FloorRightDetect > 0
   else FloorDetect := _FloorLeftDetect > 0;
   if _Character.Standing
-  and not FloorDetect
-  and (_DirSwitchTime <= 0) then
+  and (
+    (not FloorDetect and (_DirSwitchTime <= 0))
+    or
+    (_RandomTurnTime <= 0)
+  ) then
   begin
     _DirRight := not _DirRight;
     _DirSwitchTime := 0.4;
   end;
+  if _RandomTurnTime <= 0 then _RandomTurnTime := 20;//5 + Random(10);
   if _DirRight then _Character.Walk(20)
   else _Character.Walk(-20);
   _Animation.FlipX := not _DirRight;
+end;
+
+procedure TAlienComponent.OnDying;
+begin
+  inherited OnDying;
+end;
+
+procedure TAlienComponent.OnDead;
+begin
+  _Character.Enabled := False;
+end;
+
+procedure TAlienComponent.OnFade;
+begin
+  if _DeadTime < 1 then
+  begin
+    _Animation.Color := G2LerpColor(0, $ffffffff, _DeadTime);
+  end
+  else
+  begin
+    _Animation.Color := $ffffffff;
+  end;
+end;
+
+procedure TAlienComponent.OnRemove;
+begin
+  Owner.Free;
 end;
 //TAlienComponent END
 
@@ -400,10 +682,17 @@ procedure TShotComponent.OnHit(const Data: TG2Scene2DEventData);
   var Effect: TG2Scene2DComponentEffect;
   var e: TG2Scene2DEntity;
   var rb: TG2Scene2DComponentRigidBody;
+  var Alien: TAlienComponent;
 begin
-  if (EventData.Entities[1] <> nil)
+  if not Dead
+  and (EventData.Entities[1] <> nil)
   and (EventData.Entities[1].ComponentOfType[TPlayerComponent] = nil) then
   begin
+    Alien := TAlienComponent(EventData.Entities[1].ComponentOfType[TAlienComponent]);
+    if Assigned(Alien) then
+    begin
+      Alien.DamageActor(5);
+    end;
     Dead := True;
     e := TG2Scene2DEntity.Create(Scene);
     e.Transform := Owner.Transform;
@@ -502,6 +791,7 @@ end;
 procedure TGame.Render;
 begin
   Scene.Render(Display);
+  //Scene.DebugDraw(Display);
 end;
 
 procedure TGame.KeyDown(const Key: Integer);
