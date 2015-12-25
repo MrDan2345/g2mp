@@ -836,7 +836,9 @@ type
     var _IntValue: Integer;
     var _FloatValue: Single;
     var _StringValue: AnsiString;
+    function GetName: AnsiString; inline;
   public
+    property Name: AnsiString read GetName;
     property IntValue: Integer read _IntValue write _IntValue;
     property FloatValue: Single read _FloatValue write _FloatValue;
     property StringValue: AnsiString read _StringValue write _StringValue;
@@ -3303,6 +3305,11 @@ end;
 //TSpineSkeletonBounds END
 
 //TSpineEvent BEGIN
+function TSpineEvent.GetName: AnsiString;
+begin
+  Result := _Data.Name;
+end;
+
 constructor TSpineEvent.Create(const AData: TSpineEventData);
 begin
   _Data := AData;

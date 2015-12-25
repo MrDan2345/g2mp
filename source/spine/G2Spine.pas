@@ -18,8 +18,8 @@ type
 
   TG2SpineDataProvider = class (TSpineDataProvider)
   public
-    class function FetchData(const DataName: String): TSpineDataProvider; override;
-    class function FetchTexture(const TextureName: String): TSpineTexture; override;
+    class function FetchData(const DataName: AnsiString): TSpineDataProvider; override;
+    class function FetchTexture(const TextureName: AnsiString): TSpineTexture; override;
   end;
 
   TG2SpineRender = class (TSpineRender)
@@ -43,7 +43,7 @@ type
 implementation
 
 //TG2SpineDataProvider BEGIN
-class function TG2SpineDataProvider.FetchData(const DataName: String): TSpineDataProvider;
+class function TG2SpineDataProvider.FetchData(const DataName: AnsiString): TSpineDataProvider;
   var dm: TG2DataManager;
 begin
   dm := TG2DataManager.Create(DataName, dmAsset);
@@ -52,7 +52,7 @@ begin
   dm.Free;
 end;
 
-class function TG2SpineDataProvider.FetchTexture(const TextureName: String): TSpineTexture;
+class function TG2SpineDataProvider.FetchTexture(const TextureName: AnsiString): TSpineTexture;
 begin
   Result := TG2SpineTexture.Create(TextureName);
 end;
