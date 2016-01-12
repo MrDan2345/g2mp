@@ -154,9 +154,7 @@ begin
   Font0.Load('Font0.g2fh', 'Font0.png');
   Initialized := True;
   for i := 0 to High(Sprites) do
-  Sprites[i] := TSprite.Create;
-  //TexSprite := TG2Texture2D.Create;
-  //TexSprite.Load('sprite.png');
+  Sprites[i] := TSprite.Create; ;
 end;
 
 procedure TGame.Finalize;
@@ -168,8 +166,8 @@ procedure TGame.Update;
   var i: Integer;
 begin
   if Initialized
-  and (TexSprite.State = asLoaded)
-  and (Font0.State = asLoaded) then
+  and (TexSprite.State = asLoaded) then
+  //and (Font0.State = asLoaded) then
   begin
     for i := 0 to High(Sprites) do
     Sprites[i].Update;
@@ -202,8 +200,8 @@ begin
     begin
       PrintText(10, 10, G2Vec4(1, 1, 1, 1), 'FPS: ' + IntToStr(g2.FPS));
       PrintText(10, 40, G2Vec4(1, 1, 1, 1), 'Sprites: ' + IntToStr(Length(Sprites)));
-      //Font0.Print(10, 10, 'FPS: ' + IntToStr(g2.FPS));
-      //Font0.Print(10, 40, 'Sprites: ' + IntToStr(Length(Sprites)));
+      Font0.Print(10, 10, 'FPS: ' + IntToStr(g2.FPS));
+      Font0.Print(10, 40, 'Sprites: ' + IntToStr(Length(Sprites)));
     end;
     //g2.PrimLine(10, 10, 100, 100, G2Color(0, 0, 0, 1));
   end;

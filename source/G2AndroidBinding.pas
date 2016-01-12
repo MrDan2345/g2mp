@@ -5,9 +5,13 @@ interface
 uses
   G2Types,
   G2AndroidJNI,
+  G2AndroidLog,
   SysUtils;
 
 type
+
+  { TG2AndroidBinding }
+
   TG2AndroidBinding = object
   private
     _Env: PJNIEnv;
@@ -44,6 +48,7 @@ type
     procedure FASetPos(const Pos: TG2IntS64);
     function FARead(const Buffer: Pointer; const Count: Integer): Integer;
     procedure FontMake(var Buffer: Pointer; var tw, th: Integer; const Size: Integer; const chw, chh: PInteger);
+    procedure ResetTitle;
   end;
 
 var AndroidBinding: TG2AndroidBinding;
@@ -197,17 +202,23 @@ function TG2AndroidBinding.FAOpen(const FileName: String; const Len: Integer): I
   var JStr: JString;
   var Ptr: Pointer;
   var i: Integer;
+  var fs: AnsiString;
 begin
-  GetMem(Ptr, Len * 2);
-  for i := 0 to Len - 1 do
-  begin
-    PByteArray(Ptr)^[i * 2] := Byte(FileName[i + 1]);
-    PByteArray(Ptr)^[i * 2 + 1] := 0;
-  end;
-  JStr := (_Env^)^.NewString(_Env, PJChar(Ptr), Len);
+  SetLength(fs, Length(FileName) + 1);
+  Move(FileName[1], fs[1], Length(FileName));
+  fs[Length(fs)] := #0;
+  //G2AndroidJNI.NewStringUTF(PAnsiChar(FileName));
+  //GetMem(Ptr, Length(FileName) * 2);
+  //for i := 0 to Length(FileName) - 1 do
+  //begin
+  //  PByteArray(Ptr)^[i * 2] := Byte(FileName[i + 1]);
+  //  PByteArray(Ptr)^[i * 2 + 1] := 0;
+  //end;
+  //JStr := (_Env^)^.NewString(_Env, PJChar(@FileName[1]), Length(FileName));
+  JStr := (_Env^)^.NewStringUTF(_Env, PAnsiChar(@fs[1]));
   Result := (_Env^)^.CallIntMethodV(_Env, _Mgr, _MIDFAOpen, va_list(@JStr));
   (_Env^)^.DeleteLocalRef(_Env, JStr);
-  FreeMem(Ptr, Len * 2);
+  //FreeMem(Ptr, Length(FileName) * 2);
 end;
 
 procedure TG2AndroidBinding.FAClose();
@@ -234,13 +245,13 @@ begin
   ArgArr.Offset := 0;
   ArgArr.Len := Count;
   ArgArr.Buffer := (_Env^)^.NewByteArray(_Env, ArgArr.Len);
-  (_Env^)^.NewGlobalRef(_Env, ArgArr.Buffer);
+  (_Env^)^.NewLocalRef(_Env, ArgArr.Buffer);
   Result := (_Env^)^.CallIntMethodV(_Env, _Mgr, _MIDFARead, va_list(@ArgArr));
   IsCopy := 0;
   Data := (_Env^)^.GetByteArrayElements(_Env, ArgArr.Buffer, IsCopy);
   Move(Data^, Buffer^, Count);
   (_Env^)^.ReleaseByteArrayElements(_Env, ArgArr.Buffer, Data, 0);
-  (_Env^)^.DeleteGlobalRef(_Env, ArgArr.Buffer);
+  (_Env^)^.DeleteLocalRef(_Env, ArgArr.Buffer);
 end;
 
 procedure TG2AndroidBinding.FontMake(var Buffer: Pointer; var tw, th: Integer; const Size: Integer; const chw, chh: PInteger);
@@ -257,30 +268,39 @@ procedure TG2AndroidBinding.FontMake(var Buffer: Pointer; var tw, th: Integer; c
 begin
   ArgArr.Size := Size;
   ArgArr.CharWidths := (_Env^)^.NewIntArray(_Env, 256);
-  (_Env^)^.NewGlobalRef(_Env, ArgArr.CharWidths);
+  (_Env^)^.NewLocalRef(_Env, ArgArr.CharWidths);
   ArgArr.CharHeights := (_Env^)^.NewIntArray(_Env, 256);
-  (_Env^)^.NewGlobalRef(_Env, ArgArr.CharHeights);
+  (_Env^)^.NewLocalRef(_Env, ArgArr.CharHeights);
   (_Env^)^.CallVoidMethodV(_Env, _Mgr, _MIDFontMake, va_list(@ArgArr));
   IsCopy := 0;
   Data := (_Env^)^.GetIntArrayElements(_Env, ArgArr.CharWidths, IsCopy);
   Move(Data^, chw^, 1024);
   (_Env^)^.ReleaseIntArrayElements(_Env, ArgArr.CharWidths, Data, 0);
+  (_Env^)^.DeleteLocalRef(_Env, ArgArr.CharWidths);
   IsCopy := 0;
   Data := (_Env^)^.GetIntArrayElements(_Env, ArgArr.CharHeights, IsCopy);
   Move(Data^, chh^, 1024);
   (_Env^)^.ReleaseIntArrayElements(_Env, ArgArr.CharHeights, Data, 0);
+  (_Env^)^.DeleteLocalRef(_Env, ArgArr.CharHeights);
   TexWidth := (_Env^)^.CallIntMethod(_Env, _Mgr, _MIDFontGetW);
   TexHeight := (_Env^)^.CallIntMethod(_Env, _Mgr, _MIDFontGetH);
   tw := TexWidth; th := TexHeight;
   TexBuffer := (_Env^)^.NewIntArray(_Env, tw * th);
-  (_Env^)^.NewGlobalRef(_Env, TexBuffer);
-  (_Env^)^.CallVoidMethodV(_Env, _Mgr, _MIDFontGetD, va_list(@TexBuffer));
+  (_Env^)^.NewLocalRef(_Env, TexBuffer);
+  (_Env^)^.CallIntMethodV(_Env, _Mgr, _MIDFontGetD, va_list(@TexBuffer));
   Buffer := GetMem(tw * th * 4);
   IsCopy := 0;
   Data := (_Env^)^.GetIntArrayElements(_Env, TexBuffer, IsCopy);
   Move(Data^, Buffer^, tw * th * 4);
   (_Env^)^.ReleaseIntArrayElements(_Env, TexBuffer, Data, 0);
-  (_Env^)^.DeleteGlobalRef(_Env, TexBuffer);
+  (_Env^)^.DeleteLocalRef(_Env, TexBuffer);
+end;
+
+procedure TG2AndroidBinding.ResetTitle;
+  var m: JMethodID;
+begin
+  m := (_Env^)^.GetMethodID(_Env, _MgrClass, 'resettitle', '()V');
+  (_Env^)^.CallVoidMethod(_Env, _Mgr, m);
 end;
 
 end.

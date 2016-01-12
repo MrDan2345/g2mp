@@ -17568,6 +17568,8 @@ var TGame = {
          if ($Check($Check(Self,"").Font0,"")._State==2) {
             PrintText(10,10,G2Vec4(1,1,1,1),("FPS: "+$Check(g2,"")._FPS.toString()));
             PrintText(10,40,G2Vec4(1,1,1,1),"Sprites: 10000");
+            TG2Font.Print$6($Check(Self,"").Font0,10,10,("FPS: "+$Check(g2,"")._FPS.toString()));
+            TG2Font.Print$6($Check(Self,"").Font0,10,40,"Sprites: 10000");
          }
       }
    }
@@ -17578,7 +17580,7 @@ var TGame = {
    /// procedure TGame.Update()
    ,Update$1:function(Self) {
       var i$86 = 0;
-      if (($Check(Self,"").Initialized&&($Check($Check(Self,"").TexSprite,"")._State==2))&&($Check($Check(Self,"").Font0,"")._State==2)) {
+      if ($Check(Self,"").Initialized&&($Check($Check(Self,"").TexSprite,"")._State==2)) {
          for(i$86 = 0;i$86<=9999;i$86++) {
             TSprite.Update($Check(Self,"").Sprites[$Idx(i$86,0,9999,"")]);
          }

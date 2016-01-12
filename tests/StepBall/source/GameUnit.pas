@@ -183,6 +183,7 @@ begin
   Display.Free;
   PicArrow.RefDec;
   Font1.Free;
+  Free;
 end;
 
 procedure TGame.Update;
@@ -223,6 +224,7 @@ begin
       );
     end;
   end;
+  Font1.Print(10, 10, 1, 1, $ffffffff, IntToStr(PickList.Count), bmNormal, tfPoint);
 end;
 
 procedure TGame.KeyDown(const Key: Integer);
@@ -238,6 +240,8 @@ end;
 procedure TGame.MouseDown(const Button, x, y: Integer);
   var i, j: Integer;
 begin
+  g2.Log.WriteLn('Mouse Down');
+  Scene.QueryPoint(Display.CoordToDisplay(G2Vec2(x, y)), PickList);
   case Button of
     G2MB_Left:
     begin
@@ -261,6 +265,7 @@ procedure TGame.MouseUp(const Button, x, y: Integer);
   var mc, v: TG2Vec2;
   var rb: TG2Scene2DComponentRigidBody;
 begin
+  g2.Log.WriteLn('Mouse Up');
   case Button of
     G2MB_Left:
     begin

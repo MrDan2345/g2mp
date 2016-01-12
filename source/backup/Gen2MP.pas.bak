@@ -9410,6 +9410,7 @@ begin
     if TexturesSorted[j] = PTextureArr(TextureArr)^[i] then
     begin
       Remap[j] := i;
+      Break;
     end;
   end;
   ImgList.Clear;

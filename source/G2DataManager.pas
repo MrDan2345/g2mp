@@ -1164,7 +1164,7 @@ begin
   else
   begin
     {$ifdef G2Target_Android}
-    if (Mode = dmAsset) or (Mode = dmAssetNoPacks) then
+    if Mode in [dmAsset, dmAssetNoPacks] then
     _Control := TG2DataControlAndroidAsset.Create(fs, Mode)
     else
     _Control := TG2DataControlAndroidFile.Create(fs, Mode);

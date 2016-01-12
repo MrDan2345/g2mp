@@ -4309,9 +4309,9 @@ procedure TG2Core.OnUpdate;
 begin
   if not _Pause then
   begin
-    {$if not defined(G2Target_Mobile)}
+    //{$if not defined(G2Target_Mobile)}
     _Window.ProcessMessages;
-    {$endif}
+    //{$endif}
     CurTime := G2Time;
     _UpdateCount := _UpdateCount + TG2Float(CurTime - _UpdatePrevTime) * _TargetUPS * 0.001;
     NumUpdates := Trunc(_UpdateCount);
@@ -4639,62 +4639,52 @@ begin
   case TG2AndroidMessageType(MessageType) of
     amConnect:
     begin
-      LOGW('amConnect - BEGIN');
       AndroidBinding.Init(Env, Obj);
-      LOGW('amConnect - END');
     end;
     amInit:
     begin
-      LOGW('amInit - BEGIN');
+      AndroidBinding.Init(Env, Obj);
       G2InitializeMath;
       G2Initialize;
       g2.Params._ScreenWidth := Param0;
       g2.Params._ScreenHeight := Param1;
       g2.Params.Width := Param0;
       g2.Params.Height := Param1;
-      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
-      LOGW('amInit - END');
     end;
     amQuit:
     begin
-      LOGW('amQuit - BEGIN');
+      AndroidBinding.Init(Env, Obj);
       g2.Stop;
       G2Finalize;
-      LOGW('amQuit - END');
     end;
     amResize:
     begin
-      LOGW('amResize - BEGIN');
-      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
+      AndroidBinding.Init(Env, Obj);
       g2.Params.Width := Param0;
       g2.Params.Height := Param1;
       glViewport(0, 0, Param0, Param1);
-      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
-      LOGW('amResize - END');
     end;
     amDraw:
     begin
-      LOGW('amDraw - BEGIN');
-      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
+      AndroidBinding.Init(Env, Obj);
       g2.OnUpdate;
-      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
       g2.OnRender;
-      LOGW(PChar(IntToStr(g2._LinkRender.Count)));
-      LOGW('amDraw - END');
     end;
     amTouchDown:
     begin
-      LOGW('amTouchDown - BEGIN');
+      AndroidBinding.Init(Env, Obj);
+      g2.Log.WriteLn('amTouchDown - BEGIN');
       g2.Window.AddMessage(@g2.Window.OnMouseDown, G2MB_Left, Param0, Param1);
       g2._CursorPos := Point(Param0, Param1);
-      LOGW('amTouchDown - END');
+      g2.Log.WriteLn('amTouchDown - END');
     end;
     amTouchUp:
     begin
-      LOGW('amTouchUp - BEGIN');
+      AndroidBinding.Init(Env, Obj);
+      g2.Log.WriteLn('amTouchUp - BEGIN');
       g2.Window.AddMessage(@g2.Window.OnMouseUp, G2MB_Left, Param0, Param1);
       g2._CursorPos := Point(Param0, Param1);
-      LOGW('amTouchUp - END');
+      g2.Log.WriteLn('amTouchUp - END');
     end;
     amTouchMove:
     begin
@@ -6919,14 +6909,24 @@ end;
 //TG2Params BEGIN
 procedure TG2Params.SetWidth(const Value: TG2IntS32);
 begin
+  {$if defined(G2Target_Mobile)}
+  if not _Buffered then _Width := _ScreenWidth;
+  _NewWidth := _ScreenWidth;
+  {$else}
   if not _Buffered then _Width := Value;
   _NewWidth := Value;
+  {$endif}
 end;
 
 procedure TG2Params.SetHeight(const Value: TG2IntS32);
 begin
+  {$if defined(G2Target_Mobile)}
+  if not _Buffered then _Height := _ScreenHeight;
+  _NewHeight := _ScreenHeight;
+  {$else}
   if not _Buffered then _Height := Value;
   _NewHeight := Value;
+  {$endif}
 end;
 
 procedure TG2Params.SetScreenMode(const Value: TG2ScreenMode);
@@ -8114,7 +8114,6 @@ procedure TG2GfxGLES.Clear(
 );
   var Target: TGLbitfield;
 begin
-  LOGW('TG2GfxGLES.Clear');
   Target := 0;
   if Color then
   begin
@@ -8406,7 +8405,7 @@ begin
   {$elseif defined(G2Gfx_OGL)}
   _Gfx := TG2GfxOGL(g2.Gfx);
   _Texture := 0;
-  {$elseif defined(Gfx_GLES)}
+  {$elseif defined(G2Gfx_GLES)}
   _Gfx := TG2GfxGLES(g2.Gfx);
   _Texture := 0;
   {$endif}

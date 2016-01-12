@@ -23165,6 +23165,8 @@ begin
   AddUnit(g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'units' + G2PathSep + 'arm-android' + G2PathSep + 'rtl');
   AddUnit(g2.AppPath + 'fpc' + G2PathSep + '3.0.0' + G2PathSep + 'source' + G2PathSep + 'packages' + G2PathSep + 'paszlib' + G2PathSep + 'src');
   AddUnit(g2.AppPath + '..' + G2PathSep + '..' + G2PathSep + 'source');
+  AddUnit(g2.AppPath + '..' + G2PathSep + '..' + G2PathSep + 'source' + G2PathSep + 'box2d');
+  AddUnit(g2.AppPath + '..' + G2PathSep + '..' + G2PathSep + 'source' + G2PathSep + 'spine');
   AddOption('-FE' + '"' + _FilePath + 'build' + G2PathSep + 'raw' + G2PathSep + 'lib' + G2PathSep + 'armeabi' + '"');
   AddOption('-olibg2mp.so');
   for i := 0 to High(_ProjectIncludeSource) do
@@ -23205,7 +23207,7 @@ begin
   begin
     if not DirectoryExists(_FilePath + 'build' + G2PathSep + 'assets') then
     CreateDir(_FilePath + 'build' + G2PathSep + 'assets');
-    CopyDirTree(_FilePath + 'assets', _FilePath + 'build' + G2PathSep + 'assets');
+    CopyDirTree(_FilePath + 'assets', _FilePath + 'build' + G2PathSep + 'assets', [cffCreateDestDirectory, cffOverwriteFile]);
   end;
   JavaSrcPath := _FilePath + 'build' + G2PathSep + 'src';
   if not DirectoryExists(JavaSrcPath) then
@@ -23253,7 +23255,7 @@ begin
   JavaSource.Append('import javax.microedition.khronos.opengles.GL10;');
   JavaSource.Append('import android.opengl.GLES20;');
   JavaSource.Append('');
-  JavaSource.Append('public class CleanProject extends Activity {');
+  JavaSource.Append('public class ' + TargetName + ' extends Activity {');
   JavaSource.Append('    public int AM_CONNECT = 0;');
   JavaSource.Append('    public int AM_INIT = 1;');
   JavaSource.Append('    public int AM_QUIT = 2;');
@@ -23475,6 +23477,7 @@ begin
   JavaSource.Append('        return file.exists();');
   JavaSource.Append('    }');
   JavaSource.Append('    public int faopen (String f) {');
+  //JavaSource.Append('        setTitle(f);');
   JavaSource.Append('        int StreamSize = 0;');
   JavaSource.Append('        try {');
   JavaSource.Append('            AssetStream = AssetMgr.open(f, 1);');
@@ -23557,6 +23560,9 @@ begin
   JavaSource.Append('                p');
   JavaSource.Append('            );');
   JavaSource.Append('        }');
+  JavaSource.Append('    }');
+  JavaSource.Append('    public void resettitle() {');
+  JavaSource.Append('        setTitle("reset");');
   JavaSource.Append('    }');
   JavaSource.Append('    public native void MessageJNI(int MessageType, int Param0, int Param1, int Param2);');
   JavaSource.Append('    static {');
@@ -23799,6 +23805,7 @@ begin
   CreateDir(_FilePath + 'build' + G2PathSep + 'obj');
   if not DirectoryExists(_FilePath + 'build' + G2PathSep + 'data') then
   CreateDir(_FilePath + 'build' + G2PathSep + 'data');
+  CopyDirTree(_FilePath + 'assets', _FilePath + 'build' + G2PathSep + 'data', [cffCreateDestDirectory, cffOverwriteFile]);
   if not DirectoryExists(_FilePath + 'bin') then
   CreateDir(_FilePath + 'bin');
   cf.Initialize;
