@@ -118,6 +118,10 @@ type
     procedure RemoveComponent(const Component: TG2Scene2DComponent); inline;
     function GetTag(const Index: TG2IntS32): AnsiString; inline;
     function GetTagCount: TG2IntS32; inline;
+    function GetPosition: TG2Vec2; inline;
+    procedure SetPosition(const Value: TG2Vec2); inline;
+    function GetRotation: TG2Rotation2; inline;
+    procedure SetRotation(const Value: TG2Rotation2); inline;
   protected
     var _Scene: TG2Scene2D;
     var _Parent: TG2Scene2DEntity;
@@ -144,6 +148,8 @@ type
     property TagCount: TG2IntS32 read GetTagCount;
     property Name: AnsiString read _Name write _Name;
     property Transform: TG2Transform2 read _Transform write SetTransform;
+    property Position: TG2Vec2 read GetPosition write SetPosition;
+    property Rotation: TG2Rotation2 read GetRotation write SetRotation;
     constructor Create(const OwnerScene: TG2Scene2D); virtual;
     destructor Destroy; override;
     procedure NewGUID;
@@ -169,9 +175,9 @@ type
     var _UserData: Pointer;
     var _Scene: TG2Scene2D;
     var _Enabled: Boolean;
-    procedure SetEnabled(const Value: Boolean); virtual;
   protected
     var _Joint: pb2_joint;
+    procedure SetEnabled(const Value: Boolean); virtual;
     procedure SaveClassType(const dm: TG2DataManager);
   public
     property UserData: Pointer read _UserData write _UserData;
@@ -192,8 +198,9 @@ type
     var _AnchorA: TG2Vec2;
     var _AnchorB: TG2Vec2;
     var _Distance: TG2Float;
-    procedure SetEnabled(const Value: Boolean); override;
     function Valid: Boolean; inline;
+  protected
+    procedure SetEnabled(const Value: Boolean); override;
   public
     property RigidBodyA: TG2Scene2DComponentRigidBody read _RigidBodyA write _RigidBodyA;
     property RigidBodyB: TG2Scene2DComponentRigidBody read _RigidBodyB write _RigidBodyB;
@@ -214,10 +221,11 @@ type
     var _Anchor: TG2Vec2;
     var _OffsetA: TG2Vec2;
     var _OffsetB: TG2Vec2;
-    procedure SetEnabled(const Value: Boolean); override;
     function Valid: Boolean; inline;
     function GetAnchor: TG2Vec2;
     procedure SetAnchor(const Value: TG2Vec2);
+  protected
+    procedure SetEnabled(const Value: Boolean); override;
   public
     property RigidBodyA: TG2Scene2DComponentRigidBody read _RigidBodyA write _RigidBodyA;
     property RigidBodyB: TG2Scene2DComponentRigidBody read _RigidBodyB write _RigidBodyB;
@@ -227,6 +235,27 @@ type
     destructor Destroy; override;
     procedure Save(const dm: TG2DataManager); override;
     procedure Load(const dm: TG2DataManager); override;
+  end;
+
+  TG2Scene2DPullJoint = class (TG2Scene2DJoint)
+  private
+    var _RigidBody: TG2Scene2DComponentRigidBody;
+    var _Target: TG2Vec2;
+    var _MaxForce: TG2Float;
+    function Valid: Boolean; inline;
+    procedure SetRigidBody(const Value: TG2Scene2DComponentRigidBody);
+    procedure SetTarget(const Value: TG2Vec2);
+    procedure SetMaxForce(const Value: TG2Float);
+    function GetAnchor: TG2Vec2; inline;
+  protected
+    procedure SetEnabled(const Value: Boolean); override;
+  public
+    property RigidBody: TG2Scene2DComponentRigidBody read _RigidBody write SetRigidBody;
+    property Target: TG2Vec2 read _Target write SetTarget;
+    property MaxForce: TG2Float read _MaxForce write SetMaxForce;
+    property Anchor: TG2Vec2 read GetAnchor;
+    constructor Create(const OwnerScene: TG2Scene2D); override;
+    destructor Destroy; override;
   end;
 
   TG2Scene2DRenderHookProc = procedure (const Display: TG2Display2D) of object;
@@ -282,6 +311,7 @@ type
     var _GridOffsetY: TG2Float;
     var _QueryPoint: tb2_vec2;
     var _QueryTarget: PG2Scene2DEntityList;
+    var _FixedBody: pb2_body;
     function ProcessQuery(const fixture: pb2_fixture): Boolean;
     procedure Update;
     function GetEntity(const Index: TG2IntS32): TG2Scene2DEntity; inline;
@@ -298,6 +328,8 @@ type
     procedure SetGravity(const Value: TG2Vec2); inline;
     procedure SetGridSizeX(const Value: TG2Float); inline;
     procedure SetGridSizeY(const Value: TG2Float); inline;
+  protected
+    property FixedBody: pb2_body read _FixedBody;
   public
     property Entities[const Index: TG2IntS32]: TG2Scene2DEntity read GetEntity;
     property EntityCount: TG2IntS32 read GetEntityCount;
@@ -1349,6 +1381,26 @@ begin
   Result := _Tags.Count;
 end;
 
+function TG2Scene2DEntity.GetPosition: TG2Vec2;
+begin
+  Result := _Transform.p;
+end;
+
+procedure TG2Scene2DEntity.SetPosition(const Value: TG2Vec2);
+begin
+  SetTransform(G2Transform2(Value, _Transform.r));
+end;
+
+function TG2Scene2DEntity.GetRotation: TG2Rotation2;
+begin
+  Result := _Transform.r;
+end;
+
+procedure TG2Scene2DEntity.SetRotation(const Value: TG2Rotation2);
+begin
+  SetTransform(G2Transform2(_Transform.p, Value));
+end;
+
 procedure TG2Scene2DEntity.SetTransform(const Value: TG2Transform2);
   var Origin: TG2Vec2;
   var xfm: TG2Transform2;
@@ -1649,6 +1701,14 @@ end;
 //TG2Scene2DJoint END
 
 //TG2Scene2DDistanceJoint BEIGN
+function TG2Scene2DDistanceJoint.Valid: Boolean;
+begin
+  Result := (
+    (_RigidBodyA <> nil)
+    and (_RigidBodyB <> nil)
+  );
+end;
+
 procedure TG2Scene2DDistanceJoint.SetEnabled(const Value: Boolean);
   var def: tb2_distance_joint_def;
 begin
@@ -1679,14 +1739,6 @@ begin
     _Scene.PhysWorld.destroy_joint(_Joint);
     _Joint := nil;
   end;
-end;
-
-function TG2Scene2DDistanceJoint.Valid: Boolean;
-begin
-  Result := (
-    (_RigidBodyA <> nil)
-    and (_RigidBodyB <> nil)
-  );
 end;
 
 class constructor TG2Scene2DDistanceJoint.CreateClass;
@@ -1760,6 +1812,30 @@ end;
 //TG2Scene2DDistanceJoint END
 
 //TG2Scene2DRevoluteJoint BEGIN
+function TG2Scene2DRevoluteJoint.Valid: Boolean;
+begin
+  Result := (
+    (_RigidBodyA <> nil)
+    and (_RigidBodyB <> nil)
+  );
+end;
+
+function TG2Scene2DRevoluteJoint.GetAnchor: TG2Vec2;
+begin
+  if Valid then Result := (_RigidBodyA.Owner.Transform.p + _OffsetA + _RigidBodyB.Owner.Transform.p + _OffsetB) * 0.5
+  else Result := _Anchor;
+end;
+
+procedure TG2Scene2DRevoluteJoint.SetAnchor(const Value: TG2Vec2);
+begin
+  _Anchor := Value;
+  if Valid then
+  begin
+    _OffsetA := _Anchor - _RigidBodyA.Owner.Transform.p;
+    _OffsetB := _Anchor - _RigidBodyB.Owner.Transform.p;
+  end;
+end;
+
 procedure TG2Scene2DRevoluteJoint.SetEnabled(const Value: Boolean);
   var def: tb2_revolute_joint_def;
 begin
@@ -1784,30 +1860,6 @@ begin
   begin
     _Scene.PhysWorld.destroy_joint(_Joint);
     _Joint := nil;
-  end;
-end;
-
-function TG2Scene2DRevoluteJoint.Valid: Boolean;
-begin
-  Result := (
-    (_RigidBodyA <> nil)
-    and (_RigidBodyB <> nil)
-  );
-end;
-
-function TG2Scene2DRevoluteJoint.GetAnchor: TG2Vec2;
-begin
-  if Valid then Result := (_RigidBodyA.Owner.Transform.p + _OffsetA + _RigidBodyB.Owner.Transform.p + _OffsetB) * 0.5
-  else Result := _Anchor;
-end;
-
-procedure TG2Scene2DRevoluteJoint.SetAnchor(const Value: TG2Vec2);
-begin
-  _Anchor := Value;
-  if Valid then
-  begin
-    _OffsetA := _Anchor - _RigidBodyA.Owner.Transform.p;
-    _OffsetB := _Anchor - _RigidBodyB.Owner.Transform.p;
   end;
 end;
 
@@ -1875,6 +1927,94 @@ begin
   Enabled := dm.ReadBool;
 end;
 //TG2Scene2DRevoluteJoint END
+
+//TG2Scene2DPullJoint BEGIN
+function TG2Scene2DPullJoint.Valid: Boolean;
+begin
+  Result := _RigidBody <> nil;
+end;
+
+procedure TG2Scene2DPullJoint.SetRigidBody(const Value: TG2Scene2DComponentRigidBody);
+begin
+  if Value = _RigidBody then Exit;
+  _RigidBody := Value;
+  if Enabled and Valid then
+  begin
+    Enabled := False;
+    Enabled := True;
+  end;
+end;
+
+procedure TG2Scene2DPullJoint.SetTarget(const Value: TG2Vec2);
+begin
+  _Target := Value;
+  if Enabled then
+  begin
+    pb2_mouse_joint(_Joint)^.set_target(_Target);
+  end;
+end;
+
+procedure TG2Scene2DPullJoint.SetMaxForce(const Value: TG2Float);
+begin
+  _MaxForce := Value;
+  if Enabled then
+  begin
+    pb2_mouse_joint(_Joint)^.set_max_force(_MaxForce);
+  end;
+end;
+
+function TG2Scene2DPullJoint.GetAnchor: TG2Vec2;
+begin
+  if Enabled then
+  begin
+    Result := pb2_mouse_joint(_Joint)^.get_anchor_a;
+  end
+  else
+  begin
+    Result := G2Vec2;
+  end;
+end;
+
+procedure TG2Scene2DPullJoint.SetEnabled(const Value: Boolean);
+  var def: tb2_mouse_joint_def;
+begin
+  if _Enabled = Value then Exit;
+  _Enabled := Value;
+  if _Enabled then
+  begin
+    if not Valid then
+    begin
+      _Enabled := False;
+      Exit;
+    end;
+    def := b2_mouse_joint_def;
+    def.body_a := _Scene.FixedBody;
+    def.body_b := _RigidBody.PhysBody;
+    def.target := _Target;
+    def.max_force := _MaxForce;
+    _Joint := _Scene.PhysWorld.create_joint(def);
+    _RigidBody.PhysBody^.set_awake(True);
+  end
+  else
+  begin
+    _Scene.PhysWorld.destroy_joint(_Joint);
+    _Joint := nil;
+  end;
+end;
+
+constructor TG2Scene2DPullJoint.Create(const OwnerScene: TG2Scene2D);
+begin
+  inherited Create(OwnerScene);
+  _RigidBody := nil;
+  _Target := G2Vec2;
+  _MaxForce := 1000;
+end;
+
+destructor TG2Scene2DPullJoint.Destroy;
+begin
+  inherited Destroy;
+end;
+//TG2Scene2DPullJoint END
 
 //TG2Scene2DRenderHook BEGIN
 procedure TG2Scene2DRenderHook.SetLayer(const Value: TG2IntS32);
@@ -2239,6 +2379,7 @@ begin
 end;
 
 constructor TG2Scene2D.Create;
+  var FixedBodyDef: tb2_body_def;
 begin
   _Entities.Clear;
   _Joints.Clear;
@@ -2255,6 +2396,9 @@ begin
   _PhysWorld.set_continuous_physics(true);
   _PhysWorld.set_warm_starting(true);
   _PhysWorld.set_contact_listener(_ContactListener);
+  FixedBodyDef := b2_body_def;
+  FixedBodyDef.active := true;
+  _FixedBody := _PhysWorld.create_body(FixedBodyDef);
   _Simulate := False;
   _GridEnable := False;
   _GridSizeX := 0.5;

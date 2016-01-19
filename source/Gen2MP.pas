@@ -3528,6 +3528,7 @@ type
     procedure OnEnter(const PrevState: TG2GameState); virtual;
     procedure OnLeave(const NextState: TG2GameState); virtual;
   public
+    property Enabled: Boolean read _Enabled write SetEnabled;
     property State: TG2GameState read _State write _SwitchState;
     property RenderOrder: TG2Float read _RenderOrder write SetRenderOrder;
     constructor Create; virtual;
@@ -19942,8 +19943,6 @@ begin
   _State := nil;
   _Enabled := False;
   _RenderOrder := 0;
-  g2.CallbackInitializeAdd(@Initialize);
-  g2.CallbackFinalizeAdd(@Finalize);
   g2.CallbackRenderAdd(@Render, _RenderOrder);
   g2.CallbackUpdateAdd(@Update);
   g2.CallbackKeyDownAdd(@KeyDown);
@@ -19966,13 +19965,13 @@ begin
     List.Prev := Self;
     List := Self;
   end;
+  Initialize;
 end;
 
 destructor TG2GameState.Destroy;
 begin
+  Finalize;
   State := nil;
-  g2.CallbackInitializeRemove(@Initialize);
-  g2.CallbackFinalizeRemove(@Finalize);
   g2.CallbackRenderRemove(@Render);
   g2.CallbackUpdateRemove(@Update);
   g2.CallbackKeyDownRemove(@KeyDown);

@@ -2953,7 +2953,7 @@ end;
 function tb2_timer.get_milliseconds: tb2_float32;
   var t: timeval;
 begin
-  gettimeofday(@t, 0);
+  gettimeofday(@t, nil);
   result := 1000.0 * (t.tv_sec - _start_sec) + 0.001 * (t.tv_usec - _start_usec);
 end;
 {$else}
@@ -8724,7 +8724,14 @@ constructor tb2_mouse_joint.create_mouse_joint(const def: tb2_mouse_joint_def);
 begin
   inherited create(def);
   _target_a := def.target;
-  _local_anchor_b := b2_mul_t(_body_b^.get_transform, _target_a);
+  if _body_b <> nil then
+  begin
+    _local_anchor_b := b2_mul_t(_body_b^.get_transform, _target_a);
+  end
+  else
+  begin
+    _local_anchor_b := _target_a;
+  end;
   _max_force := def.max_force;
   _impulse.set_zero;
   _frequency_hz := def.frequency_hz;
