@@ -2782,19 +2782,26 @@ type
 //TProject BEGIN
   TProject = object
   private
-    _TargetPlatform: Integer;
-    _Open: Boolean;
-    _FilePath: String;
-    _FileName: String;
-    _LastModifyCheck: TG2IntU32;
-    _LastModified: Integer;
-    _md5: TG2MD5;
-    _ProjectCode: AnsiString;
-    _ProjectIncludeSource: TG2StrArrA;
+    type TOutputProcess = record
+      sl: TStringList;
+      ProcOutput: TMemoryStream;
+      Proc: TProcess;
+      ReadBytes, NumBytes: Integer;
+    end;
+    var _TargetPlatform: Integer;
+    var _Open: Boolean;
+    var _FilePath: String;
+    var _FileName: String;
+    var _LastModifyCheck: TG2IntU32;
+    var _LastModified: Integer;
+    var _md5: TG2MD5;
+    var _ProjectCode: AnsiString;
+    var _ProjectIncludeSource: TG2StrArrA;
     function GetProjectName: AnsiString;
     function GetProjectPath: AnsiString;
     function GetProjectIncludeSource(const Index: Integer): AnsiString; inline;
     function GetProjectIncludeSourceCount: Integer; inline;
+    function ExecuteProcess(const Executable, CommandLine, SuccessMessage, FailMessage: String; const ShowOutput: Boolean = False): Boolean;
   public
     AvailablePlatforms: array of TG2TargetPlatform;
     property TargetPlatform: Integer read _TargetPlatform write _TargetPlatform;
@@ -22525,6 +22532,77 @@ begin
   Result := Length(_ProjectIncludeSource);
 end;
 
+function TProject.ExecuteProcess(const Executable, CommandLine, SuccessMessage, FailMessage: String; const ShowOutput: Boolean = False): Boolean;
+  var Process: TOutputProcess;
+  var FileDir, FileExecutable: String;
+  var i: Integer;
+  const READ_BYTES = 2048;
+begin
+  if not FileExists(Executable) then
+  begin
+    App.Console.AddLine('File missing: ' + Executable);
+    App.Log.Log(FailMessage);
+    App.Console.AddLine(FailMessage);
+    Exit(False);
+  end;
+  Process.sl := TStringList.Create;
+  Process.ProcOutput := TMemoryStream.Create;
+  Process.Proc := TProcessUTF8.Create(nil);
+  Process.Proc.CommandLine := Executable + CommandLine;
+  Process.Proc.Executable := Executable;
+  if ShowOutput then Process.Proc.Options := Process.Proc.Options + [poUsePipes];
+  Process.Proc.ShowWindow := swoHIDE;
+  Process.ReadBytes := 0;
+  Process.Proc.Execute;
+  if poUsePipes in Process.Proc.Options then
+  while True do
+  begin
+    if Process.Proc.Output.NumBytesAvailable > 0 then
+    begin
+      Process.ProcOutput.SetSize(Process.ReadBytes + READ_BYTES);
+      Process.NumBytes := Process.Proc.Output.Read((Process.ProcOutput.Memory + Process.ReadBytes)^, READ_BYTES);
+    end
+    else
+    Process.NumBytes := 0;
+    if Process.NumBytes > 0 then
+    begin
+      Inc(Process.ReadBytes, Process.NumBytes);
+    end
+    else if not Process.Proc.Running then Break;
+  end;
+  while Process.Proc.Running do;
+  if poUsePipes in Process.Proc.Options then
+  begin
+    Process.ProcOutput.SetSize(Process.ReadBytes);
+    Process.sl.LoadFromStream(Process.ProcOutput);
+  end;
+  if Process.Proc.ExitStatus = 0 then
+  begin
+    for i := 0 to Process.sl.Count - 1 do
+    App.Console.AddLine(Process.sl[i]);
+    if Length(SuccessMessage) > 0 then
+    begin
+      App.Log.Log(SuccessMessage);
+      App.Console.AddLine(SuccessMessage);
+    end;
+    Result := True;
+  end
+  else
+  begin
+    for i := 0 to Process.sl.Count - 2 do
+    App.Console.AddLine(Process.sl[i]);
+    if Length(FailMessage) > 0 then
+    begin
+      App.Log.Log(FailMessage);
+      App.Console.AddLine(FailMessage);
+    end;
+    Result := False;
+  end;
+  Process.Proc.Free;
+  Process.ProcOutput.Free;
+  Process.sl.Free;
+end;
+
 function TProject.GetPlatformName(const Platform: TG2TargetPlatform): String;
 begin
   case Platform of
@@ -22818,12 +22896,6 @@ procedure TProject.BuildWindows32;
   begin
     CommandLine := CommandLine + ' ' + Option;
   end;
-  type TOutputProcess = record
-    sl: TStringList;
-    ProcOutput: TMemoryStream;
-    Proc: TProcessUTF8;
-    ReadBytes, NumBytes: Integer;
-  end;
   var CompilerProcess, ExeProcess: TOutputProcess;
   var cf: TCodeFile;
   var CompilerPath: String;
@@ -23031,12 +23103,12 @@ procedure TProject.BuildAndroid;
   begin
     if FileExists(FilePath) then DeleteFile(FilePath);
   end;
-  type TOutputProcess = record
-    sl: TStringList;
-    ProcOutput: TMemoryStream;
-    Proc: TProcess;
-    ReadBytes, NumBytes: Integer;
-  end;
+  //type TOutputProcess = record
+  //  sl: TStringList;
+  //  ProcOutput: TMemoryStream;
+  //  Proc: TProcess;
+  //  ReadBytes, NumBytes: Integer;
+  //end;
   procedure VerifyDir(const Path: String);
   begin
     if not DirectoryExists(Path) then
@@ -23044,76 +23116,76 @@ procedure TProject.BuildAndroid;
       CreateDir(Path);
     end;
   end;
-  function ExecuteProcess(const Executable, CommandLine, SuccessMessage, FailMessage: String; const ShowOutput: Boolean = False): Boolean;
-    var Process: TOutputProcess;
-    var FileDir, FileExecutable: String;
-    var i: Integer;
-    const READ_BYTES = 2048;
-  begin
-    if not FileExists(Executable) then
-    begin
-      App.Console.AddLine('File missing: ' + Executable);
-      App.Log.Log(FailMessage);
-      App.Console.AddLine(FailMessage);
-      Exit(False);
-    end;
-    Process.sl := TStringList.Create;
-    Process.ProcOutput := TMemoryStream.Create;
-    Process.Proc := TProcessUTF8.Create(nil);
-    Process.Proc.CommandLine := Executable + CommandLine;
-    Process.Proc.Executable := Executable;
-    if ShowOutput then Process.Proc.Options := Process.Proc.Options + [poUsePipes];
-    Process.Proc.ShowWindow := swoHIDE;
-    Process.ReadBytes := 0;
-    Process.Proc.Execute;
-    if poUsePipes in Process.Proc.Options then
-    while True do
-    begin
-      if Process.Proc.Output.NumBytesAvailable > 0 then
-      begin
-        Process.ProcOutput.SetSize(Process.ReadBytes + READ_BYTES);
-        Process.NumBytes := Process.Proc.Output.Read((Process.ProcOutput.Memory + Process.ReadBytes)^, READ_BYTES);
-      end
-      else
-      Process.NumBytes := 0;
-      if Process.NumBytes > 0 then
-      begin
-        Inc(Process.ReadBytes, Process.NumBytes);
-      end
-      else if not Process.Proc.Running then Break;
-    end;
-    while Process.Proc.Running do;
-    if poUsePipes in Process.Proc.Options then
-    begin
-      Process.ProcOutput.SetSize(Process.ReadBytes);
-      Process.sl.LoadFromStream(Process.ProcOutput);
-    end;
-    if Process.Proc.ExitStatus = 0 then
-    begin
-      for i := 0 to Process.sl.Count - 1 do
-      App.Console.AddLine(Process.sl[i]);
-      if Length(SuccessMessage) > 0 then
-      begin
-        App.Log.Log(SuccessMessage);
-        App.Console.AddLine(SuccessMessage);
-      end;
-      Result := True;
-    end
-    else
-    begin
-      for i := 0 to Process.sl.Count - 2 do
-      App.Console.AddLine(Process.sl[i]);
-      if Length(FailMessage) > 0 then
-      begin
-        App.Log.Log(FailMessage);
-        App.Console.AddLine(FailMessage);
-      end;
-      Result := False;
-    end;
-    Process.Proc.Free;
-    Process.ProcOutput.Free;
-    Process.sl.Free;
-  end;
+  //function ExecuteProcess(const Executable, CommandLine, SuccessMessage, FailMessage: String; const ShowOutput: Boolean = False): Boolean;
+  //  var Process: TOutputProcess;
+  //  var FileDir, FileExecutable: String;
+  //  var i: Integer;
+  //  const READ_BYTES = 2048;
+  //begin
+  //  if not FileExists(Executable) then
+  //  begin
+  //    App.Console.AddLine('File missing: ' + Executable);
+  //    App.Log.Log(FailMessage);
+  //    App.Console.AddLine(FailMessage);
+  //    Exit(False);
+  //  end;
+  //  Process.sl := TStringList.Create;
+  //  Process.ProcOutput := TMemoryStream.Create;
+  //  Process.Proc := TProcessUTF8.Create(nil);
+  //  Process.Proc.CommandLine := Executable + CommandLine;
+  //  Process.Proc.Executable := Executable;
+  //  if ShowOutput then Process.Proc.Options := Process.Proc.Options + [poUsePipes];
+  //  Process.Proc.ShowWindow := swoHIDE;
+  //  Process.ReadBytes := 0;
+  //  Process.Proc.Execute;
+  //  if poUsePipes in Process.Proc.Options then
+  //  while True do
+  //  begin
+  //    if Process.Proc.Output.NumBytesAvailable > 0 then
+  //    begin
+  //      Process.ProcOutput.SetSize(Process.ReadBytes + READ_BYTES);
+  //      Process.NumBytes := Process.Proc.Output.Read((Process.ProcOutput.Memory + Process.ReadBytes)^, READ_BYTES);
+  //    end
+  //    else
+  //    Process.NumBytes := 0;
+  //    if Process.NumBytes > 0 then
+  //    begin
+  //      Inc(Process.ReadBytes, Process.NumBytes);
+  //    end
+  //    else if not Process.Proc.Running then Break;
+  //  end;
+  //  while Process.Proc.Running do;
+  //  if poUsePipes in Process.Proc.Options then
+  //  begin
+  //    Process.ProcOutput.SetSize(Process.ReadBytes);
+  //    Process.sl.LoadFromStream(Process.ProcOutput);
+  //  end;
+  //  if Process.Proc.ExitStatus = 0 then
+  //  begin
+  //    for i := 0 to Process.sl.Count - 1 do
+  //    App.Console.AddLine(Process.sl[i]);
+  //    if Length(SuccessMessage) > 0 then
+  //    begin
+  //      App.Log.Log(SuccessMessage);
+  //      App.Console.AddLine(SuccessMessage);
+  //    end;
+  //    Result := True;
+  //  end
+  //  else
+  //  begin
+  //    for i := 0 to Process.sl.Count - 2 do
+  //    App.Console.AddLine(Process.sl[i]);
+  //    if Length(FailMessage) > 0 then
+  //    begin
+  //      App.Log.Log(FailMessage);
+  //      App.Console.AddLine(FailMessage);
+  //    end;
+  //    Result := False;
+  //  end;
+  //  Process.Proc.Free;
+  //  Process.ProcOutput.Free;
+  //  Process.sl.Free;
+  //end;
   var DomainArr: TG2StrArrA;
   var cf: TCodeFile;
   var CompilerPath, JavaSrcPath, JavaDomain, CurPath: String;
@@ -23782,16 +23854,11 @@ procedure TProject.BuildHTML5;
   begin
     CommandLine := CommandLine + ' ' + Option;
   end;
-  type TOutputProcess = record
-    sl: TStringList;
-    ProcOutput: TMemoryStream;
-    Proc: TProcessUTF8;
-    ReadBytes, NumBytes: Integer;
-  end;
   var CompilerProcess, ExeProcess: TOutputProcess;
   var cf: TCodeFile;
   var CompilerPath, ExePath, UnitPaths: String;
   var i: Integer;
+  var CompileSucceeded: Boolean;
   const READ_BYTES = 2048;
 begin
   if not _Open then Exit;
@@ -23825,35 +23892,16 @@ begin
   AddOption('-optimization=yes');
   AddOption('-emit-manifest=no');
   AddOption('-emit-chrome-manifest=no');
-  CompilerProcess.sl := TStringList.Create;
-  CompilerProcess.ProcOutput := TMemoryStream.Create;
-  CompilerProcess.Proc := TProcessUTF8.Create(nil);
-  CompilerProcess.Proc.Executable := CompilerPath;
-  CompilerProcess.Proc.CommandLine := CompilerProcess.Proc.Executable + CommandLine;
-  CompilerProcess.Proc.Options := CompilerProcess.Proc.Options + [poUsePipes];
-  CompilerProcess.Proc.ShowWindow := swoHIDE;
-  CompilerProcess.ReadBytes := 0;
-  CompilerProcess.Proc.Execute;
-  while True do
-  begin
-    CompilerProcess.ProcOutput.SetSize(CompilerProcess.ReadBytes + READ_BYTES);
-    CompilerProcess.NumBytes := CompilerProcess.Proc.Output.Read((CompilerProcess.ProcOutput.Memory + CompilerProcess.ReadBytes)^, READ_BYTES);
-    if CompilerProcess.NumBytes > 0 then
-    begin
-      Inc(CompilerProcess.ReadBytes, CompilerProcess.NumBytes);
-    end
-    else
-    Break;
-  end;
-  CompilerProcess.Proc.WaitOnExit;
-  CompilerProcess.ProcOutput.SetSize(CompilerProcess.ReadBytes);
-  CompilerProcess.sl.LoadFromStream(CompilerProcess.ProcOutput);
-  for i := 0 to CompilerProcess.sl.Count - 2 do
-  App.Console.AddLine(CompilerProcess.sl[i]);
-  if CompilerProcess.Proc.ExitStatus = 0 then
+  CompileSucceeded := ExecuteProcess(
+    CompilerPath,
+    CommandLine,
+    'Build Succeeded',
+    'Build Failed',
+    False
+  );
+  if CompileSucceeded then
   begin
     App.Log.Log('Build Succeeded');
-    App.Console.AddLine('Build Succeeded');
     try
       CopyFile(g2.AppPath + 'http' + G2PathSep + 'start.jar', _FilePath + 'build' + G2PathSep + 'start.jar');
     except
@@ -23877,7 +23925,6 @@ begin
   else
   begin
     App.Log.Log('Build Failed');
-    App.Console.AddLine('Build Failed');
   end;
 end;
 

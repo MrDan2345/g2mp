@@ -151,7 +151,7 @@ type
   
   TG2LinkRender = class (TG2Link)
     Proc: TG2Proc;
-	Order: TG2Float;
+    Order: TG2Float;
   end;
   
   TG2LinkPrint = class (TG2Link)
@@ -182,7 +182,7 @@ type
     _LastFPSUpdate: Integer;
     _TimerPause: Boolean;
     _TimerEnable: Boolean;
-	_LinkInitialize: TG2LinkProc;
+    _LinkInitialize: TG2LinkProc;
     _LinkFinalize: TG2LinkProc;
     _LinkUpdate: TG2LinkProc;
     _LinkRender: TG2LinkRender;
@@ -202,8 +202,8 @@ type
     _ClearColor: TG2Vec4;
     _MousePos: TG2Point;
     _LoadingItems: Integer;
-	procedure ClearLinks(var List: TG2Link);
-	procedure Initialize;
+    procedure ClearLinks(var List: TG2Link);
+    procedure Initialize;
     procedure Finalize;
     function GetWidth: Integer;
     procedure SetWidth(const Value: Integer);
@@ -236,8 +236,8 @@ type
     constructor Create; override;
     destructor Destroy; override;
     procedure Start;
-	procedure Stop;
-	procedure CallbackInitializeAdd(const ProcInitialize: TG2Proc);
+    procedure Stop;
+    procedure CallbackInitializeAdd(const ProcInitialize: TG2Proc);
     procedure CallbackInitializeRemove(const ProcInitialize: TG2Proc);
     procedure CallbackFinalizeAdd(const ProcFinalize: TG2Proc);
     procedure CallbackFinalizeRemove(const ProcFinalize: TG2Proc);
@@ -694,8 +694,8 @@ type
   private
     _gl: JWebGLRenderingContext;
     _ShaderProgram: JWebGLProgram;
-  	_VertexShader: JWebGLShader;
-  	_PixelShader: JWebGLShader;
+      _VertexShader: JWebGLShader;
+      _PixelShader: JWebGLShader;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -1306,14 +1306,49 @@ end;
 //TG2LocalStorage END
 
 //TG2Core BEGIN
+function G2CompareProc(f0, f1: TG2Proc): Boolean;
+begin
+  asm
+    (@Result) = (@f0) == (@f1);
+  end;
+end;
+
+function G2CompareProcChar(f0, f1: TG2ProcChar): Boolean;
+begin
+  asm
+    (@Result) = (@f0) == (@f1);
+  end;
+end;
+
+function G2CompareProcKey(f0, f1: TG2ProcKey): Boolean;
+begin
+  asm
+    (@Result) = (@f0) == (@f1);
+  end;
+end;
+
+function G2CompareProcMouse(f0, f1: TG2ProcMouse): Boolean;
+begin
+  asm
+    (@Result) = (@f0) == (@f1);
+  end;
+end;
+
+function G2CompareProcScroll(f0, f1: TG2ProcScroll): Boolean;
+begin
+  asm
+    (@Result) = (@f0) == (@f1);
+  end;
+end;
+
 procedure TG2Core.ClearLinks(var List: TG2Link);
   var Link: TG2Link;
 begin
   while List <> nil do
   begin
     Link := List;
-	List := List.Next;
-    Link.Free;	
+    List := List.Next;
+    Link.Free;    
   end;
 end;
 
@@ -1374,7 +1409,7 @@ begin
   while Link <> nil do
   begin
     Link.Proc();
-	Link := TG2LinkProc(Link.Next);
+    Link := TG2LinkProc(Link.Next);
   end;
 end;
 
@@ -1385,7 +1420,7 @@ begin
   while Link <> nil do
   begin
     Link.Proc();
-	Link := TG2LinkProc(Link.Next);
+    Link := TG2LinkProc(Link.Next);
   end;
 end;
 
@@ -1415,21 +1450,21 @@ begin
   if _TimerEnable then
   begin
     t := G2Time;
-	if not _TimerPause then _TimeToUpdate := t - _LastTick;
-	_LastTick := t;
-	UpdateTime := Trunc(1000 / _TargetUPS);
-	UpdateCount := Trunc(_TimeToUpdate / UpdateTime);
-	if UpdateCount > 2 then UpdateCount := 2;
+    if not _TimerPause then _TimeToUpdate := t - _LastTick;
+    _LastTick := t;
+    UpdateTime := Trunc(1000 / _TargetUPS);
+    UpdateCount := Trunc(_TimeToUpdate / UpdateTime);
+    if UpdateCount > 2 then UpdateCount := 2;
     for i := 0 to UpdateCount - 1 do OnUpdate;
-	_TimeToUpdate := _TimeToUpdate - UpdateCount * UpdateTime;
-	if t - _LastFPSUpdate >= 2000 then
+    _TimeToUpdate := _TimeToUpdate - UpdateCount * UpdateTime;
+    if t - _LastFPSUpdate >= 2000 then
     begin
-	  _LastFPSUpdate := t;
-	  _FPS := Trunc(_TotalFrames * 0.5);
-	  _TotalFrames := 0;
+      _LastFPSUpdate := t;
+      _FPS := Trunc(_TotalFrames * 0.5);
+      _TotalFrames := 0;
     end;
     OnRender;
-	_TotalFrames := _TotalFrames + 1;
+    _TotalFrames := _TotalFrames + 1;
     var RenderCallback := @OnTimer;
     asm
       window.RequestAnimFrame(@RenderCallback);
@@ -1444,7 +1479,7 @@ begin
   while Link <> nil do
   begin
     Link.Proc();
-	Link := TG2LinkProc(Link.Next);
+    Link := TG2LinkProc(Link.Next);
   end;
 end;
 
@@ -1458,7 +1493,7 @@ begin
   while Link <> nil do
   begin
     Link.Proc();
-	Link := TG2LinkRender(Link.Next);
+    Link := TG2LinkRender(Link.Next);
   end;
   g2.RenderControl := nil;
   g2.Gfx.RenderTarget := nil;
@@ -1467,7 +1502,7 @@ end;
 procedure TG2Core.OnMouseMove(const e: Variant);
   var ox, oy: Integer;
   var o: Variant;
-  var Link: TG2LinkMouse;
+  //var Link: TG2LinkMouse;
 begin
   _MousePos.x := e.clientX;
   _MousePos.y := e.clientY;
@@ -1481,12 +1516,12 @@ begin
   until (o = null);
   _MousePos.x := _MousePos.x - ox;
   _MousePos.y := _MousePos.y - oy;
-{   Link := _LinkMouseMove;
-  while Link <> nil do
-  begin
-    Link.Proc(_MousePos.x, _MousePos.y);
-	Link := TG2LinkMouse(Link.Next);
-  end; }
+  //Link := _LinkMouseMove;
+  //while Link <> nil do
+  //begin
+  //  Link.Proc(_MousePos.x, _MousePos.y);
+  //  Link := TG2LinkMouse(Link.Next);
+  //end;
   //MouseMove(_MousePos.x, _MousePos.y);
 end;
 
@@ -1503,7 +1538,7 @@ begin
   while Link <> nil do
   begin
     Link.Proc(Button, _MousePos.x, _MousePos.y);
-	Link := TG2LinkMouse(Link.Next);
+    Link := TG2LinkMouse(Link.Next);
   end;
   //MouseDown(Button, _MousePos.x, _MousePos.y);
 end;
@@ -1521,7 +1556,7 @@ begin
   while Link <> nil do
   begin
     Link.Proc(Button, _MousePos.x, _MousePos.y);
-	Link := TG2LinkMouse(Link.Next);
+    Link := TG2LinkMouse(Link.Next);
   end;
   //MouseUp(Button, _MousePos.x, _MousePos.y);
 end;
@@ -1537,7 +1572,7 @@ begin
   while Link <> nil do
   begin
     Link.Proc(Shift);
-	Link := TG2LinkScroll(Link.Next);
+    Link := TG2LinkScroll(Link.Next);
   end;
   //MouseWheel(Shift);
 end;
@@ -1625,20 +1660,20 @@ end;
 procedure TG2Core.CallbackInitializeRemove(const ProcInitialize: TG2Proc);
   var Link: TG2LinkProc;
 begin
-{   Link := _LinkInitialize;
+  Link := _LinkInitialize;
   while Link <> nil do
   begin
-    if Link.Proc = @ProcInitialize then
-	begin
-	  if Link.Next <> nil then Link.Next.Prev := Link.Prev;
+    if G2CompareProc(@Link.Proc, @ProcInitialize) then
+    begin
+      if Link.Next <> nil then Link.Next.Prev := Link.Prev;
       if Link.Prev <> nil then Link.Prev.Next := Link.Next;
-      if _LinkInitialize = Link then _LinkInitialize := Link.Next;
-	  Link.Free;
-	  Exit;
-	end
-	else
-	Link := Link.Next;
-  end; }
+      if _LinkInitialize = Link then _LinkInitialize := TG2LinkProc(Link.Next);
+      Link.Free;
+      Exit;
+    end
+    else
+    Link := TG2LinkProc(Link.Next);
+  end;
 end;
 
 procedure TG2Core.CallbackFinalizeAdd(const ProcFinalize: TG2Proc);
@@ -1655,18 +1690,20 @@ end;
 procedure TG2Core.CallbackFinalizeRemove(const ProcFinalize: TG2Proc);
   var Link: TG2LinkProc;
 begin
-{   Link := _LinkFinalize;
+  Link := _LinkFinalize;
   while Link <> nil do
   begin
-    if Link.Proc = ProcFinalize then
-	begin
-	  Link.Delete(_LinkFinalize);
-	  Link.Free;
-	  Exit;
-	end
-	else
-	Link := Link.Next;
-  end; }
+    if G2CompareProc(@Link.Proc, @ProcFinalize) then
+    begin
+      if Link.Next <> nil then Link.Next.Prev := Link.Prev;
+      if Link.Prev <> nil then Link.Prev.Next := Link.Next;
+      if _LinkFinalize = Link then _LinkFinalize := TG2LinkProc(Link.Next);
+      Link.Free;
+      Exit;
+    end
+    else
+    Link := TG2LinkProc(Link.Next);
+  end;
 end;
 
 procedure TG2Core.CallbackUpdateAdd(const ProcUpdate: TG2Proc);
@@ -1683,18 +1720,20 @@ end;
 procedure TG2Core.CallbackUpdateRemove(const ProcUpdate: TG2Proc);
   var Link: TG2LinkProc;
 begin
-{   Link := _LinkUpdate;
+  Link := _LinkUpdate;
   while Link <> nil do
   begin
-    if Link.Proc = ProcUpdate then
-	begin
-	  Link.Delete(_LinkUpdate);
-	  Link.Free;
-	  Exit;
-	end
-	else
-	Link := Link.Next;
-  end; }
+    if G2CompareProc(@Link.Proc, @ProcUpdate) then
+    begin
+      if Link.Next <> nil then Link.Next.Prev := Link.Prev;
+      if Link.Prev <> nil then Link.Prev.Next := Link.Next;
+      if _LinkUpdate = Link then _LinkUpdate := TG2LinkProc(Link.Next);
+      Link.Free;
+      Exit;
+    end
+    else
+    Link := TG2LinkProc(Link.Next);
+  end;
 end;
 
 procedure TG2Core.CallbackRenderAdd(const ProcRender: TG2Proc; Order: TG2Float);
@@ -1710,45 +1749,47 @@ begin
   else
   begin
     List := _LinkRender;
-	while List <> nil do
-	begin
-	  if (List.Order >= Link.Order) then
-	  begin
-		Link.Next := List;
-		Link.Prev := List.Prev;
-		if List.Prev <> nil then List.Prev.Next := Link;
-		List.Prev := Link;
-	    if List = _LinkRender then
-		_LinkRender := Link;
-		Exit;
-	  end
-	  else if List.Next = nil then
-	  begin
-	    List.Next := Link;
-		Link.Prev := List;
-		Exit;
-	  end
-	  else
-	  List := TG2LinkRender(List.Next);
-	end;
+    while List <> nil do
+    begin
+      if (List.Order >= Link.Order) then
+      begin
+        Link.Next := List;
+        Link.Prev := List.Prev;
+        if List.Prev <> nil then List.Prev.Next := Link;
+        List.Prev := Link;
+        if List = _LinkRender then
+        _LinkRender := Link;
+        Exit;
+      end
+      else if List.Next = nil then
+      begin
+        List.Next := Link;
+        Link.Prev := List;
+        Exit;
+      end
+      else
+      List := TG2LinkRender(List.Next);
+    end;
   end;
 end;
 
 procedure TG2Core.CallbackRenderRemove(const ProcRender: TG2Proc);
   var Link: TG2LinkRender;
 begin
-{   Link := _LinkRender;
+  Link := _LinkRender;
   while Link <> nil do
   begin
-    if Link.Proc = ProcRender then
-	begin
-	  Link.Delete(_LinkRender);
-	  Link.Free;
-	  Exit;
-	end
-	else
-	Link := Link.Next;
-  end; }
+    if G2CompareProc(@Link.Proc, @ProcRender) then
+    begin
+      if Link.Next <> nil then Link.Next.Prev := Link.Prev;
+      if Link.Prev <> nil then Link.Prev.Next := Link.Next;
+      if _LinkRender = Link then _LinkRender := TG2LinkRender(Link.Next);
+      Link.Free;
+      Exit;
+    end
+    else
+    Link := TG2LinkRender(Link.Next);
+  end;
 end;
 
 procedure TG2Core.CallbackPrintAdd(const ProcPrint: TG2ProcChar);
@@ -1765,18 +1806,20 @@ end;
 procedure TG2Core.CallbackPrintRemove(const ProcPrint: TG2ProcChar);
   var Link: TG2LinkPrint;
 begin
-{   Link := _LinkPrint;
+  Link := _LinkPrint;
   while Link <> nil do
   begin
-    if Link.Proc = ProcPrint then
-	begin
-	  Link.Delete(_LinkPrint);
-	  Link.Free;
-	  Exit;
-	end
-	else
-	Link := Link.Next;
-  end; }
+    if G2CompareProcChar(@Link.Proc, ProcPrint) then
+    begin
+      if Link.Next <> nil then Link.Next.Prev := Link.Prev;
+      if Link.Prev <> nil then Link.Prev.Next := Link.Next;
+      if _LinkPrint = Link then _LinkPrint := TG2LinkPrint(Link.Next);
+      Link.Free;
+      Exit;
+    end
+    else
+    Link := TG2LinkPrint(Link.Next);
+  end;
 end;
 
 procedure TG2Core.CallbackKeyDownAdd(const ProcKeyDown: TG2ProcKey);
@@ -1793,18 +1836,20 @@ end;
 procedure TG2Core.CallbackKeyDownRemove(const ProcKeyDown: TG2ProcKey);
   var Link: TG2LinkKey;
 begin
-{   Link := _LinkKeyDown;
+  Link := _LinkKeyDown;
   while Link <> nil do
   begin
-    if Link.Proc = ProcKeyDown then
-	begin
-	  Link.Delete(_LinkKeyDown);
-	  Link.Free;
-	  Exit;
-	end
-	else
-	Link := Link.Next;
-  end; }
+    if G2CompareProcKey(@Link.Proc, @ProcKeyDown) then
+    begin
+      if Link.Next <> nil then Link.Next.Prev := Link.Prev;
+      if Link.Prev <> nil then Link.Prev.Next := Link.Next;
+      if _LinkKeyDown = Link then _LinkKeyDown := TG2LinkKey(Link.Next);
+      Link.Free;
+      Exit;
+    end
+    else
+    Link := TG2LinkKey(Link.Next);
+  end;
 end;
 
 procedure TG2Core.CallbackKeyUpAdd(const ProcKeyUp: TG2ProcKey);
@@ -1821,18 +1866,20 @@ end;
 procedure TG2Core.CallbackKeyUpRemove(const ProcKeyUp: TG2ProcKey);
   var Link: TG2LinkKey;
 begin
-{   Link := _LinkKeyUp;
+  Link := _LinkKeyUp;
   while Link <> nil do
   begin
-    if Link.Proc = ProcKeyUp then
-	begin
-	  Link.Delete(_LinkKeyDown);
-	  Link.Free;
-	  Exit;
-	end
-	else
-	Link := Link.Next;
-  end; }
+    if G2CompareProcKey(@Link.Proc, @ProcKeyUp) then
+    begin
+      if Link.Next <> nil then Link.Next.Prev := Link.Prev;
+      if Link.Prev <> nil then Link.Prev.Next := Link.Next;
+      if _LinkKeyUp = Link then _LinkKeyUp := TG2LinkKey(Link.Next);
+      Link.Free;
+      Exit;
+    end
+    else
+    Link := TG2LinkKey(Link.Next);
+  end;
 end;
 
 procedure TG2Core.CallbackMouseDownAdd(const ProcMouseDown: TG2ProcMouse);
@@ -1849,18 +1896,20 @@ end;
 procedure TG2Core.CallbackMouseDownRemove(const ProcMouseDown: TG2ProcMouse);
   var Link: TG2LinkMouse;
 begin
-{   Link := _LinkMouseDown;
+  Link := _LinkMouseDown;
   while Link <> nil do
   begin
-    if Link.Proc = ProcMouseDown then
-	begin
-	  Link.Delete(_LinkMouseDown);
-	  Link.Free;
-	  Exit;
-	end
-	else
-	Link := Link.Next;
-  end; }
+    if G2CompareProcMouse(@Link.Proc, @ProcMouseDown) then
+    begin
+      if Link.Next <> nil then Link.Next.Prev := Link.Prev;
+      if Link.Prev <> nil then Link.Prev.Next := Link.Next;
+      if _LinkMouseDown = Link then _LinkMouseDown := TG2LinkMouse(Link.Next);
+      Link.Free;
+      Exit;
+    end
+    else
+    Link := TG2LinkMouse(Link.Next);
+  end;
 end;
 
 procedure TG2Core.CallbackMouseUpAdd(const ProcMouseUp: TG2ProcMouse);
@@ -1877,18 +1926,20 @@ end;
 procedure TG2Core.CallbackMouseUpRemove(const ProcMouseUp: TG2ProcMouse);
   var Link: TG2LinkMouse;
 begin
-{   Link := _LinkMouseUo;
+  Link := _LinkMouseUp;
   while Link <> nil do
   begin
-    if Link.Proc = ProcMouseUp then
-	begin
-	  Link.Delete(_LinkMouseUp);
-	  Link.Free;
-	  Exit;
-	end
-	else
-	Link := Link.Next;
-  end; }
+    if G2CompareProcMouse(@Link.Proc, @ProcMouseUp) then
+    begin
+      if Link.Next <> nil then Link.Next.Prev := Link.Prev;
+      if Link.Prev <> nil then Link.Prev.Next := Link.Next;
+      if _LinkMouseUp = Link then _LinkMouseUp := TG2LinkMouse(Link.Next);
+      Link.Free;
+      Exit;
+    end
+    else
+    Link := TG2LinkMouse(Link.Next);
+  end;
 end;
 
 procedure TG2Core.CallbackScrollAdd(const ProcScroll: TG2ProcScroll);
@@ -1905,18 +1956,20 @@ end;
 procedure TG2Core.CallbackScrollRemove(const ProcScroll: TG2ProcScroll);
   var Link: TG2LinkScroll;
 begin
-{   Link := _LinkScroll;
+  Link := _LinkScroll;
   while Link <> nil do
   begin
-    if Link.Proc = ProcScroll then
-	begin
-	  Link.Delete(_LinkScroll);
-	  Link.Free;
-	  Exit;
-	end
-	else
-	Link := Link.Next;
-  end; }
+    if G2CompareProcScroll(@Link.Proc, ProcScroll) then
+    begin
+      if Link.Next <> nil then Link.Next.Prev := Link.Prev;
+      if Link.Prev <> nil then Link.Prev.Next := Link.Next;
+      if _LinkScroll = Link then _LinkScroll := TG2LinkScroll(Link.Next);
+      Link.Free;
+      Exit;
+    end
+    else
+    Link := TG2LinkScroll(Link.Next);
+  end;
 end;
 
 procedure TG2Core.PicQuadCol(
@@ -2644,7 +2697,7 @@ begin
   _gl.bindTexture(_gl.TEXTURE_2D, _Texture);
   asm
     (@_gl).pixelStorei((@_gl).UNPACK_FLIP_Y_WEBGL, false);
-	  (@_gl).texImage2D((@_gl).TEXTURE_2D, 0, (@_gl).RGBA, (@_gl).RGBA, (@_gl).UNSIGNED_BYTE, @_Image);
+      (@_gl).texImage2D((@_gl).TEXTURE_2D, 0, (@_gl).RGBA, (@_gl).RGBA, (@_gl).UNSIGNED_BYTE, @_Image);
     (@_gl).texParameteri((@_gl).TEXTURE_2D, (@_gl).TEXTURE_WRAP_S, (@_gl).REPEAT);
     (@_gl).texParameteri((@_gl).TEXTURE_2D, (@_gl).TEXTURE_WRAP_T, (@_gl).REPEAT);
     (@_gl).texParameteri((@_gl).TEXTURE_2D, (@_gl).TEXTURE_MAG_FILTER, (@_gl).LINEAR);
@@ -3383,10 +3436,10 @@ begin
     @VertsColors = new Float32Array(@_ArrColors);
   end;
   _gl.bindBuffer(_gl.ARRAY_BUFFER, _BufferPositions);
-	_gl.bufferData(_gl.ARRAY_BUFFER, VertsPositions, _gl.DYNAMIC_DRAW);
+    _gl.bufferData(_gl.ARRAY_BUFFER, VertsPositions, _gl.DYNAMIC_DRAW);
   _gl.vertexAttribPointer(_AttribPosition, 3, _gl.FLOAT, False, 0, 0);
   _gl.bindBuffer(_gl.ARRAY_BUFFER, _BufferColors);
-	_gl.bufferData(_gl.ARRAY_BUFFER, VertsColors, _gl.DYNAMIC_DRAW);
+    _gl.bufferData(_gl.ARRAY_BUFFER, VertsColors, _gl.DYNAMIC_DRAW);
   _gl.vertexAttribPointer(_AttribColor, 4, _gl.FLOAT, False, 0, 0);
   case _CurPrimType of
     ptLines: _gl.drawArrays(_gl.LINES, 0, _CurPoint);
@@ -3509,13 +3562,13 @@ begin
   VertsColors := new JFloat32Array(_ArrColors);
   VertsTexCoords := new JFloat32Array(_ArrTexCoords);
   _gl.bindBuffer(_gl.ARRAY_BUFFER, _BufferPositions);
-	_gl.bufferData(_gl.ARRAY_BUFFER, VertsPositions, _gl.DYNAMIC_DRAW);
+    _gl.bufferData(_gl.ARRAY_BUFFER, VertsPositions, _gl.DYNAMIC_DRAW);
   _gl.vertexAttribPointer(_AttribPosition, 3, _gl.FLOAT, False, 0, 0);
   _gl.bindBuffer(_gl.ARRAY_BUFFER, _BufferColors);
-	_gl.bufferData(_gl.ARRAY_BUFFER, VertsColors, _gl.DYNAMIC_DRAW);
+    _gl.bufferData(_gl.ARRAY_BUFFER, VertsColors, _gl.DYNAMIC_DRAW);
   _gl.vertexAttribPointer(_AttribColor, 4, _gl.FLOAT, False, 0, 0);
   _gl.bindBuffer(_gl.ARRAY_BUFFER, _BufferTexCoords);
-	_gl.bufferData(_gl.ARRAY_BUFFER, VertsTexCoords, _gl.DYNAMIC_DRAW);
+    _gl.bufferData(_gl.ARRAY_BUFFER, VertsTexCoords, _gl.DYNAMIC_DRAW);
   _gl.vertexAttribPointer(_AttribTexCoord, 2, _gl.FLOAT, False, 0, 0);
   _gl.bindBuffer(_gl.ELEMENT_ARRAY_BUFFER, _BufferIndices);
   _gl.drawElements(_gl.TRIANGLES, _CurQuad * 6, _gl.UNSIGNED_SHORT, 0);
@@ -3549,7 +3602,7 @@ begin
   for j := 0 to 5 do
   QuadInd[i * 6 + j] := QuadIndPk[j] + i * 4;
   _gl.bindBuffer(_gl.ELEMENT_ARRAY_BUFFER, _BufferIndices);
-	_gl.bufferData(_gl.ELEMENT_ARRAY_BUFFER, new JUint16Array(QuadInd), _gl.STATIC_DRAW);
+    _gl.bufferData(_gl.ELEMENT_ARRAY_BUFFER, new JUint16Array(QuadInd), _gl.STATIC_DRAW);
 end;
 
 destructor TG2RenderControlPic2D.Destroy;

@@ -131,16 +131,16 @@ end;
 
 destructor TGame.Destroy;
 begin
-//  g2.CallbackInitializeRemove(@Initialize);
-//  g2.CallbackFinalizeRemove(@Finalize);
-//  g2.CallbackUpdateRemove(@Update);
-//  g2.CallbackRenderRemove(@Render);
-//  g2.CallbackKeyDownRemove(@KeyDown);
-//  g2.CallbackKeyUpRemove(@KeyUp);
-//  g2.CallbackMouseDownRemove(@MouseDown);
-//  g2.CallbackMouseUpRemove(@MouseUp);
-//  g2.CallbackScrollRemove(@Scroll);
-//  g2.CallbackPrintRemove(@Print);
+  g2.CallbackInitializeRemove(@Initialize);
+  g2.CallbackFinalizeRemove(@Finalize);
+  g2.CallbackUpdateRemove(@Update);
+  g2.CallbackRenderRemove(@Render);
+  g2.CallbackKeyDownRemove(@KeyDown);
+  g2.CallbackKeyUpRemove(@KeyUp);
+  g2.CallbackMouseDownRemove(@MouseDown);
+  g2.CallbackMouseUpRemove(@MouseUp);
+  g2.CallbackScrollRemove(@Scroll);
+  g2.CallbackPrintRemove(@Print);
   inherited Destroy;
 end;
 

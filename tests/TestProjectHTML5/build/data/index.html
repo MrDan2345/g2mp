@@ -995,7 +995,7 @@ var TG2Texture2D = {
       $Check(Self,"")._gl$1.bindTexture(3553,$Check(Self,"")._Texture);
       
     (Self._gl$1).pixelStorei((Self._gl$1).UNPACK_FLIP_Y_WEBGL, false);
-	  (Self._gl$1).texImage2D((Self._gl$1).TEXTURE_2D, 0, (Self._gl$1).RGBA, (Self._gl$1).RGBA, (Self._gl$1).UNSIGNED_BYTE, Self._Image$1);
+      (Self._gl$1).texImage2D((Self._gl$1).TEXTURE_2D, 0, (Self._gl$1).RGBA, (Self._gl$1).RGBA, (Self._gl$1).UNSIGNED_BYTE, Self._Image$1);
     (Self._gl$1).texParameteri((Self._gl$1).TEXTURE_2D, (Self._gl$1).TEXTURE_WRAP_S, (Self._gl$1).REPEAT);
     (Self._gl$1).texParameteri((Self._gl$1).TEXTURE_2D, (Self._gl$1).TEXTURE_WRAP_T, (Self._gl$1).REPEAT);
     (Self._gl$1).texParameteri((Self._gl$1).TEXTURE_2D, (Self._gl$1).TEXTURE_MAG_FILTER, (Self._gl$1).LINEAR);
@@ -3509,7 +3509,24 @@ var TG2Core = {
    /// procedure TG2Core.CallbackFinalizeRemove(const ProcFinalize: TG2Proc)
    ,CallbackFinalizeRemove:function(Self, ProcFinalize$1) {
       var Link$2 = null;
-      /* null */
+      Link$2 = $Check(Self,"")._LinkFinalize;
+      while (Link$2!==null) {
+         if (G2CompareProc($Check(Link$2,"").Proc$2,ProcFinalize$1)) {
+            if ($Check(Link$2,"").Next!==null) {
+               $Check($Check(Link$2,"").Next,"").Prev = $Check(Link$2,"").Prev;
+            }
+            if ($Check(Link$2,"").Prev!==null) {
+               $Check($Check(Link$2,"").Prev,"").Next = $Check(Link$2,"").Next;
+            }
+            if ($Check(Self,"")._LinkFinalize===Link$2) {
+               $Check(Self,"")._LinkFinalize = $As($Check(Link$2,"").Next,TG2LinkProc);
+            }
+            TObject.Free(Link$2);
+            return;
+         } else {
+            Link$2 = $As($Check(Link$2,"").Next,TG2LinkProc);
+         }
+      }
    }
    /// procedure TG2Core.CallbackInitializeAdd(const ProcInitialize: TG2Proc)
    ,CallbackInitializeAdd:function(Self, ProcInitialize) {
@@ -3526,7 +3543,24 @@ var TG2Core = {
    /// procedure TG2Core.CallbackInitializeRemove(const ProcInitialize: TG2Proc)
    ,CallbackInitializeRemove:function(Self, ProcInitialize$1) {
       var Link$4 = null;
-      /* null */
+      Link$4 = $Check(Self,"")._LinkInitialize;
+      while (Link$4!==null) {
+         if (G2CompareProc($Check(Link$4,"").Proc$2,ProcInitialize$1)) {
+            if ($Check(Link$4,"").Next!==null) {
+               $Check($Check(Link$4,"").Next,"").Prev = $Check(Link$4,"").Prev;
+            }
+            if ($Check(Link$4,"").Prev!==null) {
+               $Check($Check(Link$4,"").Prev,"").Next = $Check(Link$4,"").Next;
+            }
+            if ($Check(Self,"")._LinkInitialize===Link$4) {
+               $Check(Self,"")._LinkInitialize = $As($Check(Link$4,"").Next,TG2LinkProc);
+            }
+            TObject.Free(Link$4);
+            return;
+         } else {
+            Link$4 = $As($Check(Link$4,"").Next,TG2LinkProc);
+         }
+      }
    }
    /// procedure TG2Core.CallbackKeyDownAdd(const ProcKeyDown: TG2ProcKey)
    ,CallbackKeyDownAdd:function(Self, ProcKeyDown) {
@@ -3543,7 +3577,24 @@ var TG2Core = {
    /// procedure TG2Core.CallbackKeyDownRemove(const ProcKeyDown: TG2ProcKey)
    ,CallbackKeyDownRemove:function(Self, ProcKeyDown$1) {
       var Link$6 = null;
-      /* null */
+      Link$6 = $Check(Self,"")._LinkKeyDown;
+      while (Link$6!==null) {
+         if (G2CompareProcKey($Check(Link$6,"").Proc$5,ProcKeyDown$1)) {
+            if ($Check(Link$6,"").Next!==null) {
+               $Check($Check(Link$6,"").Next,"").Prev = $Check(Link$6,"").Prev;
+            }
+            if ($Check(Link$6,"").Prev!==null) {
+               $Check($Check(Link$6,"").Prev,"").Next = $Check(Link$6,"").Next;
+            }
+            if ($Check(Self,"")._LinkKeyDown===Link$6) {
+               $Check(Self,"")._LinkKeyDown = $As($Check(Link$6,"").Next,TG2LinkKey);
+            }
+            TObject.Free(Link$6);
+            return;
+         } else {
+            Link$6 = $As($Check(Link$6,"").Next,TG2LinkKey);
+         }
+      }
    }
    /// procedure TG2Core.CallbackKeyUpAdd(const ProcKeyUp: TG2ProcKey)
    ,CallbackKeyUpAdd:function(Self, ProcKeyUp) {
@@ -3560,7 +3611,24 @@ var TG2Core = {
    /// procedure TG2Core.CallbackKeyUpRemove(const ProcKeyUp: TG2ProcKey)
    ,CallbackKeyUpRemove:function(Self, ProcKeyUp$1) {
       var Link$8 = null;
-      /* null */
+      Link$8 = $Check(Self,"")._LinkKeyUp;
+      while (Link$8!==null) {
+         if (G2CompareProcKey($Check(Link$8,"").Proc$5,ProcKeyUp$1)) {
+            if ($Check(Link$8,"").Next!==null) {
+               $Check($Check(Link$8,"").Next,"").Prev = $Check(Link$8,"").Prev;
+            }
+            if ($Check(Link$8,"").Prev!==null) {
+               $Check($Check(Link$8,"").Prev,"").Next = $Check(Link$8,"").Next;
+            }
+            if ($Check(Self,"")._LinkKeyUp===Link$8) {
+               $Check(Self,"")._LinkKeyUp = $As($Check(Link$8,"").Next,TG2LinkKey);
+            }
+            TObject.Free(Link$8);
+            return;
+         } else {
+            Link$8 = $As($Check(Link$8,"").Next,TG2LinkKey);
+         }
+      }
    }
    /// procedure TG2Core.CallbackMouseDownAdd(const ProcMouseDown: TG2ProcMouse)
    ,CallbackMouseDownAdd:function(Self, ProcMouseDown) {
@@ -3577,7 +3645,24 @@ var TG2Core = {
    /// procedure TG2Core.CallbackMouseDownRemove(const ProcMouseDown: TG2ProcMouse)
    ,CallbackMouseDownRemove:function(Self, ProcMouseDown$1) {
       var Link$10 = null;
-      /* null */
+      Link$10 = $Check(Self,"")._LinkMouseDown;
+      while (Link$10!==null) {
+         if (G2CompareProcMouse($Check(Link$10,"").Proc$4,ProcMouseDown$1)) {
+            if ($Check(Link$10,"").Next!==null) {
+               $Check($Check(Link$10,"").Next,"").Prev = $Check(Link$10,"").Prev;
+            }
+            if ($Check(Link$10,"").Prev!==null) {
+               $Check($Check(Link$10,"").Prev,"").Next = $Check(Link$10,"").Next;
+            }
+            if ($Check(Self,"")._LinkMouseDown===Link$10) {
+               $Check(Self,"")._LinkMouseDown = $As($Check(Link$10,"").Next,TG2LinkMouse);
+            }
+            TObject.Free(Link$10);
+            return;
+         } else {
+            Link$10 = $As($Check(Link$10,"").Next,TG2LinkMouse);
+         }
+      }
    }
    /// procedure TG2Core.CallbackMouseUpAdd(const ProcMouseUp: TG2ProcMouse)
    ,CallbackMouseUpAdd:function(Self, ProcMouseUp) {
@@ -3594,7 +3679,24 @@ var TG2Core = {
    /// procedure TG2Core.CallbackMouseUpRemove(const ProcMouseUp: TG2ProcMouse)
    ,CallbackMouseUpRemove:function(Self, ProcMouseUp$1) {
       var Link$12 = null;
-      /* null */
+      Link$12 = $Check(Self,"")._LinkMouseUp;
+      while (Link$12!==null) {
+         if (G2CompareProcMouse($Check(Link$12,"").Proc$4,ProcMouseUp$1)) {
+            if ($Check(Link$12,"").Next!==null) {
+               $Check($Check(Link$12,"").Next,"").Prev = $Check(Link$12,"").Prev;
+            }
+            if ($Check(Link$12,"").Prev!==null) {
+               $Check($Check(Link$12,"").Prev,"").Next = $Check(Link$12,"").Next;
+            }
+            if ($Check(Self,"")._LinkMouseUp===Link$12) {
+               $Check(Self,"")._LinkMouseUp = $As($Check(Link$12,"").Next,TG2LinkMouse);
+            }
+            TObject.Free(Link$12);
+            return;
+         } else {
+            Link$12 = $As($Check(Link$12,"").Next,TG2LinkMouse);
+         }
+      }
    }
    /// procedure TG2Core.CallbackPrintAdd(const ProcPrint: TG2ProcChar)
    ,CallbackPrintAdd:function(Self, ProcPrint) {
@@ -3611,7 +3713,24 @@ var TG2Core = {
    /// procedure TG2Core.CallbackPrintRemove(const ProcPrint: TG2ProcChar)
    ,CallbackPrintRemove:function(Self, ProcPrint$1) {
       var Link$14 = null;
-      /* null */
+      Link$14 = $Check(Self,"")._LinkPrint;
+      while (Link$14!==null) {
+         if (G2CompareProcChar($Check(Link$14,"").Proc$3,ProcPrint$1)) {
+            if ($Check(Link$14,"").Next!==null) {
+               $Check($Check(Link$14,"").Next,"").Prev = $Check(Link$14,"").Prev;
+            }
+            if ($Check(Link$14,"").Prev!==null) {
+               $Check($Check(Link$14,"").Prev,"").Next = $Check(Link$14,"").Next;
+            }
+            if ($Check(Self,"")._LinkPrint===Link$14) {
+               $Check(Self,"")._LinkPrint = $As($Check(Link$14,"").Next,TG2LinkPrint);
+            }
+            TObject.Free(Link$14);
+            return;
+         } else {
+            Link$14 = $As($Check(Link$14,"").Next,TG2LinkPrint);
+         }
+      }
    }
    /// procedure TG2Core.CallbackRenderAdd(const ProcRender: TG2Proc; Order: TG2Float = 0)
    ,CallbackRenderAdd:function(Self, ProcRender, Order$4) {
@@ -3651,7 +3770,24 @@ var TG2Core = {
    /// procedure TG2Core.CallbackRenderRemove(const ProcRender: TG2Proc)
    ,CallbackRenderRemove:function(Self, ProcRender$1) {
       var Link$16 = null;
-      /* null */
+      Link$16 = $Check(Self,"")._LinkRender;
+      while (Link$16!==null) {
+         if (G2CompareProc($Check(Link$16,"").Proc$1,ProcRender$1)) {
+            if ($Check(Link$16,"").Next!==null) {
+               $Check($Check(Link$16,"").Next,"").Prev = $Check(Link$16,"").Prev;
+            }
+            if ($Check(Link$16,"").Prev!==null) {
+               $Check($Check(Link$16,"").Prev,"").Next = $Check(Link$16,"").Next;
+            }
+            if ($Check(Self,"")._LinkRender===Link$16) {
+               $Check(Self,"")._LinkRender = $As($Check(Link$16,"").Next,TG2LinkRender);
+            }
+            TObject.Free(Link$16);
+            return;
+         } else {
+            Link$16 = $As($Check(Link$16,"").Next,TG2LinkRender);
+         }
+      }
    }
    /// procedure TG2Core.CallbackScrollAdd(const ProcScroll: TG2ProcScroll)
    ,CallbackScrollAdd:function(Self, ProcScroll) {
@@ -3668,7 +3804,24 @@ var TG2Core = {
    /// procedure TG2Core.CallbackScrollRemove(const ProcScroll: TG2ProcScroll)
    ,CallbackScrollRemove:function(Self, ProcScroll$1) {
       var Link$18 = null;
-      /* null */
+      Link$18 = $Check(Self,"")._LinkScroll;
+      while (Link$18!==null) {
+         if (G2CompareProcScroll($Check(Link$18,"").Proc,ProcScroll$1)) {
+            if ($Check(Link$18,"").Next!==null) {
+               $Check($Check(Link$18,"").Next,"").Prev = $Check(Link$18,"").Prev;
+            }
+            if ($Check(Link$18,"").Prev!==null) {
+               $Check($Check(Link$18,"").Prev,"").Next = $Check(Link$18,"").Next;
+            }
+            if ($Check(Self,"")._LinkScroll===Link$18) {
+               $Check(Self,"")._LinkScroll = $As($Check(Link$18,"").Next,TG2LinkScroll);
+            }
+            TObject.Free(Link$18);
+            return;
+         } else {
+            Link$18 = $As($Check(Link$18,"").Next,TG2LinkScroll);
+         }
+      }
    }
    /// procedure TG2Core.CallbackUpdateAdd(const ProcUpdate: TG2Proc)
    ,CallbackUpdateAdd:function(Self, ProcUpdate) {
@@ -3685,7 +3838,24 @@ var TG2Core = {
    /// procedure TG2Core.CallbackUpdateRemove(const ProcUpdate: TG2Proc)
    ,CallbackUpdateRemove:function(Self, ProcUpdate$1) {
       var Link$20 = null;
-      /* null */
+      Link$20 = $Check(Self,"")._LinkUpdate;
+      while (Link$20!==null) {
+         if (G2CompareProc($Check(Link$20,"").Proc$2,ProcUpdate$1)) {
+            if ($Check(Link$20,"").Next!==null) {
+               $Check($Check(Link$20,"").Next,"").Prev = $Check(Link$20,"").Prev;
+            }
+            if ($Check(Link$20,"").Prev!==null) {
+               $Check($Check(Link$20,"").Prev,"").Next = $Check(Link$20,"").Next;
+            }
+            if ($Check(Self,"")._LinkUpdate===Link$20) {
+               $Check(Self,"")._LinkUpdate = $As($Check(Link$20,"").Next,TG2LinkProc);
+            }
+            TObject.Free(Link$20);
+            return;
+         } else {
+            Link$20 = $As($Check(Link$20,"").Next,TG2LinkProc);
+         }
+      }
    }
    /// procedure TG2Core.ClearLinks(var List: TG2Link)
    ,ClearLinks:function(Self, List$1) {
@@ -3854,7 +4024,6 @@ var TG2Core = {
       var ox = 0;
       var oy = 0;
       var o = undefined;
-      var Link$25 = null;
       $Check(Self,"")._MousePos.x$5 = parseInt(e$6.clientX,10);
       $Check(Self,"")._MousePos.y$4 = parseInt(e$6.clientY,10);
       ox = 0;
@@ -3871,7 +4040,7 @@ var TG2Core = {
    /// procedure TG2Core.OnMouseUp(const e: Variant)
    ,OnMouseUp$1:function(Self, e$7) {
       var Button$2 = 0;
-      var Link$26 = null;
+      var Link$25 = null;
       {var $temp59 = e$7.button;
          if ($temp59==2) {
             Button$2 = 2;
@@ -3883,22 +4052,22 @@ var TG2Core = {
             Button$2 = 1;
          }
       }
-      Link$26 = $Check(Self,"")._LinkMouseUp;
-      while (Link$26!==null) {
-         $CheckFunc($Check(Link$26,"").Proc$4,"")(Button$2,$Check(Self,"")._MousePos.x$5,$Check(Self,"")._MousePos.y$4);
-         Link$26 = $As($Check(Link$26,"").Next,TG2LinkMouse);
+      Link$25 = $Check(Self,"")._LinkMouseUp;
+      while (Link$25!==null) {
+         $CheckFunc($Check(Link$25,"").Proc$4,"")(Button$2,$Check(Self,"")._MousePos.x$5,$Check(Self,"")._MousePos.y$4);
+         Link$25 = $As($Check(Link$25,"").Next,TG2LinkMouse);
       }
    }
    /// procedure TG2Core.OnRender()
    ,OnRender:function(Self) {
-      var Link$27 = null;
+      var Link$26 = null;
       $Check($Check(g2,"")._Gfx,"").gl$1.clearColor(TG2Vec4$GetX($Check(g2,"")._ClearColor),TG2Vec4$GetY($Check(g2,"")._ClearColor),TG2Vec4$GetZ($Check(g2,"")._ClearColor),TG2Vec4$GetW($Check(g2,"")._ClearColor));
       $Check($Check(g2,"")._Gfx,"").gl$1.clearDepth(1);
       $Check($Check(g2,"")._Gfx,"").gl$1.clear(16640);
-      Link$27 = $Check(Self,"")._LinkRender;
-      while (Link$27!==null) {
-         $CheckFunc($Check(Link$27,"").Proc$1,"")();
-         Link$27 = $As($Check(Link$27,"").Next,TG2LinkRender);
+      Link$26 = $Check(Self,"")._LinkRender;
+      while (Link$26!==null) {
+         $CheckFunc($Check(Link$26,"").Proc$1,"")();
+         Link$26 = $As($Check(Link$26,"").Next,TG2LinkRender);
       }
       TG2Core.SetRenderControl(g2,null);
       TG2Gfx.SetRenderTarget($Check(g2,"")._Gfx,null);
@@ -3906,13 +4075,13 @@ var TG2Core = {
    /// procedure TG2Core.OnScroll()
    ,OnScroll:function(Self) {
       var Shift = 0;
-      var Link$28 = null;
+      var Link$27 = null;
       
     Shift = event.detail ? event.detail * -1 : event.wheelDelta / 40;
-  Link$28 = $Check(Self,"")._LinkScroll;
-      while (Link$28!==null) {
-         $CheckFunc($Check(Link$28,"").Proc,"")(Shift);
-         Link$28 = $As($Check(Link$28,"").Next,TG2LinkScroll);
+  Link$27 = $Check(Self,"")._LinkScroll;
+      while (Link$27!==null) {
+         $CheckFunc($Check(Link$27,"").Proc,"")(Shift);
+         Link$27 = $As($Check(Link$27,"").Next,TG2LinkScroll);
       }
    }
    /// procedure TG2Core.OnTimer()
@@ -3952,11 +4121,11 @@ var TG2Core = {
    }
    /// procedure TG2Core.OnUpdate()
    ,OnUpdate:function(Self) {
-      var Link$29 = null;
-      Link$29 = $Check(Self,"")._LinkUpdate;
-      while (Link$29!==null) {
-         $CheckFunc($Check(Link$29,"").Proc$2,"")();
-         Link$29 = $As($Check(Link$29,"").Next,TG2LinkProc);
+      var Link$28 = null;
+      Link$28 = $Check(Self,"")._LinkUpdate;
+      while (Link$28!==null) {
+         $CheckFunc($Check(Link$28,"").Proc$2,"")();
+         Link$28 = $As($Check(Link$28,"").Next,TG2LinkProc);
       }
    }
    /// procedure TG2Core.PicQuad(const x0: TG2Float; const y0: TG2Float; const x1: TG2Float; const y1: TG2Float; const x2: TG2Float; const y2: TG2Float; const x3: TG2Float; const y3: TG2Float; const tu0: TG2Float; const tv0: TG2Float; const tu1: TG2Float; const tv1: TG2Float; const tu2: TG2Float; const tv2: TG2Float; const tu3: TG2Float; const tv3: TG2Float; const Col: TG2Vec4; const Texture: TG2Texture2DBase; BlendMode: TG2BlendMode = 2; Filtering: TG2Filter = 1)
@@ -4513,6 +4682,36 @@ function Pub$a$39($) {
       ,"TransformCom" : Pub$TG2Mat($.TransformCom)
    }
 }
+function G2CompareProcScroll(f0$2, f1$1) {
+   var Result = false;
+   
+    (Result) = (f0$2) == (f1$1);
+  return Result
+};
+function G2CompareProcMouse(f0$3, f1$2) {
+   var Result = false;
+   
+    (Result) = (f0$3) == (f1$2);
+  return Result
+};
+function G2CompareProcKey(f0$4, f1$3) {
+   var Result = false;
+   
+    (Result) = (f0$4) == (f1$3);
+  return Result
+};
+function G2CompareProcChar(f0$5, f1$4) {
+   var Result = false;
+   
+    (Result) = (f0$5) == (f1$4);
+  return Result
+};
+function G2CompareProc(f0$6, f1$5) {
+   var Result = false;
+   
+    (Result) = (f0$6) == (f1$5);
+  return Result
+};
 function WriteLn(value$2) {
    if (window.console) {
       window.console.log(value$2);
@@ -15262,7 +15461,7 @@ function TG2Frustum$GetPlane(Self$261, Index$44) {
 /// function TG2Frustum.IntersectFrustum(var Self: TG2Frustum; const Frustum: TG2Frustum) : Boolean
 function TG2Frustum$IntersectFrustum(Self$262, Frustum$1) {
    var Result = false;
-   function FrustumOutside(f1$1, f2) {
+   function FrustumOutside(f1$6, f2) {
       var Result = false;
       var Points = {v:[{Arr$2:[0,0,0]},{Arr$2:[0,0,0]},{Arr$2:[0,0,0]},{Arr$2:[0,0,0]},{Arr$2:[0,0,0]},{Arr$2:[0,0,0]},{Arr$2:[0,0,0]},{Arr$2:[0,0,0]}]};
       var i$67 = 0;
@@ -15272,7 +15471,7 @@ function TG2Frustum$IntersectFrustum(Self$262, Frustum$1) {
       for(i$67 = 0;i$67<=5;i$67++) {
          n$10 = 0;
          for(j$5 = 0;j$5<=7;j$5++) {
-            if (TG2Frustum$DistanceToPoint(f1$1,i$67,Points.v[$Idx(j$5,0,7,"")])<0) {
+            if (TG2Frustum$DistanceToPoint(f1$6,i$67,Points.v[$Idx(j$5,0,7,"")])<0) {
                ++n$10;
             }
          }
@@ -16469,8 +16668,8 @@ function G2LerpVec2(v0$66, v1$23, s$15) {
    TG2Vec2$SetY$2(Result,(TG2Vec2$GetY$2(v0$66)+((TG2Vec2$GetY$2(v1$23)-TG2Vec2$GetY$2(v0$66))*s$15)));
    return Result
 };
-function G2LerpFloat(f0$2, f1$2, s$16) {
-   return f0$2+((f1$2-f0$2)*s$16);
+function G2LerpFloat(f0$7, f1$7, s$16) {
+   return f0$7+((f1$7-f0$7)*s$16);
 };
 function G2Intersect3Planes(p1, p2, p3) {
    var Result = {Arr$2:[0,0,0]};
@@ -17510,6 +17709,16 @@ var TGame = {
    }
    /// destructor TGame.Destroy()
    ,Destroy:function(Self) {
+      TG2Core.CallbackInitializeRemove(g2,$Event0(Self,TGame.Initialize));
+      TG2Core.CallbackFinalizeRemove(g2,$Event0(Self,TGame.Finalize));
+      TG2Core.CallbackUpdateRemove(g2,$Event0(Self,TGame.Update$1));
+      TG2Core.CallbackRenderRemove(g2,$Event0(Self,TGame.Render$1));
+      TG2Core.CallbackKeyDownRemove(g2,$Event1(Self,TGame.KeyDown));
+      TG2Core.CallbackKeyUpRemove(g2,$Event1(Self,TGame.KeyUp));
+      TG2Core.CallbackMouseDownRemove(g2,$Event3(Self,TGame.MouseDown));
+      TG2Core.CallbackMouseUpRemove(g2,$Event3(Self,TGame.MouseUp));
+      TG2Core.CallbackScrollRemove(g2,$Event1(Self,TGame.Scroll));
+      TG2Core.CallbackPrintRemove(g2,$Event1(Self,TGame.Print$1));
       TObject.Destroy(Self);
    }
    /// procedure TGame.Finalize()
