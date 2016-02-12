@@ -538,6 +538,21 @@ type
     function Make(const NewWidth, NewHeight: Integer): Boolean;
   end;
 
+  TG2Texture2DVideo = class (TG2Texture2DBase)
+  private
+    _Video: Variant;
+    _IntervalID: Variant;
+    _OnFinishedProc: TG2ProcObj;
+    procedure OnReadyToPlay;
+    procedure OnPlayFinished;
+    procedure OnUpdateTexture;
+  public
+    property OnFinished: TG2ProcObj read _OnFinishedProc write _OnFinishedProc;
+    constructor Create; override;
+    destructor Destroy; override;
+    procedure Load(const FileName: String);
+  end;
+
   TG2TextureCubeBase = class (TG2TextureBase)
   protected
     _Size: TG2Float;
@@ -2697,7 +2712,7 @@ begin
   _gl.bindTexture(_gl.TEXTURE_2D, _Texture);
   asm
     (@_gl).pixelStorei((@_gl).UNPACK_FLIP_Y_WEBGL, false);
-      (@_gl).texImage2D((@_gl).TEXTURE_2D, 0, (@_gl).RGBA, (@_gl).RGBA, (@_gl).UNSIGNED_BYTE, @_Image);
+    (@_gl).texImage2D((@_gl).TEXTURE_2D, 0, (@_gl).RGBA, (@_gl).RGBA, (@_gl).UNSIGNED_BYTE, @_Image);
     (@_gl).texParameteri((@_gl).TEXTURE_2D, (@_gl).TEXTURE_WRAP_S, (@_gl).REPEAT);
     (@_gl).texParameteri((@_gl).TEXTURE_2D, (@_gl).TEXTURE_WRAP_T, (@_gl).REPEAT);
     (@_gl).texParameteri((@_gl).TEXTURE_2D, (@_gl).TEXTURE_MAG_FILTER, (@_gl).LINEAR);
@@ -2756,6 +2771,86 @@ begin
   g2.LoadingItems := g2.LoadingItems + 1;
 end;
 //TG2Texture2D END
+
+//TG2Texture2DVideo BEGIN
+procedure TG2Texture2DVideo.OnReadyToPlay;
+  function SetTimer(const Proc: TG2ProcObj): Variant;
+  begin
+    asm
+      (@Result) = setInterval((@Proc), 30);
+    end;
+  end;
+begin
+  if _State = asLoaded then Exit;
+  _Video.play();
+  _Video.volume := 0.1;
+  _RealWidth := _Video.videoWidth;
+  _RealHeight := _Video.videoHeight;
+  _Width := _RealWidth;
+  _Height := _RealHeight;
+  _SizeTU := 1;
+  _SizeTV := 1;
+  _gl.bindTexture(_gl.TEXTURE_2D, _Texture);
+  asm
+    (@_gl).pixelStorei((@_gl).UNPACK_FLIP_Y_WEBGL, false);
+    (@_gl).texImage2D((@_gl).TEXTURE_2D, 0, (@_gl).RGBA, (@_gl).RGBA, (@_gl).UNSIGNED_BYTE, (@_Video));
+    (@_gl).texParameteri((@_gl).TEXTURE_2D, (@_gl).TEXTURE_WRAP_S, (@_gl).CLAMP_TO_EDGE);
+    (@_gl).texParameteri((@_gl).TEXTURE_2D, (@_gl).TEXTURE_WRAP_T, (@_gl).CLAMP_TO_EDGE);
+    (@_gl).texParameteri((@_gl).TEXTURE_2D, (@_gl).TEXTURE_MAG_FILTER, (@_gl).LINEAR);
+    (@_gl).texParameteri((@_gl).TEXTURE_2D, (@_gl).TEXTURE_MIN_FILTER, (@_gl).LINEAR);
+    (@_gl).bindTexture((@_gl).TEXTURE_2D, null);
+  end;
+  _IntervalID := SetTimer(@OnUpdateTexture);
+  _State := asLoaded;
+end;
+
+procedure TG2Texture2DVideo.OnPlayFinished;
+begin
+  if Assigned(_OnFinishedProc) then _OnFinishedProc;
+end;
+
+procedure TG2Texture2DVideo.OnUpdateTexture;
+begin
+  _gl.bindTexture(_gl.TEXTURE_2D, _Texture);
+  asm
+    (@_gl).pixelStorei((@_gl).UNPACK_FLIP_Y_WEBGL, false);
+    (@_gl).texImage2D((@_gl).TEXTURE_2D, 0, (@_gl).RGBA, (@_gl).RGBA, (@_gl).UNSIGNED_BYTE, (@_Video));
+    (@_gl).bindTexture((@_gl).TEXTURE_2D, null);
+  end;
+end;
+
+constructor TG2Texture2DVideo.Create;
+begin
+  inherited Create;
+  _IntervalID := -1;
+  _OnFinishedProc := nil;
+end;
+
+destructor TG2Texture2DVideo.Destroy;
+begin
+  inherited Destroy;
+  if _IntervalID > -1 then
+  begin
+    asm
+      //clearInterval(@_IntervalID);
+    end;
+    _IntervalID := -1;
+  end;
+end;
+
+procedure TG2Texture2DVideo.Load(const FileName: String);
+begin
+  asm
+    @_Video = document.createElement("video");
+    (@_Video).style.display = "none";
+    (@_Video).preload = "auto";
+    (@_Video).src = FileName;
+  end;
+  _Video.addEventListener('canplaythrough', @OnReadyToPlay, True);
+  _Video.addEventListener('ended', @OnPlayFinished, True);
+  _State := asLoading;
+end;
+//TG2Texture2DVideo END
 
 //TG2Texture2DRT BEGIN
 procedure TG2Texture2DRT.Release;

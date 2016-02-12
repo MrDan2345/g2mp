@@ -28,6 +28,8 @@ type
     TexSprite: TG2Texture2D;
     Font0: TG2Font;
     Initialized: Boolean;
+    Video: TG2Texture2DVideo;
+    VideoAngle: TG2Float;
     constructor Create;
     destructor Destroy; override;
     procedure Initialize;
@@ -147,14 +149,16 @@ end;
 procedure TGame.Initialize;
   var i: Integer;
 begin
-  //g2.ClearColor.SetValue(1, 1, 1, 1);
   TexSprite := TG2Texture2D.Create;
   TexSprite.Load('sprite.png');
   Font0 := TG2Font.Create;
   Font0.Load('Font0.g2fh', 'Font0.png');
   Initialized := True;
   for i := 0 to High(Sprites) do
-  Sprites[i] := TSprite.Create; ;
+  Sprites[i] := TSprite.Create;
+  Video := TG2Texture2DVideo.Create;
+  Video.Load('Video.mp4');
+  VideoAngle := 0;
 end;
 
 procedure TGame.Finalize;
@@ -172,6 +176,7 @@ begin
     for i := 0 to High(Sprites) do
     Sprites[i].Update;
   end;
+  VideoAngle += 0.02;
 end;
 
 procedure TGame.Render;
@@ -195,6 +200,17 @@ begin
       //g2.PicRect(10, 10, G2Vec4(1, 1, 1, 1), TexSprite);
       for i := 0 to High(Sprites) do
       Sprites[i].Render;
+    end;
+    if Video.State = asLoaded then
+    begin
+      g2.PicRect(
+        g2.Params.Width * 0.5, g2.Params.Height * 0.5,
+        Video.Width, Video.Height,
+        G2Vec4(1, 1, 1, 1),
+        0.5, 0.5, 1, 1, VideoAngle,
+        False, False, Video,
+        Video.Width, Video.Height, 0
+      );
     end;
     if Font0.State = asLoaded then
     begin

@@ -898,6 +898,91 @@ var TG2Texture2DBase = {
    ,Create$48:TG2TextureBase.Create$48
    ,Release$1:TG2TextureBase.Release$1
 };
+/// TG2Texture2DVideo = class (TG2Texture2DBase)
+var TG2Texture2DVideo = {
+   $ClassName:"TG2Texture2DVideo",
+   $Parent:TG2Texture2DBase
+   ,$Init:function ($) {
+      TG2Texture2DBase.$Init($);
+      $._IntervalID = $._Video = undefined;
+      $._OnFinishedProc = null;
+   }
+   /// constructor TG2Texture2DVideo.Create()
+   ,Create$48:function(Self) {
+      TG2TextureBase.Create$48(Self);
+      $Check(Self,"")._IntervalID = -1;
+      $Check(Self,"")._OnFinishedProc = null;
+      return Self
+   }
+   /// destructor TG2Texture2DVideo.Destroy()
+   ,Destroy:function(Self) {
+      TG2TextureBase.Destroy(Self);
+      if ($Check(Self,"")._IntervalID>(-1)) {
+         
+      //clearInterval(@_IntervalID);
+    $Check(Self,"")._IntervalID = -1;
+      }
+   }
+   /// procedure TG2Texture2DVideo.Load(const FileName: String)
+   ,Load$1:function(Self, FileName) {
+      
+    Self._Video = document.createElement("video");
+    (Self._Video).style.display = "none";
+    (Self._Video).preload = "auto";
+    (Self._Video).src = FileName;
+  $Check(Self,"")._Video.addEventListener("canplaythrough",$Event0(Self,TG2Texture2DVideo.OnReadyToPlay),true);
+      $Check(Self,"")._Video.addEventListener("ended",$Event0(Self,TG2Texture2DVideo.OnPlayFinished),true);
+      $Check(Self,"")._State = 1;
+   }
+   /// procedure TG2Texture2DVideo.OnPlayFinished()
+   ,OnPlayFinished:function(Self) {
+      if ($Check(Self,"")._OnFinishedProc) {
+         $CheckFunc($Check(Self,"")._OnFinishedProc,"")();
+      }
+   }
+   /// procedure TG2Texture2DVideo.OnReadyToPlay()
+   ,OnReadyToPlay:function(Self) {
+      function SetTimer(Proc$6) {
+         var Result = undefined;
+         
+      (Result) = setInterval((Proc$6), 30);
+    return Result
+      };
+      if ($Check(Self,"")._State==2) {
+         return;
+      }
+      $Check(Self,"")._Video.play();
+      $Check(Self,"")._Video.volume = 0.1;
+      $Check(Self,"")._RealWidth = parseInt($Check(Self,"")._Video.videoWidth,10);
+      $Check(Self,"")._RealHeight = parseInt($Check(Self,"")._Video.videoHeight,10);
+      $Check(Self,"")._Width = $Check(Self,"")._RealWidth;
+      $Check(Self,"")._Height = $Check(Self,"")._RealHeight;
+      $Check(Self,"")._SizeTU = 1;
+      $Check(Self,"")._SizeTV = 1;
+      $Check(Self,"")._gl$1.bindTexture(3553,$Check(Self,"")._Texture);
+      
+    (Self._gl$1).pixelStorei((Self._gl$1).UNPACK_FLIP_Y_WEBGL, false);
+    (Self._gl$1).texImage2D((Self._gl$1).TEXTURE_2D, 0, (Self._gl$1).RGBA, (Self._gl$1).RGBA, (Self._gl$1).UNSIGNED_BYTE, (Self._Video));
+    (Self._gl$1).texParameteri((Self._gl$1).TEXTURE_2D, (Self._gl$1).TEXTURE_WRAP_S, (Self._gl$1).CLAMP_TO_EDGE);
+    (Self._gl$1).texParameteri((Self._gl$1).TEXTURE_2D, (Self._gl$1).TEXTURE_WRAP_T, (Self._gl$1).CLAMP_TO_EDGE);
+    (Self._gl$1).texParameteri((Self._gl$1).TEXTURE_2D, (Self._gl$1).TEXTURE_MAG_FILTER, (Self._gl$1).LINEAR);
+    (Self._gl$1).texParameteri((Self._gl$1).TEXTURE_2D, (Self._gl$1).TEXTURE_MIN_FILTER, (Self._gl$1).LINEAR);
+    (Self._gl$1).bindTexture((Self._gl$1).TEXTURE_2D, null);
+  $Check(Self,"")._IntervalID = SetTimer($Event0(Self,TG2Texture2DVideo.OnUpdateTexture));
+      $Check(Self,"")._State = 2;
+   }
+   /// procedure TG2Texture2DVideo.OnUpdateTexture()
+   ,OnUpdateTexture:function(Self) {
+      $Check(Self,"")._gl$1.bindTexture(3553,$Check(Self,"")._Texture);
+      
+    (Self._gl$1).pixelStorei((Self._gl$1).UNPACK_FLIP_Y_WEBGL, false);
+    (Self._gl$1).texImage2D((Self._gl$1).TEXTURE_2D, 0, (Self._gl$1).RGBA, (Self._gl$1).RGBA, (Self._gl$1).UNSIGNED_BYTE, (Self._Video));
+    (Self._gl$1).bindTexture((Self._gl$1).TEXTURE_2D, null);
+     }
+   ,Destroy$:function($){return $.ClassType.Destroy($)}
+   ,Create$48$:function($){return $.ClassType.Create$48($)}
+   ,Release$1:TG2TextureBase.Release$1
+};
 /// TG2Texture2DRT = class (TG2Texture2DBase)
 var TG2Texture2DRT = {
    $ClassName:"TG2Texture2DRT",
@@ -970,18 +1055,18 @@ var TG2Texture2D = {
       return Self
    }
    /// procedure TG2Texture2D.Load(const FileName: String; TextureUsage: TG2TextureUsage = 0)
-   ,Load$1:function(Self, FileName, TextureUsage$1) {
+   ,Load$2:function(Self, FileName$1, TextureUsage$1) {
       var fname = "";
       $Check(Self,"")._Usage = $Check(Self,"")._Usage;
       
     Self._Image$1 = new Image();
   $Check(Self,"")._Image$1.onload = $Event0(Self,TG2Texture2D.OnLoad$1);
       $Check(Self,"")._Image$1.onerror = $Event0(Self,TG2Texture2D.OnError$1);
-      fname = FileName;
+      fname = FileName$1;
       if (PreventCaching) {
          fname = fname+"?c="+G2Time().toString();
       }
-      $Check(Self,"")._Image$1.src = FileName;
+      $Check(Self,"")._Image$1.src = FileName$1;
       $Check(Self,"")._State = 1;
       $Check(g2,"")._LoadingItems+=1;
    }
@@ -995,7 +1080,7 @@ var TG2Texture2D = {
       $Check(Self,"")._gl$1.bindTexture(3553,$Check(Self,"")._Texture);
       
     (Self._gl$1).pixelStorei((Self._gl$1).UNPACK_FLIP_Y_WEBGL, false);
-      (Self._gl$1).texImage2D((Self._gl$1).TEXTURE_2D, 0, (Self._gl$1).RGBA, (Self._gl$1).RGBA, (Self._gl$1).UNSIGNED_BYTE, Self._Image$1);
+    (Self._gl$1).texImage2D((Self._gl$1).TEXTURE_2D, 0, (Self._gl$1).RGBA, (Self._gl$1).RGBA, (Self._gl$1).UNSIGNED_BYTE, Self._Image$1);
     (Self._gl$1).texParameteri((Self._gl$1).TEXTURE_2D, (Self._gl$1).TEXTURE_WRAP_S, (Self._gl$1).REPEAT);
     (Self._gl$1).texParameteri((Self._gl$1).TEXTURE_2D, (Self._gl$1).TEXTURE_WRAP_T, (Self._gl$1).REPEAT);
     (Self._gl$1).texParameteri((Self._gl$1).TEXTURE_2D, (Self._gl$1).TEXTURE_MAG_FILTER, (Self._gl$1).LINEAR);
@@ -1201,7 +1286,7 @@ var TG2Scene3D = {
       pt = TObject.Create($New(TG2S3DTexture));
       $Check(pt,"").Name$6 = TextureName;
       $Check(pt,"").Texture$1 = TG2Resource.Create$48$($New(TG2Texture2D));
-      TG2Texture2D.Load$1($Check(pt,"").Texture$1,TextureName,Usage$1);
+      TG2Texture2D.Load$2($Check(pt,"").Texture$1,TextureName,Usage$1);
       TG2QuickList$Add$11($Check(Self,"")._Textures,pt);
       Result = $Check(pt,"").Texture$1;
       return Result
@@ -1278,7 +1363,7 @@ var TG2Scene3D = {
       }
       if (n$4==(-1)) {
          n$4 = $Check(Self,"")._ParticleRenders._ItemCount$5;
-         TG2QuickList$Add$11($Check(Self,"")._ParticleRenders,TG2S3DParticleRender.Create$57$($NewDyn($Check(Particle,"")._RenderClass,""),Self));
+         TG2QuickList$Add$11($Check(Self,"")._ParticleRenders,TG2S3DParticleRender.Create$58$($NewDyn($Check(Particle,"")._RenderClass,""),Self));
       }
       $Check(Particle,"")._ParticleRender = $As(TG2QuickList$GetItem$11($Check(Self,"")._ParticleRenders,n$4),TG2S3DParticleRender);
       ps = $Check(Particle,"")._Size$1*2;
@@ -1536,7 +1621,7 @@ var TG2S3DParticleRender = {
       $._gl$3 = $._Scene = null;
    }
    /// constructor TG2S3DParticleRender.Create(const Scene: TG2Scene3D)
-   ,Create$57:function(Self, Scene) {
+   ,Create$58:function(Self, Scene) {
       TObject.Create(Self);
       $Check(Self,"")._Scene = Scene;
       $Check(Self,"")._gl$3 = $Check($Check(g2,"")._Gfx,"").gl$1;
@@ -1547,7 +1632,7 @@ var TG2S3DParticleRender = {
       TObject.Destroy(Self);
    }
    ,Destroy$:function($){return $.ClassType.Destroy($)}
-   ,Create$57$:function($){return $.ClassType.Create$57.apply($.ClassType, arguments)}
+   ,Create$58$:function($){return $.ClassType.Create$58.apply($.ClassType, arguments)}
    ,RenderBegin$:function($){return $.ClassType.RenderBegin($)}
    ,RenderEnd$:function($){return $.ClassType.RenderEnd($)}
    ,RenderParticle$:function($){return $.ClassType.RenderParticle.apply($.ClassType, arguments)}
@@ -1564,10 +1649,10 @@ var TG2S3DParticleRenderFlat = {
       $._CurTexture = $._IB = $._Shader = $._UniformTex0 = $._UniformWVP = $._VB$1 = null;
    }
    /// constructor TG2S3DParticleRenderFlat.Create(const Scene: TG2Scene3D)
-   ,Create$57:function(Self, Scene$1) {
+   ,Create$58:function(Self, Scene$1) {
       var Decl$2 = [];
       var i$20 = 0;
-      TG2S3DParticleRender.Create$57(Self,Scene$1);
+      TG2S3DParticleRender.Create$58(Self,Scene$1);
       $Check(Self,"")._MaxQuads = 45;
       $Check(Self,"")._Shader = TG2Resource.Create$48$($New(TG2ShaderProgram));
       TG2Resource.SetParent($Check(Self,"")._Shader,$Check(Self,"")._Scene);
@@ -1693,7 +1778,7 @@ var TG2S3DParticleRenderFlat = {
       ++$Check(Self,"")._CurQuad;
    }
    ,Destroy$:function($){return $.ClassType.Destroy($)}
-   ,Create$57$:function($){return $.ClassType.Create$57.apply($.ClassType, arguments)}
+   ,Create$58$:function($){return $.ClassType.Create$58.apply($.ClassType, arguments)}
    ,RenderBegin$:function($){return $.ClassType.RenderBegin($)}
    ,RenderEnd$:function($){return $.ClassType.RenderEnd($)}
    ,RenderParticle$:function($){return $.ClassType.RenderParticle.apply($.ClassType, arguments)}
@@ -1724,7 +1809,7 @@ var TG2S3DParticle = {
       $._Size$1 = 0;
    }
    /// constructor TG2S3DParticle.Create()
-   ,Create$59:function(Self) {
+   ,Create$60:function(Self) {
       TObject.Create(Self);
       $Check(Self,"")._ParticleRender = null;
       $Check(Self,"")._RenderClass = null;
@@ -1753,7 +1838,7 @@ var TG2S3DParticle = {
       return Result
    }
    ,Destroy$:function($){return $.ClassType.Destroy($)}
-   ,Create$59$:function($){return $.ClassType.Create$59($)}
+   ,Create$60$:function($){return $.ClassType.Create$60($)}
    ,Update$6$:function($){return $.ClassType.Update$6($)}
 };
 /// TG2S3DParticleFlat = class (TG2S3DParticle)
@@ -1770,8 +1855,8 @@ var TG2S3DParticleFlat = {
       $._VecY = {Arr$2:[0,0,0]};
    }
    /// constructor TG2S3DParticleFlat.Create()
-   ,Create$59:function(Self) {
-      TG2S3DParticle.Create$59(Self);
+   ,Create$60:function(Self) {
+      TG2S3DParticle.Create$60(Self);
       $Check(Self,"")._RenderClass = TG2S3DParticleRenderFlat;
       TG2Vec3$SetValue$1($Check(Self,"")._VecX,1,0,0);
       TG2Vec3$SetValue$1($Check(Self,"")._VecY,0,1,0);
@@ -1826,7 +1911,7 @@ var TG2S3DParticleFlat = {
       $Check(Self,"")._Size$1 = Math.sqrt(Math.pow(TG2Vec3$Len($Check(Self,"")._VecX),2)+Math.pow(TG2Vec3$Len($Check(Self,"")._VecY),2));
    }
    ,Destroy$:function($){return $.ClassType.Destroy($)}
-   ,Create$59$:function($){return $.ClassType.Create$59($)}
+   ,Create$60$:function($){return $.ClassType.Create$60($)}
    ,Update$6$:function($){return $.ClassType.Update$6($)}
 };
 /// TG2S3DOcTreeNode = class (TObject)
@@ -1853,7 +1938,7 @@ var TG2S3DNode = {
       $._Transform = {Arr$5:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]};
    }
    /// constructor TG2S3DNode.Create(const Scene: TG2Scene3D)
-   ,Create$61:function(Self, Scene$2) {
+   ,Create$62:function(Self, Scene$2) {
       TObject.Create(Self);
       $Check(Self,"")._Scene$1 = Scene$2;
       $Check(Self,"")._Transform = G2MatIdentity();
@@ -1874,7 +1959,7 @@ var TG2S3DNode = {
       Copy$TG2Mat(Value$3,$Check(Self,"")._Transform);
    }
    ,Destroy$:function($){return $.ClassType.Destroy($)}
-   ,Create$61$:function($){return $.ClassType.Create$61.apply($.ClassType, arguments)}
+   ,Create$62$:function($){return $.ClassType.Create$62.apply($.ClassType, arguments)}
    ,SetTransform$:function($){return $.ClassType.SetTransform.apply($.ClassType, arguments)}
 };
 /// TG2S3DMeshNode = class (TObject)
@@ -1919,8 +2004,8 @@ var TG2S3DFrame = {
       TG2S3DNode.$Init($);
    }
    /// constructor TG2S3DFrame.Create(const Scene: TG2Scene3D)
-   ,Create$61:function(Self, Scene$3) {
-      TG2S3DNode.Create$61(Self,Scene$3);
+   ,Create$62:function(Self, Scene$3) {
+      TG2S3DNode.Create$62(Self,Scene$3);
       TG2QuickList$Add$11($Check($Check(Self,"")._Scene$1,"")._Frames,Self);
       return Self
    }
@@ -1930,7 +2015,7 @@ var TG2S3DFrame = {
       TG2S3DNode.Destroy(Self);
    }
    ,Destroy$:function($){return $.ClassType.Destroy($)}
-   ,Create$61$:function($){return $.ClassType.Create$61.apply($.ClassType, arguments)}
+   ,Create$62$:function($){return $.ClassType.Create$62.apply($.ClassType, arguments)}
    ,SetTransform:TG2S3DNode.SetTransform
    ,GetAABox$1$:function($){return $.ClassType.GetAABox$1($)}
 };
@@ -1986,8 +2071,8 @@ var TG2S3DMeshInst = {
       TG2S3DMeshInst.ComputeSkinTransforms(Self);
    }
    /// constructor TG2S3DMeshInst.Create(const Scene: TG2Scene3D)
-   ,Create$61:function(Self, Scene$4) {
-      TG2S3DFrame.Create$61(Self,Scene$4);
+   ,Create$62:function(Self, Scene$4) {
+      TG2S3DFrame.Create$62(Self,Scene$4);
       $Check(Self,"")._Mesh = null;
       $Check(Self,"")._AutoComputeTransforms = true;
       TG2QuickList$Add$11($Check($Check(Self,"")._Scene$1,"")._MeshInst,Self);
@@ -2179,7 +2264,7 @@ var TG2S3DMeshInst = {
       }
    }
    ,Destroy$:function($){return $.ClassType.Destroy($)}
-   ,Create$61$:function($){return $.ClassType.Create$61.apply($.ClassType, arguments)}
+   ,Create$62$:function($){return $.ClassType.Create$62.apply($.ClassType, arguments)}
    ,SetTransform:TG2S3DNode.SetTransform
    ,GetAABox$1$:function($){return $.ClassType.GetAABox$1($)}
 };
@@ -2239,7 +2324,7 @@ var TG2S3DMesh = {
       return Result
    }
    /// constructor TG2S3DMesh.Create(const Scene: TG2Scene3D)
-   ,Create$64:function(Self, Scene$5) {
+   ,Create$65:function(Self, Scene$5) {
       TG2ResourceAsync.Create$48(Self);
       $Check(Self,"")._Loaded = false;
       $Check(Self,"")._NodeCount = 0;
@@ -2278,8 +2363,8 @@ var TG2S3DMesh = {
       return $DIdxR($Check(Self,"")._Nodes$1,Index$10,"");
    }
    /// procedure TG2S3DMesh.Load(const FileName: String)
-   ,Load$2:function(Self, FileName$1) {
-      TG2DataManager.Load$5($Check(Self,"")._DataManager,FileName$1);
+   ,Load$3:function(Self, FileName$2) {
+      TG2DataManager.Load$6($Check(Self,"")._DataManager,FileName$2);
       $Check(Self,"")._State = 1;
       $Check(g2,"")._LoadingItems+=1;
    }
@@ -2519,7 +2604,7 @@ var TG2S3DMesh = {
    /// function TG2S3DMesh.NewInst() : TG2S3DMeshInst
    ,NewInst:function(Self) {
       var Result = null;
-      Result = TG2S3DNode.Create$61$($New(TG2S3DMeshInst),$Check(Self,"")._Scene$2);
+      Result = TG2S3DNode.Create$62$($New(TG2S3DMeshInst),$Check(Self,"")._Scene$2);
       TG2S3DMeshInst.SetMesh(Result,Self);
       return Result
    }
@@ -2533,7 +2618,7 @@ var TG2S3DMesh = {
       var $temp52;
       for(i$31 = 0,$temp52 = G2MeshLoaders.length;i$31<$temp52;i$31++) {
          if (TG2MeshLoader.CanLoad$($Check($DIdxR(G2MeshLoaders,i$31,""),""),$Check(Self,"")._DataManager)) {
-            MeshLoader = TG2MeshLoader.Create$73($NewDyn($DIdxR(G2MeshLoaders,i$31,""),""));
+            MeshLoader = TG2MeshLoader.Create$74($NewDyn($DIdxR(G2MeshLoaders,i$31,""),""));
             break;
          }
       }
@@ -2541,7 +2626,7 @@ var TG2S3DMesh = {
          $Check(Self,"")._State = 3;
          return;
       }
-      TG2MeshLoader.Load$4$($Check(MeshLoader,""),$Check(Self,"")._DataManager);
+      TG2MeshLoader.Load$5$($Check(MeshLoader,""),$Check(Self,"")._DataManager);
       MeshData$1 = TG2MeshLoader.ExportMeshData$($Check(MeshLoader,""));
       TG2S3DMesh.LoadData(Self,MeshData$1);
       TObject.Free(MeshData$1);
@@ -3210,7 +3295,7 @@ var TG2Gfx = {
       $._Handle = undefined;
    }
    /// constructor TG2Gfx.Create(const Handle: THandle)
-   ,Create$70:function(Self, Handle$6) {
+   ,Create$71:function(Self, Handle$6) {
       var Properties$1 = undefined;
       $Check(Self,"")._Handle = Handle$6;
       Properties$1 = G2NewVariant();
@@ -3358,9 +3443,9 @@ var TG2Font = {
       TG2Resource.Destroy(Self);
    }
    /// procedure TG2Font.Load(const FontHeader: String; const FontImage: String)
-   ,Load$3:function(Self, FontHeader, FontImage) {
-      TG2Texture2D.Load$1($Check(Self,"")._Texture$2,FontImage,0);
-      TG2DataManager.Load$5($Check(Self,"")._DataManager$1,FontHeader);
+   ,Load$4:function(Self, FontHeader, FontImage) {
+      TG2Texture2D.Load$2($Check(Self,"")._Texture$2,FontImage,0);
+      TG2DataManager.Load$6($Check(Self,"")._DataManager$1,FontHeader);
       $Check(Self,"")._State = 1;
       $Check(g2,"")._LoadingItems+=1;
    }
@@ -3970,7 +4055,7 @@ var TG2Core = {
       $Check(Self,"")._TimeToUpdate = 0;
       $Check(Self,"")._TimerPause = false;
       $Check(Self,"")._TimerEnable = true;
-      $Check(Self,"")._Gfx = TG2Gfx.Create$70($New(TG2Gfx),TW3CustomGraphicContext.GetHandle$($Check($Check(Self,"")._Canvas,"")));
+      $Check(Self,"")._Gfx = TG2Gfx.Create$71($New(TG2Gfx),TW3CustomGraphicContext.GetHandle$($Check($Check(Self,"")._Canvas,"")));
       $Check(Self,"")._LocalStorage = TObject.Create($New(TG2LocalStorage));
       $Check(Self,"")._RenderControl = null;
       $Check(Self,"")._RenderControlPrim2D = TG2Resource.Create$48$($New(TG2RenderControlPrim2D));
@@ -16762,12 +16847,12 @@ var TG2DataManager = {
       return parseInt($Check(Self,"")._Data$2.byteLength,10);
    }
    /// procedure TG2DataManager.Load(const FileName: String)
-   ,Load$5:function(Self, FileName$2) {
+   ,Load$6:function(Self, FileName$3) {
       $Check(Self,"")._State = 1;
       if (PreventCaching) {
-         $Check(Self,"")._Ajax.open("GET",FileName$2+"?c="+G2Time().toString(),true);
+         $Check(Self,"")._Ajax.open("GET",FileName$3+"?c="+G2Time().toString(),true);
       } else {
-         $Check(Self,"")._Ajax.open("GET",FileName$2,true);
+         $Check(Self,"")._Ajax.open("GET",FileName$3,true);
       }
       $Check(Self,"")._Ajax.responseType = "arraybuffer";
       $Check(Self,"")._Ajax.send();
@@ -17001,7 +17086,7 @@ var TG2MeshLoader = {
       return Result
    }
    /// constructor TG2MeshLoader.Create()
-   ,Create$73:function(Self) {
+   ,Create$74:function(Self) {
       TObject.Create(Self);
       return Self
    }
@@ -17015,7 +17100,7 @@ var TG2MeshLoader = {
    }
    ,Destroy$:function($){return $.ClassType.Destroy($)}
    ,CanLoad$:function($){return $.CanLoad.apply($.ClassType, arguments)}
-   ,Load$4$:function($){return $.ClassType.Load$4.apply($.ClassType, arguments)}
+   ,Load$5$:function($){return $.ClassType.Load$5.apply($.ClassType, arguments)}
    ,ExportMeshData$:function($){return $.ClassType.ExportMeshData($)}
 };
 /// TG2MeshData = class (TObject)
@@ -17033,7 +17118,7 @@ var TG2MeshData = {
       $.Skins$1 = [];
    }
    /// constructor TG2MeshData.Create()
-   ,Create$74:function(Self) {
+   ,Create$75:function(Self) {
       TObject.Create(Self);
       $Check(Self,"").NodeCount$3 = 0;
       $Check(Self,"").GeomCount$1 = 0;
@@ -17683,12 +17768,13 @@ var TGame = {
    $Parent:TObject
    ,$Init:function ($) {
       TObject.$Init($);
-      $.Font0 = $.TexSprite = null;
+      $.Font0 = $.TexSprite = $.Video = null;
       $.Initialized = false;
       $.Sprites = function () {
          for (var r=[],i=0; i<10000; i++) r.push(null);
          return r
       }();
+      $.VideoAngle = 0;
    }
    /// constructor TGame.Create()
    ,Create$4:function(Self) {
@@ -17729,13 +17815,16 @@ var TGame = {
    ,Initialize:function(Self) {
       var i$84 = 0;
       $Check(Self,"").TexSprite = TG2Resource.Create$48$($New(TG2Texture2D));
-      TG2Texture2D.Load$1($Check(Self,"").TexSprite,"sprite.png",0);
+      TG2Texture2D.Load$2($Check(Self,"").TexSprite,"sprite.png",0);
       $Check(Self,"").Font0 = TG2Resource.Create$48$($New(TG2Font));
-      TG2Font.Load$3($Check(Self,"").Font0,"Font0.g2fh","Font0.png");
+      TG2Font.Load$4($Check(Self,"").Font0,"Font0.g2fh","Font0.png");
       $Check(Self,"").Initialized = true;
       for(i$84 = 0;i$84<=9999;i$84++) {
          $Check(Self,"").Sprites[$Idx(i$84,0,9999,"")] = TSprite.Create$3($New(TSprite));
       }
+      $Check(Self,"").Video = TG2Resource.Create$48$($New(TG2Texture2DVideo));
+      TG2Texture2DVideo.Load$1($Check(Self,"").Video,"Video.mp4");
+      $Check(Self,"").VideoAngle = 0;
    }
    /// procedure TGame.KeyDown(const Key: Integer)
    ,KeyDown:function(Self, Key$2) {
@@ -17774,6 +17863,9 @@ var TGame = {
                TSprite.Render($Check(Self,"").Sprites[$Idx(i$85,0,9999,"")]);
             }
          }
+         if ($Check($Check(Self,"").Video,"")._State==2) {
+            TG2Core.PicRect$7(g2,(TG2Params.GetWidth$2($Check(g2,"")._Params)*0.5),(TG2Params.GetHeight$2($Check(g2,"")._Params)*0.5),($Check($Check(Self,"").Video,"")._Width),($Check($Check(Self,"").Video,"")._Height),G2Vec4(1,1,1,1),0.5,0.5,1,1,$Check(Self,"").VideoAngle,false,false,$Check(Self,"").Video,$Check($Check(Self,"").Video,"")._Width,$Check($Check(Self,"").Video,"")._Height,0,2,1);
+         }
          if ($Check($Check(Self,"").Font0,"")._State==2) {
             PrintText(10,10,G2Vec4(1,1,1,1),("FPS: "+$Check(g2,"")._FPS.toString()));
             PrintText(10,40,G2Vec4(1,1,1,1),"Sprites: 10000");
@@ -17794,6 +17886,7 @@ var TGame = {
             TSprite.Update($Check(Self,"").Sprites[$Idx(i$86,0,9999,"")]);
          }
       }
+      $Check(Self,"").VideoAngle+=0.02;
    }
    ,Destroy$:function($){return $.ClassType.Destroy($)}
 };
