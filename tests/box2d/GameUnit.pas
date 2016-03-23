@@ -19,6 +19,7 @@ type
     var _font: TG2Font;
   public
     constructor create; override;
+    destructor destroy; override;
     procedure draw_polygon(const vertices: pb2_vec2; const vertex_count: tb2_int32; const color: tb2_color); override;
     procedure draw_solid_polygon(const vertices: pb2_vec2; const vertex_count: tb2_int32; const color: tb2_color); override;
     procedure draw_circle(const center: tb2_vec2; const radius: tb2_float32; const color: tb2_color); override;
@@ -801,6 +802,12 @@ begin
   inherited create;
   _font := TG2Font.Create;
   _font.Make(16);
+end;
+
+destructor t_draw.destroy;
+begin
+  _font.Free;
+  inherited destroy;
 end;
 
 procedure t_draw.draw_polygon(const vertices: pb2_vec2; const vertex_count: tb2_int32; const color: tb2_color);
@@ -7348,6 +7355,7 @@ begin
   Test.Free;
   draw.free;
   Font.Free;
+  Free;
 end;
 
 procedure TGame.Update;

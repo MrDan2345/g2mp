@@ -38,7 +38,8 @@
       <Unit0>
         <Filename Value="Testbed.lpr"/>
         <IsPartOfProject Value="True"/>
-        <CursorPos X="14" Y="8"/>
+        <UnitName Value="TestProject"/>
+        <CursorPos X="12" Y="9"/>
         <UsageCount Value="200"/>
         <Loaded Value="True"/>
       </Unit0>

@@ -2205,7 +2205,7 @@ begin
     Exit;
   end;
   i := 0;
-  mi := G2Min(Length(DirsOrigin), Length(DirsTarget));
+  mi := G2Min(TG2IntS32(Length(DirsOrigin)), TG2IntS32(Length(DirsTarget)));
   while (LowerCase(DirsOrigin[i]) = LowerCase(DirsTarget[i])) and (i < mi) do i += 1;
   Result := '';
   for n := i to High(DirsTarget) do

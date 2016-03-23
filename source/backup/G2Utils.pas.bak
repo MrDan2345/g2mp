@@ -2205,7 +2205,7 @@ begin
     Exit;
   end;
   i := 0;
-  mi := G2Min(Length(DirsOrigin), Length(DirsTarget));
+  mi := G2Min(TG2IntS32(Length(DirsOrigin)), Length(DirsTarget));
   while (LowerCase(DirsOrigin[i]) = LowerCase(DirsTarget[i])) and (i < mi) do i += 1;
   Result := '';
   for n := i to High(DirsTarget) do
@@ -2511,8 +2511,7 @@ begin
   begin
     Move(Str[1], Result[1], Start);
   end;
-    Move(ReplaceStr[1], Result[Start + 1], Length(ReplaceStr));
-  end;
+  Move(ReplaceStr[1], Result[Start + 1], Length(ReplaceStr));
   Move(Str[Start + ReplaceCount + 1], Result[Start + Length(ReplaceStr) + 1], Length(Str) - (Start + ReplaceCount));
 end;
 

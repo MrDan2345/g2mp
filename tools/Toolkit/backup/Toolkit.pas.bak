@@ -428,11 +428,14 @@ type
       pt_button,
       pt_bool,
       pt_int,
+      pt_byte,
       pt_float,
       pt_string,
       pt_vec2,
       pt_vec3,
+      pt_color,
       pt_enum,
+      pt_mask,
       pt_blend_mode,
       pt_component
     );
@@ -481,8 +484,19 @@ type
     type TPropertyInt = class (TProperty)
     protected
       var _ValuePtr: PG2IntS32;
+      var _ValMin: TG2IntS32;
+      var _ValMax: TG2IntS32;
     public
       property ValuePtr: PG2IntS32 read _ValuePtr write _ValuePtr;
+      property ValMin: TG2IntS32 read _ValMin write _ValMin;
+      property ValMax: TG2IntS32 read _ValMax write _ValMax;
+      constructor Create; override;
+    end;
+    type TPropertyByte = class (TProperty)
+    protected
+      var _ValuePtr: PG2IntU8;
+    public
+      property ValuePtr: PG2IntU8 read _ValuePtr write _ValuePtr;
       constructor Create; override;
     end;
     type TPropertyFloat = class (TProperty)
@@ -517,6 +531,14 @@ type
       procedure ComponentChangeProc(const Ptr: Pointer);
     public
       property ValuePtr: PG2Vec3 read _ValuePtr write _ValuePtr;
+      constructor Create; override;
+    end;
+    type TPropertyColor = class (TProperty)
+    protected
+      var _ValuePtr: PG2Color;
+      procedure ComponentChangeProc(const Ptr: Pointer);
+    public
+      property ValuePtr: PG2Color read _ValuePtr write _ValuePtr;
       constructor Create; override;
     end;
     type TPropertyEnum = class (TProperty)
@@ -557,6 +579,15 @@ type
       property ValuePtr: TG2Scene2DComponent read _ValuePtr write _ValuePtr;
       constructor Create; override;
     end;
+    type TPropertyMask = class (TProperty)
+    protected
+      var _Size: Integer;
+      var _ValuePtr: Pointer;
+    public
+      property ValuePtr: Pointer read _ValuePtr write _ValuePtr;
+      property Size: Integer read _Size write _Size;
+      constructor Create; override;
+    end;
   private
     var _Root: TProperty;
   public
@@ -591,6 +622,12 @@ type
       const Parent: TProperty = nil;
       const OnChangeProc: TG2ProcPtrObj = nil
     ): TPropertyInt;
+    function PropByte(
+      const Name: String;
+      const ValuePtr: PG2IntU8;
+      const Parent: TProperty = nil;
+      const OnChangeProc: TG2ProcPtrObj = nil
+    ): TPropertyByte;
     function PropFloat(
       const Name: String;
       const ValuePtr: PG2Float;
@@ -615,12 +652,25 @@ type
       const Parent: TProperty = nil;
       const OnChangeProc: TG2ProcPtrObj = nil
     ): TPropertyVec3;
+    function PropColor(
+      const Name: String;
+      const ValuePtr: PG2Color;
+      const Parent: TProperty = nil;
+      const OnChangeProc: TG2ProcPtrObj = nil
+    ): TPropertyColor;
     function PropEnum(
       const Name: String;
       const ValuePtr: Pointer;
       const Parent: TProperty = nil;
       const OnChangeProc: TG2ProcPtrObj = nil
     ): TPropertyEnum;
+    function PropMask(
+      const Name: String;
+      const Size: Integer;
+      const ValuePtr: Pointer;
+      const Parent: TProperty = nil;
+      const OnChangeProc: TG2ProcPtrObj = nil
+    ): TPropertyMask;
     function PropBlendMode(
       const Name: String;
       const ValuePtr: PG2BlendMode;
@@ -1680,6 +1730,7 @@ type
     var _AdjustSplitterPropertySet: set of TPropertySet.TPropertyType;
     var _ScrollV: TSCrollBox;
     var _ItemsHeight: Integer;
+    var _MaskCellSize: Integer;
     procedure OnEditFinish;
     procedure OnPathSelect(const Path: String);
     procedure OnEnumChage(const Index: Integer);
@@ -1708,6 +1759,11 @@ type
       const Offset: Integer;
       const Prop: TPropertySet.TPropertyInt
     );
+    procedure RenderByte(
+      const r: TG2Rect;
+      const Offset: Integer;
+      const Prop: TPropertySet.TPropertyByte
+    );
     procedure RenderFloat(
       const r: TG2Rect;
       const Offset: Integer;
@@ -1728,10 +1784,20 @@ type
       const Offset: Integer;
       const Prop: TPropertySet.TPropertyVec3
     );
+    procedure RenderColor(
+      const r: TG2Rect;
+      const Offset: Integer;
+      const Prop: TPropertySet.TPropertyColor
+    );
     procedure RenderEnum(
       const r: TG2Rect;
       const Offset: Integer;
       const Prop: TPropertySet.TPropertyEnum
+    );
+    procedure RenderMask(
+      const r: TG2Rect;
+      const Offset: Integer;
+      const Prop: TPropertySet.TPropertyMask
     );
     procedure RenderBlendMode(
       const r: TG2Rect;
@@ -3558,6 +3624,7 @@ type
     var ImagePath: String;
     var Position: TG2Vec2;
     var Rotation: TG2Float;
+    var Color: TG2Color;
   public
     var Component: TG2Scene2DComponentSprite;
     class function GetName: String; override;
@@ -3569,6 +3636,7 @@ type
     procedure OnChangeImage(const Sender: Pointer);
     procedure OnChangePosition(const Sender: Pointer);
     procedure OnChangeRotation(const Sender: Pointer);
+    procedure OnChangeColor(const Sender: Pointer);
     procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataSprite END
@@ -3580,6 +3648,7 @@ type
     var FontPath: String;
     var Position: TG2Vec2;
     var Rotation: TG2Float;
+    var Color: TG2Color;
   public
     var Component: TG2Scene2DComponentText;
     class function GetName: String; override;
@@ -3591,6 +3660,7 @@ type
     procedure OnChangeFont(const Sender: Pointer);
     procedure OnChangePosition(const Sender: Pointer);
     procedure OnChangeRotation(const Sender: Pointer);
+    procedure OnChangeColor(const Sender: Pointer);
     procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataText END
@@ -3608,6 +3678,7 @@ type
     var FlipX: Boolean;
     var FlipY: Boolean;
     var TimeScale: TG2Float;
+    var Color: TG2Color;
     procedure UpdateAnimList;
   public
     var Component: TG2Scene2DComponentSpineAnimation;
@@ -3625,6 +3696,7 @@ type
     procedure OnFlipXChange(const Sender: Pointer);
     procedure OnFlipYChange(const Sender: Pointer);
     procedure OnTimeScaleChange(const Sender: Pointer);
+    procedure OnChangeColor(const Sender: Pointer);
     procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataSpineAnimation END
@@ -3634,6 +3706,7 @@ type
   private
     var Layer: TG2IntS32;
     var TexturePath: String;
+    var Color: TG2Color;
   public
     var Component: TG2Scene2DComponentBackground;
     class function GetName: String; override;
@@ -3641,6 +3714,7 @@ type
     procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnChangeLayer(const Sender: Pointer);
     procedure OnChangeTexture(const Sender: Pointer);
+    procedure OnChangeColor(const Sender: Pointer);
     procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataBackground END
@@ -3789,13 +3863,31 @@ type
   end;
 //TScene2DComponentDataCharacter END
 
+//TScene2DComponentDataShape BEGIN
+  TScene2DComponentDataShape = class (TScene2DComponentData)
+  private
+    var _FilterCategory: TG2IntU16;
+    var _FilterMask: TG2IntU16;
+    var _FilterGroup: TG2IntS32;
+  protected
+    function GetComponentShape: TG2Scene2DComponentCollisionShape; virtual; abstract;
+    procedure AddFilterToProperties(const PropertySet: TPropertySet; const Group: TPropertySet.TProperty);
+  public
+    procedure OnChangeFilterCategory(const Sender: Pointer);
+    procedure OnChangeFilterMask(const Sender: Pointer);
+    procedure OnChangeFilterGroup(const Sender: Pointer);
+  end;
+//TScene2DComponentDataShape END
+
 //TScene2DComponentDataShapePoly BEGIN
-  TScene2DComponentDataShapePoly = class (TScene2DComponentData)
+  TScene2DComponentDataShapePoly = class (TScene2DComponentDataShape)
   private
     var _Friction: TG2Float;
     var _Density: TG2Float;
     var _Restitution: TG2Float;
     var _Sensor: Boolean;
+  protected
+    function GetComponentShape: TG2Scene2DComponentCollisionShape; override;
   public
     var Component: TG2Scene2DComponentCollisionShapePoly;
     class function GetName: String; override;
@@ -3815,7 +3907,7 @@ type
 //TScene2DComponentDataShapePoly END
 
 //TScene2DComponentDataShapeBox BEGIN
-  TScene2DComponentDataShapeBox = class (TScene2DComponentData)
+  TScene2DComponentDataShapeBox = class (TScene2DComponentDataShape)
   private
     var _Offset: TG2Vec2;
     var _Angle: TG2Float;
@@ -3825,6 +3917,8 @@ type
     var _Density: TG2Float;
     var _Restitution: TG2Float;
     var _Sensor: Boolean;
+  protected
+    function GetComponentShape: TG2Scene2DComponentCollisionShape; override;
   public
     var Component: TG2Scene2DComponentCollisionShapeBox;
     class function GetName: String; override;
@@ -3847,7 +3941,7 @@ type
 //TScene2DComponentDataShapeBox END
 
 //TScene2DComponentDataShapeCircle BEGIN
-  TScene2DComponentDataShapeCircle = class (TScene2DComponentData)
+  TScene2DComponentDataShapeCircle = class (TScene2DComponentDataShape)
   private
     var _Offset: TG2Vec2;
     var _Radius: TG2Float;
@@ -3855,6 +3949,8 @@ type
     var _Density: TG2Float;
     var _Restitution: TG2Float;
     var _Sensor: Boolean;
+  protected
+    function GetComponentShape: TG2Scene2DComponentCollisionShape; override;
   public
     var Component: TG2Scene2DComponentCollisionShapeCircle;
     class function GetName: String; override;
@@ -3874,12 +3970,14 @@ type
 //TScene2DComponentDataShapeCircle END
 
 //TScene2DComponentDataShapeEdge BEGIN
-  TScene2DComponentDataShapeEdge = class (TScene2DComponentData)
+  TScene2DComponentDataShapeEdge = class (TScene2DComponentDataShape)
   private
     var _Friction: TG2Float;
     var _Density: TG2Float;
     var _Restitution: TG2Float;
     var _Sensor: Boolean;
+  protected
+    function GetComponentShape: TG2Scene2DComponentCollisionShape; override;
   public
     var Component: TG2Scene2DComponentCollisionShapeEdge;
     class function GetName: String; override;
@@ -3897,12 +3995,14 @@ type
 //TScene2DComponentDataShapeEdge END
 
 //TScene2DComponentDataShapeChain BEGIN
-  TScene2DComponentDataShapeChain = class (TScene2DComponentData)
+  TScene2DComponentDataShapeChain = class (TScene2DComponentDataShape)
   private
     var _Friction: TG2Float;
     var _Density: TG2Float;
     var _Restitution: TG2Float;
     var _Sensor: Boolean;
+  protected
+    function GetComponentShape: TG2Scene2DComponentCollisionShape; override;
   public
     var Component: TG2Scene2DComponentCollisionShapeChain;
     class function GetName: String; override;
@@ -6441,6 +6541,14 @@ constructor TPropertySet.TPropertyInt.Create;
 begin
   inherited Create;
   _PropertyType := pt_int;
+  _ValMin := 0;
+  _ValMax := 0;
+end;
+
+constructor TPropertySet.TPropertyByte.Create;
+begin
+  inherited Create;
+  _PropertyType := pt_byte;
 end;
 
 constructor TPropertySet.TPropertyFloat.Create;
@@ -6468,6 +6576,17 @@ begin
   _PropertyType := pt_vec2;
 end;
 
+procedure TPropertySet.TPropertyColor.ComponentChangeProc(const Ptr: Pointer);
+begin
+  if Assigned(OnChange) then OnChange(Self);
+end;
+
+constructor TPropertySet.TPropertyColor.Create;
+begin
+  inherited Create;
+  _PropertyType := pt_color;
+end;
+
 procedure TPropertySet.TPropertyVec3.ComponentChangeProc(const Ptr: Pointer);
 begin
   if Assigned(OnChange) then OnChange(Self);
@@ -6478,7 +6597,6 @@ begin
   inherited Create;
   _PropertyType := pt_vec3;
 end;
-
 
 function TPropertySet.TPropertyEnum.GetValueCount: Integer;
 begin
@@ -6540,6 +6658,14 @@ constructor TPropertySet.TPropertyComponent.Create;
 begin
   inherited Create;
   _PropertyType := pt_component;
+end;
+
+constructor TPropertySet.TPropertyMask.Create;
+begin
+  inherited Create;
+  _PropertyType := pt_mask;
+  _Size := 0;
+  _ValuePtr := nil;
 end;
 
 constructor TPropertySet.Create;
@@ -6638,6 +6764,23 @@ begin
   Root.Children^.Add(Result);
 end;
 
+function TPropertySet.PropByte(
+  const Name: String;
+  const ValuePtr: PG2IntU8;
+  const Parent: TProperty = nil;
+  const OnChangeProc: TG2ProcPtrObj = nil
+): TPropertyByte;
+begin
+  Result := TPropertyByte.Create;
+  Result.Name := Name;
+  Result.ValuePtr := ValuePtr;
+  Result.OnChange := OnChangeProc;
+  if Parent <> nil then
+  Parent.Children^.Add(Result)
+  else
+  Root.Children^.Add(Result);
+end;
+
 function TPropertySet.PropFloat(
   const Name: String;
   const ValuePtr: PG2Float;
@@ -6711,6 +6854,27 @@ begin
   Root.Children^.Add(Result);
 end;
 
+function TPropertySet.PropColor(
+  const Name: String;
+  const ValuePtr: PG2Color;
+  const Parent: TProperty = nil;
+  const OnChangeProc: TG2ProcPtrObj = nil
+): TPropertyColor;
+begin
+  Result := TPropertyColor.Create;
+  Result.Name := Name;
+  Result.ValuePtr := ValuePtr;
+  Result.OnChange := OnChangeProc;
+  PropByte('r', @ValuePtr^.r, Result, @Result.ComponentChangeProc);
+  PropByte('g', @ValuePtr^.g, Result, @Result.ComponentChangeProc);
+  PropByte('b', @ValuePtr^.b, Result, @Result.ComponentChangeProc);
+  PropByte('a', @ValuePtr^.a, Result, @Result.ComponentChangeProc);
+  if Parent <> nil then
+  Parent.Children^.Add(Result)
+  else
+  Root.Children^.Add(Result);
+end;
+
 function TPropertySet.PropEnum(
   const Name: String;
   const ValuePtr: Pointer;
@@ -6720,6 +6884,25 @@ function TPropertySet.PropEnum(
 begin
   Result := TPropertyEnum.Create;
   Result.Name := Name;
+  Result.ValuePtr := ValuePtr;
+  Result.OnChange := OnChangeProc;
+  if Parent <> nil then
+  Parent.Children^.Add(Result)
+  else
+  Root.Children^.Add(Result);
+end;
+
+function TPropertySet.PropMask(
+  const Name: String;
+  const Size: Integer;
+  const ValuePtr: Pointer;
+  const Parent: TProperty;
+  const OnChangeProc: TG2ProcPtrObj
+): TPropertyMask;
+begin
+  Result := TPropertyMask.Create;
+  Result.Name := Name;
+  Result.Size := Size;
   Result.ValuePtr := ValuePtr;
   Result.OnChange := OnChangeProc;
   if Parent <> nil then
@@ -12221,6 +12404,7 @@ end;
 
 //TUIWorkspaceProperties BEGIN
 procedure TUIWorkspaceProperties.OnEditFinish;
+  var i: Integer;
 begin
   if _EditProperty = nil then Exit;
   case _EditProperty.PropertyType of
@@ -12228,7 +12412,20 @@ begin
     begin
       if StrToIntDef(_EditText, 0) = StrToIntDef(_EditText, 1) then
       begin
-        TPropertySet.TPropertyInt(_EditProperty).ValuePtr^ := StrToIntDef(_EditText, 0);
+        i := StrToIntDef(_EditText, 0);
+        if TPropertySet.TPropertyInt(_EditProperty).ValMin <> TPropertySet.TPropertyInt(_EditProperty).ValMax then
+        begin
+          i := G2Min(G2Max(i, TPropertySet.TPropertyInt(_EditProperty).ValMin), TPropertySet.TPropertyInt(_EditProperty).ValMax);
+        end;
+        TPropertySet.TPropertyInt(_EditProperty).ValuePtr^ := i;
+        if Assigned(_EditProperty.OnChange) then _EditProperty.OnChange(_EditProperty);
+      end;
+    end;
+    TPropertySet.TPropertyType.pt_byte:
+    begin
+      if StrToIntDef(_EditText, 0) = StrToIntDef(_EditText, 1) then
+      begin
+        TPropertySet.TPropertyByte(_EditProperty).ValuePtr^ := G2Min(G2Max(StrToIntDef(_EditText, 0), 0), $ff);
         if Assigned(_EditProperty.OnChange) then _EditProperty.OnChange(_EditProperty);
       end;
     end;
@@ -12393,6 +12590,47 @@ procedure TUIWorkspaceProperties.RenderInt(
   const r: TG2Rect;
   const Offset: Integer;
   const Prop: TPropertySet.TPropertyInt
+);
+  var h: Integer;
+  var spx, spw: TG2Float;
+  var tx, ty: TG2Float;
+  var Text: AnsiString;
+begin
+  spx := r.x + r.w * _Splitter + 1;
+  spw := r.w * (1 - _Splitter) - 1;
+  g2.PrimRect(r.x, r.y, r.w * _Splitter, r.h, App.UI.GetColorPrimary(0.9));
+  g2.PrimRect(spx, r.y, spw, r.h, App.UI.GetColorPrimary(1));
+  h := App.UI.Font1.TextHeight('A');
+  App.UI.PushClipRect(G2Rect(r.x, r.y, spx - r.x, r.h));
+  App.UI.Font1.Print(
+    r.x + 4 + Offset, r.y + (r.h - h) * 0.5, 1, 1,
+    $ff000000, Prop.Name, bmNormal, tfPoint
+  );
+  App.UI.PopClipRect;
+  App.UI.PushClipRect(G2Rect(spx, r.y, spw, r.h));
+  if _EditProperty = Prop then
+  begin
+    tx := _TextPos.x;
+    ty := _TextPos.y;
+    Text := _EditText;
+  end
+  else
+  begin
+    tx := spx + 4;
+    ty := r.y + (r.h - h) * 0.5;
+    Text := IntToStr(Prop.ValuePtr^);
+  end;
+  App.UI.Font1.Print(
+    tx, ty, 1, 1,
+    $ff000000, Text, bmNormal, tfPoint
+  );
+  App.UI.PopClipRect;
+end;
+
+procedure TUIWorkspaceProperties.RenderByte(
+  const r: TG2Rect;
+  const Offset: Integer;
+  const Prop: TPropertySet.TPropertyByte
 );
   var h: Integer;
   var spx, spw: TG2Float;
@@ -12597,6 +12835,36 @@ begin
   App.UI.PopClipRect;
 end;
 
+procedure TUIWorkspaceProperties.RenderColor(
+  const r: TG2Rect;
+  const Offset: Integer;
+  const Prop: TPropertySet.TPropertyColor
+);
+  var h: Integer;
+  var spx, spw: TG2Float;
+  var s: TG2Float;
+  var Text: AnsiString;
+begin
+  spx := r.x + r.w * _Splitter + 1;
+  spw := r.w * (1 - _Splitter) - 1;
+  g2.PrimRect(r.x, r.y, r.w * _Splitter, r.h, App.UI.GetColorPrimary(0.9));
+  g2.PrimRect(spx, r.y, spw, r.h, App.UI.GetColorPrimary(1));
+  h := App.UI.Font1.TextHeight('A');
+  App.UI.PushClipRect(G2Rect(r.x, r.y, spx - r.x, r.h));
+  App.UI.Font1.Print(
+    r.x + 4 + Offset, r.y + (r.h - h) * 0.5, 1, 1,
+    $ff000000, Prop.Name, bmNormal, tfPoint
+  );
+  App.UI.PopClipRect;
+  App.UI.PushClipRect(G2Rect(spx, r.y, spw, r.h));
+  s := 2 / r.h;
+  g2.PicRect(r.x, r.y, r.w, r.h, 0, 0, r.w * s, r.h * s, $ffffffff, App.UI.TexChecker);
+  r.l := spx;
+  r.Expand(-1, -1);
+  g2.PrimRect(r.x, r.y, r.w, r.h, Prop.ValuePtr^);
+  App.UI.PopClipRect;
+end;
+
 procedure TUIWorkspaceProperties.RenderEnum(
   const r: TG2Rect;
   const Offset: Integer;
@@ -12634,6 +12902,60 @@ begin
     tx, ty, 1, 1,
     $ff000000, Text, bmNormal, tfPoint
   );
+  App.UI.PopClipRect;
+end;
+
+procedure TUIWorkspaceProperties.RenderMask(
+  const r: TG2Rect;
+  const Offset: Integer;
+  const Prop: TPropertySet.TPropertyMask
+);
+  var h, i: Integer;
+  var spx, spw: TG2Float;
+  var tx, ty: TG2Float;
+  var Text: AnsiString;
+  var CellSize: Integer;
+  var Mask: TG2IntU32;
+  var c: TG2Color;
+begin
+  spx := r.x + r.w * _Splitter + 1;
+  spw := r.w * (1 - _Splitter) - 1;
+  g2.PrimRect(r.x, r.y, r.w * _Splitter, r.h, App.UI.GetColorPrimary(0.9));
+  g2.PrimRect(spx, r.y, spw, r.h, App.UI.GetColorPrimary(1));
+  h := App.UI.Font1.TextHeight('A');
+  App.UI.PushClipRect(G2Rect(r.x, r.y, spx - r.x, r.h));
+  App.UI.Font1.Print(
+    r.x + 4 + Offset, r.y + (r.h - h) * 0.5, 1, 1,
+    $ff000000, Prop.Name, bmNormal, tfPoint
+  );
+  App.UI.PopClipRect;
+  App.UI.PushClipRect(G2Rect(spx, r.y, spw, r.h));
+  Mask := 0;
+  Move(Prop.ValuePtr^, Mask, Prop.Size);
+  CellSize := _MaskCellSize;
+  r.l := spx + spw - CellSize * (Prop.Size * 8) - 2;
+  r.r := spx + spw - 1;
+  r.t := r.t + 1;
+  r.b := r.b - 1;
+  g2.PrimRect(r.x, r.y, r.w, r.h, $ff000000);
+  tx := r.r - CellSize;
+  for i := 0 to Prop.Size * 8 - 1 do
+  begin
+    if Mask and (1 shl i) > 0 then c := $ffffffff else c := $ffaaaaaa;
+    g2.PrimRect(tx, r.y + 1, CellSize - 1, r.h - 2, c);
+    tx := tx - CellSize;
+  end;
+  tx := r.r - CellSize;
+  ty := Round(r.y + (r.h - App.UI.FontCode.TextHeight('A')) * 0.5);
+  for i := 0 to Prop.Size * 8 - 1 do
+  begin
+    Text := IntToStr(i);
+    App.UI.FontCode.Print(
+      Round(tx + (CellSize - App.UI.FontCode.TextWidth(Text)) * 0.5), ty, 1, 1,
+      $ff000000, Text, bmNormal, tfPoint
+    );
+    tx := tx - CellSize;
+  end;
   App.UI.PopClipRect;
 end;
 
@@ -12802,11 +13124,14 @@ begin
   _AdjustSplitterPropertySet := [
     TPropertySet.TPropertyType.pt_bool,
     TPropertySet.TPropertyType.pt_int,
+    TPropertySet.TPropertyType.pt_byte,
     TPropertySet.TPropertyType.pt_float,
     TPropertySet.TPropertyType.pt_string,
     TPropertySet.TPropertyType.pt_vec2,
     TPropertySet.TPropertyType.pt_vec3,
+    TPropertySet.TPropertyType.pt_color,
     TPropertySet.TPropertyType.pt_blend_mode,
+    TPropertySet.TPropertyType.pt_mask,
     TPropertySet.TPropertyType.pt_path
   ];
   _AdjustingSplitter := false;
@@ -12815,6 +13140,7 @@ begin
   _ScrollV.Initialize;
   _ScrollV.Orientation := sbVertical;
   _ItemsHeight := 24;
+  _MaskCellSize := 18;
   _OverlayDropList := TOverlayDropList.Create;
 end;
 
@@ -12884,11 +13210,14 @@ procedure TUIWorkspaceProperties.OnRender;
       TPropertySet.TPropertyType.pt_button: RenderButton(pr, Offset, TPropertySet.TPropertyButton(Prop));
       TPropertySet.TPropertyType.pt_bool: RenderBool(pr, Offset, TPropertySet.TPropertyBool(Prop));
       TPropertySet.TPropertyType.pt_int: RenderInt(pr, Offset, TPropertySet.TPropertyInt(Prop));
+      TPropertySet.TPropertyType.pt_byte: RenderByte(pr, Offset, TPropertySet.TPropertyByte(Prop));
       TPropertySet.TPropertyType.pt_float: RenderFloat(pr, Offset, TPropertySet.TPropertyFloat(Prop));
       TPropertySet.TPropertyType.pt_string: RenderString(pr, Offset, TPropertySet.TPropertyString(Prop));
       TPropertySet.TPropertyType.pt_vec2: RenderVec2(pr, Offset, TPropertySet.TPropertyVec2(Prop));
       TPropertySet.TPropertyType.pt_vec3: RenderVec3(pr, Offset, TPropertySet.TPropertyVec3(Prop));
+      TPropertySet.TPropertyType.pt_color: RenderColor(pr, Offset, TPropertySet.TPropertyColor(Prop));
       TPropertySet.TPropertyType.pt_enum: RenderEnum(pr, Offset, TPropertySet.TPropertyEnum(Prop));
+      TPropertySet.TPropertyType.pt_mask: RenderMask(pr, Offset, TPropertySet.TPropertyMask(Prop));
       TPropertySet.TPropertyType.pt_blend_mode: RenderBlendMode(pr, Offset, TPropertySet.TPropertyBlendMode(Prop));
       TPropertySet.TPropertyType.pt_component: RenderComponent(pr, Offset, TPropertySet.TPropertyComponent(Prop));
     end;
@@ -12933,6 +13262,7 @@ end;
 procedure TUIWorkspaceProperties.OnMouseDown(const Button, x, y: Integer);
   var Prop: TPropertySet.TProperty;
   var PropInt: TPropertySet.TPropertyInt absolute Prop;
+  var PropByte: TPropertySet.TPropertyByte absolute Prop;
   var PropFloat: TPropertySet.TPropertyFloat absolute Prop;
   var PropString: TPropertySet.TPropertyString absolute Prop;
   var InExpand, InEdit: Boolean;
@@ -12982,6 +13312,12 @@ begin
             _EditText := IntToStr(PropInt.ValuePtr^);
             StartEditing;
           end;
+          TPropertySet.TPropertyType.pt_byte:
+          begin
+            _EditProperty := Prop;
+            _EditText := IntToStr(PropByte.ValuePtr^);
+            StartEditing;
+          end;
           TPropertySet.TPropertyType.pt_float:
           begin
             _EditProperty := Prop;
@@ -13010,8 +13346,10 @@ procedure TUIWorkspaceProperties.OnMouseUp(const Button, x, y: Integer);
   var md: TG2Vec2;
   var r: TG2Rect;
   var od: TOpenDialog;
-  var i: Integer;
+  var i, j: Integer;
+  var m, m1: TG2IntU32;
   var Component: TG2Scene2DComponent;
+  var cd: TColorDialog;
 begin
   md := g2.MouseDownPos[Button];
   PropPrev := PtInProperty(Round(md.x), Round(md.y), InExpandPrev, InEditPrev, r);
@@ -13023,6 +13361,20 @@ begin
     begin
       if not InExpand and Assigned(TPropertySet.TPropertyButton(Prop).Proc) then
       TPropertySet.TPropertyButton(Prop).Proc;
+    end
+    else if (Prop is TPropertySet.TPropertyColor) then
+    begin
+      if InEdit and InEditPrev then
+      begin
+        cd := TColorDialog.Create(nil);
+        cd.Color := G2ColorToSysColor(TPropertySet.TPropertyColor(Prop).ValuePtr^);
+        if cd.Execute then
+        begin
+          TPropertySet.TPropertyColor(Prop).ValuePtr^ := SysColorToG2Color(cd.Color);
+          if Assigned(Prop.OnChange) then Prop.OnChange(Prop);
+        end;
+        cd.Free;
+      end;
     end
     else if (Prop is TPropertySet.TPropertyPath) then
     begin
@@ -13063,6 +13415,36 @@ begin
       _OverlayDropList.Initialize(r);
       _OverlayDropList.OnChange := @OnEnumChage;
       App.UI.Overlay := _OverlayDropList;
+    end
+    else if (Prop is TPropertySet.TPropertyMask) then
+    begin
+      r.l := G2Max(r.l, r.r - _MaskCellSize * (TPropertySet.TPropertyMask(Prop).Size * 8) - 1);
+      if r.Contains(x, y) and r.Contains(md) then
+      begin
+        r.l := r.r - _MaskCellSize;
+        for i := 0 to TPropertySet.TPropertyMask(Prop).Size * 8 - 1 do
+        begin
+          if r.Contains(x, y) and r.Contains(md) then
+          begin
+            m := 0;
+            Move(TPropertySet.TPropertyMask(Prop).ValuePtr^, m, TPropertySet.TPropertyMask(Prop).Size);
+            if g2.KeyDown[G2K_ShiftL] or g2.KeyDown[G2K_ShiftR] then
+            begin
+              m1 := 0;
+              for j := 0 to TPropertySet.TPropertyMask(Prop).Size - 1 do m1 := m1 or ($ff shl (j * 8));
+              if m = m1 then m := 0 else m := m1;
+            end
+            else
+            begin
+              m := m xor TG2IntU32(1 shl i);
+            end;
+            Move(m, TPropertySet.TPropertyMask(Prop).ValuePtr^, TPropertySet.TPropertyMask(Prop).Size);
+            if Assigned(Prop.OnChange) then Prop.OnChange(Prop);
+            Break;
+          end;
+          r.x := r.x - _MaskCellSize;
+        end;
+      end;
     end
     else if (Prop is TPropertySet.TPropertyComponent) then
     begin
@@ -21274,6 +21656,7 @@ begin
   TexDocEmpty.Free;
   TexFileOpen.Free;
   TexFileSave.Free;
+  TexFileSaveAs.Free;
   TexPlus.Free;
   TexGear.Free;
   TexDelete.Free;
@@ -23897,7 +24280,7 @@ begin
     CommandLine,
     'Build Succeeded',
     'Build Failed',
-    True
+    False
   );
   if CompileSucceeded then
   begin
@@ -29383,6 +29766,8 @@ begin
   PropertySet.PropBool('Flip X', @FlipX, Group, @OnFlipXChange);
   PropertySet.PropBool('Flip Y', @FlipY, Group, @OnFlipYChange);
   PropertySet.PropFloat('Speed', @TimeScale, Group, @OnTimeScaleChange);
+
+  PropertySet.PropColor('Color', @Color, Group, @OnChangeColor);
   PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   UpdateAnimList;
 end;
@@ -29449,6 +29834,11 @@ end;
 procedure TScene2DComponentDataSpineAnimation.OnTimeScaleChange(const Sender: Pointer);
 begin
   Component.TimeScale := TimeScale;
+end;
+
+procedure TScene2DComponentDataSpineAnimation.OnChangeColor(const Sender: Pointer);
+begin
+  Component.Color := Color;
 end;
 
 procedure TScene2DComponentDataSpineAnimation.OnTagsChange(const Sender: Pointer);
@@ -29518,6 +29908,8 @@ begin
   PropertySet.PropFloat('Rotation', @Rotation, Group, @OnChangeRotation);
   PropertySet.PropBool('Flip X', @Component.FlipX, Group);
   PropertySet.PropBool('Flip Y', @Component.FlipY, Group);
+  Color := Component.Color;
+  PropertySet.PropColor('Color', @Color, Group, @OnChangeColor);
   Enum := PropertySet.PropEnum('Filter', @Component.Filter, Group);
   Enum.AddValue('Point', Byte(tfPoint));
   Enum.AddValue('Linear', Byte(tfLinear));
@@ -29560,12 +29952,17 @@ end;
 
 procedure TScene2DComponentDataSprite.OnChangePosition(const Sender: Pointer);
 begin
-  Component.Transform.p := Position;
+  Component.Position := Position;
 end;
 
 procedure TScene2DComponentDataSprite.OnChangeRotation(const Sender: Pointer);
 begin
-  Component.Transform.r.Angle := Rotation * G2DegToRad;
+  Component.Rotation := Rotation * G2DegToRad;
+end;
+
+procedure TScene2DComponentDataSprite.OnChangeColor(const Sender: Pointer);
+begin
+  Component.Color := Color;
 end;
 
 procedure TScene2DComponentDataSprite.OnTagsChange(const Sender: Pointer);
@@ -29650,6 +30047,8 @@ begin
   while Rotation < 0 do Rotation := 360 + Rotation;
   PropertySet.PropVec2('Offset', @Position, Group, @OnChangePosition);
   PropertySet.PropFloat('Rotation', @Rotation, Group, @OnChangeRotation);
+  Color := Component.Color;
+  PropertySet.PropColor('Color', @Color, Group, @OnChangeColor);
   Enum := PropertySet.PropEnum('Filter', @Component.Filter, Group);
   Enum.AddValue('Point', Byte(tfPoint));
   Enum.AddValue('Linear', Byte(tfLinear));
@@ -29670,12 +30069,17 @@ end;
 
 procedure TScene2DComponentDataText.OnChangePosition(const Sender: Pointer);
 begin
-  Component.Transform.p := Position;
+  Component.Position := Position;
 end;
 
 procedure TScene2DComponentDataText.OnChangeRotation(const Sender: Pointer);
 begin
-  Component.Transform.r.Angle := Rotation * G2DegToRad;
+  Component.Rotation := Rotation * G2DegToRad;
+end;
+
+procedure TScene2DComponentDataText.OnChangeColor(const Sender: Pointer);
+begin
+  Component.Color := Color;
 end;
 
 procedure TScene2DComponentDataText.OnTagsChange(const Sender: Pointer);
@@ -29715,6 +30119,8 @@ begin
   PropertySet.PropBool('Flip Y', @Component.FlipY, Group);
   PropertySet.PropBool('Repeat X', @Component.RepeatX, Group);
   PropertySet.PropBool('Repeat Y', @Component.RepeatY, Group);
+  Color := Component.Color;
+  PropertySet.PropColor('Color', @Color, Group, @OnChangeColor);
   Enum := PropertySet.PropEnum('Filter', @Component.Filter, Group);
   Enum.AddValue('Point', Byte(tfPoint));
   Enum.AddValue('Linear', Byte(tfLinear));
@@ -29731,6 +30137,11 @@ end;
 procedure TScene2DComponentDataBackground.OnChangeTexture(const Sender: Pointer);
 begin
   Component.Texture := App.AssetManager.GetTexture(TexturePath);
+end;
+
+procedure TScene2DComponentDataBackground.OnChangeColor(const Sender: Pointer);
+begin
+  Component.Color := Color;
 end;
 
 procedure TScene2DComponentDataBackground.OnTagsChange(const Sender: Pointer);
@@ -30446,7 +30857,41 @@ begin
 end;
 //TScene2DComponentDataCharacter END
 
+//TScene2DComponentDataShape BEGIN
+procedure TScene2DComponentDataShape.AddFilterToProperties(const PropertySet: TPropertySet; const Group: TPropertySet.TProperty);
+  var FilterGroup: TPropertySet.TProperty;
+begin
+  _FilterCategory := GetComponentShape.FilterCatergoryMask;
+  _FilterMask := GetComponentShape.FilterMask;
+  _FilterGroup := GetComponentShape.FilterGroup;
+  FilterGroup := PropertySet.PropGroup('Collision Filter', Group);
+  PropertySet.PropMask('Category', 2, @_FilterCategory, FilterGroup, @OnChangeFilterCategory);
+  PropertySet.PropMask('Mask', 2, @_FilterMask, FilterGroup, @OnChangeFilterMask);
+  PropertySet.PropInt('Group', @_FilterGroup, FilterGroup, @OnChangeFilterGroup);
+end;
+
+procedure TScene2DComponentDataShape.OnChangeFilterCategory(const Sender: Pointer);
+begin
+  GetComponentShape.FilterCatergoryMask := _FilterCategory;
+end;
+
+procedure TScene2DComponentDataShape.OnChangeFilterMask(const Sender: Pointer);
+begin
+  GetComponentShape.FilterMask := _FilterMask;
+end;
+
+procedure TScene2DComponentDataShape.OnChangeFilterGroup(const Sender: Pointer);
+begin
+  GetComponentShape.FilterGroup := _FilterGroup;
+end;
+//TScene2DComponentDataShape END
+
 //TScene2DComponentDataShapePoly BEGIN
+function TScene2DComponentDataShapePoly.GetComponentShape: TG2Scene2DComponentCollisionShape;
+begin
+  Result := Component;
+end;
+
 class function TScene2DComponentDataShapePoly.GetName: String;
 begin
   Result := 'Collision Polygon';
@@ -30530,6 +30975,7 @@ begin
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
   PropertySet.PropFloat('Restitution', @_Restitution, Group, @OnChangeRestitution);
+  AddFilterToProperties(PropertySet, Group);
   PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
   PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   PropertySet.PropButton('Edit', @OnEdit, Group);
@@ -30580,6 +31026,11 @@ end;
 //TScene2DComponentDataShapePoly END
 
 //TScene2DComponentDataShapeBox BEGIN
+function TScene2DComponentDataShapeBox.GetComponentShape: TG2Scene2DComponentCollisionShape;
+begin
+  Result := Component;
+end;
+
 class function TScene2DComponentDataShapeBox.GetName: String;
 begin
   Result := 'Collision Box';
@@ -30671,6 +31122,7 @@ begin
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
   PropertySet.PropFloat('Restitution', @_Restitution, Group, @OnChangeRestitution);
+  AddFilterToProperties(PropertySet, Group);
   PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
   PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   EventGroup := PropertySet.PropGroup('Events', Group);
@@ -30728,6 +31180,11 @@ end;
 //TScene2DComponentDataShapeBox END
 
 //TScene2DComponentDataShapeCircle BEGIN
+function TScene2DComponentDataShapeCircle.GetComponentShape: TG2Scene2DComponentCollisionShape;
+begin
+  Result := Component;
+end;
+
 class function TScene2DComponentDataShapeCircle.GetName: String;
 begin
   Result := 'Collision Circle';
@@ -30794,6 +31251,7 @@ begin
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
   PropertySet.PropFloat('Restitution', @_Restitution, Group, @OnChangeRestitution);
+  AddFilterToProperties(PropertySet, Group);
   PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
   PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   EventGroup := PropertySet.PropGroup('Events', Group);
@@ -30841,6 +31299,11 @@ end;
 //TScene2DComponentDataShapeCircle END
 
 //TScene2DComponentDataShapeEdge BEGIN
+function TScene2DComponentDataShapeEdge.GetComponentShape: TG2Scene2DComponentCollisionShape;
+begin
+  Result := Component;
+end;
+
 class function TScene2DComponentDataShapeEdge.GetName: String;
 begin
   Result := 'Collision Edge';
@@ -30886,6 +31349,7 @@ begin
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
   PropertySet.PropFloat('Restitution', @_Restitution, Group, @OnChangeRestitution);
+  AddFilterToProperties(PropertySet, Group);
   PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
   PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   PropertySet.PropButton('Edit', @OnEdit, Group);
@@ -30935,6 +31399,11 @@ end;
 //TScene2DComponentDataShapeEdge END
 
 //TScene2DComponentDataShapeChain BEGIN
+function TScene2DComponentDataShapeChain.GetComponentShape: TG2Scene2DComponentCollisionShape;
+begin
+  Result := Component;
+end;
+
 class function TScene2DComponentDataShapeChain.GetName: String;
 begin
   Result := 'Collision Chain';
@@ -30989,6 +31458,7 @@ begin
   PropertySet.PropFloat('Friction', @_Friction, Group, @OnChangeFriction);
   PropertySet.PropFloat('Density', @_Density, Group, @OnChangeDensity);
   PropertySet.PropFloat('Restitution', @_Restitution, Group, @OnChangeRestitution);
+  AddFilterToProperties(PropertySet, Group);
   PropertySet.PropBool('Sensor', @_Sensor, Group, @OnChangeSensor);
   PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   PropertySet.PropButton('Edit', @OnEdit, Group);

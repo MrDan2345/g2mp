@@ -350,6 +350,8 @@ type
   operator := (b: TG2AABox) rb: TG2Box; inline;
   operator := (c: TG2Color) rv: TG2Vec4; inline;
   operator := (v: TG2Vec4) rc: TG2Color; inline;
+  operator := (r: TG2Rotation2) ra: TG2Float; inline;
+  operator := (a: TG2Float) rr: TG2Rotation2; inline;
   operator - (v: TG2Vec2) vr: TG2Vec2; inline;
   operator - (v: TG2Vec3) vr: TG2Vec3; inline;
   operator - (v0, v1: TG2Vec2) vr: TG2Vec2; inline;
@@ -1569,6 +1571,16 @@ end;
 operator := (v: TG2Vec4) rc: TG2Color;
 begin
   rc := G2Color(Round(v.x * $ff), Round(v.y * $ff), Round(v.z * $ff), Round(v.w * $ff));
+end;
+
+operator := (r: TG2Rotation2) ra: TG2Float;
+begin
+  ra := r.Angle;
+end;
+
+operator := (a: TG2Float) rr: TG2Rotation2;
+begin
+  rr.Angle := a;
 end;
 
 operator - (v: TG2Vec2) vr: TG2Vec2;

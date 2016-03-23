@@ -1205,17 +1205,6 @@ type
   end;
   {$endif}
 
-  //TG2Mgr = class
-  //private
-  //  _Items: TG2QuickList;
-  //  procedure FreeItems;
-  //public
-  //  procedure ItemAdd(const Item: TG2Res);
-  //  procedure ItemRemove(const Item: TG2Res);
-  //  constructor Create;
-  //  destructor Destroy; override;
-  //end;
-
   TG2TextureBase = class (TG2Asset)
   protected
     _Gfx: {$if defined(G2Gfx_D3D9)}TG2GfxD3D9{$elseif defined(G2Gfx_OGL)}TG2GfxOGL{$elseif defined(G2Gfx_GLES)}TG2GfxGLES{$endif};
@@ -7783,6 +7772,7 @@ end;
 
 procedure TG2GfxOGL.Finalize;
 begin
+  inherited Finalize;
   {$if not defined(G2Threading)}
   {$if defined(G2Target_Windows)}
   wglMakeCurrent(0, 0);
@@ -8098,6 +8088,7 @@ begin
   {$elseif defined(G2Target_Android)}
   UnInitOpenGLES;
   {$endif}
+  inherited Finalize;
 end;
 
 procedure TG2GfxGLES.Render;
@@ -14596,22 +14587,22 @@ begin
   {$if defined(G2Gfx_D3D9)}
   v := @_Vertices[_CurQuad * 4];
   {$if defined(G2RM_FF)}
-  v^.x := p^.Pos0.x; v^.y := p^.Pos0.y; v^.z := 0; v^.rhw := 1;
+  v^.x := p^.Pos0.x - 0.0125; v^.y := p^.Pos0.y - 0.0125; v^.z := 0; v^.rhw := 1;
   v^.Color := p^.c0; v^.tu := p^.Tex0.x; v^.tv := p^.Tex0.y; Inc(v);
-  v^.x := p^.Pos1.x; v^.y := p^.Pos1.y; v^.z := 0; v^.rhw := 1;
+  v^.x := p^.Pos1.x - 0.0125; v^.y := p^.Pos1.y - 0.0125; v^.z := 0; v^.rhw := 1;
   v^.Color := p^.c1; v^.tu := p^.Tex1.x; v^.tv := p^.Tex1.y; Inc(v);
-  v^.x := p^.Pos2.x; v^.y := p^.Pos2.y; v^.z := 0; v^.rhw := 1;
+  v^.x := p^.Pos2.x - 0.0125; v^.y := p^.Pos2.y - 0.0125; v^.z := 0; v^.rhw := 1;
   v^.Color := p^.c2; v^.tu := p^.Tex2.x; v^.tv := p^.Tex2.y; Inc(v);
-  v^.x := p^.Pos3.x; v^.y := p^.Pos3.y; v^.z := 0; v^.rhw := 1;
+  v^.x := p^.Pos3.x - 0.0125; v^.y := p^.Pos3.y - 0.0125; v^.z := 0; v^.rhw := 1;
   v^.Color := p^.c3; v^.tu := p^.Tex3.x; v^.tv := p^.Tex3.y;
   {$elseif defined(G2RM_SM2)}
-  v^.x := p^.Pos0.x; v^.y := p^.Pos0.y; v^.z := 0;
+  v^.x := p^.Pos0.x - 0.0125; v^.y := p^.Pos0.y - 0.0125; v^.z := 0;
   v^.Color := p^.c0; v^.tu := p^.Tex0.x; v^.tv := p^.Tex0.y; Inc(v);
-  v^.x := p^.Pos1.x; v^.y := p^.Pos1.y; v^.z := 0;
+  v^.x := p^.Pos1.x - 0.0125; v^.y := p^.Pos1.y - 0.0125; v^.z := 0;
   v^.Color := p^.c1; v^.tu := p^.Tex1.x; v^.tv := p^.Tex1.y; Inc(v);
-  v^.x := p^.Pos2.x; v^.y := p^.Pos2.y; v^.z := 0;
+  v^.x := p^.Pos2.x - 0.0125; v^.y := p^.Pos2.y - 0.0125; v^.z := 0;
   v^.Color := p^.c2; v^.tu := p^.Tex2.x; v^.tv := p^.Tex2.y; Inc(v);
-  v^.x := p^.Pos3.x; v^.y := p^.Pos3.y; v^.z := 0;
+  v^.x := p^.Pos3.x - 0.0125; v^.y := p^.Pos3.y - 0.0125; v^.z := 0;
   v^.Color := p^.c3; v^.tu := p^.Tex3.x; v^.tv := p^.Tex3.y;
   {$endif}
   {$elseif defined(G2Gfx_OGL)}
@@ -18325,7 +18316,7 @@ begin
   glActiveTexture(GL_TEXTURE0);
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, _CurTexture.GetTexture);
-  if _CurTexture.Usage = tuUsage3D then
+  if _CurTexture.Usage = tu3D then
   begin
     case _CurFilter of
       tfPoint:
@@ -19105,7 +19096,7 @@ begin
             glActiveTexture(CurStage);
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, Material^.Channels[0].MapDiffuse.GetTexture);
-            if Material^.Channels[0].MapDiffuse.Usage = tuUsage3D then
+            if Material^.Channels[0].MapDiffuse.Usage = tu3D then
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
             else
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

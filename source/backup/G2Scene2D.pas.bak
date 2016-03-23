@@ -380,6 +380,10 @@ type
     function GetLayer: TG2IntS32; inline;
     procedure SetLayer(const Value: TG2IntS32); inline;
     procedure SetPicture(const Value: TG2Picture); inline;
+    procedure SetPosition(const Value: TG2Vec2); inline;
+    function GetPosition: TG2Vec2; inline;
+    procedure SetRotation(const Value: TG2Rotation2); inline;
+    function GetRotation: TG2Rotation2; inline;
   protected
     procedure OnInitialize; override;
     procedure OnFinalize; override;
@@ -402,6 +406,8 @@ type
     property BlendMode: TG2BlendMode read _BlendMode write _BlendMode;
     property Visible: Boolean read _Visible write _Visible;
     property Transform: TG2Transform2 read _Transform write _Transform;
+    property Position: TG2Vec2 read GetPosition write SetPosition;
+    property Rotation: TG2Rotation2 read GetRotation write SetRotation;
     procedure Save(const dm: TG2DataManager); override;
     procedure Load(const dm: TG2DataManager); override;
   end;
@@ -429,6 +435,10 @@ type
     procedure SetFont(const Value: TG2Font); inline;
     function GetWidth: TG2Float; inline;
     function GetHeight: TG2Float; inline;
+    procedure SetPosition(const Value: TG2Vec2); inline;
+    function GetPosition: TG2Vec2; inline;
+    procedure SetRotation(const Value: TG2Rotation2); inline;
+    function GetRotation: TG2Rotation2; inline;
   protected
     procedure OnInitialize; override;
     procedure OnFinalize; override;
@@ -453,6 +463,8 @@ type
     property BlendMode: TG2BlendMode read _BlendMode write _BlendMode;
     property Visible: Boolean read _Visible write _Visible;
     property Transform: TG2Transform2 read _Transform write _Transform;
+    property Position: TG2Vec2 read GetPosition write SetPosition;
+    property Rotation: TG2Rotation2 read GetRotation write SetRotation;
     procedure Save(const dm: TG2DataManager); override;
     procedure Load(const dm: TG2DataManager); override;
   end;
@@ -523,6 +535,7 @@ type
     var _FlipY: Boolean;
     var _RepeatX: Boolean;
     var _RepeatY: Boolean;
+    var _Color: TG2Color;
     var _Filter: TG2Filter;
     var _BlendMode: TG2BlendMode;
     var _RefTexture: Boolean;
@@ -547,6 +560,7 @@ type
     property FlipY: Boolean read _FlipY write _FlipY;
     property RepeatX: Boolean read _RepeatX write _RepeatX;
     property RepeatY: Boolean read _RepeatY write _RepeatY;
+    property Color: TG2Color read _Color write _Color;
     property Filter: TG2Filter read _Filter write _Filter;
     property BlendMode: TG2BlendMode read _BlendMode write _BlendMode;
     procedure Save(const dm: TG2DataManager); override;
@@ -639,6 +653,10 @@ type
     function GetLinearDamping: TG2Float; inline;
     procedure SetAngularDamping(const Value: TG2Float); inline;
     function GetAngularDamping: TG2Float; inline;
+    procedure SetLinearVelocity(const Value: TG2Vec2); inline;
+    function GetLinearVelocity: TG2Vec2; inline;
+    procedure SetAngularVelocity(const Value: TG2Float); inline;
+    function GetAngularVelocity: TG2Float; inline;
   protected
     procedure OnInitialize; override;
     procedure OnFinalize; override;
@@ -659,11 +677,19 @@ type
     property GravityScale: TG2Float read GetGravityScale write SetGravityScale;
     property LinearDamping: TG2Float read GetLinearDamping write SetLinearDamping;
     property AngularDamping: TG2Float read GetAngularDamping write SetAngularDamping;
+    property LinearVelocity: TG2Vec2 read GetLinearVelocity write SetLinearVelocity;
+    property AngularVelocity: TG2Float read GetAngularVelocity write SetAngularVelocity;
     property Enabled: Boolean read _Enabled write SetEnabled;
     property PhysBody: pb2_body read _Body;
     procedure MakeStatic; inline;
     procedure MakeKinematic; inline;
     procedure MakeDynamic; inline;
+    procedure UpdateFromOwner;
+    procedure ApplyLinearImpulse(const Impulse, Point: TG2Vec2; const Wake: Boolean = True); inline;
+    procedure ApplyAngularImpulse(const Impulse: TG2Float; const Wake: Boolean = True); inline;
+    procedure ApplyForce(const Force, Point: TG2Vec2; const Wake: Boolean = True);
+    procedure ApplyForceToCenter(const Force: TG2Vec2; const Wake: Boolean = True);
+    procedure ApplyTorque(const Torque: TG2Float; const Wake: Boolean = True);
     procedure Save(const dm: TG2DataManager); override;
     procedure Load(const dm: TG2DataManager); override;
   end;
@@ -700,12 +726,24 @@ type
     constructor Create; override;
   end;
 
+  TG2Scene2DCollisionFilter = record
+    CategoryBits: TG2IntU16;
+    MaskBits: TG2IntU16;
+    GroupIndex: TG2IntS16;
+  end;
+
   TG2Scene2DComponentCollisionShape = class (TG2Scene2DComponent)
   private
     var _EventBeginContactData: TG2Scene2DEventBeginContactData;
     var _EventEndContactData: TG2Scene2DEventEndContactData;
     var _EventBeforeContactSolveData: TG2Scene2DEventBeforeContactSolveData;
     var _EventAfterContactSolveData: TG2Scene2DEventAfterContactSolveData;
+    procedure SetFilterCategoryMask(const Value: TG2IntU16); inline;
+    function GetFilterCategoryMask: TG2IntU16; inline;
+    procedure SetFilterMask(const Value: TG2IntU16); inline;
+    function GetFilterMask: TG2IntU16; inline;
+    procedure SetFilterGroup(const Value: TG2IntS16); inline;
+    function GetFilterGroup: TG2IntS16; inline;
   protected
     var _FixtureDef: tb2_fixture_def;
     var _Fixture: pb2_fixture;
@@ -756,6 +794,9 @@ type
     property Density: TG2Float read GetDensity write SetDensity;
     property Restitution: TG2Float read GetRestitution write SetRestitution;
     property IsSensor: Boolean read GetIsSensor write SetIsSensor;
+    property FilterCatergoryMask: TG2IntU16 read GetFilterCategoryMask write SetFilterCategoryMask;
+    property FilterMask: TG2IntU16 read GetFilterMask write SetFilterMask;
+    property FilterGroup: TG2IntS16 read GetFilterGroup write SetFilterGroup;
     property PhysFixture: pb2_fixture read _Fixture;
     property EventBeginContact: TG2Scene2DEventDispatcher read _EventBeginContact;
     property EventEndContact: TG2Scene2DEventDispatcher read _EventEndContact;
@@ -1988,8 +2029,8 @@ begin
       Exit;
     end;
     def := b2_mouse_joint_def;
-    def.body_b := _Scene.FixedBody;
-    def.body_a := _RigidBody.PhysBody;
+    def.body_a := _Scene.FixedBody;
+    def.body_b := _RigidBody.PhysBody;
     def.target := _Target;
     def.max_force := _MaxForce;
     _Joint := _Scene.PhysWorld.create_joint(def);
@@ -2301,7 +2342,7 @@ end;
 procedure TG2Scene2D.Update;
 begin
   if _Simulate then
-  _PhysWorld.step(g2.DeltaTimeSec, 6, 2);
+  _PhysWorld.step(g2.DeltaTimeSec, 6, 4);
 end;
 
 function TG2Scene2D.GetEntity(const Index: TG2IntS32): TG2Scene2DEntity;
@@ -2640,6 +2681,26 @@ begin
   end;
 end;
 
+procedure TG2Scene2DComponentSprite.SetPosition(const Value: TG2Vec2);
+begin
+  _Transform.p := Value;
+end;
+
+function TG2Scene2DComponentSprite.GetPosition: TG2Vec2;
+begin
+  Result := _Transform.p;
+end;
+
+procedure TG2Scene2DComponentSprite.SetRotation(const Value: TG2Rotation2);
+begin
+  _Transform.r := Value;
+end;
+
+function TG2Scene2DComponentSprite.GetRotation: TG2Rotation2;
+begin
+  Result := _Transform.r;
+end;
+
 procedure TG2Scene2DComponentSprite.OnInitialize;
 begin
   _RenderHook := nil;
@@ -2809,6 +2870,26 @@ function TG2Scene2DComponentText.GetHeight: TG2Float;
 begin
   if Assigned(_Font) then Exit(_Font.TextHeight('A') * _ScaleY);
   Result := 0;
+end;
+
+procedure TG2Scene2DComponentText.SetPosition(const Value: TG2Vec2);
+begin
+  _Transform.p := Value;
+end;
+
+function TG2Scene2DComponentText.GetPosition: TG2Vec2;
+begin
+  Result := _Transform.p;
+end;
+
+procedure TG2Scene2DComponentText.SetRotation(const Value: TG2Rotation2);
+begin
+  _Transform.r := Value;
+end;
+
+function TG2Scene2DComponentText.GetRotation: TG2Rotation2;
+begin
+  Result := _Transform.r;
 end;
 
 procedure TG2Scene2DComponentText.OnInitialize;
@@ -3225,6 +3306,7 @@ begin
   _FlipY := False;
   _RepeatX := True;
   _RepeatY := True;
+  _Color := $ffffffff;
   _Layer := 0;
 end;
 
@@ -3360,7 +3442,7 @@ begin
   Display.PicQuad(
     v[0], v[1], v[2], v[3],
     t[0], t[1], t[2], t[3],
-    $ffffffff, _Texture,
+    _Color, _Texture,
     _BlendMode, _Filter
   );
 end;
@@ -3420,6 +3502,7 @@ begin
   dm.WriteBool(_FlipY);
   dm.WriteBool(_RepeatX);
   dm.WriteBool(_RepeatY);
+  dm.WriteColor(_Color);
   dm.WriteBuffer(@_Filter, SizeOf(_Filter));
   dm.WriteIntS32(_Layer);
   dm.WriteBuffer(@_BlendMode, SizeOf(_BlendMode));
@@ -3861,6 +3944,26 @@ begin
   Result := _BodyDef.angular_damping;
 end;
 
+procedure TG2Scene2DComponentRigidBody.SetLinearVelocity(const Value: TG2Vec2);
+begin
+  if _Enabled then _Body^.set_linear_velocity(Value);
+end;
+
+function TG2Scene2DComponentRigidBody.GetLinearVelocity: TG2Vec2;
+begin
+  if _Enabled then Result := _Body^.get_linear_velocity else Result := G2Vec2;
+end;
+
+procedure TG2Scene2DComponentRigidBody.SetAngularVelocity(const Value: TG2Float);
+begin
+  if _Enabled then _Body^.set_angular_velocity(Value);
+end;
+
+function TG2Scene2DComponentRigidBody.GetAngularVelocity: TG2Float;
+begin
+  if _Enabled then Result := _Body^.get_angular_velocity else Result := 0;
+end;
+
 procedure TG2Scene2DComponentRigidBody.OnInitialize;
 begin
   _Enabled := False;
@@ -3886,7 +3989,9 @@ end;
 procedure TG2Scene2DComponentRigidBody.OnUpdate;
 begin
   if Owner = nil then Exit;
-  Owner.Transform := Transform;//b2_mul(_Body^.get_transform, Transform);
+  if (BodyType = g2_s2d_rbt_dynamic_body)
+  or (BodyType = g2_s2d_rbt_kinematic_body) then
+  Owner.Transform := Transform;
 end;
 
 procedure TG2Scene2DComponentRigidBody.AddShape(const Shape: TG2Scene2DComponentCollisionShape);
@@ -3934,6 +4039,46 @@ end;
 procedure TG2Scene2DComponentRigidBody.MakeDynamic;
 begin
   BodyType := g2_s2d_rbt_dynamic_body;
+end;
+
+procedure TG2Scene2DComponentRigidBody.UpdateFromOwner;
+begin
+  SetTransform(Owner.Transform);
+  _Body^.set_awake(true);
+end;
+
+procedure TG2Scene2DComponentRigidBody.ApplyLinearImpulse(
+  const Impulse, Point: TG2Vec2; const Wake: Boolean
+);
+begin
+  if _Enabled then _Body^.apply_linear_impulse(Impulse, Point, Wake);
+end;
+
+procedure TG2Scene2DComponentRigidBody.ApplyAngularImpulse(
+  const Impulse: TG2Float; const Wake: Boolean);
+begin
+  if _Enabled then _Body^.apply_angular_impulse(Impulse, Wake);
+end;
+
+procedure TG2Scene2DComponentRigidBody.ApplyForce(
+  const Force, Point: TG2Vec2; const Wake: Boolean
+);
+begin
+  if _Enabled then _Body^.apply_force(Force, Point, Wake);
+end;
+
+procedure TG2Scene2DComponentRigidBody.ApplyForceToCenter(
+  const Force: TG2Vec2; const Wake: Boolean
+);
+begin
+  if _Enabled then _Body^.apply_force_to_center(Force, Wake);
+end;
+
+procedure TG2Scene2DComponentRigidBody.ApplyTorque(
+  const Torque: TG2Float; const Wake: Boolean
+);
+begin
+  if _Enabled then _Body^.apply_torque(Torque, Wake);
 end;
 
 procedure TG2Scene2DComponentRigidBody.Save(const dm: TG2DataManager);
@@ -3989,6 +4134,39 @@ end;
 //TG2Scene2DEventAfterContactSolveData END
 
 //TG2Scene2DComponentCollisionShape BEGIN
+procedure TG2Scene2DComponentCollisionShape.SetFilterCategoryMask(const Value: TG2IntU16);
+begin
+  _FixtureDef.filter.category_bits := Value;
+  if Assigned(_Fixture) then _Fixture^.set_filter_data(_FixtureDef.filter);
+end;
+
+function TG2Scene2DComponentCollisionShape.GetFilterCategoryMask: TG2IntU16;
+begin
+  Result := _FixtureDef.filter.category_bits;
+end;
+
+procedure TG2Scene2DComponentCollisionShape.SetFilterMask(const Value: TG2IntU16);
+begin
+  _FixtureDef.filter.mask_bits := Value;
+  if Assigned(_Fixture) then _Fixture^.set_filter_data(_FixtureDef.filter);
+end;
+
+function TG2Scene2DComponentCollisionShape.GetFilterMask: TG2IntU16;
+begin
+  Result := _FixtureDef.filter.mask_bits;
+end;
+
+procedure TG2Scene2DComponentCollisionShape.SetFilterGroup(const Value: TG2IntS16);
+begin
+  _FixtureDef.filter.group_index := Value;
+  if Assigned(_Fixture) then _Fixture^.set_filter_data(_FixtureDef.filter);
+end;
+
+function TG2Scene2DComponentCollisionShape.GetFilterGroup: TG2IntS16;
+begin
+  Result := _FixtureDef.filter.group_index;
+end;
+
 procedure TG2Scene2DComponentCollisionShape.OnInitialize;
 begin
   inherited OnInitialize;
