@@ -328,6 +328,7 @@ type
     procedure SetGravity(const Value: TG2Vec2); inline;
     procedure SetGridSizeX(const Value: TG2Float); inline;
     procedure SetGridSizeY(const Value: TG2Float); inline;
+    procedure VerifyEntityName(const Entity: TG2Scene2DEntity);
   protected
     property FixedBody: pb2_body read _FixedBody;
   public
@@ -357,6 +358,8 @@ type
     procedure QueryPoint(const p: TG2Vec2; var EntityList: TG2Scene2DEntityList);
     function AdjustToGrid(const v: TG2Vec2): TG2Vec2;
     function GridPos(const v: TG2Vec2): TPoint;
+    function CreatePrefab(const dm: TG2DataManager; const Transform: TG2Transform2): TG2Scene2DEntity;
+    function CreatePrefab(const PrefabName: String; const Transform: TG2Transform2): TG2Scene2DEntity;
     procedure Save(const dm: TG2DataManager);
     procedure Load(const dm: TG2DataManager);
     procedure Load(const FileName: String);
@@ -657,6 +660,8 @@ type
     function GetLinearVelocity: TG2Vec2; inline;
     procedure SetAngularVelocity(const Value: TG2Float); inline;
     function GetAngularVelocity: TG2Float; inline;
+    procedure SetIsBullet(const Value: Boolean); inline;
+    function GetIsBullet: Boolean; inline;
   protected
     procedure OnInitialize; override;
     procedure OnFinalize; override;
@@ -678,6 +683,7 @@ type
     property LinearDamping: TG2Float read GetLinearDamping write SetLinearDamping;
     property AngularDamping: TG2Float read GetAngularDamping write SetAngularDamping;
     property LinearVelocity: TG2Vec2 read GetLinearVelocity write SetLinearVelocity;
+    property IsBullet: Boolean read GetIsBullet write SetIsBullet;
     property AngularVelocity: TG2Float read GetAngularVelocity write SetAngularVelocity;
     property Enabled: Boolean read _Enabled write SetEnabled;
     property PhysBody: pb2_body read _Body;
@@ -2419,6 +2425,36 @@ begin
   _GridSizeYRcp := 1 / _GridSizeY;
 end;
 
+procedure TG2Scene2D.VerifyEntityName(const Entity: TG2Scene2DEntity);
+  var NameBase, EntityName, str: String;
+  var NameIndex, n, i: Integer;
+begin
+  if FindEntityByName(Entity.Name) = nil then Exit;
+  if Entity.Name <> '' then
+  NameBase := Entity.Name
+  else
+  NameBase := 'Entity';
+  n := Length(NameBase);
+  while (n > 0) and (StrToIntDef(NameBase[n], 0) = StrToIntDef(NameBase[n], 1)) do Dec(n);
+  if n < Length(NameBase) then
+  begin
+    str := '';
+    for i := n + 1 to Length(NameBase) do
+    str += NameBase[i];
+    NameIndex := StrToIntDef(str, 0) + 1;
+    Delete(NameBase, n + 1, Length(NameBase) - n);
+  end
+  else
+  NameIndex := 0;
+  EntityName := NameBase;
+  while FindEntityByName(EntityName) <> nil do
+  begin
+    Inc(NameIndex);
+    EntityName := NameBase + IntToStr(NameIndex);
+  end;
+  Entity.Name := EntityName;
+end;
+
 constructor TG2Scene2D.Create;
   var FixedBodyDef: tb2_body_def;
 begin
@@ -2585,6 +2621,48 @@ function TG2Scene2D.GridPos(const v: TG2Vec2): TPoint;
 begin
   Result.x := Round((v.x - _GridOffsetX) * _GridSizeXRcp);
   Result.y := Round((v.y - _GridOffsetY) * _GridSizeYRcp);
+end;
+
+function TG2Scene2D.CreatePrefab(const dm: TG2DataManager; const Transform: TG2Transform2): TG2Scene2DEntity;
+  procedure ProcessEntity(const Entity: TG2Scene2DEntity);
+    var i: Integer;
+  begin
+    Entity.NewGUID;
+    VerifyEntityName(Entity);
+    for i := 0 to Entity.ChildCount - 1 do
+    ProcessEntity(Entity.Children[i]);
+  end;
+  var Def: array[0..3] of AnsiChar;
+  var i, n: Integer;
+begin
+  dm.ReadBuffer(@Def, 4);
+  if Def = 'PF2D' then
+  begin
+    Result := TG2Scene2DEntity.Create(Self);
+    Result.Load(dm);
+    n := dm.ReadIntS32;
+    for i := 0 to n - 1 do
+    begin
+      TG2Scene2DJoint.LoadClass(dm, Self);
+    end;
+    ProcessEntity(Result);
+    Result.Transform := Transform;
+  end
+  else
+  begin
+    Result := nil;
+  end;
+end;
+
+function TG2Scene2D.CreatePrefab(const PrefabName: String; const Transform: TG2Transform2): TG2Scene2DEntity;
+  var dm: TG2DataManager;
+begin
+  dm := TG2DataManager.Create(PrefabName, dmAsset);
+  try
+    Result := CreatePrefab(dm, Transform);
+  finally
+    dm.Free;
+  end;
 end;
 
 procedure TG2Scene2D.Save(const dm: TG2DataManager);
@@ -3523,6 +3601,7 @@ begin
   _FlipY := dm.ReadBool;
   _RepeatX := dm.ReadBool;
   _RepeatY := dm.ReadBool;
+  _Color := dm.ReadColor;
   dm.ReadBuffer(@_Filter, SizeOf(_Filter));
   Layer := dm.ReadIntS32;
   dm.ReadBuffer(@_BlendMode, SizeOf(_BlendMode));
@@ -3962,6 +4041,18 @@ end;
 function TG2Scene2DComponentRigidBody.GetAngularVelocity: TG2Float;
 begin
   if _Enabled then Result := _Body^.get_angular_velocity else Result := 0;
+end;
+
+procedure TG2Scene2DComponentRigidBody.SetIsBullet(const Value: Boolean);
+begin
+  _BodyDef.bullet = Value then Exit;
+  _BodyDef.bullet := Value;
+  if _Enabled then _Body^.set_bullet(_BodyDef.bullet);
+end;
+
+function TG2Scene2DComponentRigidBody.GetIsBullet: Boolean;
+begin
+  Result := _BodyDef.bullet;
 end;
 
 procedure TG2Scene2DComponentRigidBody.OnInitialize;
