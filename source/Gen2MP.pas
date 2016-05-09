@@ -764,6 +764,8 @@ type
 
   {$if defined(G2Target_Windows)}
   TG2Cursor = HCursor;
+  {$elseif defined(G2Target_Linux)}
+  TG2Cursor = TCursor;
   {$endif}
 
   TG2Window = class
@@ -837,6 +839,7 @@ type
     property Caption: AnsiString read _Caption write SetCaption;
     property IsLooping: Boolean read _Loop;
     procedure Loop;
+    procedure DisplayMessage(const Text: AnsiString);
     constructor Create(const Width: TG2IntS32 = 0; const Height: TG2IntS32 = 0; const NewCaption: AnsiString = 'Gen2MP');
     destructor Destroy; override;
   end;
@@ -4354,7 +4357,7 @@ begin
        {$if defined(G2Output)}
        WriteLn('g2mp exception: ' + e.Message);
        {$elseif not defined(G2Target_Mobile)}
-       MessageBoxA(Window.Handle, PAnsiChar(e.Message), 'Error', 0);
+       Window.DisplayMessage(e.Message);
        {$endif}
      end;
   end;
@@ -6543,6 +6546,48 @@ begin
 end;
 {$Hints on}
 
+procedure TG2Window.DisplayMessage(const Text: AnsiString);
+{$if defined(G2Target_Windows)}
+begin
+  MessageBoxA(_Handle, PAnsiChar(Text), 'Error', 0);
+end;
+{$elseif defined(G2Target_Linux)}
+  var d: PDisplay;
+  var w: TWindow;
+  var e: TXEvent;
+  var msg: PChar;
+  var s: Integer;
+begin
+  msg := PChar(Text);
+  d := XOpenDisplay(nil);
+  if d = nil then exit;
+  try
+    s := DefaultScreen(d);
+    w := XCreateSimpleWindow(
+      d, RootWindow(d, s), 10, 10, 200, 200, 1,
+      BlackPixel(d, s), WhitePixel(d, s)
+    );
+    XSelectInput(d, w, ExposureMask or KeyPressMask);
+    XMapWindow(d, w);
+    while (True) do
+    begin
+      XNextEvent(d, @e);
+      if (e._type = Expose) then
+      begin
+        XFillRectangle(d, w, DefaultGC(d, s), 20, 20, 10, 10);
+        XDrawString(d, w, DefaultGC(d, s), 50, 50, msg, strlen(msg));
+      end;
+      if (e._type = KeyPress) then Break;
+    end;
+  finally
+    XCloseDisplay(d);
+  end;
+end;
+{$else}
+begin
+end;
+{$endif}
+
 {$if defined(G2Target_Android)}
 {$Hints off}
 {$endif}
@@ -7777,7 +7822,7 @@ begin
   {$if defined(G2Target_Windows)}
   wglMakeCurrent(0, 0);
   {$elseif defined(G2Target_Linux)}
-  glXMakeCurrent(g2.Window.Display, 0, 0);
+  glXMakeCurrent(g2.Window.Display, 0, nil);
   {$elseif defined(G2Target_OSX)}
   aglSetCurrentContext(0);
   {$endif}
@@ -12892,7 +12937,7 @@ begin
     PARGBArr(TextureData)^[i].b := $ff;
   end;
   gdk_image_destroy(Image);
-  _Gfx.ThreadAttach;
+  TG2GfxOGL(g2.Gfx).ThreadAttach;
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glGenTextures(1, @_Texture._Texture);
   glBindTexture(GL_TEXTURE_2D, _Texture._Texture);
@@ -12911,7 +12956,7 @@ begin
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  _Gfx.ThreadDetach;
+  TG2GfxOGL(g2.Gfx).ThreadDetach;
   FreeMem(TextureData, TexWidth * TexHeight * 4);
 {$elseif defined(G2Target_OSX)}
   type TARGB = packed record

@@ -16234,6 +16234,7 @@ procedure TUIWorkspaceParticles2DList.BtnSaveLib;
   var sd: TSaveDialog;
 begin
   sd := TSaveDialog.Create(nil);
+  sd.Filter := 'g2mp effect library (*.g2fxl)|*.g2fxl|';
   sd.DefaultExt := 'g2fxl';
   g2.Pause := True;
   try
@@ -16249,6 +16250,7 @@ procedure TUIWorkspaceParticles2DList.BtnLoadLib;
   var od: TOpenDialog;
 begin
   od := TOpenDialog.Create(nil);
+  od.Filter := 'g2mp effect library (*.g2fxl)|*.g2fxl|';
   od.DefaultExt := 'g2fxl';
   g2.Pause := True;
   try
@@ -26374,6 +26376,7 @@ begin
   begin
     sd := TSaveDialog.Create(nil);
     sd.DefaultExt := 'g2fx';
+    sd.Filter := 'g2mp effect 2d (*.g2fx)';
     g2.Pause := True;
     try
       if sd.Execute then
@@ -29766,7 +29769,7 @@ begin
   PropertySet.PropBool('Flip X', @FlipX, Group, @OnFlipXChange);
   PropertySet.PropBool('Flip Y', @FlipY, Group, @OnFlipYChange);
   PropertySet.PropFloat('Speed', @TimeScale, Group, @OnTimeScaleChange);
-
+  Color := Component.Color;
   PropertySet.PropColor('Color', @Color, Group, @OnChangeColor);
   PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
   UpdateAnimList;
@@ -32244,6 +32247,7 @@ procedure TScene2DData.SavePrefab;
 begin
   if Selection.Count <> 1 then Exit;
   sd := TSaveDialog.Create(nil);
+  sd.Filter := 'g2mp prefab 2d (*.g2prefab2d)|*.g2prefab2d|';
   sd.DefaultExt := '.g2prefab2d';
   if sd.Execute then
   begin

@@ -706,6 +706,7 @@ type
     var Shapes: array[0..1] of TG2Scene2DComponentCollisionShape;
     var Entities: array[0..1] of TG2Scene2DEntity;
     constructor Create; override;
+    function GetContactPoint: TG2Vec2;
   end;
 
   TG2Scene2DEventEndContactData = class (TG2Scene2DEventData)
@@ -4200,6 +4201,23 @@ end;
 constructor TG2Scene2DEventBeginContactData.Create;
 begin
   inherited Create;
+end;
+
+function TG2Scene2DEventBeginContactData.GetContactPoint: TG2Vec2;
+  var wm: tb2_world_manifold;
+  var i: Integer;
+begin
+  if PhysContact^.get_manifold^.point_count = 0 then Exit(G2Vec2);
+  PhysContact^.get_world_manifold(wm);
+  Result := wm.points[0];
+  if PhysContact^.get_manifold^.point_count > 0 then
+  begin
+    for i := 1 to PhysContact^.get_manifold^.point_count - 1 do
+    begin
+      Result := Result + wm.points[i];
+    end;
+    Result := Result / PhysContact^.get_manifold^.point_count;
+  end;
 end;
 //TG2Scene2DEventBeginContactData END
 

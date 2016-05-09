@@ -18,7 +18,7 @@ uses
   {$endif}
   G2Utils;
 
-{$MACRO ON}
+{$macro on}
 {$ifdef G2Target_Windows}
   {$define libdecl := stdcall}
 {$else}
