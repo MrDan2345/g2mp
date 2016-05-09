@@ -272,7 +272,7 @@ type
     property AssetName: String read _AssetName write _AssetName;
     class constructor CreateClass;
     class procedure UnlockQueue(const Queue: TG2IntU8);
-    constructor Create;
+    constructor Create; virtual;
     destructor Destroy; override;
     function IsShared: Boolean; inline;
     procedure Lock(const Queue: TG2IntU8);

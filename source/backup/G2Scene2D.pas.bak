@@ -415,6 +415,21 @@ type
     procedure Load(const dm: TG2DataManager); override;
   end;
 
+  TG2Scene2DComponentModel3D = class (TG2Scene2DComponent)
+  private
+    var _Scene3D: TG2Scene3D;
+    Mesh: TG2S3DMesh;
+  protected
+    procedure OnInitialize; override;
+    procedure OnFinalize; override;
+    procedure OnAttach; override;
+    procedure OnDetach; override;
+    procedure OnRender(const Display: TG2Display2D);
+  public
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
+  end;
+
   TG2Scene2DAlignH = (g2al_left, g2al_center, g2al_right);
   TG2Scene2DAlignV = (g2al_top, g2al_middle, g2al_bottom);
 
@@ -451,7 +466,7 @@ type
   public
     class constructor CreateClass;
     class function GetName: String; override;
-    class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
+    class function CanAttach(const {%H-}Node: TG2Scene2DEntity): Boolean; override;
     property Layer: TG2IntS32 read GetLayer write SetLayer;
     property Font: TG2Font read _Font write SetFont;
     property Text: String read _Text write _Text;
@@ -2917,6 +2932,45 @@ begin
 end;
 //TG2Scene2DComponentSprite END
 
+//TG2Scene2DComponentModel3D BEGIN
+procedure TG2Scene2DComponentModel3D.OnInitialize;
+begin
+  inherited OnInitialize;
+  _Scene3D := TG2Scene3D.Create;
+end;
+
+procedure TG2Scene2DComponentModel3D.OnFinalize;
+begin
+  _Scene3D.Free;
+  inherited OnFinalize;
+end;
+
+procedure TG2Scene2DComponentModel3D.OnAttach;
+begin
+  inherited OnAttach;
+end;
+
+procedure TG2Scene2DComponentModel3D.OnDetach;
+begin
+  inherited OnDetach;
+end;
+
+procedure TG2Scene2DComponentModel3D.OnRender(const Display: TG2Display2D);
+begin
+
+end;
+
+procedure TG2Scene2DComponentModel3D.Save(const dm: TG2DataManager);
+begin
+  inherited Save(dm);
+end;
+
+procedure TG2Scene2DComponentModel3D.Load(const dm: TG2DataManager);
+begin
+  inherited Load(dm);
+end;
+//TG2Scene2DComponentModel3D END
+
 //TG2Scene2DComponentText BEGIN
 function TG2Scene2DComponentText.GetLayer: TG2IntS32;
 begin
@@ -4208,13 +4262,13 @@ function TG2Scene2DEventBeginContactData.GetContactPoint: TG2Vec2;
   var i: Integer;
 begin
   if PhysContact^.get_manifold^.point_count = 0 then Exit(G2Vec2);
-  PhysContact^.get_world_manifold(wm);
+  PhysContact^.get_world_manifold(wm{%H-});
   Result := wm.points[0];
   if PhysContact^.get_manifold^.point_count > 0 then
   begin
     for i := 1 to PhysContact^.get_manifold^.point_count - 1 do
     begin
-      Result := Result + G2Vec2(wm.points[i]);
+      Result := Result + wm.points[i];
     end;
     Result := Result / PhysContact^.get_manifold^.point_count;
   end;

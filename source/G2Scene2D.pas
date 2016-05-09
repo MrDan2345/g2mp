@@ -417,7 +417,8 @@ type
 
   TG2Scene2DComponentModel3D = class (TG2Scene2DComponent)
   private
-    var _Scene: TG2Scene3D;
+    var _Scene3D: TG2Scene3D;
+    var Mesh: TG2S3DMesh;
   protected
     procedure OnInitialize; override;
     procedure OnFinalize; override;
@@ -2935,12 +2936,12 @@ end;
 procedure TG2Scene2DComponentModel3D.OnInitialize;
 begin
   inherited OnInitialize;
-  _Scene := TG2Scene3D.Create;
+  _Scene3D := TG2Scene3D.Create;
 end;
 
 procedure TG2Scene2DComponentModel3D.OnFinalize;
 begin
-  _Scene.Free;
+  _Scene3D.Free;
   inherited OnFinalize;
 end;
 
