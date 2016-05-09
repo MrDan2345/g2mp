@@ -415,6 +415,20 @@ type
     procedure Load(const dm: TG2DataManager); override;
   end;
 
+  TG2Scene2DComponentModel3D = class (TG2Scene2DComponent)
+  private
+    var _Scene: TG2Scene3D;
+  protected
+    procedure OnInitialize; override;
+    procedure OnFinalize; override;
+    procedure OnAttach; override;
+    procedure OnDetach; override;
+    procedure OnRender(const Display: TG2Display2D);
+  public
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
+  end;
+
   TG2Scene2DAlignH = (g2al_left, g2al_center, g2al_right);
   TG2Scene2DAlignV = (g2al_top, g2al_middle, g2al_bottom);
 
@@ -2916,6 +2930,45 @@ begin
   Layer := dm.ReadIntS32;
 end;
 //TG2Scene2DComponentSprite END
+
+//TG2Scene2DComponentModel3D BEGIN
+procedure TG2Scene2DComponentModel3D.OnInitialize;
+begin
+  inherited OnInitialize;
+  _Scene := TG2Scene3D.Create;
+end;
+
+procedure TG2Scene2DComponentModel3D.OnFinalize;
+begin
+  _Scene.Free;
+  inherited OnFinalize;
+end;
+
+procedure TG2Scene2DComponentModel3D.OnAttach;
+begin
+  inherited OnAttach;
+end;
+
+procedure TG2Scene2DComponentModel3D.OnDetach;
+begin
+  inherited OnDetach;
+end;
+
+procedure TG2Scene2DComponentModel3D.OnRender(const Display: TG2Display2D);
+begin
+
+end;
+
+procedure TG2Scene2DComponentModel3D.Save(const dm: TG2DataManager);
+begin
+  inherited Save(dm);
+end;
+
+procedure TG2Scene2DComponentModel3D.Load(const dm: TG2DataManager);
+begin
+  inherited Load(dm);
+end;
+//TG2Scene2DComponentModel3D END
 
 //TG2Scene2DComponentText BEGIN
 function TG2Scene2DComponentText.GetLayer: TG2IntS32;
