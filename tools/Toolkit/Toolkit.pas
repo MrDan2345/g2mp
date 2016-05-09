@@ -21,6 +21,7 @@ uses
   Math,
   Interfaces,
   LCLType,
+  LazFileUtils,
   Clipbrd,
   Dialogs,
   Process,
@@ -82,8 +83,8 @@ type
     procedure Initialize;
     procedure Render;
     procedure Update;
-    procedure MouseDown(const Button, x, y: Integer);
-    procedure MouseUp(const Button, x, y: Integer);
+    procedure MouseDown(const {%H-}Button, x, y: Integer);
+    procedure MouseUp(const {%H-}Button, {%H-}x, {%H-}y: Integer);
     procedure Scroll(const Amount: Integer);
   end;
 //TScrollBox END
@@ -93,9 +94,9 @@ type
   public
     procedure Render; virtual;
     procedure Update; virtual;
-    procedure MouseDown(const Button, x, y: Integer); virtual;
-    procedure MouseUp(const Button, x, y: Integer); virtual;
-    procedure Scroll(const y: Integer); virtual;
+    procedure MouseDown(const {%H-}Button, {%H-}x, {%H-}y: Integer); virtual;
+    procedure MouseUp(const {%H-}Button, {%H-}x, {%H-}y: Integer); virtual;
+    procedure Scroll(const {%H-}y: Integer); virtual;
     constructor Create; virtual;
     destructor Destroy; override;
   end;
@@ -129,8 +130,8 @@ type
     procedure Clear;
     procedure Render; override;
     procedure Update; override;
-    procedure MouseDown(const Button, x, y: Integer); override;
-    procedure MouseUp(const Button, x, y: Integer); override;
+    procedure MouseDown(const {%H-}Button, x, y: Integer); override;
+    procedure MouseUp(const {%H-}Button, {%H-}x, {%H-}y: Integer); override;
   end;
 //TOverlayWorkspaceList END
 
@@ -144,7 +145,7 @@ type
     property Workspace: TUIWorkspace read _Workspace write SetWorkspace;
     procedure Render; override;
     procedure Update; override;
-    procedure MouseUp(const Button, x, y: Integer); override;
+    procedure MouseUp(const {%H-}Button, x, y: Integer); override;
   end;
 //TOverlayWorkspace END
 
@@ -183,7 +184,7 @@ type
     procedure Clear;
     procedure Render; override;
     procedure Update; override;
-    procedure MouseDown(const Button, x, y: Integer); override;
+    procedure MouseDown(const Button, {%H-}x, {%H-}y: Integer); override;
     procedure MouseUp(const Button, x, y: Integer); override;
   end;
 //TOverlayPopUp END
@@ -256,7 +257,7 @@ type
     procedure Initialzie; virtual;
     procedure Render; override;
     procedure Update; override;
-    procedure MouseUp(const Button, x, y: Integer); override;
+    procedure MouseUp(const {%H-}Button, {%H-}x, {%H-}y: Integer); override;
   end;
 //TOverlayDrop END
 
@@ -520,7 +521,7 @@ type
     type TPropertyVec2 = class (TProperty)
     protected
       var _ValuePtr: PG2Vec2;
-      procedure ComponentChangeProc(const Ptr: Pointer);
+      procedure ComponentChangeProc(const {%H-}Ptr: Pointer);
     public
       property ValuePtr: PG2Vec2 read _ValuePtr write _ValuePtr;
       constructor Create; override;
@@ -528,7 +529,7 @@ type
     type TPropertyVec3 = class (TProperty)
     protected
       var _ValuePtr: PG2Vec3;
-      procedure ComponentChangeProc(const Ptr: Pointer);
+      procedure ComponentChangeProc(const {%H-}Ptr: Pointer);
     public
       property ValuePtr: PG2Vec3 read _ValuePtr write _ValuePtr;
       constructor Create; override;
@@ -536,7 +537,7 @@ type
     type TPropertyColor = class (TProperty)
     protected
       var _ValuePtr: PG2Color;
-      procedure ComponentChangeProc(const Ptr: Pointer);
+      procedure ComponentChangeProc(const {%H-}Ptr: Pointer);
     public
       property ValuePtr: PG2Color read _ValuePtr write _ValuePtr;
       constructor Create; override;
@@ -701,8 +702,8 @@ type
     procedure Render;
     procedure Update;
     procedure MouseDown(const Button, x, y: Integer);
-    procedure MouseUp(const Button, x, y: Integer);
-    procedure Scroll(const Amount: Integer);
+    procedure MouseUp(const {%H-}Button, {%H-}x, {%H-}y: Integer);
+    procedure Scroll(const {%H-}Amount: Integer);
   end;
 //TSpinner END
 
@@ -733,20 +734,20 @@ type
     procedure OnAdjust; virtual;
     procedure OnUpdate; virtual;
     procedure OnRender; virtual;
-    procedure OnMouseDown(const Button, x, y: Integer); virtual;
-    procedure OnMouseUp(const Button, x, y: Integer); virtual;
-    procedure OnKeyDown(const Key: Integer); virtual;
-    procedure OnKeyUp(const Key: Integer); virtual;
-    procedure OnScroll(const y: Integer); virtual;
+    procedure OnMouseDown(const {%H-}Button, {%H-}x, {%H-}y: Integer); virtual;
+    procedure OnMouseUp(const {%H-}Button, {%H-}x, {%H-}y: Integer); virtual;
+    procedure OnKeyDown(const {%H-}Key: Integer); virtual;
+    procedure OnKeyUp(const {%H-}Key: Integer); virtual;
+    procedure OnScroll(const {%H-}y: Integer); virtual;
     procedure OnChildAdd(const Child: TUIWorkspace); virtual;
-    procedure OnChildRemove(const Child: TUIWorkspace); virtual;
+    procedure OnChildRemove(const {%H-}Child: TUIWorkspace); virtual;
     procedure OnTabInsert(const TabParent: TUIWorkspaceFrame); virtual;
     procedure OnHeaderRender; virtual;
-    procedure OnHeaderMouseDown(const Button, x, y: Integer); virtual;
-    procedure OnHeaderMouseUp(const Button, x, y: Integer); virtual;
-    procedure OnDragDropBegin(const Drop: TOverlayDrop); virtual;
-    procedure OnDragDropEnd(const Drop: TOverlayDrop); virtual;
-    procedure OnDragDropRelase(const Drop: TOverlayDrop); virtual;
+    procedure OnHeaderMouseDown(const {%H-}Button, {%H-}x, {%H-}y: Integer); virtual;
+    procedure OnHeaderMouseUp(const {%H-}Button, {%H-}x, {%H-}y: Integer); virtual;
+    procedure OnDragDropBegin(const {%H-}Drop: TOverlayDrop); virtual;
+    procedure OnDragDropEnd(const {%H-}Drop: TOverlayDrop); virtual;
+    procedure OnDragDropRelase(const {%H-}Drop: TOverlayDrop); virtual;
   public
     class var Focus: TUIWorkspace;
     class function GetWorkspaceName: AnsiString; virtual;
@@ -769,7 +770,7 @@ type
     procedure Scroll(const y: Integer); virtual;
     function GetMinWidth: Single; virtual;
     function GetMinHeight: Single; virtual;
-    function CanDragDrop(const Drop: TOverlayDrop): Boolean; virtual;
+    function CanDragDrop(const {%H-}Drop: TOverlayDrop): Boolean; virtual;
     class constructor CreateClass;
     constructor Create;
     destructor Destroy; override;
@@ -791,10 +792,10 @@ type
     procedure OnFinalize; override;
     procedure OnUpdate; override;
     procedure OnAdjust; override;
-    procedure OnMouseDown(const Button, x, y: Integer); override;
-    procedure OnMouseUp(const Button, x, y: Integer); override;
-    procedure OnChildAdd(const Child: TUIWorkspace); override;
-    procedure OnChildRemove(const Child: TUIWorkspace); override;
+    procedure OnMouseDown(const {%H-}Button, x, y: Integer); override;
+    procedure OnMouseUp(const {%H-}Button, {%H-}x, {%H-}y: Integer); override;
+    procedure OnChildAdd(const {%H-}Child: TUIWorkspace); override;
+    procedure OnChildRemove(const {%H-}Child: TUIWorkspace); override;
   public
     property Orientation: TOrientation read _Orientation write SetOrientation;
     property SplitPos: Single read _SplitPos write SetSplitPos;
@@ -825,7 +826,7 @@ type
     procedure OnRender; override;
     procedure OnMouseDown(const Button, x, y: Integer); override;
     procedure OnMouseUp(const Button, x, y: Integer); override;
-    procedure OnChildAdd(const Child: TUIWorkspace); override;
+    procedure OnChildAdd(const {%H-}Child: TUIWorkspace); override;
     procedure OnChildRemove(const Child: TUIWorkspace); override;
     function PtInClose(const x, y: Integer): Boolean;
     function PtInDrag(const x, y: Integer): Boolean;
@@ -969,8 +970,8 @@ type
     procedure OnMouseUp(const Button, x, y: Integer); override;
     procedure OnTabInsert(const TabParent: TUIWorkspaceFrame); override;
     procedure OnHeaderRender; override;
-    procedure OnHeaderMouseDown(const Button, x, y: Integer); override;
-    procedure OnHeaderMouseUp(const Button, x, y: Integer); override;
+    procedure OnHeaderMouseDown(const {%H-}Button, x, y: Integer); override;
+    procedure OnHeaderMouseUp(const {%H-}Button, x, y: Integer); override;
   public
     property FileIndex: Integer read _FileIndex write SetFileIndex;
     property CodeFiles[const Index: Integer]: PCodeFile read GetCodeFile;
@@ -1356,7 +1357,7 @@ type
     procedure OnRender; override;
     procedure OnUpdate; override;
     procedure OnMouseDown(const Button, x, y: Integer); override;
-    procedure OnMouseUp(const Button, x, y: Integer); override;
+    procedure OnMouseUp(const {%H-}Button, {%H-}x, {%H-}y: Integer); override;
   public
     property Position: TG2Float read _Position write SetPosition;
     property OnChange: TG2ProcObj read _OnChange write _OnChange;
@@ -1530,7 +1531,7 @@ type
     procedure OnUpdate; override;
     procedure OnRender; override;
     procedure OnMouseDown(const Button, x, y: Integer); override;
-    procedure OnMouseUp(const Button, x, y: Integer); override;
+    procedure OnMouseUp(const Button, {%H-}x, {%H-}y: Integer); override;
   public
     property Points[const Index: Integer]: TG2Vec2 read GetPoint write SetPoint;
     property PointCount: Integer read GetPointCount;
@@ -1575,7 +1576,7 @@ type
     procedure OnUpdate; override;
     procedure OnRender; override;
     procedure OnMouseDown(const Button, x, y: Integer); override;
-    procedure OnMouseUp(const Button, x, y: Integer); override;
+    procedure OnMouseUp(const {%H-}Button, {%H-}x, {%H-}y: Integer); override;
   public
     property Colors[const Index: Integer]: PSectionColor read GetColor;
     property ColorCount: Integer read GetColorCount;
@@ -1682,7 +1683,7 @@ type
     procedure OnBtnBuild;
     procedure OnBtnBuildHTML5;
     procedure OnBtnLpr;
-    procedure OnChangeTarget(const Index: TG2IntS32);
+    procedure OnChangeTarget(const {%H-}Index: TG2IntS32);
     procedure OnSearchJDK;
     procedure OnSearchASDK;
     procedure OnSearchANDK;
@@ -1741,7 +1742,7 @@ type
     );
     procedure RenderButton(
       const r: TG2Rect;
-      const Offset: Integer;
+      const {%H-}Offset: Integer;
       const Prop: TPropertySet.TPropertyButton
     );
     procedure RenderGroup(
@@ -2003,7 +2004,7 @@ type
     procedure OnFinalize; override;
     procedure OnRender; override;
     procedure OnMouseDown(const Button, x, y: Integer); override;
-    procedure OnMouseUp(const Button, x, y: Integer); override;
+    procedure OnMouseUp(const {%H-}Button, {%H-}x, {%H-}y: Integer); override;
   public
     property Root: TItem read _Root;
     class function GetWorkspaceName: AnsiString; override;
@@ -2055,15 +2056,15 @@ type
     procedure OnMouseDown(const Button, x, y: Integer); override;
     procedure OnMouseUp(const Button, x, y: Integer); override;
     procedure OnScroll(const y: Integer); override;
-    procedure OnDragDropRelase(const Drop: TOverlayDrop); override;
+    procedure OnDragDropRelase(const {%H-}Drop: TOverlayDrop); override;
   public
     class constructor Create;
     class function GetWorkspaceName: AnsiString; override;
     class function GetWorkspacePath: AnsiString; override;
     function GetMinWidth: Single; override;
     function GetMinHeight: Single; override;
-    procedure OnCreateEntity(const Entity: TG2Scene2DEntity);
-    procedure OnDeleteEntity(const Entity: TG2Scene2DEntity);
+    procedure OnCreateEntity(const {%H-}Entity: TG2Scene2DEntity);
+    procedure OnDeleteEntity(const {%H-}Entity: TG2Scene2DEntity);
     function CanDragDrop(const Drop: TOverlayDrop): Boolean; override;
   end;
 //TUIWorkspaceScene2DStructure END
@@ -2219,7 +2220,7 @@ type
     procedure OnEmitterTimeStartChange;
     procedure OnEmitterTimeEndChange;
     procedure OnEmitterOrientationChange;
-    procedure OnEmitterShapeChange(const PrevIndex: Integer);
+    procedure OnEmitterShapeChange(const {%H-}PrevIndex: Integer);
     procedure OnEmitterShapeRadius0Change;
     procedure OnEmitterShapeRadius1Change;
     procedure OnEmitterShapeAngleChange;
@@ -2251,11 +2252,11 @@ type
     procedure OnParticleColor0Change;
     procedure OnParticleColor1Change;
     procedure OnParticleOpacityChange;
-    procedure OnParticleBlendChange(const PrevIndex: Integer);
-    procedure OnParticleBlendColorSrcChange(const PrevIndex: Integer);
-    procedure OnParticleBlendColorDstChange(const PrevIndex: Integer);
-    procedure OnParticleBlendAlphaSrcChange(const PrevIndex: Integer);
-    procedure OnParticleBlendAlphaDstChange(const PrevIndex: Integer);
+    procedure OnParticleBlendChange(const {%H-}PrevIndex: Integer);
+    procedure OnParticleBlendColorSrcChange(const {%H-}PrevIndex: Integer);
+    procedure OnParticleBlendColorDstChange(const {%H-}PrevIndex: Integer);
+    procedure OnParticleBlendAlphaSrcChange(const {%H-}PrevIndex: Integer);
+    procedure OnParticleBlendAlphaDstChange(const {%H-}PrevIndex: Integer);
     procedure OnModifierAdd(const Sender: Pointer);
     procedure ModsClear;
     procedure ModsShow;
@@ -2417,13 +2418,13 @@ type
     procedure Update; virtual;
     procedure OnEnable; virtual;
     procedure OnDisable; virtual;
-    procedure AdjustCursor(const ScrX, ScrY: Single); virtual;
-    procedure OnMouseDown(const x, y: Integer); virtual;
-    procedure OnMouseUp(const x, y: Integer); virtual;
-    procedure OnScroll(const y: Integer); virtual;
-    procedure OnPrint(const Char: AnsiChar); virtual;
-    procedure OnKeyDown(const Key: TG2IntS32); virtual;
-    procedure OnKeyUp(const Key: TG2IntS32); virtual;
+    procedure AdjustCursor(const {%H-}ScrX, {%H-}ScrY: Single); virtual;
+    procedure OnMouseDown(const {%H-}x, {%H-}y: Integer); virtual;
+    procedure OnMouseUp(const {%H-}x, {%H-}y: Integer); virtual;
+    procedure OnScroll(const {%H-}y: Integer); virtual;
+    procedure OnPrint(const {%H-}Char: AnsiChar); virtual;
+    procedure OnKeyDown(const {%H-}Key: TG2IntS32); virtual;
+    procedure OnKeyUp(const {%H-}Key: TG2IntS32); virtual;
     procedure TextUpdated; virtual;
     function GetCursorPos: TG2Vec2; virtual;
   end;
@@ -2455,12 +2456,12 @@ type
     procedure Update; override;
     procedure OnEnable; override;
     procedure OnDisable; override;
-    procedure AdjustCursor(const ScrX, ScrY: Single); override;
-    procedure OnMouseDown(const x, y: Integer); override;
-    procedure OnMouseUp(const x, y: Integer); override;
+    procedure AdjustCursor(const ScrX, {%H-}ScrY: Single); override;
+    procedure OnMouseDown(const x, {%H-}y: Integer); override;
+    procedure OnMouseUp(const {%H-}x, {%H-}y: Integer); override;
     procedure OnPrint(const Char: AnsiChar); override;
     procedure OnKeyDown(const Key: TG2IntS32); override;
-    procedure OnKeyUp(const Key: TG2IntS32); override;
+    procedure OnKeyUp(const {%H-}Key: TG2IntS32); override;
     procedure TextUpdated; override;
     function GetCursorPos: TG2Vec2; override;
     constructor Create;
@@ -2515,11 +2516,11 @@ type
     procedure OnDisable; override;
     procedure AdjustCursor(const ScrX, ScrY: Single); override;
     procedure OnMouseDown(const x, y: Integer); override;
-    procedure OnMouseUp(const x, y: Integer); override;
+    procedure OnMouseUp(const {%H-}x, {%H-}y: Integer); override;
     procedure OnScroll(const y: Integer); override;
     procedure OnPrint(const Char: AnsiChar); override;
     procedure OnKeyDown(const Key: TG2IntS32); override;
-    procedure OnKeyUp(const Key: TG2IntS32); override;
+    procedure OnKeyUp(const {%H-}Key: TG2IntS32); override;
     procedure TextUpdated; override;
     function GetCursorPos: TG2Vec2; override;
     procedure UndoActionInsert(const Ptr: Pointer);
@@ -2601,7 +2602,7 @@ type
   public
     property WorkspaceClass: CUIWorkspace read _WorkspaceClass write _WorkspaceClass;
     function GetName: AnsiString; virtual;
-    procedure OnCreateWorkspace(const Workspace: TUIWorkspace); virtual;
+    procedure OnCreateWorkspace(const {%H-}Workspace: TUIWorkspace); virtual;
   end;
 //TUIWorkspaceConstructor END
 
@@ -2609,7 +2610,7 @@ type
   TUIWorkspaceConstructorCode = class (TUIWorkspaceConstructor)
   public
     constructor Create;
-    procedure OnCreateWorkspace(const Workspace: TUIWorkspace); override;
+    procedure OnCreateWorkspace(const {%H-}Workspace: TUIWorkspace); override;
   end;
 //TUIWorkspaceConstructorCode END
 
@@ -3043,13 +3044,13 @@ type
     constructor Create; virtual;
     destructor Destroy; override;
     procedure OnModClose;
-    procedure OnParticleCreate(const Particle: TParticle); virtual;
-    procedure OnParticleDestroy(const Particle: TParticle); virtual;
-    procedure OnParticleUpdate(const Particle: TParticle; const t: TG2Float); virtual;
-    procedure OnEmitterUpdate(const Emitter: TEmitter; const t: TG2Float); virtual;
-    procedure Save(const dm: TG2DataManager); virtual;
-    procedure Load(const dm: TG2DataManager); virtual;
-    procedure WriteG2ML(const g2ml: TG2MLWriter); virtual;
+    procedure OnParticleCreate(const {%H-}Particle: TParticle); virtual;
+    procedure OnParticleDestroy(const {%H-}Particle: TParticle); virtual;
+    procedure OnParticleUpdate(const {%H-}Particle: TParticle; const {%H-}t: TG2Float); virtual;
+    procedure OnEmitterUpdate(const {%H-}Emitter: TEmitter; const {%H-}t: TG2Float); virtual;
+    procedure Save(const {%H-}dm: TG2DataManager); virtual;
+    procedure Load(const {%H-}dm: TG2DataManager); virtual;
+    procedure WriteG2ML(const {%H-}g2ml: TG2MLWriter); virtual;
   end;
 
   TParticleModOpacityGraph = class (TParticleMod)
@@ -3314,12 +3315,12 @@ type
     procedure RefInc;
     procedure RefDec;
     procedure Update; virtual;
-    procedure Update(const Display: TG2Display2D); virtual;
-    procedure Render(const Display: TG2Display2D); virtual;
-    procedure MouseDown(const Display: TG2Display2D; const Button, x, y: Integer); virtual;
-    procedure MouseUp(const Display: TG2Display2D; const Button, x, y: Integer); virtual;
-    procedure KeyDown(const Key: Integer); virtual;
-    procedure KeyUp(const Key: Integer); virtual;
+    procedure Update(const {%H-}Display: TG2Display2D); virtual;
+    procedure Render(const {%H-}Display: TG2Display2D); virtual;
+    procedure MouseDown(const {%H-}Display: TG2Display2D; const {%H-}Button, {%H-}x, {%H-}y: Integer); virtual;
+    procedure MouseUp(const {%H-}Display: TG2Display2D; const {%H-}Button, {%H-}x, {%H-}y: Integer); virtual;
+    procedure KeyDown(const {%H-}Key: Integer); virtual;
+    procedure KeyUp(const {%H-}Key: Integer); virtual;
     procedure Initialize; virtual;
     procedure Finalize; virtual;
     procedure BeforeDestruction; override;
@@ -3352,8 +3353,8 @@ type
     destructor Destroy; override;
     procedure Update(const Display: TG2Display2D); override;
     procedure Render(const Display: TG2Display2D); override;
-    procedure MouseDown(const Display: TG2Display2D; const Button, x, y: Integer); override;
-    procedure MouseUp(const Display: TG2Display2D; const Button, x, y: Integer); override;
+    procedure MouseDown(const Display: TG2Display2D; const {%H-}Button, {%H-}x, {%H-}y: Integer); override;
+    procedure MouseUp(const {%H-}Display: TG2Display2D; const {%H-}Button, {%H-}x, {%H-}y: Integer); override;
     procedure Initialize; override;
   end;
 //TScene2DEditorEdge END
@@ -3375,7 +3376,7 @@ type
     procedure Update(const Display: TG2Display2D); override;
     procedure Render(const Display: TG2Display2D); override;
     procedure MouseDown(const Display: TG2Display2D; const Button, x, y: Integer); override;
-    procedure MouseUp(const Display: TG2Display2D; const Button, x, y: Integer); override;
+    procedure MouseUp(const {%H-}Display: TG2Display2D; const {%H-}Button, {%H-}x, {%H-}y: Integer); override;
     procedure Initialize; override;
   end;
 //TScene2DEditorChain END
@@ -3399,7 +3400,7 @@ type
     procedure Update(const Display: TG2Display2D); override;
     procedure Render(const Display: TG2Display2D); override;
     procedure MouseDown(const Display: TG2Display2D; const Button, x, y: Integer); override;
-    procedure MouseUp(const Display: TG2Display2D; const Button, x, y: Integer); override;
+    procedure MouseUp(const {%H-}Display: TG2Display2D; const {%H-}Button, {%H-}x, {%H-}y: Integer); override;
     procedure Initialize; override;
   end;
 //TScene2DEditorShapePoly END
@@ -3430,7 +3431,7 @@ type
       procedure AddItem(const ItemName: AnsiString);
       procedure Initialize(const Frame: TG2Rect; const BorderSize: TG2Float);
       procedure Render; override;
-      procedure MouseDown(const Button, x, y: Integer); override;
+      procedure MouseDown(const {%H-}Button, x, y: Integer); override;
       procedure MouseUp(const Button, x, y: Integer); override;
     end;
     type TBtn = class
@@ -3483,10 +3484,10 @@ type
     procedure OnModeFaces;
     procedure OnModeTexCoords;
     procedure OnModeClick(const Display: Pointer);
-    procedure OnFlipEdgeClick(const Display: Pointer);
-    procedure OnCollapseClick(const Display: Pointer);
-    procedure OnSplitClick(const Display: Pointer);
-    procedure OnDeleteClick(const Display: Pointer);
+    procedure OnFlipEdgeClick(const {%H-}Display: Pointer);
+    procedure OnCollapseClick(const {%H-}Display: Pointer);
+    procedure OnSplitClick(const {%H-}Display: Pointer);
+    procedure OnDeleteClick(const {%H-}Display: Pointer);
     procedure DeleteVertex(const v: TScene2DComponentDataPolyVertex);
     procedure DeleteEdge(const e: TScene2DComponentDataPolyEdge);
     procedure DeleteFace(const f: TScene2DComponentDataPolyFace);
@@ -3685,7 +3686,7 @@ type
     class function GetName: String; override;
     destructor Destroy; override;
     function PickLayer: Integer; override;
-    function Pick(const x, y: TG2Float): Boolean; override;
+    function Pick(const {%H-}x, {%H-}y: TG2Float): Boolean; override;
     procedure AddToProperties(const PropertySet: TPropertySet); override;
     procedure OnSkeletonPathChange(const Sender: Pointer);
     procedure OnLayerChange(const Sender: Pointer);
@@ -4137,7 +4138,6 @@ type
     procedure PasteEntity(const Pos: TG2Vec2);
     procedure SavePrefab;
     function CreatePrefab(const Transform: TG2Transform2; const PrefabName: String): TG2Scene2DEntity;
-    procedure CreateEntityData(const Entity: TG2Scene2DEntity);
     procedure CreateJointData(const Joint: TG2Scene2DJoint);
     procedure VerifyEntityName(const Entity: TG2Scene2DEntity);
     function CreateJointDistance(const Position: TG2Vec2): TG2Scene2DDistanceJoint;
@@ -4185,7 +4185,7 @@ type
     procedure KeyDown(const Key: Integer);
     procedure KeyUp(const Key: Integer);
     procedure Update;
-    procedure MouseClick(const Display: TG2Display2D; const Button: Integer; const x, y: TG2Float);
+    procedure MouseClick(const Display: TG2Display2D; const {%H-}Button: Integer; const x, y: TG2Float);
     procedure Render(const Display: TG2Display2D);
   end;
 //TScene2DData END
@@ -4454,7 +4454,7 @@ type
     procedure MouseUp(const Button, x, y: Integer);
     procedure Scroll(const y: Integer);
     procedure Print(const Char: AnsiChar);
-    procedure Resize(const OldWidth, OldHeight, NewWidth, NewHeight: Integer);
+    procedure Resize(const {%H-}OldWidth, {%H-}OldHeight, {%H-}NewWidth, {%H-}NewHeight: Integer);
     procedure SaveSettings;
     procedure LoadSettings;
     function LoadFile(const f: String): AnsiString;
@@ -5528,7 +5528,6 @@ end;
 
 //TOverlayDropList BEGIN
 procedure TOverlayDropList.Initialize(const OwnerFrame: TG2Rect);
-  var i: Integer;
 begin
   OnChange := nil;
   _ItemHeight := OwnerFrame.h;
@@ -6283,6 +6282,7 @@ begin
     _Parser.Parse(CodeFile^.Lines[Line]);
     repeat
       tps := _Parser.Position;
+      tt := ttError;
       Token := _Parser.NextToken(tt);
       tpe := _Parser.Position - 1;
       case tt of
@@ -6434,6 +6434,7 @@ begin
     _Parser.Parse(CodeFile^.Lines[Line]);
     repeat
       tps := _Parser.Position;
+      tt := ttError;
       Token := _Parser.NextToken(tt);
       tpe := _Parser.Position - 1;
       case tt of
@@ -7308,7 +7309,7 @@ end;
 function TUIWorkspaceFrame.PointInChild(const x, y: Single): Integer;
   var ChildFrame: TG2Rect;
 begin
-  Result := PointInChild(x, y, ChildFrame);
+  Result := PointInChild(x, y, ChildFrame{%H-});
 end;
 
 procedure TUIWorkspaceFrame.OnInitialize;
@@ -7367,7 +7368,7 @@ begin
     if _Dragging then
     begin
       mc := g2.MousePos;
-      ci := PointInChild(mc.x, mc.y, ChildFrame);
+      ci := PointInChild(mc.x, mc.y, ChildFrame{%H-});
       if (ci > -1) and (ci <> _ChildIndex) then
       begin
         Ratio := (mc.x - ChildFrame.l) / ChildFrame.w;
@@ -8176,20 +8177,20 @@ end;
 function TUIWorkspaceCode.PtInFile(const x, y: Single; var InDrag, InClose: Boolean): Integer;
   var FileFrame: TG2Rect;
 begin
-  Result := PtInFile(x, y, InDrag, InClose, FileFrame);
+  Result := PtInFile(x, y, InDrag, InClose, FileFrame{%H-});
 end;
 
 function TUIWorkspaceCode.PtInFile(const x, y: Single; var FileFrame: TG2Rect): Integer;
   var InDrag, InClose: Boolean;
 begin
-  Result := PtInFile(x, y, InDrag, InClose, FileFrame);
+  Result := PtInFile(x, y, InDrag{%H-}, InClose{%H-}, FileFrame);
 end;
 
 function TUIWorkspaceCode.PtInFile(const x, y: Single): Integer;
   var InDrag, InClose: Boolean;
   var FileFrame: TG2Rect;
 begin
-  Result := PtInFile(x, y, InDrag, InClose, FileFrame);
+  Result := PtInFile(x, y, InDrag{%H-}, InClose{%H-}, FileFrame{%H-});
 end;
 
 procedure TUIWorkspaceCode.AddToolItem(const Icon: TG2Texture2D; const OnClick: TG2ProcObj = nil);
@@ -8463,7 +8464,7 @@ begin
     if _Dragging then
     begin
       mc := g2.MousePos;
-      fi := PtInFile(mc.x, mc.y, FileFrame);
+      fi := PtInFile(mc.x, mc.y, FileFrame{%H-});
       if (fi > -1) and (fi <> _FileIndex) then
       begin
         Ratio := (mc.x - FileFrame.l) / FileFrame.w;
@@ -8632,7 +8633,7 @@ procedure TUIWorkspaceCode.OnHeaderMouseDown(const Button, x, y: Integer);
   var Code: TUIWorkspaceCode;
   var CodeConstructor: TUIWorkspaceConstructorCode;
 begin
-  mdf := PtInFile(x, y, InDrag, InClose);
+  mdf := PtInFile(x, y, InDrag{%H-}, InClose{%H-});
   if _FileIndex = mdf then
   begin
     if InDrag then
@@ -8656,8 +8657,8 @@ procedure TUIWorkspaceCode.OnHeaderMouseUp(const Button, x, y: Integer);
   var cf: PCodeFile;
 begin
   md := g2.MouseDownPos[G2MB_Left];
-  MDFile := PtInFile(md.x, md.y, MdInDrag, MdInClose);
-  if (MDFile > -1) and (PtInFile(x, y, InDrag, InClose) = MDFile) then
+  MDFile := PtInFile(md.x, md.y, MdInDrag{%H-}, MdInClose{%H-});
+  if (MDFile > -1) and (PtInFile(x, y, InDrag{%H-}, InClose{%H-}) = MDFile) then
   begin
     _HighlightRescan := True;
     if MDFile = _FileIndex then
@@ -8826,16 +8827,15 @@ begin
   for i := 0 to _Root.Children.Count - 1 do
   begin
     Result := CheckItem(PNode(_Root.Children[i]), varx, vary, InExpand, InImplementation);
-    if Result <> nil then
-    Exit;
+    if Result <> nil then Exit;
   end;
+  Result := nil;
 end;
 
 procedure TUIWorkspaceCodeBrowser.ProcessFile(const FileSymbol: TCodeInsightSymbolFile);
   procedure ProcessNode(const Node: PNode; const Symbol: TCodeInsightSymbol);
     var i: Integer;
     var n: PNode;
-    var sf: TCodeInsightSymbolFile;
   begin
     n := Node^.AddNode(Symbol.Name);// + ' (' + IntToStr(Symbol.LineInterface) + ':' + IntToStr(Symbol.LineImplementation) + ') ' + Symbol.Path);
     n^.LineInterface := Symbol.LineInterface;
@@ -9005,6 +9005,8 @@ procedure TUIWorkspaceCodeBrowser.OnMouseDown(const Button, x, y: Integer);
   var n: PNode;
   var InExpand, InImplementation: Boolean;
 begin
+  InExpand := False;
+  InImplementation := False;
   n := PtInItem(x, y, InExpand, InImplementation);
   if (n <> nil) and InExpand then
   begin
@@ -9018,8 +9020,8 @@ procedure TUIWorkspaceCodeBrowser.OnMouseUp(const Button, x, y: Integer);
   var NodeMD, NodeMC: PNode;
   var InExpandMD, InExpandMC, InImplementationMD, InImplementationMC: Boolean;
 begin
-  NodeMD := PtInItem(g2.MouseDownPos[Button].x, g2.MouseDownPos[Button].y, InExpandMD, InImplementationMD);
-  NodeMC := PtInItem(x, y, InExpandMC, InImplementationMC);
+  NodeMD := PtInItem(g2.MouseDownPos[Button].x, g2.MouseDownPos[Button].y, InExpandMD{%H-}, InImplementationMD{%H-});
+  NodeMC := PtInItem(x, y, InExpandMC{%H-}, InImplementationMC{%H-});
   if (NodeMD <> nil)
   and (NodeMD = NodeMC)
   and (App.CodeInsight.CurCodeFile <> nil)
@@ -9113,7 +9115,7 @@ begin
     else if not PNode(Children[m])^.IsDir and NodeIsDir then
     c := 1
     else
-    c := CompareFilenamesIgnoreCase(PNode(Children[m])^.Name, NodeName);
+    c := LazFileUtils.CompareFilenamesIgnoreCase(PNode(Children[m])^.Name, NodeName);
     if c < 0 then
     l := m + 1 else h := m - 1;
   end;
@@ -9190,9 +9192,9 @@ begin
   for i := 0 to _Root.Children.Count - 1 do
   begin
     Result := CheckItem(PNode(_Root.Children[i]), varx, vary, InExpand);
-    if Result <> nil then
-    Exit;
+    if Result <> nil then Exit;
   end;
+  Result := nil;
 end;
 
 procedure TUIWorkspaceProjectBrowser.OnSlide;
@@ -9202,13 +9204,10 @@ end;
 
 procedure TUIWorkspaceProjectBrowser.Refresh;
   procedure ProcessDir(const ParentNode: PNode; const Directory: String);
-    var i: Integer;
     var n: PNode;
     var sr: TSearchRec;
-    var PathArr: TG2StrArrA;
-    var NodeName: String;
   begin
-    if FindFirstUTF8(Directory + '*', faDirectory, sr) = 0 then
+    if LazFileUtils.FindFirstUTF8(Directory + '*', faDirectory, sr) = 0 then
     begin
       repeat
         if (sr.Name <> '.')
@@ -9222,11 +9221,10 @@ procedure TUIWorkspaceProjectBrowser.Refresh;
             ProcessDir(n, Directory + G2PathSep + sr.Name + G2PathSep);
           end;
         end;
-      until FindNextUTF8(sr) <> 0;
-      FindCloseUTF8(sr);
+      until LazFileUtils.FindNextUTF8(sr) <> 0;
+      LazFileUtils.FindCloseUTF8(sr);
     end;
   end;
-  var i: Integer;
 begin
   Clear;
   _Root.IsDir := True;
@@ -9245,7 +9243,7 @@ procedure TUIWorkspaceProjectBrowser.Scan;
   begin
     n := 0;
     v := True;
-    if FindFirstUTF8(Node^.Path + '*', faDirectory, sr) = 0 then
+    if LazFileUtils.FindFirstUTF8(Node^.Path + '*', faDirectory, sr) = 0 then
     begin
       repeat
         if (sr.Name <> '.')
@@ -9263,8 +9261,8 @@ procedure TUIWorkspaceProjectBrowser.Scan;
           if not v then
           Break;
         end;
-      until FindNextUTF8(sr) <> 0;
-      FindCloseUTF8(sr);
+      until LazFileUtils.FindNextUTF8(sr) <> 0;
+      LazFileUtils.FindCloseUTF8(sr);
     end;
     v := v and (n = Node^.Children.Count);
     if v then
@@ -9319,7 +9317,7 @@ end;
 
 procedure TUIWorkspaceProjectBrowser.OnRender;
   procedure RenderNode(const n: PNode; var x, y: Single);
-    var i, l: Integer;
+    var i: Integer;
     var s: AnsiString;
     var r: TG2Rect;
     var c: TG2Color;
@@ -9398,6 +9396,7 @@ procedure TUIWorkspaceProjectBrowser.OnMouseDown(const Button, x, y: Integer);
   var n: PNode;
   var InExpand: Boolean;
 begin
+  InExpand := False;
   n := PtInItem(x, y, InExpand);
   if (n <> nil) and InExpand then
   begin
@@ -9411,8 +9410,8 @@ procedure TUIWorkspaceProjectBrowser.OnMouseUp(const Button, x, y: Integer);
   var NodeMD, NodeMC: PNode;
   var InExpandMD, InExpandMC: Boolean;
 begin
-  NodeMD := PtInItem(g2.MouseDownPos[Button].x, g2.MouseDownPos[Button].y, InExpandMD);
-  NodeMC := PtInItem(x, y, InExpandMC);
+  NodeMD := PtInItem(g2.MouseDownPos[Button].x, g2.MouseDownPos[Button].y, InExpandMD{%H-});
+  NodeMC := PtInItem(x, y, InExpandMC{%H-});
   if (NodeMD <> nil)
   and (NodeMD = NodeMC)
   and (App.CodeInsight.CurCodeFile <> nil)
@@ -9516,7 +9515,6 @@ begin
 end;
 
 procedure TUIWorkspaceFixedSplitterV.OnAdjust;
-  var i: Integer;
   var s0, s1, s2: Single;
   var f: TG2Rect;
 begin
@@ -9575,7 +9573,6 @@ begin
 end;
 
 procedure TUIWorkspaceFixedSplitterH.OnAdjust;
-  var i: Integer;
   var s0, s1, s2: Single;
   var f: TG2Rect;
 begin
@@ -9650,8 +9647,8 @@ end;
 
 procedure TUIWorkspaceFixedSplitterMulti.OnAdjust;
   var i, fn: Integer;
-  var tmp, FreeSize, FixedSize, w: Single;
-  var f, r: TG2Rect;
+  var FreeSize, FixedSize, w: Single;
+  var f: TG2Rect;
 begin
   if _SubsetCount < 1 then Exit;
   f := Frame;
@@ -9705,6 +9702,7 @@ function TUIWorkspaceFixedSplitterMulti.GetMinWidth: Single;
 begin
   if not _EqualSized then
   begin
+    Result := 0;
     for i := 0 to _SubsetCount - 1 do
     Result := G2Max(Result, _Subsets[i].GetMinWidth / G2Max(_SplitRatio, 0.01));
   end
@@ -11117,7 +11115,7 @@ end;
 
 function TUIWorkspaceCustomGraph.PtInPoint(const v: TG2Vec2): Integer;
   var i: Integer;
-  var v0, ss: TG2Vec2;
+  var v0: TG2Vec2;
 begin
   for i := 0 to _Points.Count - 1 do
   begin
@@ -11213,7 +11211,7 @@ procedure TUIWorkspaceCustomGraph.OnRender;
   var r: TG2Rect;
   var s: TG2Float;
   var i, st, w: Integer;
-  var v0, v1, ss: TG2Vec2;
+  var v0, v1: TG2Vec2;
   var str: AnsiString;
 begin
   if Abs(_ScaleYMax - _ScaleYMin) < G2EPS then Exit;
@@ -11271,8 +11269,6 @@ begin
       $ff000000, str, bmNormal, tfPoint
     );
   end;
-  ss.x := 1 / ScaleX * _FrameGraph.w;
-  ss.y := 1 / ScaleY * _FrameGraph.h;
   App.UI.PushClipRect(_FrameGraph);
   for i := 0 to _Points.Count - 1 do
   begin
@@ -11339,7 +11335,6 @@ end;
 
 function TUIWorkspaceCustomGraph.GetYAt(const x: TG2Float): TG2Float;
   var n, i: Integer;
-  var p: TG2Vec2;
   var td, t0: TG2Float;
 begin
   n := PointCount - 1;
@@ -11488,7 +11483,7 @@ end;
 
 procedure TUIWorkspaceCustomColorGraph.OnRender;
   var r, rc: TG2Rect;
-  var i, j: Integer;
+  var i: Integer;
   var c0, c1: PSectionColor;
 begin
   r := Frame;
@@ -12152,10 +12147,7 @@ end;
 
 procedure TUIWorkspaceProject.OnInitialize;
   var p: TUIWorkspaceCustomPanel;
-  var sh: TUIWorkspaceFixedSplitterH;
-  var sv: TUIWorkspaceFixedSplitterV;
   var sm: TUIWorkspaceFixedSplitterMulti;
-  var cb: TUIWorkspaceCustomComboBox;
   var lbl: TUIWorkspaceCustomLabel;
   var pg: TUIWorkspaceCustom;
   var btn: TUIWorkspaceCustomButton;
@@ -12492,7 +12484,7 @@ begin
   App.UI.PushClipRect(G2Rect(spx, r.y, spw, r.h));
   tx := spx + 4;
   ty := r.y + (r.h - h) * 0.5;
-  Text := ExtractFileNameOnly(Prop.ValuePtr^);
+  Text := LazFileUtils.ExtractFileNameOnly(Prop.ValuePtr^);
   App.UI.Font1.Print(
     tx, ty, 1, 1,
     $ff000000, Text, bmNormal, tfPoint
@@ -12843,7 +12835,6 @@ procedure TUIWorkspaceProperties.RenderColor(
   var h: Integer;
   var spx, spw: TG2Float;
   var s: TG2Float;
-  var Text: AnsiString;
 begin
   spx := r.x + r.w * _Splitter + 1;
   spw := r.w * (1 - _Splitter) - 1;
@@ -13183,7 +13174,7 @@ begin
     r.r := r.l + 6;
     if (App.UI.Overlay = nil) and r.Contains(mc.x, mc.y) then
     begin
-      Prop := PtInProperty(mc.x, mc.y, InExpand, InEdit, pr);
+      Prop := PtInProperty(mc.x, mc.y, InExpand{%H-}, InEdit{%H-}, pr{%H-});
       if Prop <> nil then
       begin
         if Prop.PropertyType in _AdjustSplitterPropertySet then
@@ -13236,7 +13227,6 @@ procedure TUIWorkspaceProperties.OnRender;
     RenderProperty(Prop.Children^[i], Offset + 16);
   end;
   var i: Integer;
-  var Prop: TPropertySet.TProperty;
 begin
   r := Frame;
   r.r := r.r - _ScrollV.Frame.w;
@@ -13290,7 +13280,7 @@ begin
   r.r := r.r - _ScrollV.Frame.w;
   r.l := r.l + r.w * _Splitter - 3;
   r.r := r.l + 6;
-  Prop := PtInProperty(x, y, InExpand, InEdit, pr);
+  Prop := PtInProperty(x, y, InExpand{%H-}, InEdit{%H-}, pr);
   if r.Contains(x, y)
   and (Prop <> nil)
   and (Prop.PropertyType in _AdjustSplitterPropertySet) then
@@ -13352,8 +13342,8 @@ procedure TUIWorkspaceProperties.OnMouseUp(const Button, x, y: Integer);
   var cd: TColorDialog;
 begin
   md := g2.MouseDownPos[Button];
-  PropPrev := PtInProperty(Round(md.x), Round(md.y), InExpandPrev, InEditPrev, r);
-  Prop := PtInProperty(x, y, InExpand, InEdit, r);
+  PropPrev := PtInProperty(Round(md.x), Round(md.y), InExpandPrev{%H-}, InEditPrev{%H-}, r{%H-});
+  Prop := PtInProperty(x, y, InExpand{%H-}, InEdit{%H-}, r);
   if (Prop <> nil)
   and (Prop = PropPrev) then
   begin
@@ -13730,8 +13720,8 @@ begin
   _ScrollV.MouseUp(Button, x, y);
   md := g2.MouseDownPos[Button];
   mc := Point(x, y);
-  MdItem := PtInItem(md.x, md.y, MdInClose);
-  McItem := PtInItem(mc.x, mc.y, McInClose);
+  MdItem := PtInItem(md.x, md.y, MdInClose{%H-});
+  McItem := PtInItem(mc.x, mc.y, McInClose{%H-});
   if (McItem > -1) and (McItem = MdItem) then
   begin
     if (McInClose) and (MdInClose) then
@@ -13791,8 +13781,6 @@ end;
 
 procedure TUIWorkspaceAtlasPacker.TWorkspacePreview.OnRender;
   var r: TG2Rect;
-  var i, j: Integer;
-  var AtlasFrame: TAtlasFrame;
 begin
   r := Frame;
   g2.PrimRect(
@@ -14001,7 +13989,7 @@ procedure TUIWorkspaceAtlasPacker.GenerateAtlas;
   var i, j, n, k, w, l, m, h, x, y, wpot, hpot: Integer;
   var AllocationBest: array[0..2] of Integer;
   var RatioBest, Ratio: Single;
-  var OffsetBest, Offset, AreaBest, Area, AliasCount: Integer;
+  var OffsetBest, Offset, Area, AliasCount: Integer;
   var Image: TListImage;
   var AtlasFrame: TAtlasFrame;
   var AtlasPage: TAtlasPage;
@@ -14075,7 +14063,7 @@ begin
       m := (l + h) div 2;
       k := (ImagesSorted[m].Texture.Width + BorderSize2) * (ImagesSorted[m].Texture.Height + BorderSize2);
       if k = n then
-      j := CompareFilenamesIgnoreCase(Images[i].Name, ImagesSorted[m].Name)
+      j := LazFileUtils.CompareFilenamesIgnoreCase(Images[i].Name, ImagesSorted[m].Name)
       else
       j := n - k;
       if j < 0 then
@@ -14134,6 +14122,8 @@ begin
             Offset := x + y;
             Area := w * h;
             Ratio += Area * 0.0001;
+            OffsetBest := 0;
+            RatioBest := 0;
             if Abs(Ratio - RatioBest) < 0.001 then
             SelectAllocation := Offset < OffsetBest
             else
@@ -14146,7 +14136,6 @@ begin
               AllocationBest[2] := y;
               RatioBest := Ratio;
               OffsetBest := Offset;
-              AreaBest := Area;
             end;
           end;
           y += 1;
@@ -14643,7 +14632,6 @@ begin
 end;
 
 procedure TUIWorkspaceAtlasPacker.OnFinalize;
-  var i: Integer;
 begin
   FreeAtlas;
   ClearImages;
@@ -14674,7 +14662,6 @@ end;
 procedure TUIWorkspaceAtlasPacker.OnRender;
   var r: TG2Rect;
   var i: Integer;
-  var ClipRect: TRect;
 begin
   r := Frame;
   g2.PrimRect(
@@ -14742,7 +14729,6 @@ end;
 procedure TUIWorkspaceAtlasPacker.FuncFolderAdd;
   var od: TSelectDirectoryDialog;
   var fld: TListFolder;
-  var i: Integer;
 begin
   od := TSelectDirectoryDialog.Create(nil);
   g2.Pause := True;
@@ -15046,8 +15032,8 @@ begin
   case Button of
     G2MB_Left:
     begin
-      ItemPrev := PtInItem(g2.MouseDownPos[Button], InExpandPrev);
-      Item := PtInItem(G2Vec2(x, y), InExpand);
+      ItemPrev := PtInItem(g2.MouseDownPos[Button], InExpandPrev{%H-});
+      Item := PtInItem(G2Vec2(x, y), InExpand{%H-});
       if (Item <> nil)
       and (Item = ItemPrev)
       and (InExpand = InExpandPrev) then
@@ -15442,8 +15428,8 @@ begin
   and g2.MouseDown[G2MB_Left]
   and Frame.Contains(g2.MouseDownPos[G2MB_Left]) then
   begin
-    Item0 := PtInItem(g2.MouseDownPos[G2MB_Left], InExpand0);
-    Item1 := PtInItem(g2.MousePos, InExpand1);
+    Item0 := PtInItem(g2.MouseDownPos[G2MB_Left], InExpand0{%H-});
+    Item1 := PtInItem(g2.MousePos, InExpand1{%H-});
     if (Item0 <> nil)
     and (Item0 <> Item1)
     and not InExpand0 then
@@ -15470,7 +15456,7 @@ begin
   case Button of
     G2MB_Left:
     begin
-      Item := PtInItem(G2Vec2(x, y), InExpand);
+      Item := PtInItem(G2Vec2(x, y), InExpand{%H-});
       if (Item <> nil) then
       begin
         ItemData := TScene2DEntityData(Item.UserData);
@@ -15593,8 +15579,8 @@ begin
   case Button of
     G2MB_Left:
     begin
-      Item := PtInItem(G2Vec2(x, y), InExpand);
-      ItemPrev := PtInItem(g2.MouseDownPos[Button], InExpandPrev);
+      Item := PtInItem(G2Vec2(x, y), InExpand{%H-});
+      ItemPrev := PtInItem(g2.MouseDownPos[Button], InExpandPrev{%H-});
       if (App.Scene2DData.Selection.Count > 1)
       and (not g2.KeyDown[G2K_CtrlL])
       and (not g2.KeyDown[G2K_CtrlR])
@@ -15642,7 +15628,7 @@ procedure TUIWorkspaceScene2DStructure.OnDragDropRelase(
   var InExpand: Boolean;
   var i: Integer;
 begin
-  Entity := PtInItem(g2.MousePos, InExpand);
+  Entity := PtInItem(g2.MousePos, InExpand{%H-});
   if (Entity <> nil) then
   begin
     for i := 0 to App.Scene2DData.Selection.Count - 1 do
@@ -16110,7 +16096,6 @@ begin
 end;
 
 procedure TUIWorkspaceScene2D.OnMouseUp(const Button, x, y: Integer);
-  var v: TG2Vec2;
   var r: TG2Rect;
 begin
   case Button of
@@ -16273,7 +16258,6 @@ begin
 end;
 
 procedure TUIWorkspaceParticles2DList.BtnDeleteEffect;
-  var Effect: TParticleEffect;
 begin
   if (App.ParticleData.Selection = nil)
   or not (App.ParticleData.Selection is TParticleEffect) then Exit;
@@ -16286,7 +16270,6 @@ begin
 end;
 
 procedure TUIWorkspaceParticles2DList.BtnDeleteEmitter;
-  var Emitter: TParticleEmitter;
 begin
   if (App.ParticleData.Selection = nil)
   or not (App.ParticleData.Selection is TParticleEmitter) then Exit;
@@ -17320,7 +17303,6 @@ end;
 
 procedure TUIWorkspaceParticles2DEditor.OnInitialize;
   var sh: TUIWorkspaceFixedSplitterH;
-  var sv: TUIWorkspaceFixedSplitterV;
   var sm: TUIWorkspaceFixedSplitterMulti;
   var p: TUIWorkspaceCustomPanel;
   var g: TUIWorkspaceCustomGroup;
@@ -19149,7 +19131,7 @@ begin
     and g2.MouseDown[G2MB_Left] then
     begin
       if not Dragging
-      and (PointInView(g2.MouseDownPos[G2MB_Left].x, g2.MouseDownPos[G2MB_Left].y, InClose, InList, InText) = ViewIndex)
+      and (PointInView(g2.MouseDownPos[G2MB_Left].x, g2.MouseDownPos[G2MB_Left].y, InClose{%H-}, InList{%H-}, InText{%H-}) = ViewIndex)
       and ((G2Vec2(g2.MousePos) - G2Vec2(g2.MouseDownPos[G2MB_Left])).Len > 8) then
       Dragging := True;
     end
@@ -19158,7 +19140,7 @@ begin
     if Dragging then
     begin
       mc := g2.MousePos;
-      Tab := PointInView(mc.x, mc.y, TabFrame);
+      Tab := PointInView(mc.x, mc.y, TabFrame{%H-});
       if (Tab > -1) and (Tab <> ViewIndex) then
       begin
         Ratio := (mc.x - TabFrame.l) / TabFrame.w;
@@ -19314,7 +19296,7 @@ begin
       g2.PrimBegin(ptTriangles, bmNormal);
 
       if not Dragging
-      and (PointInView(mc.x, mc.y, InClose, InList, InText) = i) then
+      and (PointInView(mc.x, mc.y, InClose{%H-}, InList{%H-}, InText{%H-}) = i) then
       begin
         r := Rect(
           x1 + TabSpacing + w + CloseRect.Left,
@@ -19470,13 +19452,13 @@ end;
 function TUIViews.PointInView(const x, y: Integer; var InClose: Boolean; var InList: Boolean; var InText: Boolean): Integer;
   var TabFrame: TG2Rect;
 begin
-  Result := PointInView(x, y, InClose, InList, InText, TabFrame);
+  Result := PointInView(x, y, InClose, InList, InText, TabFrame{%H-});
 end;
 
 function TUIViews.PointInView(const x, y: Integer; var TabFrame: TG2Rect): Integer;
   var InClose, InList, InText: Boolean;
 begin
-  Result := PointInView(x, y, InClose, InList, InText, TabFrame);
+  Result := PointInView(x, y, InClose{%H-}, InList{%H-}, InText{%H-}, TabFrame);
 end;
 
 function TUIViews.FindFrameWorkpace(const x, y: Single): TUIWorkspace;
@@ -19519,7 +19501,7 @@ procedure TUIViews.OnMouseDown(const Button, x, y: Integer);
   var t: TG2IntU32;
 begin
   t := G2Time;
-  MouseDownView := PointInView(x, y, InClose, InList, InText);
+  MouseDownView := PointInView(x, y, InClose{%H-}, InList{%H-}, InText{%H-});
   if (MouseDownView > -1) and (MouseDownView = ViewIndex) and (InText) then
   begin
     if (t - ViewTextClickTime < 1000) then
@@ -19549,7 +19531,7 @@ procedure TUIViews.OnMouseUp(const Button, x, y: Integer);
   var Pos: TG2Vec2;
 begin
   Dragging := False;
-  if (MouseDownView > -1) and (MouseDownView = PointInView(x, y, InClose, InList, InText)) then
+  if (MouseDownView > -1) and (MouseDownView = PointInView(x, y, InClose{%H-}, InList{%H-}, InText{%H-})) then
   begin
     if MouseDownView = Views.Count then
     begin
@@ -20839,7 +20821,7 @@ end;
 
 procedure TUITextEditCode.OnKeyDown(const Key: TG2IntS32);
   var Cur: TPoint;
-  var i, n: Integer;
+  var n: Integer;
 begin
   case Key of
     G2K_Left:
@@ -21211,7 +21193,7 @@ procedure TUITextEditCode.UndoActionInsert(const Ptr: Pointer);
   var Buffer: PG2IntU8Arr absolute Ptr;
   var Str: AnsiString;
 begin
-  Move(Buffer^[0], Action, SizeOf(Action));
+  Move(Buffer^[0], Action{%H-}, SizeOf(Action));
   SetLength(Str, Action.StrLength);
   Move(Buffer^[SizeOf(Action)], Str[1], Action.StrLength);
   CursorStart := Action.CursorStart;
@@ -22836,6 +22818,7 @@ procedure TConsole.Command(const Text: AnsiString);
   var i: Integer;
 begin
   _Parser.Parse(Text);
+  tt := ttError;
   Token := _Parser.NextToken(tt);
   if tt = ttKeyword then
   begin
@@ -22919,7 +22902,6 @@ end;
 
 function TProject.ExecuteProcess(const Executable, CommandLine, SuccessMessage, FailMessage: String; const ShowOutput: Boolean = False): Boolean;
   var Process: TOutputProcess;
-  var FileDir, FileExecutable: String;
   var i: Integer;
   const READ_BYTES = 2048;
 begin
@@ -23067,8 +23049,8 @@ begin
   begin
     _FileName := ExtractFileName(sd.FileName);
     _FilePath := ExtractFilePath(sd.FileName);
-    CreateDirUTF8(_FilePath + 'source');
-    CreateDirUTF8(_FilePath + 'assets');
+    LazFileUtils.CreateDirUTF8(_FilePath + 'source');
+    LazFileUtils.CreateDirUTF8(_FilePath + 'assets');
     cf.Initialize;
     cf.AddLine('(* project settings:');
     cf.AddLine('  {#include');
@@ -23353,7 +23335,7 @@ begin
     App.Console.AddLine(CompilerProcess.sl[i]);
     App.Log.Log('Build Succeeded');
     App.Console.AddLine('Build Succeeded');
-    if FileExists(_FilePath + 'bin' + G2PathSep + ProjectName + '.exe') then
+    if LazFileUtils.FileExistsUTF8(_FilePath + 'bin' + G2PathSep + ProjectName + '.exe') then
     begin
       ExeProcess.sl := TStringList.Create;
       ExeProcess.ProcOutput := TMemoryStream.Create;
@@ -23488,12 +23470,6 @@ procedure TProject.BuildAndroid;
   begin
     if FileExists(FilePath) then DeleteFile(FilePath);
   end;
-  //type TOutputProcess = record
-  //  sl: TStringList;
-  //  ProcOutput: TMemoryStream;
-  //  Proc: TProcess;
-  //  ReadBytes, NumBytes: Integer;
-  //end;
   procedure VerifyDir(const Path: String);
   begin
     if not DirectoryExists(Path) then
@@ -23501,81 +23477,10 @@ procedure TProject.BuildAndroid;
       CreateDir(Path);
     end;
   end;
-  //function ExecuteProcess(const Executable, CommandLine, SuccessMessage, FailMessage: String; const ShowOutput: Boolean = False): Boolean;
-  //  var Process: TOutputProcess;
-  //  var FileDir, FileExecutable: String;
-  //  var i: Integer;
-  //  const READ_BYTES = 2048;
-  //begin
-  //  if not FileExists(Executable) then
-  //  begin
-  //    App.Console.AddLine('File missing: ' + Executable);
-  //    App.Log.Log(FailMessage);
-  //    App.Console.AddLine(FailMessage);
-  //    Exit(False);
-  //  end;
-  //  Process.sl := TStringList.Create;
-  //  Process.ProcOutput := TMemoryStream.Create;
-  //  Process.Proc := TProcessUTF8.Create(nil);
-  //  Process.Proc.CommandLine := Executable + CommandLine;
-  //  Process.Proc.Executable := Executable;
-  //  if ShowOutput then Process.Proc.Options := Process.Proc.Options + [poUsePipes];
-  //  Process.Proc.ShowWindow := swoHIDE;
-  //  Process.ReadBytes := 0;
-  //  Process.Proc.Execute;
-  //  if poUsePipes in Process.Proc.Options then
-  //  while True do
-  //  begin
-  //    if Process.Proc.Output.NumBytesAvailable > 0 then
-  //    begin
-  //      Process.ProcOutput.SetSize(Process.ReadBytes + READ_BYTES);
-  //      Process.NumBytes := Process.Proc.Output.Read((Process.ProcOutput.Memory + Process.ReadBytes)^, READ_BYTES);
-  //    end
-  //    else
-  //    Process.NumBytes := 0;
-  //    if Process.NumBytes > 0 then
-  //    begin
-  //      Inc(Process.ReadBytes, Process.NumBytes);
-  //    end
-  //    else if not Process.Proc.Running then Break;
-  //  end;
-  //  while Process.Proc.Running do;
-  //  if poUsePipes in Process.Proc.Options then
-  //  begin
-  //    Process.ProcOutput.SetSize(Process.ReadBytes);
-  //    Process.sl.LoadFromStream(Process.ProcOutput);
-  //  end;
-  //  if Process.Proc.ExitStatus = 0 then
-  //  begin
-  //    for i := 0 to Process.sl.Count - 1 do
-  //    App.Console.AddLine(Process.sl[i]);
-  //    if Length(SuccessMessage) > 0 then
-  //    begin
-  //      App.Log.Log(SuccessMessage);
-  //      App.Console.AddLine(SuccessMessage);
-  //    end;
-  //    Result := True;
-  //  end
-  //  else
-  //  begin
-  //    for i := 0 to Process.sl.Count - 2 do
-  //    App.Console.AddLine(Process.sl[i]);
-  //    if Length(FailMessage) > 0 then
-  //    begin
-  //      App.Log.Log(FailMessage);
-  //      App.Console.AddLine(FailMessage);
-  //    end;
-  //    Result := False;
-  //  end;
-  //  Process.Proc.Free;
-  //  Process.ProcOutput.Free;
-  //  Process.sl.Free;
-  //end;
   var DomainArr: TG2StrArrA;
   var cf: TCodeFile;
   var CompilerPath, JavaSrcPath, JavaDomain, CurPath: String;
-  var i, j, n: Integer;
-  var b: Boolean;
+  var i: Integer;
   var JavaSource, MiscFile: TStringList;
   var CompileSucceeded: Boolean;
 begin
@@ -23660,7 +23565,7 @@ begin
     _FilePath + 'build' + G2PathSep + 'raw' + G2PathSep + 'lib' + G2PathSep + 'armeabi' + G2PathSep + 'libopenal.so',
     [cffCreateDestDirectory, cffOverwriteFile]
   );
-  if DirectoryExistsUTF8(_FilePath + 'assets') then
+  if LazFileUtils.DirectoryExistsUTF8(_FilePath + 'assets') then
   begin
     if not DirectoryExists(_FilePath + 'build' + G2PathSep + 'assets') then
     CreateDir(_FilePath + 'build' + G2PathSep + 'assets');
@@ -24239,12 +24144,10 @@ procedure TProject.BuildHTML5;
   begin
     CommandLine := CommandLine + ' ' + Option;
   end;
-  var CompilerProcess, ExeProcess: TOutputProcess;
   var cf: TCodeFile;
   var CompilerPath, ExePath, UnitPaths: String;
   var i: Integer;
   var CompileSucceeded: Boolean;
-  const READ_BYTES = 2048;
 begin
   if not _Open then Exit;
   UpdateSettings;
@@ -24421,7 +24324,7 @@ procedure TProject.UpdateSettings;
   var fd: AnsiString;
   var new_md5: TG2MD5;
   var g2ml: TG2ML;
-  var Root, ProjSource, ProjInclude, ProjIncludeSource: PG2MLObject;
+  var Root, ProjInclude, ProjIncludeSource: PG2MLObject;
 begin
   if not _Open then Exit;
   fd := App.LoadFile(GetProjectPath);
@@ -26187,7 +26090,6 @@ end;
 
 procedure TParticlePlayback.Render(const Display: TG2Display2D);
   procedure RenderParticle(const Particle: TParticle);
-    var i, j: Integer;
     var v0, v1, v2, v3: TG2Vec2;
     var px0, px1, py0, py1, a: TG2Float;
     var xf: TG2Transform2;
@@ -26356,7 +26258,7 @@ procedure TParticleData.Render;
     CollectTextures(po.Emitters[i]);
   end;
   var i, j: Integer;
-  var fpath, fname, fext, data: String;
+  var fpath, fname, data: String;
   var sd: TSaveDialog;
   var dm: TG2DataManager;
 begin
@@ -26383,7 +26285,6 @@ begin
       begin
         fpath := ExtractFilePath(sd.FileName);
         fname := ExtractFileNameWithoutExt(ExtractFileName(sd.FileName));
-        fext := ExtractFileExt(sd.FileName);
         for i := 0 to _ExportAtlas.Pages.Count - 1 do
         _ExportAtlas.Pages[i].Texture.Save(fpath + G2PathSep + fname + '_fx_atlas_' + IntToStr(i) + '.png');
         g2ml := TG2MLWriter.Create;
@@ -26443,7 +26344,7 @@ procedure TParticleData.Render(const Display: TG2Display2D);
   var e: TEmitter;
   var v0, v1, v2, v3: TG2Vec2;
   var a0, hw, hh, radius: TG2Float;
-  var rg, r0, r: TG2Rotation2;
+  var r0, r: TG2Rotation2;
   var d, i, j: Integer;
 begin
   if CurrentEffect = nil then Exit;
@@ -26620,7 +26521,7 @@ end;
 
 procedure TParticleData.SaveLib(const FileName: String);
   var dm: TG2DataManager;
-  var i, j: Integer;
+  var i: Integer;
   var Effect: TParticleEffect;
 begin
   dm := TG2DataManager.Create(FileName, dmWrite);
@@ -27157,7 +27058,7 @@ end;
 
 //TScene2DEditorShapePoly BEGIN
 procedure TScene2DEditorShapePoly.SetLimits;
-  var i, i0, i1: Integer;
+  var i0, i1: Integer;
   var v0, v1, n: TG2Vec2;
   var l: TG2Vec3;
 begin
@@ -27219,12 +27120,10 @@ end;
 
 procedure TScene2DEditorShapePoly.Update(const Display: TG2Display2D);
   var xf: TG2Transform2;
-  var mc, v, v0, v1, v2, v3: TG2Vec2;
-  var l, l0, l1: TG2Vec3;
+  var mc, v: TG2Vec2;
+  var l: TG2Vec3;
   var d: TG2Float;
   var i, r: Integer;
-  var Limv: array[0..1] of Integer;
-  var Limc: Integer;
   var b: Boolean;
 begin
   if VSelect > -1 then
@@ -27232,7 +27131,6 @@ begin
     xf := GetTransform;
     mc := App.Scene2DData.Scene.AdjustToGrid(Display.CoordToDisplay(g2.MousePos));
     mc := xf.TransformInv(mc);
-    Limc := 0;
     b := True;
     r := 0;
     while b and (r < 100) do
@@ -27392,7 +27290,7 @@ begin
   if VSelect > -1 then
   begin
     c := Component.Component.VertexCount;
-    Move(Component.Component.Vertices^[0], varr[0], SizeOf(TG2Vec2) * c);
+    Move(Component.Component.Vertices^[0], {%H-}varr[0], SizeOf(TG2Vec2) * c);
     Component.Component.SetUp(@varr, c);
   end;
   VSelect := -1;
@@ -27423,7 +27321,6 @@ begin
 end;
 
 procedure TScene2DEditorPoly.TSelectList.Initialize(const Frame: TG2Rect; const BorderSize: TG2Float);
-  var i: Integer;
 begin
   bs := BorderSize;
   f := Frame;
@@ -28135,7 +28032,7 @@ procedure TScene2DEditorPoly.Update(const Display: TG2Display2D);
   var i: Integer;
   var d, bs_min, bs_max: TG2Float;
   var varr: array[0..2] of TG2Vec2;
-  var v, v0, v1, pv0, pv1, mc, pmc, pn, n: TG2Vec2;
+  var v, v0, v1, pv0, pv1, mc, pmc: TG2Vec2;
   var xf: TG2Transform2;
   var b: Boolean;
   var c, c1: TG2Color;
@@ -28275,6 +28172,7 @@ begin
       v1 := xf.Transform(_Component.Edges[i].v[1].v);
       pv0 := Display.CoordToScreen(v0);
       pv1 := Display.CoordToScreen(v1);
+      b := False;
       v := G2Project2DPointToLine(pv0, pv1, pmc, b);
       if b and ((pmc - v).LenSq <= 4 * 4) then
       _MOverEdge := _Component.Edges[i];
@@ -28296,7 +28194,6 @@ procedure TScene2DEditorPoly.Render(const Display: TG2Display2D);
   var varr: array[0..2] of TG2Vec2;
   var v, v0, v1, pv0, pv1, mc, pmc, pn, n, t, xp0, xp1: TG2Vec2;
   var xf: TG2Transform2;
-  var b: Boolean;
   var c, c1: TG2Color;
   var r: TG2Rect;
   var sr: TRect;
@@ -28347,6 +28244,7 @@ begin
     v1 := Display.CoordToDisplay(v1 + G2Vec2(4, 4)) - v0;
     Display.PrimRect(v0.x - v1.x, v0.y - v1.y, v1.x * 2, v1.y * 2, $ff0000ff);
   end;
+  r := G2Rect(0, 0, 0, 0);
   Sel := IsSelecting and SelectRect(Display, r);
   if EditMode = em_vertex then
   begin
@@ -28451,6 +28349,8 @@ begin
         v1 := xf.Transform(_Component.Edges[i].v[1].v);
         pv0 := Display.CoordToScreen(v0);
         pv1 := Display.CoordToScreen(v1);
+        xp0 := G2Vec2;
+        xp1 := G2Vec2;
         if G2Intersect2DSegmentVsRect(pv0, pv1, r, xp0, xp1) then
         begin
           pn := (pv1 - pv0).Perp.Norm * 2;
@@ -28619,7 +28519,6 @@ end;
 procedure TScene2DEditorPoly.MouseDown(const Display: TG2Display2D; const Button, x, y: Integer);
   var i: Integer;
   var r: TG2Rect;
-  var mc: TG2Vec2;
   var xf: TG2Transform2;
 begin
   if Button = G2MB_Left then
@@ -28804,6 +28703,8 @@ begin
           begin
             v0 := Display.CoordToScreen(xf.Transform(_Component.Edges[i].v[0].v));
             v1 := Display.CoordToScreen(xf.Transform(_Component.Edges[i].v[1].v));
+            xp0 := G2Vec2;
+            xp1 := G2Vec2;
             if G2Intersect2DSegmentVsRect(v0, v1, r, xp0, xp1) then
             begin
               AddSelection := True;
@@ -29379,7 +29280,7 @@ procedure TScene2DEditorJointRevolute.MouseUp(
   const Button, x, y: Integer
 );
   var rb: TG2Scene2DComponentRigidBody;
-  var v, v0, v1: TG2Vec2;
+  var v, v0: TG2Vec2;
   var e, e0: TG2Scene2DEntity;
   var i: Integer;
 begin
@@ -29675,25 +29576,33 @@ begin
   Result := 0;
 end;
 
+{$Hints off}
 function TScene2DComponentData.Pick(const x, y: TG2Float): Boolean;
 begin
   Result := False;
 end;
+{$Hints on}
 
+{$Hints off}
 procedure TScene2DComponentData.DebugDraw(const Display: TG2Display2D);
 begin
 
 end;
+{$Hints on}
 
+{$Hints off}
 function TScene2DComponentData.PtInComponent(const pt: TG2Vec2): Integer;
 begin
   Result := -1;
 end;
+{$Hints on}
 
+{$Hints off}
 procedure TScene2DComponentData.AddToProperties(const PropertySet: TPropertySet);
 begin
 
 end;
+{$Hints on}
 //TScene2DComponentData END
 
 //TScene2DComponentDataSpineAnimation BEGIN
@@ -29870,17 +29779,16 @@ end;
 function TScene2DComponentDataSprite.Pick(const x, y: TG2Float): Boolean;
   var xf: TG2Transform2;
   var v: array[0..3] of TG2Vec2;
-  var tx0, tx1, ty0, ty1: TG2Float;
   var i: Integer;
   var hw, hh: TG2Float;
 begin
   if not Assigned(Component.Picture) then Exit(False);
   hw := Component.Width * Component.Scale * 0.5;
   hh := Component.Height * Component.Scale * 0.5;
-  v[0].SetValue(-hw, -hh);
-  v[1].SetValue(hw, -hh);
-  v[2].SetValue(hw, hh);
-  v[3].SetValue(-hw, hh);
+  v[0] := G2Vec2(-hw, -hh);
+  v[1] := G2Vec2(hw, -hh);
+  v[2] := G2Vec2(hw, hh);
+  v[3] := G2Vec2(-hw, hh);
   xf := Component.Owner.Transform;
   G2Transform2Mul(@xf, @Component.Transform, @xf);
   for i := 0 to High(v) do
@@ -30582,7 +30490,7 @@ begin
 end;
 
 procedure TScene2DComponentDataPoly.OnChangeLayerTexture(const Sender: Pointer);
-  var i, l: Integer;
+  var i: Integer;
   var Layer: TScene2DComponentDataPolyLayer;
 begin
   Layer := nil;
@@ -30590,7 +30498,6 @@ begin
   if Pointer(Layers[i].PathProp) = Sender then
   begin
     Layer := Layers[i];
-    l := i;
     Break;
   end;
   if Layer = nil then Exit;
@@ -31328,7 +31235,6 @@ end;
 procedure TScene2DComponentDataShapeEdge.DebugDraw(const Display: TG2Display2D);
   var rb: TG2Scene2DComponentRigidBody;
   var xf: TG2Transform2;
-  var i, c: Integer;
   var v1, v2: TG2Vec2;
 begin
   rb := TG2Scene2DComponentRigidBody(Component.Owner.ComponentOfType[TG2Scene2DComponentRigidBody]);
@@ -31536,10 +31442,12 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 procedure TScene2DJointData.DebugDraw(const Display: TG2Display2D);
 begin
 
 end;
+{$Hints on}
 
 function TScene2DJointData.IsSelected: Boolean;
 begin
@@ -31553,10 +31461,12 @@ begin
   Result := G2Rect(v.x - 8, v.y - 8, 16, 16).Contains(G2Vec2(x, y));
 end;
 
+{$Hints off}
 procedure TScene2DJointData.AddToProperties(const PropertySet: TPropertySet);
 begin
 
 end;
+{$Hints on}
 //TScene2DJointData END
 
 //TScene2DJointDataDistance BEGIN
@@ -32059,7 +31969,6 @@ function TScene2DData.CreateEntity(
   var i: Integer;
   var NameBase, EntityName: AnsiString;
   var NameIndex: Integer;
-  var EntityData: TScene2DEntityData;
 begin
   NameBase := 'Entity';
   NameIndex := 0;
@@ -32072,7 +31981,7 @@ begin
   Result := TG2Scene2DEntity.Create(App.Scene2DData.Scene);
   Result.Transform := Transform;
   Result.Name := EntityName;
-  EntityData := TScene2DEntityData.Create(Result);
+  TScene2DEntityData.Create(Result);
   for i := 0 to TUIWorkspaceScene2DStructure.WorkspaceList.Count - 1 do
   TUIWorkspaceScene2DStructure.WorkspaceList[i].OnCreateEntity(Result);
 end;
@@ -32174,7 +32083,7 @@ procedure TScene2DData.PasteEntity(const Pos: TG2Vec2);
     Entity.NewGUID;
     VerifyEntityName(Entity);
     //NewEntities.Add(Entity);
-    CreateEntityData(Entity);
+    TScene2DEntityData.Create(Entity);
     for i := 0 to Entity.ChildCount - 1 do
     CreateNewEntityData(Entity.Children[i]);
     for i := 0 to TUIWorkspaceScene2DStructure.WorkspaceList.Count - 1 do
@@ -32276,7 +32185,7 @@ function TScene2DData.CreatePrefab(const Transform: TG2Transform2; const PrefabN
   procedure ProcessEntity(const e: TG2Scene2DEntity);
     var i: Integer;
   begin
-    CreateEntityData(e);
+    TScene2DEntityData.Create(e);
     e.NewGUID;
     VerifyEntityName(e);
     for i := 0 to e.ChildCount - 1 do
@@ -32287,7 +32196,6 @@ function TScene2DData.CreatePrefab(const Transform: TG2Transform2; const PrefabN
   var dm: TG2DataManager;
   var Def: array[0..3] of AnsiChar;
   var n, i: Integer;
-  var Shift: TG2Vec2;
   var Joint: TG2Scene2DJoint;
 begin
   dm := TG2DataManager.Create(PrefabName, dmAsset);
@@ -32296,21 +32204,11 @@ begin
   begin
     Result := App.Scene2DData.CreateEntity(Transform);
     Result.Load(dm);
-    Shift := Transform.p - Result.Transform.p;
     n := dm.ReadIntS32;
     jl.Clear;
     for i := 0 to n - 1 do
     begin
       Joint := TG2Scene2DJoint.LoadClass(dm, Scene);
-      //if Joint is TG2Scene2DDistanceJoint then
-      //begin
-      //  TG2Scene2DDistanceJoint(Joint).AnchorA := TG2Scene2DDistanceJoint(Joint).AnchorA + Shift;
-      //  TG2Scene2DDistanceJoint(Joint).AnchorB := TG2Scene2DDistanceJoint(Joint).AnchorB + Shift;
-      //end
-      //else if Joint is TG2Scene2DRevoluteJoint then
-      //begin
-      //  TG2Scene2DRevoluteJoint(Joint).Anchor := TG2Scene2DRevoluteJoint(Joint).Anchor + Shift;
-      //end;
       jl.Add(Joint);
     end;
     ProcessEntity(Result);
@@ -32327,15 +32225,6 @@ begin
     end;
   end;
   dm.Free;
-end;
-
-procedure TScene2DData.CreateEntityData(const Entity: TG2Scene2DEntity);
-  var EntityData: TScene2DEntityData;
-  var Component: TG2Scene2DComponent;
-  var ComponentData: TScene2DComponentData;
-  var j: Integer;
-begin
-  EntityData := TScene2DEntityData.Create(Entity);
 end;
 
 procedure TScene2DData.CreateJointData(const Joint: TG2Scene2DJoint);
@@ -32859,12 +32748,11 @@ procedure TScene2DData.OnLoad;
   var i, j: Integer;
   var Entity: TG2Scene2DEntity;
   var Joint: TG2Scene2DJoint;
-  var JointData: TScene2DJointData;
 begin
   for i := 0 to Scene.EntityCount - 1 do
   begin
     Entity := Scene.Entities[i];
-    CreateEntityData(Entity);
+    TScene2DEntityData.Create(Entity);
     for j := 0 to TUIWorkspaceScene2DStructure.WorkspaceList.Count - 1 do
     TUIWorkspaceScene2DStructure.WorkspaceList[j].OnCreateEntity(Entity);
   end;
@@ -32929,7 +32817,6 @@ begin
 end;
 
 procedure TScene2DData.KeyDown(const Key: Integer);
-  var i: Integer;
   var e: TG2Scene2DEntity;
 begin
   if Editor <> nil then
@@ -33043,10 +32930,12 @@ begin
   Result := 'Asset';
 end;
 
+{$Hints off}
 class function TAsset.CheckExtension(const Ext: String): Boolean;
 begin
   Result := False;
 end;
+{$Hints on}
 
 class function TAsset.ProcessFile(const FilePath: String): TG2QuickListString;
 begin
@@ -33100,10 +32989,12 @@ begin
   Result := 'All';
 end;
 
+{$Hints off}
 class function TAssetAny.CheckExtension(const Ext: String): Boolean;
 begin
   Result := True;
 end;
+{$Hints on}
 //TAssetAny END
 
 //TAssetTexture BEIGN
@@ -33647,9 +33538,9 @@ end;
 procedure TCodeInsight.Update;
   var i: Integer;
   var f: TCodeInsightSymbolFile;
-  var t: TG2IntU32;
+  //var t: TG2IntU32;
 begin
-  t := G2Time;
+  //t := G2Time;
   if _ScanThread = nil then
   begin
     for i := 0 to _Files.Count - 1 do

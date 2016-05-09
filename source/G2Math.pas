@@ -4393,7 +4393,7 @@ asm
   shufps xmm1, xmm1, $C9
   addss xmm0, xmm1
   sqrtss xmm0, xmm0
-  movss [Result], xmm0
+  movss [Result], {%H-}xmm0
 end;
 {$endif}
 
@@ -4413,7 +4413,7 @@ asm
   movhlps xmm1, xmm0
   addss xmm0, xmm1
   sqrtss xmm0, xmm0
-  movss [Result], xmm0
+  movss [Result], {%H-}xmm0
 end;
 {$endif}
 

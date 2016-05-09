@@ -132,14 +132,14 @@ const
   G2RadToDeg = 180 / Pi;
 
   {$if defined(G2Target_Windows)}
-  G2PathSep: WideChar = '\';
-  G2PathSepRev: WideChar = '/';
+  G2PathSep: AnsiChar = '\';
+  G2PathSepRev: AnsiChar = '/';
   {$elseif defined(G2Target_Linux)}
-  G2PathSep: WideChar = '/';
-  G2PathSepRev: WideChar = '\';
+  G2PathSep: AnsiChar = '/';
+  G2PathSepRev: AnsiChar = '\';
   {$elseif defined(G2Target_OSX)}
-  G2PathSep: WideChar = '/';
-  G2PathSepRev: WideChar = '\';
+  G2PathSep: AnsiChar = '/';
+  G2PathSepRev: AnsiChar = '\';
   {$elseif defined(G2Target_Android)}
   G2PathSep: AnsiChar = '/';
   G2PathSepRev: AnsiChar = '\';
@@ -231,7 +231,7 @@ type
     procedure SwapColorAlpha;
   end;
   PG2BlendMode = ^TG2BlendMode;
-  TG2BlendModeRef =
+  TG2BlendModeRef = TG2IntU32;
 
   TG2Ref = class
   private

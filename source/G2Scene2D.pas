@@ -451,7 +451,7 @@ type
   public
     class constructor CreateClass;
     class function GetName: String; override;
-    class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
+    class function CanAttach(const {%H-}Node: TG2Scene2DEntity): Boolean; override;
     property Layer: TG2IntS32 read GetLayer write SetLayer;
     property Font: TG2Font read _Font write SetFont;
     property Text: String read _Text write _Text;
@@ -4208,7 +4208,7 @@ function TG2Scene2DEventBeginContactData.GetContactPoint: TG2Vec2;
   var i: Integer;
 begin
   if PhysContact^.get_manifold^.point_count = 0 then Exit(G2Vec2);
-  PhysContact^.get_world_manifold(wm);
+  PhysContact^.get_world_manifold(wm{%H-});
   Result := wm.points[0];
   if PhysContact^.get_manifold^.point_count > 0 then
   begin

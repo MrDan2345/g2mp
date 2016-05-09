@@ -646,13 +646,10 @@ procedure TG2MeshLoaderG2M.ExportMeshData(const MeshData: PG2MeshData);
     end;
   end;
   procedure AddFace(const GeomID, FaceID: Integer);
-    var Normal, v0, v1, v2: TG2Vec3;
+    var Normal: TG2Vec3;
   begin
     if FCount >= High(TmpFaces) then
     SetLength(TmpFaces, Length(TmpFaces) + 1024);
-    v0 := Geoms[GeomID].Vertices[Geoms[GeomID].Faces[FaceID].FaceVertices[0]];
-    v1 := Geoms[GeomID].Vertices[Geoms[GeomID].Faces[FaceID].FaceVertices[1]];
-    v2 := Geoms[GeomID].Vertices[Geoms[GeomID].Faces[FaceID].FaceVertices[2]];
     Normal := G2TriangleNormal(
       Geoms[GeomID].Vertices[Geoms[GeomID].Faces[FaceID].FaceVertices[0]],
       Geoms[GeomID].Vertices[Geoms[GeomID].Faces[FaceID].FaceVertices[1]],

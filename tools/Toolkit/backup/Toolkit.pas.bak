@@ -4137,7 +4137,6 @@ type
     procedure PasteEntity(const Pos: TG2Vec2);
     procedure SavePrefab;
     function CreatePrefab(const Transform: TG2Transform2; const PrefabName: String): TG2Scene2DEntity;
-    procedure CreateEntityData(const Entity: TG2Scene2DEntity);
     procedure CreateJointData(const Joint: TG2Scene2DJoint);
     procedure VerifyEntityName(const Entity: TG2Scene2DEntity);
     function CreateJointDistance(const Position: TG2Vec2): TG2Scene2DDistanceJoint;
@@ -8826,9 +8825,9 @@ begin
   for i := 0 to _Root.Children.Count - 1 do
   begin
     Result := CheckItem(PNode(_Root.Children[i]), varx, vary, InExpand, InImplementation);
-    if Result <> nil then
-    Exit;
+    if Result <> nil then Exit;
   end;
+  Result := nil;
 end;
 
 procedure TUIWorkspaceCodeBrowser.ProcessFile(const FileSymbol: TCodeInsightSymbolFile);
@@ -9005,6 +9004,8 @@ procedure TUIWorkspaceCodeBrowser.OnMouseDown(const Button, x, y: Integer);
   var n: PNode;
   var InExpand, InImplementation: Boolean;
 begin
+  InExpand := False;
+  InImplementation := False;
   n := PtInItem(x, y, InExpand, InImplementation);
   if (n <> nil) and InExpand then
   begin
@@ -9190,9 +9191,9 @@ begin
   for i := 0 to _Root.Children.Count - 1 do
   begin
     Result := CheckItem(PNode(_Root.Children[i]), varx, vary, InExpand);
-    if Result <> nil then
-    Exit;
+    if Result <> nil then Exit;
   end;
+  Result := nil;
 end;
 
 procedure TUIWorkspaceProjectBrowser.OnSlide;
@@ -9398,6 +9399,7 @@ procedure TUIWorkspaceProjectBrowser.OnMouseDown(const Button, x, y: Integer);
   var n: PNode;
   var InExpand: Boolean;
 begin
+  InExpand := False;
   n := PtInItem(x, y, InExpand);
   if (n <> nil) and InExpand then
   begin
@@ -23353,7 +23355,7 @@ begin
     App.Console.AddLine(CompilerProcess.sl[i]);
     App.Log.Log('Build Succeeded');
     App.Console.AddLine('Build Succeeded');
-    if FileExists(_FilePath + 'bin' + G2PathSep + ProjectName + '.exe') then
+    if FileExistsUTF8(_FilePath + 'bin' + G2PathSep + ProjectName + '.exe') then
     begin
       ExeProcess.sl := TStringList.Create;
       ExeProcess.ProcOutput := TMemoryStream.Create;
@@ -26376,7 +26378,7 @@ begin
   begin
     sd := TSaveDialog.Create(nil);
     sd.DefaultExt := 'g2fx';
-    sd.Filter := 'g2mp effect 2d (*.g2fx)';
+    sd.Filter := 'g2mp effect 2d (*.g2fx)|*.g2fx|';
     g2.Pause := True;
     try
       if sd.Execute then
@@ -28296,7 +28298,6 @@ procedure TScene2DEditorPoly.Render(const Display: TG2Display2D);
   var varr: array[0..2] of TG2Vec2;
   var v, v0, v1, pv0, pv1, mc, pmc, pn, n, t, xp0, xp1: TG2Vec2;
   var xf: TG2Transform2;
-  var b: Boolean;
   var c, c1: TG2Color;
   var r: TG2Rect;
   var sr: TRect;
@@ -28451,6 +28452,8 @@ begin
         v1 := xf.Transform(_Component.Edges[i].v[1].v);
         pv0 := Display.CoordToScreen(v0);
         pv1 := Display.CoordToScreen(v1);
+        xp0 := G2Vec2;
+        xp1 := G2Vec2;
         if G2Intersect2DSegmentVsRect(pv0, pv1, r, xp0, xp1) then
         begin
           pn := (pv1 - pv0).Perp.Norm * 2;
@@ -28619,7 +28622,6 @@ end;
 procedure TScene2DEditorPoly.MouseDown(const Display: TG2Display2D; const Button, x, y: Integer);
   var i: Integer;
   var r: TG2Rect;
-  var mc: TG2Vec2;
   var xf: TG2Transform2;
 begin
   if Button = G2MB_Left then
@@ -28804,6 +28806,8 @@ begin
           begin
             v0 := Display.CoordToScreen(xf.Transform(_Component.Edges[i].v[0].v));
             v1 := Display.CoordToScreen(xf.Transform(_Component.Edges[i].v[1].v));
+            xp0 := G2Vec2;
+            xp1 := G2Vec2;
             if G2Intersect2DSegmentVsRect(v0, v1, r, xp0, xp1) then
             begin
               AddSelection := True;
@@ -29379,7 +29383,7 @@ procedure TScene2DEditorJointRevolute.MouseUp(
   const Button, x, y: Integer
 );
   var rb: TG2Scene2DComponentRigidBody;
-  var v, v0, v1: TG2Vec2;
+  var v, v0: TG2Vec2;
   var e, e0: TG2Scene2DEntity;
   var i: Integer;
 begin
@@ -29675,25 +29679,33 @@ begin
   Result := 0;
 end;
 
+{$Hints off}
 function TScene2DComponentData.Pick(const x, y: TG2Float): Boolean;
 begin
   Result := False;
 end;
+{$Hints on}
 
+{$Hints off}
 procedure TScene2DComponentData.DebugDraw(const Display: TG2Display2D);
 begin
 
 end;
+{$Hints on}
 
+{$Hints off}
 function TScene2DComponentData.PtInComponent(const pt: TG2Vec2): Integer;
 begin
   Result := -1;
 end;
+{$Hints on}
 
+{$Hints off}
 procedure TScene2DComponentData.AddToProperties(const PropertySet: TPropertySet);
 begin
 
 end;
+{$Hints on}
 //TScene2DComponentData END
 
 //TScene2DComponentDataSpineAnimation BEGIN
@@ -29870,17 +29882,16 @@ end;
 function TScene2DComponentDataSprite.Pick(const x, y: TG2Float): Boolean;
   var xf: TG2Transform2;
   var v: array[0..3] of TG2Vec2;
-  var tx0, tx1, ty0, ty1: TG2Float;
   var i: Integer;
   var hw, hh: TG2Float;
 begin
   if not Assigned(Component.Picture) then Exit(False);
   hw := Component.Width * Component.Scale * 0.5;
   hh := Component.Height * Component.Scale * 0.5;
-  v[0].SetValue(-hw, -hh);
-  v[1].SetValue(hw, -hh);
-  v[2].SetValue(hw, hh);
-  v[3].SetValue(-hw, hh);
+  v[0] := G2Vec2(-hw, -hh);
+  v[1] := G2Vec2(hw, -hh);
+  v[2] := G2Vec2(hw, hh);
+  v[3] := G2Vec2(-hw, hh);
   xf := Component.Owner.Transform;
   G2Transform2Mul(@xf, @Component.Transform, @xf);
   for i := 0 to High(v) do
@@ -30582,7 +30593,7 @@ begin
 end;
 
 procedure TScene2DComponentDataPoly.OnChangeLayerTexture(const Sender: Pointer);
-  var i, l: Integer;
+  var i: Integer;
   var Layer: TScene2DComponentDataPolyLayer;
 begin
   Layer := nil;
@@ -30590,7 +30601,6 @@ begin
   if Pointer(Layers[i].PathProp) = Sender then
   begin
     Layer := Layers[i];
-    l := i;
     Break;
   end;
   if Layer = nil then Exit;
@@ -31328,7 +31338,6 @@ end;
 procedure TScene2DComponentDataShapeEdge.DebugDraw(const Display: TG2Display2D);
   var rb: TG2Scene2DComponentRigidBody;
   var xf: TG2Transform2;
-  var i, c: Integer;
   var v1, v2: TG2Vec2;
 begin
   rb := TG2Scene2DComponentRigidBody(Component.Owner.ComponentOfType[TG2Scene2DComponentRigidBody]);
@@ -31536,10 +31545,12 @@ begin
   inherited Destroy;
 end;
 
+{$Hints off}
 procedure TScene2DJointData.DebugDraw(const Display: TG2Display2D);
 begin
 
 end;
+{$Hints on}
 
 function TScene2DJointData.IsSelected: Boolean;
 begin
@@ -31553,10 +31564,12 @@ begin
   Result := G2Rect(v.x - 8, v.y - 8, 16, 16).Contains(G2Vec2(x, y));
 end;
 
+{$Hints off}
 procedure TScene2DJointData.AddToProperties(const PropertySet: TPropertySet);
 begin
 
 end;
+{$Hints on}
 //TScene2DJointData END
 
 //TScene2DJointDataDistance BEGIN
@@ -32059,7 +32072,6 @@ function TScene2DData.CreateEntity(
   var i: Integer;
   var NameBase, EntityName: AnsiString;
   var NameIndex: Integer;
-  var EntityData: TScene2DEntityData;
 begin
   NameBase := 'Entity';
   NameIndex := 0;
@@ -32072,7 +32084,7 @@ begin
   Result := TG2Scene2DEntity.Create(App.Scene2DData.Scene);
   Result.Transform := Transform;
   Result.Name := EntityName;
-  EntityData := TScene2DEntityData.Create(Result);
+  TScene2DEntityData.Create(Result);
   for i := 0 to TUIWorkspaceScene2DStructure.WorkspaceList.Count - 1 do
   TUIWorkspaceScene2DStructure.WorkspaceList[i].OnCreateEntity(Result);
 end;
@@ -32174,7 +32186,7 @@ procedure TScene2DData.PasteEntity(const Pos: TG2Vec2);
     Entity.NewGUID;
     VerifyEntityName(Entity);
     //NewEntities.Add(Entity);
-    CreateEntityData(Entity);
+    TScene2DEntityData.Create(Entity);
     for i := 0 to Entity.ChildCount - 1 do
     CreateNewEntityData(Entity.Children[i]);
     for i := 0 to TUIWorkspaceScene2DStructure.WorkspaceList.Count - 1 do
@@ -32276,7 +32288,7 @@ function TScene2DData.CreatePrefab(const Transform: TG2Transform2; const PrefabN
   procedure ProcessEntity(const e: TG2Scene2DEntity);
     var i: Integer;
   begin
-    CreateEntityData(e);
+    TScene2DEntityData.Create(e);
     e.NewGUID;
     VerifyEntityName(e);
     for i := 0 to e.ChildCount - 1 do
@@ -32287,7 +32299,6 @@ function TScene2DData.CreatePrefab(const Transform: TG2Transform2; const PrefabN
   var dm: TG2DataManager;
   var Def: array[0..3] of AnsiChar;
   var n, i: Integer;
-  var Shift: TG2Vec2;
   var Joint: TG2Scene2DJoint;
 begin
   dm := TG2DataManager.Create(PrefabName, dmAsset);
@@ -32296,21 +32307,11 @@ begin
   begin
     Result := App.Scene2DData.CreateEntity(Transform);
     Result.Load(dm);
-    Shift := Transform.p - Result.Transform.p;
     n := dm.ReadIntS32;
     jl.Clear;
     for i := 0 to n - 1 do
     begin
       Joint := TG2Scene2DJoint.LoadClass(dm, Scene);
-      //if Joint is TG2Scene2DDistanceJoint then
-      //begin
-      //  TG2Scene2DDistanceJoint(Joint).AnchorA := TG2Scene2DDistanceJoint(Joint).AnchorA + Shift;
-      //  TG2Scene2DDistanceJoint(Joint).AnchorB := TG2Scene2DDistanceJoint(Joint).AnchorB + Shift;
-      //end
-      //else if Joint is TG2Scene2DRevoluteJoint then
-      //begin
-      //  TG2Scene2DRevoluteJoint(Joint).Anchor := TG2Scene2DRevoluteJoint(Joint).Anchor + Shift;
-      //end;
       jl.Add(Joint);
     end;
     ProcessEntity(Result);
@@ -32327,15 +32328,6 @@ begin
     end;
   end;
   dm.Free;
-end;
-
-procedure TScene2DData.CreateEntityData(const Entity: TG2Scene2DEntity);
-  var EntityData: TScene2DEntityData;
-  var Component: TG2Scene2DComponent;
-  var ComponentData: TScene2DComponentData;
-  var j: Integer;
-begin
-  EntityData := TScene2DEntityData.Create(Entity);
 end;
 
 procedure TScene2DData.CreateJointData(const Joint: TG2Scene2DJoint);
@@ -32859,12 +32851,11 @@ procedure TScene2DData.OnLoad;
   var i, j: Integer;
   var Entity: TG2Scene2DEntity;
   var Joint: TG2Scene2DJoint;
-  var JointData: TScene2DJointData;
 begin
   for i := 0 to Scene.EntityCount - 1 do
   begin
     Entity := Scene.Entities[i];
-    CreateEntityData(Entity);
+    TScene2DEntityData.Create(Entity);
     for j := 0 to TUIWorkspaceScene2DStructure.WorkspaceList.Count - 1 do
     TUIWorkspaceScene2DStructure.WorkspaceList[j].OnCreateEntity(Entity);
   end;
@@ -32929,7 +32920,6 @@ begin
 end;
 
 procedure TScene2DData.KeyDown(const Key: Integer);
-  var i: Integer;
   var e: TG2Scene2DEntity;
 begin
   if Editor <> nil then
@@ -33043,10 +33033,12 @@ begin
   Result := 'Asset';
 end;
 
+{$Hints off}
 class function TAsset.CheckExtension(const Ext: String): Boolean;
 begin
   Result := False;
 end;
+{$Hints on}
 
 class function TAsset.ProcessFile(const FilePath: String): TG2QuickListString;
 begin
@@ -33100,10 +33092,12 @@ begin
   Result := 'All';
 end;
 
+{$Hints off}
 class function TAssetAny.CheckExtension(const Ext: String): Boolean;
 begin
   Result := True;
 end;
+{$Hints on}
 //TAssetAny END
 
 //TAssetTexture BEIGN
@@ -33647,9 +33641,9 @@ end;
 procedure TCodeInsight.Update;
   var i: Integer;
   var f: TCodeInsightSymbolFile;
-  var t: TG2IntU32;
+  //var t: TG2IntU32;
 begin
-  t := G2Time;
+  //t := G2Time;
   if _ScanThread = nil then
   begin
     for i := 0 to _Files.Count - 1 do

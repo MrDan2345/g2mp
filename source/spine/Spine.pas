@@ -4548,7 +4548,7 @@ begin
       12, 13: _Chars[CharIndex] := AnsiChar(((b and $1F) shl 6) or (Provider.ReadByte and $3F));
       14:
       begin
-        bi := ((LongWord(b) and $0F) shl 12) or ((Provider.ReadByte and $3F) shl 6) or (Provider.ReadByte and $3F);
+        bi := ((LongWord(b) and $0F) shl 12) or ((LongWord(Provider.ReadByte) and $3F) shl 6) or (LongWord(Provider.ReadByte) and $3F);
         _Chars[CharIndex] := AnsiChar(bi);
       end;
     end;

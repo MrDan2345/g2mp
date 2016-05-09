@@ -105,7 +105,6 @@ uses
   G2Audio,
   G2AudioWAV,
   G2MeshData,
-  G2MeshG2M,
   {$if defined(G2RM_SM2)}
     G2Shaders,
   {$endif}
@@ -797,18 +796,16 @@ type
     _MessageCount: TG2IntS32;
     procedure AddMessage(const MessageProc: TG2ProcWndMessage; const Param1, Param2, Param3: TG2IntS32);
     procedure ProcessMessages;
-    {$Hints off}
-    procedure OnPrint(const Key, Param2, Param3: TG2IntS32);
-    procedure OnKeyDown(const Key, Param2, Param3: TG2IntS32);
-    procedure OnKeyUp(const Key, Param2, Param3: TG2IntS32);
+    procedure OnPrint(const Key, {%H-}Param2, {%H-}Param3: TG2IntS32);
+    procedure OnKeyDown(const Key, {%H-}Param2, {%H-}Param3: TG2IntS32);
+    procedure OnKeyUp(const Key, {%H-}Param2, {%H-}Param3: TG2IntS32);
     procedure OnMouseDown(const Button, x, y: TG2IntS32);
     procedure OnMouseUp(const Button, x, y: TG2IntS32);
-    procedure OnScroll(const y, Param2, Param3: TG2IntS32);
-    procedure OnResize(const Mode, NewWidth, NewHeight: TG2IntS32);
-    {$Hints on}
+    procedure OnScroll(const y, {%H-}Param2, {%H-}Param3: TG2IntS32);
+    procedure OnResize(const Mode, {%H-}NewWidth, {%H-}NewHeight: TG2IntS32);
     procedure Adjust(
       const OldScreenMode, NewScreenMode: TG2ScreenMode;
-      const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32;
+      const {%H-}OldWidth, {%H-}OldHeight, NewWidth, NewHeight: TG2IntS32;
       const OldResizable, NewResizable: Boolean
     );
     procedure Stop; inline;
@@ -959,7 +956,7 @@ type
     {$if defined(G2RM_SM2)}
     procedure SetShaderMethod(const Value: PG2ShaderMethod); virtual; abstract;
     {$endif}
-    procedure Resize(const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32); virtual;
+    procedure Resize(const {%H-}OldWidth, {%H-}OldHeight, NewWidth, NewHeight: TG2IntS32); virtual;
   public
     SizeRT: TPoint;
     property StateChange: TG2RenderControlStateChange read _ControlStateChange;
@@ -1446,9 +1443,9 @@ type
     class function CreateMod(const GUID: AnsiString): TG2Effect2DMod;
     class constructor CreateClass;
     constructor Create; virtual;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); virtual;
-    procedure OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const Inst: TG2Effect2DInst; const t, dt: TG2Float); virtual;
-    procedure LoadG2ML(const g2ml: PG2MLObject); virtual;
+    procedure OnParticleUpdate(const {%H-}Particle: TG2Effect2DParticle; const {%H-}Inst: TG2Effect2DInst; const {%H-}t, {%H-}dt: TG2Float); virtual;
+    procedure OnEmitterUpdate(const {%H-}Emitter: TG2Effect2DEmitter; const {%H-}Inst: TG2Effect2DInst; const {%H-}t, {%H-}dt: TG2Float); virtual;
+    procedure LoadG2ML(const {%H-}g2ml: PG2MLObject); virtual;
   end;
 
   TG2Effect2DModGraph = class
@@ -1467,7 +1464,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const {%H-}Inst: TG2Effect2DInst; const t, {%H-}dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1478,7 +1475,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const {%H-}Inst: TG2Effect2DInst; const t, {%H-}dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1493,7 +1490,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const {%H-}Inst: TG2Effect2DInst; const t, {%H-}dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1504,7 +1501,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const {%H-}Inst: TG2Effect2DInst; const t, {%H-}dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1515,7 +1512,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const {%H-}Inst: TG2Effect2DInst; const t, {%H-}dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1526,7 +1523,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const {%H-}Inst: TG2Effect2DInst; const t, {%H-}dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1537,7 +1534,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const {%H-}Inst: TG2Effect2DInst; const t, {%H-}dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1548,7 +1545,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const {%H-}Inst: TG2Effect2DInst; const t, {%H-}dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1561,7 +1558,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
+    procedure OnParticleUpdate(const Particle: TG2Effect2DParticle; const {%H-}Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1572,7 +1569,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
+    procedure OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const {%H-}Inst: TG2Effect2DInst; const t, {%H-}dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -1583,7 +1580,7 @@ type
     class function GetName: AnsiString; override;
     constructor Create; override;
     destructor Destroy; override;
-    procedure OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const Inst: TG2Effect2DInst; const t, dt: TG2Float); override;
+    procedure OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const {%H-}Inst: TG2Effect2DInst; const t, {%H-}dt: TG2Float); override;
     procedure LoadG2ML(const g2ml: PG2MLObject); override;
   end;
 
@@ -2086,7 +2083,7 @@ type
     procedure UniformFloat2(const Name: AnsiString; const v: TG2Vec2);
     procedure UniformFloat1(const Name: AnsiString; const v: TG2Float);
     procedure UniformInt1(const Name: AnsiString; const i: TG2IntS32);
-    procedure Sampler(const Name: AnsiString; const Texture: TG2TextureBase; const Stage: TG2IntS32 = 0);
+    procedure Sampler(const Name: AnsiString; const Texture: TG2TextureBase; const {%H-}Stage: TG2IntS32 = 0);
     {$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
     function Attribute(const Name: AnsiString): GLInt;
     {$endif}
@@ -3445,7 +3442,7 @@ type
     _UpdatingParticles: Boolean;
     _StatParticlesRendered: TG2IntS32;
     _Ambient: TG2Color;
-    procedure OcTreeBuild(const MinV, MaxV: TG2Vec3; const Depth: TG2IntS32);
+    procedure OcTreeBuild(const {%H-}MinV, {%H-}MaxV: TG2Vec3; const {%H-}Depth: TG2IntS32);
     procedure OcTreeBreak;
     function GetStatParticleGroupCount: TG2IntS32; inline;
     function GetStatParticleCount: TG2IntS32; inline;
@@ -3511,14 +3508,14 @@ type
     procedure OnFinalize; virtual;
     procedure OnRender; virtual;
     procedure OnUpdate; virtual;
-    procedure OnKeyDown(const Key: Integer); virtual;
-    procedure OnKeyUp(const Key: Integer); virtual;
-    procedure OnMouseDown(const Button, x, y: Integer); virtual;
-    procedure OnMouseUp(const Button, x, y: Integer); virtual;
-    procedure OnScroll(const y: Integer); virtual;
-    procedure OnPrint(const c: AnsiChar); virtual;
-    procedure OnEnter(const PrevState: TG2GameState); virtual;
-    procedure OnLeave(const NextState: TG2GameState); virtual;
+    procedure OnKeyDown(const {%H-}Key: Integer); virtual;
+    procedure OnKeyUp(const {%H-}Key: Integer); virtual;
+    procedure OnMouseDown(const {%H-}Button, {%H-}x, {%H-}y: Integer); virtual;
+    procedure OnMouseUp(const {%H-}Button, {%H-}x, {%H-}y: Integer); virtual;
+    procedure OnScroll(const {%H-}y: Integer); virtual;
+    procedure OnPrint(const {%H-}c: AnsiChar); virtual;
+    procedure OnEnter(const {%H-}PrevState: TG2GameState); virtual;
+    procedure OnLeave(const {%H-}NextState: TG2GameState); virtual;
   public
     property Enabled: Boolean read _Enabled write SetEnabled;
     property State: TG2GameState read _State write _SwitchState;
@@ -3802,7 +3799,6 @@ begin
 end;
 {$endif}
 
-{$Hints off}
 {$ifdef G2Target_Windows}
 var WndClass: TWndClassExA;
 {$endif}
@@ -3834,7 +3830,6 @@ begin
   G2DataManagerChachedRead := True;
   {$endif}
 end;
-{$Hints on}
 
 procedure G2Finalize;
 begin
@@ -4497,7 +4492,6 @@ begin
   Result := _MDPos[Index];
 end;
 
-{$Hints off}
 function TG2Core.GetMousePos: TPoint;
 {$if defined(G2Target_Windows)}
 begin
@@ -4533,7 +4527,6 @@ begin
   Result := _CursorPos;
 end;
 {$endif}
-{$Hints on}
 
 function TG2Core.GetAppPath: String;
 begin
@@ -4626,7 +4619,6 @@ begin
 end;
 
 {$ifdef G2Target_Android}
-{$Hints off}
 class procedure TG2Core.AndroidMessage(const Env: PJNIEnv; const Obj: JObject; const MessageType, Param0, Param1, Param2: TG2IntS32);
 begin
   case TG2AndroidMessageType(MessageType) of
@@ -4685,7 +4677,6 @@ begin
     end;
   end;
 end;
-{$Hints on}
 {$endif}
 
 procedure TG2Core.CallbackInitializeAdd(const ProcInitialize: TG2Proc);
@@ -5797,9 +5788,7 @@ procedure TG2Core.PrimCircleCol(const Pos: TG2Vec2; const Radius: TG2Float; cons
   var i: TG2IntS32;
 begin
   a := G2TwoPi / Segments;
-  {$Hints off}
-  G2SinCos(a, s, c);
-  {$Hints on}
+  G2SinCos(a, s{%H-}, c{%H-});
   v.SetValue(Radius, 0);
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(Pos, Col0);
@@ -5823,9 +5812,7 @@ procedure TG2Core.PrimCircleCol(const x, y, Radius: TG2Float; const Col0, Col1: 
   var i: TG2IntS32;
 begin
   a := G2TwoPi / Segments;
-  {$Hints off}
-  G2SinCos(a, s, c);
-  {$Hints on}
+  G2SinCos(a, s{%H-}, c{%H-});
   v.SetValue(Radius, 0);
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(x, y, Col0);
@@ -5901,9 +5888,7 @@ procedure TG2Core.PrimCircleHollow(const Pos: TG2Vec2; const Radius: TG2Float; c
   var i: TG2IntS32;
 begin
   a := G2TwoPi / Segments;
-  {$Hints off}
-  G2SinCos(a, s, c);
-  {$Hints on}
+  G2SinCos(a, s{%H-}, c{%H-});
   v.SetValue(Radius, 0);
   PrimBegin(ptLines, BlendMode);
   PrimAdd(v + Pos, Col);
@@ -5925,9 +5910,7 @@ procedure TG2Core.PrimCircleHollow(const x, y, Radius: TG2Float; const Col: TG2C
   var i: TG2IntS32;
 begin
   a := G2TwoPi / Segments;
-  {$Hints off}
-  G2SinCos(a, s, c);
-  {$Hints on}
+  G2SinCos(a, s{%H-}, c{%H-});
   v.SetValue(Radius, 0);
   PrimBegin(ptLines, BlendMode);
   PrimAdd(v.x + x, v.y + y, Col);
@@ -6286,7 +6269,6 @@ begin
   end;
 end;
 
-{$Hints off}
 procedure TG2Window.OnPrint(const Key, Param2, Param3: TG2IntS32);
 begin
   g2.OnPrint(AnsiChar(PG2IntU8Arr(@Key)^[0]));
@@ -6322,7 +6304,7 @@ procedure TG2Window.OnResize(const Mode, NewWidth, NewHeight: TG2IntS32);
 begin
   {$if defined(G2Target_Windows)}
   if not _ProcessResize then Exit;
-  GetClientRect(_Handle, R);
+  GetClientRect(_Handle, R{%H-});
   g2.Params.Width := R.Right - R.Left;
   g2.Params.Height := R.Bottom - R.Top;
   if g2.Params.ScreenMode <> smFullscreen then
@@ -6363,7 +6345,7 @@ begin
         if NewResizable then NewWndStyle := NewWndStyle or WS_THICKFRAME;
         SetWindowLongA(_Handle, GWL_STYLE, NewWndStyle);
       end;
-      GetClientRect(_Handle, R);
+      GetClientRect(_Handle, R{%H-});
       w := R.Right - R.Left;
       h := R.Bottom - R.Top;
       if (w <> NewWidth)
@@ -6424,7 +6406,6 @@ begin
   {$elseif defined(G2Target_OSX)}
   {$endif}
 end;
-{$Hints on}
 
 procedure TG2Window.Stop;
 begin
@@ -6469,7 +6450,6 @@ begin
 end;
 {$endif}
 
-{$Hints off}
 procedure TG2Window.Loop;
 {$if defined(G2Target_Windows)}
   var msg: TMsg;
@@ -6486,7 +6466,7 @@ begin
   {$else}
   _Loop := True;
   {$if defined(G2Target_Windows)}
-  FillChar(msg, SizeOf(msg), 0);
+  FillChar(msg{%H-}, SizeOf(msg), 0);
   while _Loop
   and (msg.message <> WM_QUIT)
   and (msg.message <> WM_DESTROY)
@@ -6544,7 +6524,6 @@ begin
   g2.OnStop;
   {$endif}
 end;
-{$Hints on}
 
 procedure TG2Window.DisplayMessage(const Text: AnsiString);
 {$if defined(G2Target_Windows)}
@@ -6588,9 +6567,6 @@ begin
 end;
 {$endif}
 
-{$if defined(G2Target_Android)}
-{$Hints off}
-{$endif}
 constructor TG2Window.Create(const Width: TG2IntS32 = 0; const Height: TG2IntS32 = 0; const NewCaption: AnsiString = 'Gen2MP');
 {$if defined(G2Target_Windows)}
   var w, h: TG2IntS32;
@@ -6715,9 +6691,7 @@ begin
   _ProcessResize := True;
   {$elseif defined(G2Target_Linux)}
   _Display := XOpenDisplay(nil);
-  {$Hints off}
   FillChar(VisualAttribs, SizeOf(VisualAttribs), 0);
-  {$Hints on}
   VisualAttribs[0] := GLX_RGBA; VisualAttribs[1] := 1;
   VisualAttribs[2] := GLX_RED_SIZE; VisualAttribs[3] := 8;
   VisualAttribs[4] := GLX_GREEN_SIZE; VisualAttribs[5] := 8;
@@ -6727,9 +6701,7 @@ begin
   VisualAttribs[12] := GLX_STENCIL_SIZE; VisualAttribs[13] := 8;
   VisualAttribs[14] := GLX_DOUBLEBUFFER; VisualAttribs[15] := 1;
   _VisualInfo := glXChooseVisual(_Display, 0, @VisualAttribs);
-  {$Hints off}
   FillChar(WndAttribs, SizeOf(WndAttribs), 0);
-  {$Hints on}
   WndAttribs.colormap := XCreateColormap(_Display, RootWindow(_Display, 0), _VisualInfo^.visual, AllocNone);
   WndAttribs.event_mask := (
     ExposureMask or
@@ -6754,9 +6726,7 @@ begin
         _VisualInfo^.visual, WndValueMask, @WndAttribs
       );
       XMapRaised(_Display, _Handle);
-      {$Hints off}
       FillChar(WndHints, SizeOf(WndHints), 0);
-      {$Hints on}
       WndHints.Decorations := 0;
       WndHints.Flags := 2;
       WndProps := XInternAtom(_Display, '_MOTIF_WM_HINTS', True);
@@ -6922,9 +6892,6 @@ begin
   Cursor := _CursorArrow;
   {$endif}
 end;
-{$if defined(G2Target_Android)}
-{$Hints on}
-{$endif}
 
 destructor TG2Window.Destroy;
 begin
@@ -7127,7 +7094,6 @@ begin
   CurRenderControl.RenderEnd;
 end;
 
-{$Hints off}
 procedure TG2Gfx.Resize(const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32);
 begin
   if _RenderTarget = nil then
@@ -7136,7 +7102,6 @@ begin
     SizeRT.y := NewHeight;
   end;
 end;
-{$Hints on}
 
 procedure TG2Gfx.Initialize;
 begin
@@ -7769,9 +7734,7 @@ begin
   _ThreadRef := 0;
   {$endif}
   {$if defined(G2Target_Windows)}
-  {$Hints off}
   FillChar(pfd, SizeOf(pfd), 0);
-  {$Hints on}
   pfd.nSize := SizeOf(pfd);
   pfd.nVersion := 1;
   pfd.dwFlags := PFD_DRAW_TO_WINDOW or PFD_SUPPORT_OPENGL or PFD_DOUBLEBUFFER;
@@ -8343,9 +8306,7 @@ procedure TG2SndDS.Initialize;
 begin
   CoInitialize(nil);
   DirectSoundCreate8(nil, _Device, nil);
-  {$Hints off}
-  FillChar(Desc, SizeOf(Desc), 0);
-  {$Hints on}
+  FillChar(Desc{%H-}, SizeOf(Desc), 0);
   Desc.dwSize := SizeOf(Desc);
   Desc.dwFlags := DSBCAPS_CTRL3D or DSBCAPS_PRIMARYBUFFER;
   _Device.CreateSoundBuffer(Desc, PrimaryBuffer, nil);
@@ -9112,10 +9073,8 @@ begin
   else if (_Mode = rtmPBuffer) then
   begin
     {$if defined(G2Target_Windows)}
-    {$Hints off}
     FillChar(pbufferiAttr, SizeOf(pbufferiAttr), 0);
     FillChar(pbufferfAttr, SizeOf(pbufferfAttr), 0);
-    {$Hints on}
     pbufferiAttr[0] := WGL_DRAW_TO_PBUFFER; pbufferiAttr[1] := 1;
     pbufferiAttr[2] := WGL_DOUBLE_BUFFER; pbufferiAttr[3] := 1;
     pbufferiAttr[4] := WGL_COLOR_BITS; pbufferiAttr[5] := 32;
@@ -9132,10 +9091,8 @@ begin
     _PBufferRC := wglCreateContext(_PBufferDC);
     wglShareLists(_Gfx.Context, _PBufferRC);
     {$elseif defined(G2Target_Linux)}
-    {$Hints off}
     FillChar(PBufferAttr, SizeOf(PBufferAttr), 0);
     FillChar(FBConfigAttr, SizeOf(FBConfigAttr), 0);
-    {$Hints on}
     FBConfigAttr[0] := GLX_DRAWABLE_TYPE;
     FBConfigAttr[1] := GLX_PBUFFER_BIT;
     FBConfigAttr[2] := GLX_DOUBLEBUFFER;
@@ -9815,7 +9772,6 @@ end;
 //TG2PictureAtlasFrame END
 
 //TG2Effect2DMod BEGIN
-{$Hints off}
 class function TG2Effect2DMod.GetGUID: AnsiString;
 begin
   Result := '28ad0411-cecf-4b6f-9959-ee462f40541c';
@@ -9870,7 +9826,6 @@ procedure TG2Effect2DMod.LoadG2ML(const g2ml: PG2MLObject);
 begin
 
 end;
-{$Hints on}
 //TG2Effect2DMod END
 
 //TG2Effect2DModGraph BEGIN
@@ -9949,12 +9904,10 @@ begin
   inherited Destroy;
 end;
 
-{$Hints off}
 procedure TG2Effect2DModOpacityGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Color.a := Round(Particle.ColorInit.a * Graph.GetYAt(t));
 end;
-{$Hints on}
 
 procedure TG2Effect2DModOpacityGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -9985,12 +9938,10 @@ begin
   inherited Destroy;
 end;
 
-{$Hints off}
 procedure TG2Effect2DModScaleGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Scale := Particle.ScaleInit * Graph.GetYAt(t);
 end;
-{$Hints on}
 
 procedure TG2Effect2DModScaleGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -10019,7 +9970,6 @@ begin
   inherited Destroy;
 end;
 
-{$Hints off}
 procedure TG2Effect2DModColorGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
   var i, n: Integer;
   var c: TG2Color;
@@ -10046,7 +9996,6 @@ begin
   Particle.Color.g := Round(Particle.ColorInit.g * G2Rcp255 * c.g);
   Particle.Color.b := Round(Particle.ColorInit.b * G2Rcp255 * c.b);
 end;
-{$Hints on}
 
 procedure TG2Effect2DModColorGraph.LoadG2ML(const g2ml: PG2MLObject);
   var i: TG2IntS32;
@@ -10092,12 +10041,10 @@ begin
   inherited Destroy;
 end;
 
-{$Hints off}
 procedure TG2Effect2DModWidthGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Width := Particle.WidthInit * Graph.GetYAt(t);
 end;
-{$Hints on}
 
 procedure TG2Effect2DModWidthGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -10128,12 +10075,10 @@ begin
   inherited Destroy;
 end;
 
-{$Hints off}
 procedure TG2Effect2DModHeightGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Height := Particle.HeightInit * Graph.GetYAt(t);
 end;
-{$Hints on}
 
 procedure TG2Effect2DModHeightGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -10164,12 +10109,10 @@ begin
   inherited Destroy;
 end;
 
-{$Hints off}
 procedure TG2Effect2DModRotationGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Rotation := Particle.RotationInit + Graph.GetYAt(t);
 end;
-{$Hints on}
 
 procedure TG2Effect2DModRotationGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -10200,12 +10143,10 @@ begin
   inherited Destroy;
 end;
 
-{$Hints off}
 procedure TG2Effect2DModOrientationGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.xf.r.Angle := Particle.RotationInit + Graph.GetYAt(t);
 end;
-{$Hints on}
 
 procedure TG2Effect2DModOrientationGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -10236,12 +10177,10 @@ begin
   inherited Destroy;
 end;
 
-{$Hints off}
 procedure TG2Effect2DModVelocityGraph.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Particle.Velocity := Particle.VelocityInit * Graph.GetYAt(t);
 end;
-{$Hints on}
 
 procedure TG2Effect2DModVelocityGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -10274,7 +10213,6 @@ begin
   inherited Destroy;
 end;
 
-{$Hints off}
 procedure TG2Effect2DModAcceleration.OnParticleUpdate(const Particle: TG2Effect2DParticle; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
   var r: TG2Rotation2;
   var a, v: TG2Vec2;
@@ -10290,7 +10228,6 @@ begin
   if Abs(vl) > G2EPS then
   Particle.xf.r.AxisX := v.Norm;
 end;
-{$Hints on}
 
 procedure TG2Effect2DModAcceleration.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -10323,12 +10260,10 @@ begin
   inherited Destroy;
 end;
 
-{$Hints off}
 procedure TG2Effect2DModEmitterOrientationGraph.OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
 begin
   Emitter.Orientation := Emitter.Data.Orientation + Graph.GetYAt(t);
 end;
-{$Hints on}
 
 procedure TG2Effect2DModEmitterOrientationGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -10359,7 +10294,6 @@ begin
   inherited Destroy;
 end;
 
-{$Hints off}
 procedure TG2Effect2DModEmitterScaleGraph.OnEmitterUpdate(const Emitter: TG2Effect2DEmitter; const Inst: TG2Effect2DInst; const t, dt: TG2Float);
   var d: TG2Float;
 begin
@@ -10371,7 +10305,6 @@ begin
   Emitter.Radius0 := Emitter.Data.ShapeRadius0 * d;
   Emitter.Radius1 := Emitter.Data.ShapeRadius1 * d;
 end;
-{$Hints on}
 
 procedure TG2Effect2DModEmitterScaleGraph.LoadG2ML(const g2ml: PG2MLObject);
 begin
@@ -11176,9 +11109,7 @@ function TG2SoundBuffer.Load(const Audio: TG2Audio): Boolean;
 begin
   Result := False;
   Release;
-  {$Hints off}
-  FillChar(Format, SizeOf(Format), 0);
-  {$Hints on}
+  FillChar(Format{%H-}, SizeOf(Format), 0);
   Format.cbSize := SizeOf(Format);
   Format.nChannels := Audio.ChannelCount;
   Format.nSamplesPerSec := Audio.SampleRate;
@@ -11186,9 +11117,7 @@ begin
   Format.wFormatTag := 1;
   Format.nAvgBytesPerSec := Audio.SampleRate * Audio.SampleSize;
   Format.nBlockAlign := Audio.SampleSize * Audio.ChannelCount;
-  {$Hints off}
-  FillChar(Desc, SizeOf(Desc), 0);
-  {$Hints on}
+  FillChar(Desc{%H-}, SizeOf(Desc), 0);
   Desc.dwSize := SizeOf(Desc);
   Desc.dwFlags := DSBCAPS_CTRL3D;
   Desc.dwBufferBytes := Audio.DataSize;
@@ -12011,9 +11940,7 @@ begin
   begin
     if _Decl[i].Element = vbTexCoord then
     begin
-      {$Hints off}
       _TexCoordIndex[ti] := Pointer(_VertexSize);
-      {$Hints on}
       Inc(ti);
     end;
     _VertexSize := _VertexSize + TG2IntU32(_Decl[i].Count * 4);
@@ -12070,19 +11997,19 @@ begin
       vbPosition:
       begin
         glEnableClientState(GL_VERTEX_ARRAY);
-        glVertexPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, {$Hints off}PGLVoid(BufferPos){$Hints on});
+        glVertexPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, PGLVoid(BufferPos));
         Inc(BufferPos, _Decl[i].Count * 4);
       end;
       vbNormal:
       begin
         glEnableClientState(GL_NORMAL_ARRAY);
-        glNormalPointer(GL_FLOAT, _VertexSize, {$Hints off}PGLVoid(BufferPos){$Hints on});
+        glNormalPointer(GL_FLOAT, _VertexSize, PGLVoid(BufferPos));
         Inc(BufferPos, _Decl[i].Count * 4);
       end;
       vbDiffuse:
       begin
         glEnableClientState(GL_COLOR_ARRAY);
-        glColorPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, {$Hints off}PGLVoid(BufferPos){$Hints on});
+        glColorPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, PGLVoid(BufferPos));
         Inc(BufferPos, _Decl[i].Count * 4);
       end;
       vbTexCoord:
@@ -12090,7 +12017,7 @@ begin
         glClientActiveTexture(CurTexture);
         Inc(CurTexture);
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glTexCoordPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, {$Hints off}PGLVoid(BufferPos){$Hints on});
+        glTexCoordPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, PGLVoid(BufferPos));
         Inc(BufferPos, _Decl[i].Count * 4);
       end;
       else
@@ -12312,9 +12239,7 @@ begin
   begin
     if _Decl[i].Element = vbTexCoord then
     begin
-      {$Hints off}
       _TexCoordIndex[ti] := Pointer(_VertexSize);
-      {$Hints on}
       Inc(ti);
     end;
     _VertexSize := _VertexSize + TG2IntU32(_Decl[i].Count * 4);
@@ -12369,19 +12294,19 @@ begin
       vbPosition:
       begin
         glEnableClientState(GL_VERTEX_ARRAY);
-        glVertexPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, {$Hints off}PGLVoid(BufferPos){$Hints on});
+        glVertexPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, PGLVoid(BufferPos));
         Inc(BufferPos, _Decl[i].Count * 4);
       end;
       vbNormal:
       begin
         glEnableClientState(GL_NORMAL_ARRAY);
-        glNormalPointer(GL_FLOAT, _VertexSize, {$Hints off}PGLVoid(BufferPos){$Hints on});
+        glNormalPointer(GL_FLOAT, _VertexSize, PGLVoid(BufferPos));
         Inc(BufferPos, _Decl[i].Count * 4);
       end;
       vbDiffuse:
       begin
         glEnableClientState(GL_COLOR_ARRAY);
-        glColorPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, {$Hints off}PGLVoid(BufferPos){$Hints on});
+        glColorPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, PGLVoid(BufferPos));
         Inc(BufferPos, _Decl[i].Count * 4);
       end;
       vbTexCoord:
@@ -12389,7 +12314,7 @@ begin
         glClientActiveTexture(CurTexture);
         Inc(CurTexture);
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glTexCoordPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, {$Hints off}PGLVoid(BufferPos){$Hints on});
+        glTexCoordPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, PGLVoid(BufferPos));
         Inc(BufferPos, _Decl[i].Count * 4);
       end;
       else
@@ -12748,9 +12673,7 @@ begin
   _CharSpaceY := 0;
   for i := 0 to 255 do
   begin
-    {$Hints off}
-    GetTextExtentPoint32A(dc, PAnsiChar(@i), 1, CharSize);
-    {$Hints on}
+    GetTextExtentPoint32A(dc, PAnsiChar(@i), 1, CharSize{%H-});
     if CharSize.cx > _CharSpaceX then _CharSpaceX := CharSize.cx;
     if CharSize.cy > _CharSpaceY then _CharSpaceY := CharSize.cy;
   end;
@@ -12767,15 +12690,13 @@ begin
   bmi.bmiHeader.biPlanes := 1;
   bmi.bmiHeader.biCompression := BI_RGB;
   bmi.bmiHeader.biBitCount := 32;
-  {$Hints off}
   Bitmap := CreateDIBSection(
     dc,
     bmi,
     DIB_RGB_COLORS,
-    Pointer(BitmapBits),
+    Pointer(BitmapBits){%H-},
     0, 0
   );
-  {$Hints on}
   SelectObject(dc, Bitmap);
   SetTextColor(dc, $ffffff);
   SetBkColor(dc, $00000000);
@@ -13049,7 +12970,6 @@ begin
   CGColorSpaceRelease(ColorSpace);
   Freemem(ContextData, ContextDataSize);
 {$elseif defined(G2Target_Android)}
-{$Hints off}
   type TARGB = packed record
     b, g, r, a: TG2IntU8;
   end;
@@ -13061,9 +12981,7 @@ begin
   var CharHeights: array[0..255] of TG2IntS32;
   var i: TG2IntS32;
 begin
-  {$Hints off}
   AndroidBinding.FontMake(Data, TexWidth, TexHeight, Size, @CharWidths, @CharHeights);
-  {$Hints on}
   for i := 0 to TexWidth * TexHeight - 1 do
   begin
     PARGBArr(Data)^[i].a := PARGBArr(Data)^[i].r;
@@ -13101,7 +13019,6 @@ begin
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   TG2GfxGLES(g2.Gfx).ThreadDetach;
   FreeMem(Data, TexWidth * TexHeight * 4);
-{$Hints on}
 {$elseif defined(G2Target_iOS)}
   var TexWidth, TexHeight: TG2IntS32;
 begin
@@ -13171,7 +13088,6 @@ procedure TG2Font.Load(const DataManager: TG2DataManager);
   var i: TG2IntS32;
 begin
   if DataManager.Size - DataManager.Position < 8 then Exit;
-  {$Hints off}
   DataManager.ReadBuffer(@Header.Definition, 4);
   if (Header.Definition <> Definition) then Exit;
   DataManager.ReadBuffer(@Header.Version, 4);
@@ -13181,7 +13097,6 @@ begin
   DataManager.ReadBuffer(@Header.FontSize, SizeOf(Header.FontSize));
   DataManager.ReadBuffer(@Header.DataSize, SizeOf(Header.DataSize));
   DataManager.ReadBuffer(@Header.Chars, SizeOf(Header.Chars));
-  {$Hints on}
   Texture.Load(DataManager);
   _CharSpaceX := _Texture.Width div 16;
   _CharSpaceY := _Texture.Height div 16;
@@ -13762,7 +13677,7 @@ procedure TG2ShaderGroup.UniformInt1(const Name: AnsiString; const i: TG2IntS32)
   var psid, vsid: TG2IntS32;
   var IntArr: array[0..3] of TG2IntS32;
 begin
-  {$Hints off}FillChar(IntArr[1], 12, 0);{$Hints on}
+  FillChar({%H-}IntArr[1], 12, 0);
   IntArr[0] := i;
   vsid := ParamVS(Name);
   if vsid > -1 then
@@ -13843,7 +13758,6 @@ begin
 end;
 {$endif}
 
-{$Hints off}
 procedure TG2ShaderGroup.Sampler(const Name: AnsiString; const Texture: TG2TextureBase; const Stage: TG2IntS32 = 0);
 {$if defined(G2Gfx_D3D9)}
   var psid: TG2IntS32;
@@ -13870,7 +13784,6 @@ begin
   end;
 end;
 {$endif}
-{$Hints on}
 
 {$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
 function TG2ShaderGroup.Attribute(const Name: AnsiString): GLInt;
@@ -15176,7 +15089,7 @@ procedure TG2RenderControlPrim3D.RenderBegin;
 {$if defined(G2Gfx_D3D9) and defined(G2RM_FF)}
   var m: TG2Mat;
 {$endif}
-{$if defined(G2RM_SM2)}
+{$if defined(G2Gfx_OGL) and defined(G2RM_SM2)}
   var WVP: TG2Mat;
 {$endif}
 begin
@@ -16473,9 +16386,7 @@ procedure TG2Display2D.PicRectCol(
 begin
   wl := -w * CenterX * ScaleX; wh := w * ScaleX + wl;
   hl := -h * CenterY * ScaleY; hh := h * ScaleY + hl;
-  {$Hints off}
-  G2SinCos(Angle, s, c);
-  {$Hints on}
+  G2SinCos(Angle, s{%H-}, c{%H-});
   v0.x := c * wl - s * hl + x; v0.y := s * wl + c * hl + y;
   v1.x := c * wh - s * hl + x; v1.y := s * wh + c * hl + y;
   v2.x := c * wl - s * hh + x; v2.y := s * wl + c * hh + y;
@@ -16554,9 +16465,7 @@ procedure TG2Display2D.PicRectCol(
 begin
   wl := -w * CenterX * ScaleX; wh := w * ScaleX + wl;
   hl := -h * CenterY * ScaleY; hh := h * ScaleY + hl;
-  {$Hints off}
-  G2SinCos(Angle, s, c);
-  {$Hints on}
+  G2SinCos(Angle, s{%H-}, c{%H-});
   v0.x := c * wl - s * hl + x; v0.y := s * wl + c * hl + y;
   v1.x := c * wh - s * hl + x; v1.y := s * wh + c * hl + y;
   v2.x := c * wl - s * hh + x; v2.y := s * wl + c * hh + y;
@@ -16915,9 +16824,7 @@ procedure TG2Display2D.PrimCircleCol(const Pos: TG2Vec2; const Radius: TG2Float;
   var i: TG2IntS32;
 begin
   a := G2TwoPi / Segments;
-  {$Hints off}
-  G2SinCos(a, s, c);
-  {$Hints on}
+  G2SinCos(a, s{%H-}, c{%H-});
   v.SetValue(Radius, 0);
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(Pos, Col0);
@@ -16941,9 +16848,7 @@ procedure TG2Display2D.PrimCircleCol(const x, y, Radius: TG2Float; const Col0, C
   var i: TG2IntS32;
 begin
   a := G2TwoPi / Segments;
-  {$Hints off}
-  G2SinCos(a, s, c);
-  {$Hints on}
+  G2SinCos(a, s{%H-}, c{%H-});
   v.SetValue(Radius, 0);
   PrimBegin(ptTriangles, BlendMode);
   PrimAdd(x, y, Col0);
@@ -16971,9 +16876,7 @@ procedure TG2Display2D.PrimRingCol(
   var i: TG2IntS32;
 begin
   a := G2TwoPi / Segments;
-  {$Hints off}
-  G2SinCos(a, s, c);
-  {$Hints on}
+  G2SinCos(a, s{%H-}, c{%H-});
   v0.SetValue(Radius0, 0);
   v1.SetValue(Radius1, 0);
   PrimBegin(ptTriangles, BlendMode);
@@ -17059,9 +16962,7 @@ procedure TG2Display2D.PrimCircleHollow(const Pos: TG2Vec2; const Radius: TG2Flo
   var i: TG2IntS32;
 begin
   a := G2TwoPi / Segments;
-  {$Hints off}
-  G2SinCos(a, s, c);
-  {$Hints on}
+  G2SinCos(a, s{%H-}, c{%H-});
   v.SetValue(Radius, 0);
   v2 := v + Pos;
   PrimBegin(ptLines, BlendMode);
@@ -17085,9 +16986,7 @@ procedure TG2Display2D.PrimCircleHollow(const x, y, Radius: TG2Float; const Col:
   var i: TG2IntS32;
 begin
   a := G2TwoPi / Segments;
-  {$Hints off}
-  G2SinCos(a, s, c);
-  {$Hints on}
+  G2SinCos(a, s{%H-}, c{%H-});
   v.SetValue(Radius, 0);
   cx := v.x + x; cy := v.y + y;
   PrimBegin(ptLines, BlendMode);
@@ -18773,9 +18672,7 @@ procedure TG2S3DParticleFlat.MakeBillboard(const View: TG2Mat; const Width, Heig
   var s, c: TG2Float;
   var vx, vy: TG2Vec3;
 begin
-  {$Hints off}
-  G2SinCos(Rotation, s, c);
-  {$Hints on}
+  G2SinCos(Rotation, s{%H-}, c{%H-});
   vx := G2Vec3(View.e00, View.e10, View.e20).Norm * (Width * 0.5);
   vy := G2Vec3(View.e01, View.e11, View.e21).Norm * (Height * 0.5);
   VecX := (vx * s) - (vy * c);
@@ -18815,12 +18712,10 @@ end;
 //TG2S3DParticleFlat END
 
 //TG2Scene3D BEGIN
-{$Hints off}
 procedure TG2Scene3D.OcTreeBuild(const MinV, MaxV: TG2Vec3; const Depth: TG2IntS32);
 begin
   if _OcTreeRoot <> nil then OcTreeBreak;
 end;
-{$Hints on}
 
 procedure TG2Scene3D.OcTreeBreak;
 begin
@@ -19172,7 +19067,7 @@ begin
           GL_TRIANGLES,
           Geom^.Groups[m].FaceCount * 3,
           GL_UNSIGNED_SHORT,
-          {$Hints off}PGLVoid(Geom^.Groups[m].FaceStart * 6){$Hints on}
+          PGLVoid(Geom^.Groups[m].FaceStart * 6)
         );
       end;
       Geom^.IB.Unbind;
@@ -19294,7 +19189,7 @@ begin
           GL_TRIANGLES,
           Geom^.Groups[m].FaceCount * 3,
           GL_UNSIGNED_SHORT,
-          {$Hints off}PGLVoid(Geom^.Groups[m].FaceStart * 6){$Hints on}
+          PGLVoid(Geom^.Groups[m].FaceStart * 6)
         );
         VB.Unbind;
       end;
@@ -19422,7 +19317,7 @@ begin
           GL_TRIANGLES,
           Geom^.Groups[m].FaceCount * 3,
           GL_UNSIGNED_SHORT,
-          {$Hints off}PGLVoid(Geom^.Groups[m].FaceStart * 6){$Hints on}
+          PGLVoid(Geom^.Groups[m].FaceStart * 6)
         );
       end;
       Geom^.IB.Unbind;
@@ -19545,7 +19440,7 @@ begin
           GL_TRIANGLES,
           Geom^.Groups[m].FaceCount * 3,
           GL_UNSIGNED_SHORT,
-          {$Hints off}PGLVoid(Geom^.Groups[m].FaceStart * 6){$Hints on}
+          PGLVoid(Geom^.Groups[m].FaceStart * 6)
         );
         VB.Unbind;
       end;
@@ -19815,7 +19710,6 @@ end;
 //TG2Scene3D END
 
 //TG2GameState BEGIN
-{$Hints off}
 class constructor TG2GameState.CreateClass;
 begin
   List := nil;
@@ -20024,7 +19918,6 @@ begin
   List := Next;
   inherited Destroy;
 end;
-{$Hints on}
 //TG2GameState END
 
 {$if defined(G2Target_Android)}
@@ -20041,7 +19934,7 @@ function G2Time: TG2IntU32;
 {$endif}
 begin
   {$if defined(G2Target_Windows)}
-  Result := GetTickCount;
+  Result := {%H-}GetTickCount;
   {$elseif defined(G2Target_Linux) or defined(G2Target_OSX)}
   Result := TG2IntU32(Trunc(Now * 24 * 60 * 60 * 1000));
   {$elseif defined(G2Target_Android)}
@@ -20090,9 +19983,7 @@ function G2RandomCirclePoint: TG2Vec2;
   var a: TG2Float;
 begin
   a := G2Random2Pi;
-  {$Hints off}
-  G2SinCos(a, Result.y, Result.x);
-  {$Hints on}
+  G2SinCos(a, Result{%H-}.y, Result{%H-}.x);
 end;
 
 function G2RandomSpherePoint: TG2Vec3;
@@ -20100,10 +19991,8 @@ function G2RandomSpherePoint: TG2Vec3;
 begin
   a1 := G2Random2Pi;
   a2 := G2Random2Pi;
-  {$Hints off}
-  G2SinCos(a1, s1, c1);
-  G2SinCos(a2, s2, c2);
-  {$Hints on}
+  G2SinCos(a1, s1{%H-}, c1{%H-});
+  G2SinCos(a2, s2{%H-}, c2{%H-});
   {$Warnings off}
   Result.SetValue(c1 * c2, s2, s1 * c2);
   {$Warnings on}
@@ -20201,9 +20090,7 @@ function G2SerializeFromStream(const Stream: TStream): TObject;
 begin
   InitPos := Stream.Position;
   if Stream.Position > Stream.Size - 1 then Exit(nil);
-  {$Hints off}
-  Stream.Read(n, SizeOf(n));
-  {$Hints on}
+  Stream.Read(n{%H-}, SizeOf(n));
   if Stream.Position > Stream.Size - n then
   begin
     Stream.Position := InitPos;

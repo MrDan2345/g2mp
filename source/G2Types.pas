@@ -132,20 +132,20 @@ const
   G2RadToDeg = 180 / Pi;
 
   {$if defined(G2Target_Windows)}
-  G2PathSep: WideChar = '\';
-  G2PathSepRev: WideChar = '/';
+  G2PathSep: AnsiChar = '\';
+  G2PathSepRev: AnsiChar = '/';
   {$elseif defined(G2Target_Linux)}
-  G2PathSep: WideChar = '/';
-  G2PathSepRev: WideChar = '\';
+  G2PathSep: AnsiChar = '/';
+  G2PathSepRev: AnsiChar = '\';
   {$elseif defined(G2Target_OSX)}
-  G2PathSep: WideChar = '/';
-  G2PathSepRev: WideChar = '\';
+  G2PathSep: AnsiChar = '/';
+  G2PathSepRev: AnsiChar = '\';
   {$elseif defined(G2Target_Android)}
   G2PathSep: AnsiChar = '/';
   G2PathSepRev: AnsiChar = '\';
   {$elseif defined(G2Target_iOS)}
-  G2PathSep: WideChar = '/';
-  G2PathSepRev: WideChar = '\';
+  G2PathSep: AnsiChar = '/';
+  G2PathSepRev: AnsiChar = '\';
   {$endif}
 
 type
