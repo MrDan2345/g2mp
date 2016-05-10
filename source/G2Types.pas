@@ -275,8 +275,8 @@ type
     constructor Create; virtual;
     destructor Destroy; override;
     function IsShared: Boolean; inline;
-    procedure Lock(const Queue: TG2IntU8);
-    procedure Unlock(const Queue: TG2IntU8);
+    procedure LockAsset(const Queue: TG2IntU8);
+    procedure UnlockAsset(const Queue: TG2IntU8);
     procedure Free; reintroduce;
   end;
 
@@ -427,7 +427,7 @@ end;
 class procedure TG2Asset.UnlockQueue(const Queue: TG2IntU8);
 begin
   while ListLocked[Queue] <> nil do
-  ListLocked[Queue].Unlock(Queue);
+  ListLocked[Queue].UnlockAsset(Queue);
 end;
 
 constructor TG2Asset.Create;
@@ -453,7 +453,7 @@ begin
   Result := Length(_AssetName) > 0;
 end;
 
-procedure TG2Asset.Lock(const Queue: TG2IntU8);
+procedure TG2Asset.LockAsset(const Queue: TG2IntU8);
 begin
   if _Lock[Queue] then Exit;
   _Lock[Queue] := True;
@@ -463,7 +463,7 @@ begin
   ListLocked[Queue] := Self;
 end;
 
-procedure TG2Asset.Unlock(const Queue: TG2IntU8);
+procedure TG2Asset.UnlockAsset(const Queue: TG2IntU8);
 begin
   if not _Lock[Queue] then Exit;
   _Lock[Queue] := False;

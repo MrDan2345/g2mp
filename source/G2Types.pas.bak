@@ -121,78 +121,85 @@ const
   G2MB_Right = 2;
   G2MB_Middle = 3;
 
-  TwoPi = Pi * 2;
-  HalfPi = Pi * 0.5;
-  QuatPi = Pi * 0.25;
-  RcpPi = 1 / Pi;
-  Rcp255 = 1 / $ff;
+  G2TwoPi = Pi * 2;
+  G2HalfPi = Pi * 0.5;
+  G2QuatPi = Pi * 0.25;
+  G2RcpPi = 1 / Pi;
+  G2Rcp255 = 1 / $ff;
   G2EPS = 1E-6;
+  G2EPS2 = 1E-5;
+  G2DegToRad = Pi / 180;
+  G2RadToDeg = 180 / Pi;
 
   {$if defined(G2Target_Windows)}
-  PathSep: WideChar = '\';
-  PathSepRev: WideChar = '/';
+  G2PathSep: AnsiChar = '\';
+  G2PathSepRev: AnsiChar = '/';
   {$elseif defined(G2Target_Linux)}
-  PathSep: WideChar = '/';
-  PathSepRev: WideChar = '\';
+  G2PathSep: AnsiChar = '/';
+  G2PathSepRev: AnsiChar = '\';
   {$elseif defined(G2Target_OSX)}
-  PathSep: WideChar = '/';
-  PathSepRev: WideChar = '\';
+  G2PathSep: AnsiChar = '/';
+  G2PathSepRev: AnsiChar = '\';
   {$elseif defined(G2Target_Android)}
-  PathSep: AnsiChar = '/';
-  PathSepRev: AnsiChar = '\';
+  G2PathSep: AnsiChar = '/';
+  G2PathSepRev: AnsiChar = '\';
+  {$elseif defined(G2Target_iOS)}
+  G2PathSep: AnsiChar = '/';
+  G2PathSepRev: AnsiChar = '\';
   {$endif}
 
 type
-  IntS64 = Int64;
-  IntU32 = LongWord;
-  IntS32 = Integer;
-  IntU16 = Word;
-  IntS16 = SmallInt;
-  IntU8 = Byte;
-  IntS8 = ShortInt;
-  G2Float = Single;
-  G2Bool = Boolean;
-  IntS64Arr = array[Word] of IntS64;
-  IntU32Arr = array[Word] of IntU32;
-  IntS32Arr = array[Word] of IntS32;
-  IntU16Arr = array[Word] of IntU16;
-  IntS16Arr = array[Word] of IntS16;
-  IntU8Arr = array[Word] of IntU8;
-  IntS8Arr = array[Word] of IntS8;
-  G2FloatArr = array[Word] of G2Float;
-  PIntS64 = ^IntS64;
-  PIntU32 = ^IntU32;
-  PIntS32 = ^IntS32;
-  PIntU16 = ^IntU16;
-  PIntS16 = ^IntS16;
-  PIntU8 = ^IntU8;
-  PIntS8 = ^IntS8;
-  PG2Float = ^G2Float;
-  PG2Bool = ^G2Bool;
-  PIntS64Arr = ^IntS64Arr;
-  PIntU32Arr = ^IntU32Arr;
-  PIntS32Arr = ^IntS32Arr;
-  PIntU16Arr = ^IntU16Arr;
-  PIntS16Arr = ^IntS16Arr;
-  PIntU8Arr = ^IntU8Arr;
-  PIntS8Arr = ^IntS8Arr;
-  PG2FloatArr = ^G2FloatArr;
-  PPIntS32 = ^PIntS32;
+  TG2IntS64 = Int64;
+  TG2IntU32 = LongWord;
+  TG2IntS32 = Integer;
+  TG2IntU16 = Word;
+  TG2IntS16 = SmallInt;
+  TG2IntU8 = Byte;
+  TG2IntS8 = ShortInt;
+  TG2Float = Single;
+  TG2Float64 = Double;
+  TG2Float80 = Extended;
+  TG2Bool = Boolean;
+  TG2IntS64Arr = array[Word] of TG2IntS64;
+  TG2IntU32Arr = array[Word] of TG2IntU32;
+  TG2IntS32Arr = array[Word] of TG2IntS32;
+  TG2IntU16Arr = array[Word] of TG2IntU16;
+  TG2IntS16Arr = array[Word] of TG2IntS16;
+  TG2IntU8Arr = array[Word] of TG2IntU8;
+  TG2IntS8Arr = array[Word] of TG2IntS8;
+  TG2FloatArr = array[Word] of TG2Float;
+  PG2IntS64 = ^TG2IntS64;
+  PG2IntU32 = ^TG2IntU32;
+  PG2IntS32 = ^TG2IntS32;
+  PG2IntU16 = ^TG2IntU16;
+  PG2IntS16 = ^TG2IntS16;
+  PG2IntU8 = ^TG2IntU8;
+  PG2IntS8 = ^TG2IntS8;
+  PG2Float = ^TG2Float;
+  PG2Float64 = ^TG2Float64;
+  PG2Float80 = ^TG2Float80;
+  PG2Bool = ^TG2Bool;
+  PG2IntS64Arr = ^TG2IntS64Arr;
+  PG2IntU32Arr = ^TG2IntU32Arr;
+  PG2IntS32Arr = ^TG2IntS32Arr;
+  PG2IntU16Arr = ^TG2IntU16Arr;
+  PG2IntS16Arr = ^TG2IntS16Arr;
+  PG2IntU8Arr = ^TG2IntU8Arr;
+  PG2IntS8Arr = ^TG2IntS8Arr;
+  PG2FloatArr = ^TG2FloatArr;
+  PPG2IntS32 = ^PG2IntS32;
   PPG2Float = ^PG2Float;
+  PPG2Float64 = ^PG2Float64;
+  PPG2Float80 = ^PG2Float80;
 
   TG2StrArrA = array of AnsiString;
   TG2StrArrW = array of WideString;
-  {$if defined(G2Target_Android)}
-  FileString = AnsiString;
-  {$else}
-  FileString = WideString;
-  {$endif}
 
   TG2Color = packed record
     {$if defined(G2Gfx_D3D9)}
-    b, g, r, a: IntU8;
+    b, g, r, a: TG2IntU8;
     {$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
-    r, g, b, a: IntU8;
+    r, g, b, a: TG2IntU8;
     {$endif}
   end;
   PG2Color = ^TG2Color;
@@ -224,29 +231,105 @@ type
     procedure SwapColorAlpha;
   end;
   PG2BlendMode = ^TG2BlendMode;
+  TG2BlendModeRef = TG2IntU32;
 
-  operator := (c: TG2Color) cr: IntU32;
-  operator := (c: IntU32) cr: TG2Color;
-  operator := (bm: TG2BlendMode) bmr: IntU32;
-  operator := (bm: IntU32) bmr: TG2BLendMode;
+  TG2Ref = class
+  private
+    var _Ref: TG2IntS32;
+  public
+    procedure RefInc; //inline;
+    procedure RefDec; //inline;
+    property RefCount: TG2IntS32 read _Ref;
+    procedure AfterConstruction; override;
+    procedure BeforeDestruction; override;
+    function IsReferenced: Boolean; inline;
+  end;
+
+  TG2Res = class (TG2Ref)
+  public
+    class var List: TG2Res;
+    var Next: TG2Res;
+    var Prev: TG2Res;
+  protected
+    procedure Initialize; virtual;
+    procedure Finalize; virtual;
+  public
+    class constructor CreateClass;
+    class procedure CleanUp;
+    procedure AfterConstruction; override;
+    procedure BeforeDestruction; override;
+  end;
+
+  TG2Asset = class (TG2Res)
+  private
+    class var ListLocked: array [0..1] of TG2Asset;
+    var PrevLocked: array [0..1] of TG2Asset;
+    var NextLocked: array [0..1] of TG2Asset;
+    var _Lock: array[0..1] of Boolean;
+    var _AssetName: String;
+    var _MarkForDeletion: Boolean;
+  public
+    property AssetName: String read _AssetName write _AssetName;
+    class constructor CreateClass;
+    class procedure UnlockQueue(const Queue: TG2IntU8);
+    constructor Create; virtual;
+    destructor Destroy; override;
+    function IsShared: Boolean; inline;
+    procedure LockAsset(const Queue: TG2IntU8);
+    procedure UnlockAsset(const Queue: TG2IntU8);
+    procedure Free; reintroduce;
+  end;
+
+  {$push}
+  {$interfaces corba}
+  const IG2RenderLocableGUID = '{1B1A3CBF-B65F-4171-BD18-1321E2929B69}';
+  type IG2RenderLocable = interface
+    procedure LockAsset(const Queue: TG2IntU8);
+    procedure UnlockAsset(const Queue: TG2IntU8);
+  end;
+  {$pop}
+
+  operator := (c: TG2Color) cr: TG2IntU32;
+  operator := (c: TG2IntU32) cr: TG2Color;
+  operator + (c0, c1: TG2Color) cr: TG2Color;
+  operator - (c0, c1: TG2Color) cr: TG2Color;
+  operator * (c0, c1: TG2Color) cr: TG2Color;
+  operator := (bm: TG2BlendMode) bmr: TG2IntU32;
+  operator := (bm: TG2IntU32) bmr: TG2BLendMode;
   operator = (bm0, bm1: TG2BlendMode) r: Boolean;
 
-  function G2Color(const r, g, b, a: IntU8): TG2Color;
+  function G2Color(const r, g, b, a: TG2IntU8): TG2Color;
 
 const
   bmInvalid = $ffffffff;
-  bmDisable = (IntU8(boDisable)) or (IntU8(boDisable) shl 8) or (IntU8(boDisable) shl 16) or (IntU8(boDisable) shl 24);
-  bmNormal = (IntU8(boSrcAlpha)) or (IntU8(boInvSrcAlpha) shl 8) or (IntU8(boOne) shl 16) or (IntU8(boOne) shl 24);
-  bmAdd = (IntU8(boSrcAlpha)) or (IntU8(boDstAlpha) shl 8) or (IntU8(boOne) shl 16) or (IntU8(boOne) shl 24);
-  bmSub = (IntU8(boZero)) or (IntU8(boInvSrcColor) shl 8) or (IntU8(boZero) shl 16) or (IntU8(boInvSrcColor) shl 24);
-  bmMul = (IntU8(boZero)) or (IntU8(boSrcColor) shl 8) or (IntU8(boZero) shl 16) or (IntU8(boSrcAlpha) shl 24);
+  bmDisable = (TG2IntU8(boDisable)) or (TG2IntU8(boDisable) shl 8) or (TG2IntU8(boDisable) shl 16) or (TG2IntU8(boDisable) shl 24);
+  bmNormal = (TG2IntU8(boSrcAlpha)) or (TG2IntU8(boInvSrcAlpha) shl 8) or (TG2IntU8(boOne) shl 16) or (TG2IntU8(boOne) shl 24);
+  bmAdd = (TG2IntU8(boSrcAlpha)) or (TG2IntU8(boDstAlpha) shl 8) or (TG2IntU8(boOne) shl 16) or (TG2IntU8(boOne) shl 24);
+  bmSub = (TG2IntU8(boZero)) or (TG2IntU8(boInvSrcColor) shl 8) or (TG2IntU8(boZero) shl 16) or (TG2IntU8(boInvSrcColor) shl 24);
+  bmMul = (TG2IntU8(boDstColor)) or (TG2IntU8(boInvSrcAlpha) shl 8) or (TG2IntU8(boZero) shl 16) or (TG2IntU8(boSrcAlpha) shl 24);
 
 implementation
+
+function ByteMax(const b0, b1: SmallInt): Byte; inline;
+begin
+  if b0 > b1 then
+  Result := b0
+  else
+  Result := b1;
+end;
+
+function ByteMin(const b0, b1: SmallInt): Byte; inline;
+begin
+  if b0 < b1 then
+  Result := b0
+  else
+  Result := b1;
+end;
 
 //TG2BlendMode BIEGN
 function TG2BlendMode.BlendEnable: Boolean;
 begin
-  Result := PIntU32(@Self)^ <> 0;
+  Result := PG2IntU32(@Self)^ <> 0;
 end;
 
 function TG2BlendMode.BlendSeparate: Boolean;
@@ -255,7 +338,7 @@ begin
 end;
 
 procedure TG2BlendMode.SwapColorAlpha;
-  var TmpSrcColor, TmpDstColor: Byte;
+  var TmpSrcColor, TmpDstColor: TG2BlendOperation;
 begin
   TmpSrcColor := ColorSrc;
   TmpDstColor := ColorDst;
@@ -266,16 +349,162 @@ begin
 end;
 //TG2BlendMode END
 
-operator := (c: TG2Color) cr: IntU32;
+//TG2Ref BEGIN
+procedure TG2Ref.RefInc;
+begin
+  Inc(_Ref);
+end;
+
+procedure TG2Ref.RefDec;
+begin
+  Dec(_Ref);
+  if _Ref <= 0 then
+  if Self is TG2Asset then TG2Asset(Self).Free else Free;
+end;
+
+procedure TG2Ref.AfterConstruction;
+begin
+  inherited AfterConstruction;
+  _Ref := 0;
+end;
+
+procedure TG2Ref.BeforeDestruction;
+begin
+  inherited BeforeDestruction;
+end;
+
+function TG2Ref.IsReferenced: Boolean;
+begin
+  Result := _Ref > 0;
+end;
+//TG2Ref END
+
+//TG2Res BEGIN
+procedure TG2Res.Initialize;
+begin
+
+end;
+
+procedure TG2Res.Finalize;
+begin
+
+end;
+
+class constructor TG2Res.CreateClass;
+begin
+  List := nil;
+end;
+
+class procedure TG2Res.CleanUp;
+  var Res: TG2Res;
+begin
+  while List <> nil do
+  begin
+    Res := List;
+    while Res.Next <> nil do Res := Res.Next;
+    Res.Free;
+  end;
+end;
+
+procedure TG2Res.AfterConstruction;
+begin
+  inherited AfterConstruction;
+  Prev := nil;
+  Next := List;
+  if List <> nil then List.Prev := Self;
+  List := Self;
+  Initialize;
+end;
+
+procedure TG2Res.BeforeDestruction;
+begin
+  Finalize;
+  if Prev <> nil then Prev.Next := Next;
+  if Next <> nil then Next.Prev := Prev;
+  if List = Self then List := Next;
+  inherited BeforeDestruction;
+end;
+//TG2Res END
+
+//TG2Asset BEGIN
+class constructor TG2Asset.CreateClass;
+begin
+  ListLocked[0] := nil;
+  ListLocked[1] := nil;
+end;
+
+class procedure TG2Asset.UnlockQueue(const Queue: TG2IntU8);
+begin
+  while ListLocked[Queue] <> nil do
+  ListLocked[Queue].UnlockAsset(Queue);
+end;
+
+constructor TG2Asset.Create;
+begin
+  inherited Create;
+  _AssetName := '';
+  _Lock[0] := False;
+  _Lock[1] := False;
+  _MarkForDeletion := False;
+  PrevLocked[0] := nil;
+  PrevLocked[1] := nil;
+  NextLocked[0] := nil;
+  NextLocked[1] := nil;
+end;
+
+destructor TG2Asset.Destroy;
+begin
+  inherited Destroy;
+end;
+
+function TG2Asset.IsShared: Boolean;
+begin
+  Result := Length(_AssetName) > 0;
+end;
+
+procedure TG2Asset.LockAsset(const Queue: TG2IntU8);
+begin
+  if _Lock[Queue] then Exit;
+  _Lock[Queue] := True;
+  NextLocked[Queue] := ListLocked[Queue];
+  PrevLocked[Queue] := nil;
+  if ListLocked[Queue] <> nil then ListLocked[Queue].PrevLocked[Queue] := Self;
+  ListLocked[Queue] := Self;
+end;
+
+procedure TG2Asset.UnlockAsset(const Queue: TG2IntU8);
+begin
+  if not _Lock[Queue] then Exit;
+  _Lock[Queue] := False;
+  if PrevLocked[Queue] <> nil then PrevLocked[Queue].NextLocked[Queue] := NextLocked[Queue];
+  if NextLocked[Queue] <> nil then NextLocked[Queue].PrevLocked[Queue] := PrevLocked[Queue];
+  if Self = ListLocked[Queue] then ListLocked[Queue] := NextLocked[Queue];
+  if _MarkForDeletion then Free;
+end;
+
+procedure TG2Asset.Free;
+begin
+  if not _Lock[0] and not _Lock[1] then
+  begin
+    if (Self <> nil) then Self.Destroy;
+  end
+  else
+  begin
+    _MarkForDeletion := True;
+  end;
+end;
+//TG2Asset END
+
+operator := (c: TG2Color) cr: TG2IntU32;
 begin
   {$if defined(G2Gfx_D3D9)}
-  Result := PIntU32(@c)^;
+  Result := PG2IntU32(@c)^;
   {$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
   Result := c.b or (c.g shl 8) or (c.r shl 16) or (c.a shl 24);
   {$endif}
 end;
 
-operator := (c: IntU32) cr: TG2Color;
+operator := (c: TG2IntU32) cr: TG2Color;
 begin
   {$if defined(G2Gfx_D3D9)}
   Result := PG2Color(@c)^;
@@ -287,22 +516,46 @@ begin
   {$endif}
 end;
 
-operator := (bm: TG2BlendMode) bmr: IntU32;
+operator + (c0, c1: TG2Color) cr: TG2Color;
 begin
-  Result := PIntU32(@bm)^;
+  Result.r := ByteMin(c0.r + c1.r, $ff);
+  Result.g := ByteMin(c0.g + c1.g, $ff);
+  Result.b := ByteMin(c0.b + c1.b, $ff);
+  Result.a := ByteMin(c0.a + c1.a, $ff);
 end;
 
-operator := (bm: IntU32) bmr: TG2BLendMode;
+operator - (c0, c1: TG2Color) cr: TG2Color;
+begin
+  Result.r := ByteMax(c0.r + c1.r, 0);
+  Result.g := ByteMax(c0.g + c1.g, 0);
+  Result.b := ByteMax(c0.b + c1.b, 0);
+  Result.a := ByteMax(c0.a + c1.a, 0);
+end;
+
+operator * (c0, c1: TG2Color) cr: TG2Color;
+begin
+  Result.r := Round((c0.r * G2Rcp255 * c1.r * G2Rcp255) * $ff);
+  Result.g := Round((c0.g * G2Rcp255 * c1.g * G2Rcp255) * $ff);
+  Result.b := Round((c0.b * G2Rcp255 * c1.b * G2Rcp255) * $ff);
+  Result.a := Round((c0.a * G2Rcp255 * c1.a * G2Rcp255) * $ff);
+end;
+
+operator := (bm: TG2BlendMode) bmr: TG2IntU32;
+begin
+  Result := PG2IntU32(@bm)^;
+end;
+
+operator := (bm: TG2IntU32) bmr: TG2BLendMode;
 begin
   Result := PG2BlendMode(@bm)^;
 end;
 
 operator = (bm0, bm1: TG2BlendMode) r: Boolean;
 begin
-  Result := PIntU32(@bm0)^ = PIntU32(@bm1)^;
+  Result := PG2IntU32(@bm0)^ = PG2IntU32(@bm1)^;
 end;
 
-function G2Color(const r, g, b, a: IntU8): TG2Color;
+function G2Color(const r, g, b, a: TG2IntU8): TG2Color;
 begin
   Result.a := a;
   Result.r := r;
