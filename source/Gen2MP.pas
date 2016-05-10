@@ -149,6 +149,7 @@ type
   {$if defined(G2RM_SM2)}
   TG2RenderControlBuffer = class;
   {$endif}
+  TG2RenderControlLegacyMesh = class;
   TG2RenderControlPic2D = class;
   TG2RenderControlPrim2D = class;
   TG2RenderControlPrim3D = class;
@@ -922,6 +923,7 @@ type
     {$if defined(G2RM_SM2)}
     _ControlBuffer: TG2RenderControlBuffer;
     {$endif}
+    _ControlLegacyMesh: TG2RenderControlLegacyMesh;
     _ControlPic2D: TG2RenderControlPic2D;
     _ControlPrim2D: TG2RenderControlPrim2D;
     _ControlPrim3D: TG2RenderControlPrim3D;
@@ -965,6 +967,7 @@ type
     {$if defined(G2RM_SM2)}
     property Buffer: TG2RenderControlBuffer read _ControlBuffer;
     {$endif}
+    property LegacyMesh: TG2RenderControlLegacyMesh read _ControlLegacyMesh;
     property Pic2D: TG2RenderControlPic2D read _ControlPic2D;
     property Prim2D: TG2RenderControlPrim2D read _ControlPrim2D;
     property Prim3D: TG2RenderControlPrim3D read _ControlPrim3D;
@@ -2279,6 +2282,7 @@ type
   private
     type TBufferData = record
       Skinned: Boolean;
+      WVP: TG2Mat;
       VertexBuffer: TG2VertexBuffer;
       IndexBuffer: TG2IndexBuffer;
       {$if defined(G2RM_SM2)}
@@ -2314,7 +2318,7 @@ type
     {$endif}
     procedure CheckCapacity;
   public
-    procedure RenderInstance(const Instance: TG2LegacyMeshInst; const V, P: TG2Mat);
+    procedure RenderInstance(const Instance: TG2LegacyMeshInst; const W, V, P: TG2Mat);
     procedure RenderBegin; override;
     procedure RenderEnd; override;
     procedure RenderData(const Data: Pointer); override;
@@ -3655,7 +3659,6 @@ type
       TransformCom: TG2Mat;
     end;
     var Materials: array of PG2LegacyMeshMaterial;
-    var Transform: TG2Mat;
     property Mesh: TG2LegacyMesh read _Mesh;
     property OBBox: TG2Box read GetOBBox;
     property AABox: TG2AABox read GetAABox;
@@ -3668,6 +3671,7 @@ type
     procedure FrameSetFast(const AnimName: AnsiString; const Frame: TG2IntS32);
     procedure FrameSet(const AnimName: AnsiString; const Frame: TG2Float);
     procedure ComputeTransforms;
+    procedure Render(const W, V, P: TG2Mat);
   end;
 
 //TG2GameState BEGIN
@@ -7304,6 +7308,7 @@ begin
   {$if defined(G2RM_SM2)}
   _ControlBuffer := TG2RenderControlBuffer(AddRenderControl(TG2RenderControlBuffer));
   {$endif}
+  _ControlLegacyMesh := TG2RenderControlLegacyMesh(AddRenderControl(TG2RenderControlLegacyMesh));
   _ControlPic2D := TG2RenderControlPic2D(AddRenderControl(TG2RenderControlPic2D));
   _ControlPrim2D := TG2RenderControlPrim2D(AddRenderControl(TG2RenderControlPrim2D));
   _ControlPrim3D := TG2RenderControlPrim3D(AddRenderControl(TG2RenderControlPrim3D));
@@ -14593,9 +14598,9 @@ begin
   end;
 end;
 
-procedure TG2RenderControlLegacyMesh.RenderInstance(const Instance: TG2LegacyMeshInst; const V, P: TG2Mat);
+procedure TG2RenderControlLegacyMesh.RenderInstance(const Instance: TG2LegacyMeshInst; const W, V, P: TG2Mat);
   var pb: PBufferData;
-  var WVP, VP: TG2Mat;
+  var WVP, MWVP: TG2Mat;
   var i, g, w: TG2IntS32;
   var Geom: PG2LegacyMeshGeom;
   var DataStatic: PG2LegacyGeomDataStatic;
@@ -14605,15 +14610,15 @@ procedure TG2RenderControlLegacyMesh.RenderInstance(const Instance: TG2LegacyMes
   var ShaderMethod: String;
   {$endif}
 begin
-  VP := V * P;
+  WVP := W * V * P;
   for i := 0 to Instance.Mesh.Geoms.Count - 1 do
   if Instance.Mesh.Geoms[i]^.Visible then
   begin
-    WVP := Instance.Transform * V * P;
     CheckCapacity;
     pb := _Queue[_FillID^][_QueueCount[_FillID^]];
     Geom := Instance.Mesh.Geoms[i];
     pb^.Skinned := Geom^.Skinned;
+    MWVP := Instance.Transforms[Geom^.NodeID].TransformCom * WVP;
     if pb^.Skinned then
     begin
       DataSkinned := PG2LegacyGeomDataSkinned(Geom^.Data);
@@ -20662,6 +20667,11 @@ begin
   for i := 0 to _RootNodes.Count - 1 do
   ComputeNode(_RootNodes[i]);
   ComputeSkinTransforms;
+end;
+
+procedure TG2LegacyMeshInst.Render(const W, V, P: TG2Mat);
+begin
+  g2.Gfx.LegacyMesh.RenderInstance(Self, W, V, P);
 end;
 //TG2LegacyMeshInst END
 

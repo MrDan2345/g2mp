@@ -149,6 +149,7 @@ type
   {$if defined(G2RM_SM2)}
   TG2RenderControlBuffer = class;
   {$endif}
+  TG2RenderControlLegacyMesh = class;
   TG2RenderControlPic2D = class;
   TG2RenderControlPrim2D = class;
   TG2RenderControlPrim3D = class;
@@ -922,6 +923,7 @@ type
     {$if defined(G2RM_SM2)}
     _ControlBuffer: TG2RenderControlBuffer;
     {$endif}
+    _ControlLegacyMesh: TG2RenderControlLegacyMesh;
     _ControlPic2D: TG2RenderControlPic2D;
     _ControlPrim2D: TG2RenderControlPrim2D;
     _ControlPrim3D: TG2RenderControlPrim3D;
@@ -965,6 +967,7 @@ type
     {$if defined(G2RM_SM2)}
     property Buffer: TG2RenderControlBuffer read _ControlBuffer;
     {$endif}
+    property LegacyMesh: TG2RenderControlLegacyMesh read _ControlLegacyMesh;
     property Pic2D: TG2RenderControlPic2D read _ControlPic2D;
     property Prim2D: TG2RenderControlPrim2D read _ControlPrim2D;
     property Prim3D: TG2RenderControlPrim3D read _ControlPrim3D;
@@ -1738,7 +1741,7 @@ type
     destructor Destroy; override;
   end;
 
-  TG2Buffer = class (TG2Res)
+  TG2Buffer = class (TG2Asset)
   protected
     _Allocated: Boolean;
     _Data: Pointer;
@@ -2274,6 +2277,54 @@ type
     destructor Destroy; override;
   end;
   {$endif}
+
+  TG2RenderControlLegacyMesh = class (TG2RenderControl)
+  private
+    type TBufferData = record
+      Skinned: Boolean;
+      VertexBuffer: TG2VertexBuffer;
+      IndexBuffer: TG2IndexBuffer;
+      {$if defined(G2RM_SM2)}
+      BoneCount: TG2IntS32;
+      SkinPallete: array of TG2Mat;
+      {$endif}
+      GroupCount: TG2IntS32;
+      Groups: array of record
+        {$if defined(G2RM_SM2)}
+        Method: TG2IntS32;
+        {$endif}
+        ColorTexture: TG2Texture2DBase;
+        LightTexture: TG2Texture2DBase;
+        VertexStart: TG2IntS32;
+        VertexCount: TG2IntS32;
+        IndexStart: TG2IntS32;
+        PrimCount: TG2IntS32;
+      end;
+    end;
+    type PBufferData = ^TBufferData;
+    {$if defined(G2RM_SM2)}
+    var _ShaderGroup: TG2ShaderGroup;
+    {$endif}
+    var _Queue: array[0..1] of array of PBufferData;
+    var _QueueCapacity: array[0..1] of TG2IntS32;
+    var _QueueCount: array[0..1] of TG2IntS32;
+    {$if defined(G2Gfx_D3D9)}
+    procedure RenderD3D9(const p: PBufferData);
+    {$elseif defined(G2Gfx_OGL)}
+    procedure RenderOGL(const p: PBufferData);
+    {$elseif defined(G2Gfx_GLES)}
+    procedure RenderGLES(const p: PBufferData);
+    {$endif}
+    procedure CheckCapacity;
+  public
+    procedure RenderInstance(const Instance: TG2LegacyMeshInst; const W, V, P: TG2Mat);
+    procedure RenderBegin; override;
+    procedure RenderEnd; override;
+    procedure RenderData(const Data: Pointer); override;
+    procedure Reset; override;
+    constructor Create; override;
+    destructor Destroy; override;
+  end;
 
   TG2Pic2D = record
     Pos0, Pos1, Pos2, Pos3: TG2Vec2;
@@ -3474,7 +3525,7 @@ type
     OwnerID: TG2IntS32;
     Name: AnsiString;
     Transform: TG2Mat;
-    SubNodesID: array of TG2IntS32;
+    SubNodesID: TG2QuickListIntS32;
   end;
   PG2LegacyMeshNode = ^TG2LegacyMeshNode;
 
@@ -3591,13 +3642,14 @@ type
   TG2LegacyMeshInst = class (TG2Ref)
   private
     _Mesh: TG2LegacyMesh;
-    _RootNodes: array of TG2IntS32;
+    _RootNodes: TG2QuickListIntS32;
     _Skins: array of PG2LegacyMeshInstSkin;
     _AutoComputeTransforms: Boolean;
     function GetOBBox: TG2Box;
     function GetGeomBBox(const Index: TG2IntS32): TG2Box;
     function GetSkinTransforms(const Index: TG2IntS32): PG2Mat; inline;
     function GetAABox: TG2AABox;
+    function GetSkin(const Index: TG2IntS32): PG2LegacyMeshInstSkin; inline;
     procedure ComputeSkinTransforms;
   public
     var Transforms: array of record
@@ -3611,12 +3663,14 @@ type
     property AABox: TG2AABox read GetAABox;
     property AutoComputeTransforms: Boolean read _AutoComputeTransforms write _AutoComputeTransforms;
     property GeomBBox[const Index: TG2IntS32]: TG2Box read GetGeomBBox;
+    property Skins[const Index: TG2IntS32]: PG2LegacyMeshInstSkin read GetSkin;
     property SkinTransforms[const Index: TG2IntS32]: PG2Mat read GetSkinTransforms;
     constructor Create(const AMesh: TG2LegacyMesh);
     destructor Destroy; override;
     procedure FrameSetFast(const AnimName: AnsiString; const Frame: TG2IntS32);
     procedure FrameSet(const AnimName: AnsiString; const Frame: TG2Float);
     procedure ComputeTransforms;
+    procedure Render(const W, V, P: TG2Mat);
   end;
 
 //TG2GameState BEGIN
@@ -7253,6 +7307,7 @@ begin
   {$if defined(G2RM_SM2)}
   _ControlBuffer := TG2RenderControlBuffer(AddRenderControl(TG2RenderControlBuffer));
   {$endif}
+  _ControlLegacyMesh := TG2RenderControlLegacyMesh(AddRenderControl(TG2RenderControlLegacyMesh));
   _ControlPic2D := TG2RenderControlPic2D(AddRenderControl(TG2RenderControlPic2D));
   _ControlPrim2D := TG2RenderControlPrim2D(AddRenderControl(TG2RenderControlPrim2D));
   _ControlPrim3D := TG2RenderControlPrim3D(AddRenderControl(TG2RenderControlPrim3D));
@@ -14358,7 +14413,7 @@ begin
   s := @_CurData^.Samplers[_CurData^.SamplerCount];
   s^.Name := Name;
   s^.Texture := Texture;
-  Texture.Lock(_FillID^);
+  Texture.LockAsset(_FillID^);
   _CurData^.SamplerCount := _CurData^.SamplerCount + 1;
 end;
 
@@ -14511,6 +14566,153 @@ end;
 //TG2RenderControlBuffer END
 {$endif}
 
+//TG2RenderControlLegacyMesh BEGIN
+{$if defined(G2Gfx_D3D9)}
+procedure TG2RenderControlLegacyMesh.RenderD3D9(const p: PBufferData);
+begin
+
+end;
+{$elseif defined(G2Gfx_OGL)}
+procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
+begin
+
+end;
+{$elseif defined(G2Gfx_GLES)}
+procedure TG2RenderControlLegacyMesh.RenderGLES(const p: PBufferData);
+begin
+
+end;
+{$endif}
+
+procedure TG2RenderControlLegacyMesh.CheckCapacity;
+  var n, i: TG2IntS32;
+begin
+  if _QueueCount[_FillID^] >= _QueueCapacity[_FillID^] then
+  begin
+    n := _QueueCapacity[_FillID^];
+    _QueueCapacity[_FillID^] := _QueueCapacity[_FillID^] + 128;
+    SetLength(_Queue[_FillID^], _QueueCapacity[_FillID^]);
+    for i := n to _QueueCapacity[_FillID^] - 1 do
+    New(_Queue[_FillID^][i]);
+  end;
+end;
+
+procedure TG2RenderControlLegacyMesh.RenderInstance(const Instance: TG2LegacyMeshInst; const W, V, P: TG2Mat);
+  var pb: PBufferData;
+  var WVP, MWVP: TG2Mat;
+  var i, g, w: TG2IntS32;
+  var Geom: PG2LegacyMeshGeom;
+  var DataStatic: PG2LegacyGeomDataStatic;
+  var DataSkinned: PG2LegacyGeomDataSkinned;
+  var Material: PG2LegacyMeshMaterial;
+  {$if defined(G2RM_SM2)}
+  var ShaderMethod: String;
+  {$endif}
+begin
+  WVP := W * V * P;
+  for i := 0 to Instance.Mesh.Geoms.Count - 1 do
+  if Instance.Mesh.Geoms[i]^.Visible then
+  begin
+    CheckCapacity;
+    pb := _Queue[_FillID^][_QueueCount[_FillID^]];
+    Geom := Instance.Mesh.Geoms[i];
+    pb^.Skinned := Geom^.Skinned;
+    MWVP := Instance.Transforms[Geom^.NodeID].TransformCom * WVP;
+    if pb^.Skinned then
+    begin
+      DataSkinned := PG2LegacyGeomDataSkinned(Geom^.Data);
+      {$if defined(G2RM_FF)}
+      pb^.VertexBuffer := Instance.Skins[i]^.VB;
+      {$else}
+      pb^.VertexBuffer := DataSkinned^.VB;
+      pb^.BoneCount := DataSkinned^.BoneCount;
+      if Length(pb^.SkinPallete) < pb^.BoneCount then SetLength(pb^.SkinPallete, pb^.BoneCount);
+      Move(Instance.SkinTransforms[i]^, pb^.SkinPallete[0], SizeOf(TG2Mat) * pb^.BoneCount);
+      {$endif}
+      w := DataSkinned^.MaxWeights;
+    end
+    else
+    begin
+      DataStatic := PG2LegacyGeomDataStatic(Geom^.Data);
+      pb^.VertexBuffer := DataStatic^.VB;
+      w := 0;
+    end;
+    pb^.VertexBuffer.LockAsset(_FillID^);
+    pb^.IndexBuffer := Geom^.IB;
+    pb^.IndexBuffer.LockAsset(_FillID^);
+    pb^.GroupCount := Geom^.GCount;
+    if Length(pb^.Groups) < pb^.GroupCount then SetLength(pb^.Groups, pb^.GroupCount);
+    for g := 0 to Geom^.GCount - 1 do
+    begin
+      Material := Instance.Mesh.Materials[Geom^.Groups[g].Material];
+      if (Material^.ChannelCount > 0) then
+      begin
+        pb^.Groups[g].ColorTexture := Material^.Channels[0].MapDiffuse;
+        pb^.Groups[g].LightTexture := Material^.Channels[0].MapLight;
+      end
+      else
+      begin
+        pb^.Groups[g].ColorTexture := nil;
+        pb^.Groups[g].LightTexture := nil;
+      end;
+      if Assigned(pb^.Groups[g].ColorTexture) then pb^.Groups[g].ColorTexture.LockAsset(_FillID^);
+      if Assigned(pb^.Groups[g].LightTexture) then pb^.Groups[g].LightTexture.LockAsset(_FillID^);
+      {$if defined(G2RM_SM2)}
+      ShaderMethod := 'SceneB' + IntToStr(w);
+      if Assigned(pb^.Groups[g].LightTexture) then ShaderMethod += 'L';
+      pb^.Groups[g].Method := _ShaderGroup.FindMethodIndex(ShaderMethod);
+      {$endif}
+      pb^.Groups[g].VertexStart := Geom^.Groups[g].VertexStart;
+      pb^.Groups[g].IndexStart := Geom^.Groups[g].FaceStart * 3;
+      pb^.Groups[g].VertexCount := Geom^.Groups[g].VertexCount;
+      pb^.Groups[g].PrimCount := Geom^.Groups[g].FaceCount;
+    end;
+    _Gfx.AddRenderQueueItem(Self, pb);
+    Inc(_QueueCount[_FillID^]);
+  end;
+end;
+
+procedure TG2RenderControlLegacyMesh.RenderBegin;
+begin
+
+end;
+
+procedure TG2RenderControlLegacyMesh.RenderEnd;
+begin
+
+end;
+
+procedure TG2RenderControlLegacyMesh.RenderData(const Data: Pointer);
+  var p: PBufferData absolute Data;
+begin
+  {$if defined(G2Gfx_D3D9)}
+  RenderD3D9(p);
+  {$elseif defined(G2Gfx_OGL)}
+  RenderOGL(p);
+  {$elseif defined(G2Gfx_GLES)}
+  RenderGLES(p);
+  {$endif}
+end;
+
+procedure TG2RenderControlLegacyMesh.Reset;
+begin
+  _QueueCount[_FillID^] := 0;
+end;
+
+constructor TG2RenderControlLegacyMesh.Create;
+begin
+  inherited Create;
+  {$if defined(G2RM_SM2)}
+  _ShaderGroup := _Gfx.RequestShader('StandardShaders');
+  {$endif}
+end;
+
+destructor TG2RenderControlLegacyMesh.Destroy;
+begin
+  inherited Destroy;
+end;
+//TG2RenderControlLegacyMesh END
+
 //TG2RenderControlPic2D BEGIN
 procedure TG2RenderControlPic2D.CheckCapacity;
   var n, i: TG2IntS32;
@@ -14569,7 +14771,7 @@ begin
   p^.Texture := Texture;
   p^.BlendMode := BlendMode;
   p^.Filter := Filter;
-  Texture.Lock(_FillID^);
+  Texture.LockAsset(_FillID^);
   _Gfx.AddRenderQueueItem(Self, p);
   Inc(_QueueCount[_FillID^]);
 end;
@@ -15495,7 +15697,7 @@ begin
   _CurPoly^.BlendMode := BlendMode;
   _CurPoly^.Filter := Filter;
   _CurPoly^.Count := 0;
-  Texture.Lock(_FillID^);
+  Texture.LockAsset(_FillID^);
 end;
 
 procedure TG2RenderControlPoly2D.PolyEnd;
@@ -15824,7 +16026,7 @@ begin
   _CurPoly^.Texture := Texture;
   _CurPoly^.Filter := Filter;
   _CurPoly^.WVP := WVP;
-  Texture.Lock(_FillID^);
+  Texture.LockAsset(_FillID^);
 end;
 
 procedure TG2RenderControlPoly3D.PolyEnd;
@@ -17542,9 +17744,8 @@ function TG2MeshInst.GetOBBox: TG2Box;
 begin
   if _Mesh.Geoms.Count < 1 then
   begin
-    {$Warnings off}
     Result.SetValue(G2Vec3(0, 0, 0), G2Vec3(0, 0, 0), G2Vec3(0, 0, 0), G2Vec3(0, 0, 0));
-    {$Warnings on}
+
     Exit;
   end;
   b := GetGeomBBox(0);
@@ -19993,13 +20194,12 @@ begin
     Nodes[i]^.Name := MeshData.Nodes[i].Name;
     Nodes[i]^.OwnerID := MeshData.Nodes[i].OwnerID;
     Nodes[i]^.Transform := MeshData.Nodes[i].Transform;
-    Nodes[i]^.SubNodesID := nil;
+    Nodes[i]^.SubNodesID.Clear;
   end;
   for i := 0 to Nodes.Count - 1 do
   if Nodes[i]^.OwnerID > -1 then
   begin
-    SetLength(Nodes[Nodes[i]^.OwnerID]^.SubNodesID, Length(Nodes[Nodes[i]^.OwnerID]^.SubNodesID) + 1);
-    Nodes[Nodes[i]^.OwnerID]^.SubNodesID[High(Nodes[Nodes[i]^.OwnerID]^.SubNodesID)] := i;
+    Nodes[Nodes[i]^.OwnerID]^.SubNodesID.Add(i);
   end;
   Geoms.Allocate(MeshData.GeomCount);
   for i := 0 to Geoms.Count - 1 do
@@ -20217,9 +20417,9 @@ begin
       SetLength(Anims[i]^.Nodes[j].Frames, Anims[i]^.FrameCount);
       for n := 0 to Anims[i]^.FrameCount - 1 do
       begin
-        Anims[i].Nodes[j].Frames[n].Scaling := MeshData.Anims[i].Nodes[j].Frames[n].Scaling;
-        Anims[i].Nodes[j].Frames[n].Rotation := MeshData.Anims[i].Nodes[j].Frames[n].Rotation;
-        Anims[i].Nodes[j].Frames[n].Translation := MeshData.Anims[i].Nodes[j].Frames[n].Translation;
+        Anims[i]^.Nodes[j].Frames[n].Scaling := MeshData.Anims[i].Nodes[j].Frames[n].Scaling;
+        Anims[i]^.Nodes[j].Frames[n].Rotation := MeshData.Anims[i].Nodes[j].Frames[n].Rotation;
+        Anims[i]^.Nodes[j].Frames[n].Translation := MeshData.Anims[i].Nodes[j].Frames[n].Translation;
       end;
     end;
   end;
@@ -20245,55 +20445,232 @@ end;
 
 //TG2LegacyMeshInst BEGIN
 function TG2LegacyMeshInst.GetOBBox: TG2Box;
+  var i: TG2IntS32;
+  var b: TG2AABox;
 begin
-
+  if _Mesh.Geoms.Count < 1 then
+  begin
+    Result.SetValue(G2Vec3(0, 0, 0), G2Vec3(0, 0, 0), G2Vec3(0, 0, 0), G2Vec3(0, 0, 0));
+    Exit;
+  end;
+  b := GetGeomBBox(0);
+  for i := 1 to _Mesh.Geoms.Count - 1 do
+  b.Merge(GetGeomBBox(i));
+  Result := b;
 end;
 
 function TG2LegacyMeshInst.GetGeomBBox(const Index: TG2IntS32): TG2Box;
+  var DataSkinned: PG2GeomDataSkinned;
+  var i, j: TG2IntS32;
+  var b: TG2AABox;
 begin
-
+  if _Mesh.Geoms[Index]^.Skinned then
+  begin
+    DataSkinned := PG2GeomDataSkinned(_Mesh.Geoms[Index]^.Data);
+    for i := 0 to DataSkinned^.BoneCount - 1 do
+    if DataSkinned^.Bones[i].VCount > 0 then
+    begin
+      b := DataSkinned^.Bones[i].BBox.Transform(_Skins[Index]^.Transforms[i]);
+      Break;
+    end;
+    for j := i + 1 to DataSkinned^.BoneCount - 1 do
+    if DataSkinned^.Bones[j].VCount > 0 then
+    b.Merge(DataSkinned^.Bones[j].BBox.Transform(_Skins[Index]^.Transforms[j]));
+    Result := b;
+  end
+  else
+  Result := PG2GeomDataStatic(_Mesh.Geoms[Index]^.Data)^.BBox.Transform(Transforms[_Mesh.Geoms[Index]^.NodeID].TransformCom);
 end;
 
 function TG2LegacyMeshInst.GetSkinTransforms(const Index: TG2IntS32): PG2Mat;
 begin
-
+  Result := @_Skins[Index]^.Transforms[0];
 end;
 
 function TG2LegacyMeshInst.GetAABox: TG2AABox;
 begin
+  Result := GetOBBox;
+end;
 
+function TG2LegacyMeshInst.GetSkin(const Index: TG2IntS32): PG2LegacyMeshInstSkin;
+begin
+  Result := @_Skins[Index];
 end;
 
 procedure TG2LegacyMeshInst.ComputeSkinTransforms;
+  var i, j: TG2IntS32;
+  var DataSkinned: PG2LegacyGeomDataSkinned;
 begin
-
+  for i := 0 to _Mesh.Geoms.Count - 1 do
+  if _Mesh.Geoms[i]^.Skinned then
+  begin
+    DataSkinned := PG2LegacyGeomDataSkinned(_Mesh.Geoms[i]^.Data);
+    for j := 0 to DataSkinned^.BoneCount - 1 do
+    begin
+      _Skins[i]^.Transforms[j] := DataSkinned^.Bones[j].Bind * Transforms[DataSkinned^.Bones[j].NodeID].TransformCom;
+    end;
+    {$if defined(G2RM_FF)}
+    _Skins[i]^.VB.Lock;
+    for j := 0 to _Mesh.Geoms[i]^.VCount - 1 do
+    begin
+      Vertex := PVertex(_Skins[i]^.VB.Data + TG2IntS32(_Skins[i]^.VB.VertexSize) * j);
+      TexCoords := PG2Vec2(Pointer(Vertex) + SizeOf(TVertex));
+      vp.SetValue(0, 0, 0);
+      vn.SetValue(0, 0, 0);
+      for n := 0 to DataSkinned^.Vertices[j].BoneWeightCount - 1 do
+      begin
+        vp := vp + DataSkinned^.Vertices[j].Position.Transform4x3(
+          _Skins[i]^.Transforms[DataSkinned^.Vertices[j].Bones[n]]
+        ) * DataSkinned^.Vertices[j].Weights[n];
+        vn := vn + DataSkinned^.Vertices[j].Normal.Transform3x3(
+          _Skins[i]^.Transforms[DataSkinned^.Vertices[j].Bones[n]]
+        ) * DataSkinned^.Vertices[j].Weights[n];
+      end;
+      Vertex^.Position := vp;
+      Vertex^.Normal := vn;
+      for n := 0 to _Mesh.Geoms[i]^.TCount - 1 do
+      begin
+        TexCoords^ := DataSkinned^.Vertices[j].TexCoord[n];
+        Inc(TexCoords);
+      end;
+    end;
+    _Skins[i]^.VB.UnLock;
+    {$endif}
+  end;
 end;
 
 constructor TG2LegacyMeshInst.Create(const AMesh: TG2LegacyMesh);
+  var i: TG2IntS32;
 begin
-
+  inherited Create;
+  _Mesh := AMesh;
+  SetLength(Materials, _Mesh.Materials.Count);
+  for i := 0 to _Mesh.Materials.Count - 1 do
+  Materials[i] := _Mesh.Materials[i];
+  SetLength(Transforms, _Mesh.Nodes.Count);
+  Transform := G2MatIdentity;
+  _RootNodes.Clear;
+  for i := 0 to _Mesh.Nodes.Count - 1 do
+  begin
+    if _Mesh.Nodes[i]^.OwnerID = -1 then
+    begin
+      _RootNodes.Add(i);
+    end;
+    Transforms[i].TransformDef := _Mesh.Nodes[i]^.Transform;
+    Transforms[i].TransformCur := Transforms[i].TransformDef;
+    Transforms[i].TransformCom := G2MatIdentity;
+  end;
+  SetLength(_Skins, _Mesh.Geoms.Count);
+  for i := 0 to _Mesh.Geoms.Count - 1 do
+  if _Mesh.Geoms[i]^.Skinned then
+  begin
+    New(_Skins[i]);
+    SetLength(_Skins[i]^.Transforms, PG2LegacyGeomDataSkinned(_Mesh.Geoms[i]^.Data)^.BoneCount);
+    {$if defined(G2RM_FF)}
+    _Skins[i]^.VB := TG2VertexBuffer.Create(_Mesh.Geoms[i]^.Decl, _Mesh.Geoms[i]^.VCount);
+    {$endif}
+  end;
+  ComputeTransforms;
 end;
 
 destructor TG2LegacyMeshInst.Destroy;
+  var i: TG2IntS32;
 begin
+  for i := 0 to _Mesh.Geoms.Count - 1 do
+  if _Mesh.Geoms[i]^.Skinned then
+  begin
+    Dispose(_Skins[i]);
+  end;
   inherited Destroy;
 end;
 
-procedure TG2LegacyMeshInst.FrameSetFast(const AnimName: AnsiString;
-  const Frame: TG2IntS32);
+procedure TG2LegacyMeshInst.FrameSetFast(const AnimName: AnsiString; const Frame: TG2IntS32);
+  var AnimIndex, i, f0: TG2IntS32;
+  var ms, mr, mt: TG2Mat;
 begin
-
+  AnimIndex := _Mesh.AnimIndex(AnimName);
+  if AnimIndex > -1 then
+  begin
+    if Frame < 0 then
+    f0 := _Mesh.Anims[AnimIndex]^.FrameCount - (Abs(Frame) mod _Mesh.Anims[AnimIndex]^.FrameCount)
+    else
+    f0 := Frame mod _Mesh.Anims[AnimIndex]^.FrameCount;
+    for i := 0 to _Mesh.Anims[AnimIndex]^.NodeCount - 1 do
+    begin
+      ms := G2MatScaling(_Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f0].Scaling);
+      mr := G2MatRotation(_Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f0].Rotation);
+      mt := G2MatTranslation(_Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f0].Translation);
+      Transforms[_Mesh.Anims[AnimIndex]^.Nodes[i].NodeID].TransformCur := ms * mr * mt;
+    end;
+    if _AutoComputeTransforms then ComputeTransforms;
+  end;
 end;
 
-procedure TG2LegacyMeshInst.FrameSet(const AnimName: AnsiString;
-  const Frame: TG2Float);
+procedure TG2LegacyMeshInst.FrameSet(const AnimName: AnsiString; const Frame: TG2Float);
+  var AnimIndex, i, f0, f1: TG2IntS32;
+  var f: TG2Float;
+  var s0: TG2Vec3;
+  var r0: TG2Quat;
+  var t0: TG2Vec3;
+  var ms, mr, mt: TG2Mat;
 begin
-
+  AnimIndex := _Mesh.AnimIndex(AnimName);
+  if AnimIndex > -1 then
+  begin
+    if Frame < 0 then
+    f := _Mesh.Anims[AnimIndex]^.FrameCount - (Trunc(Abs(Frame)) mod _Mesh.Anims[AnimIndex]^.FrameCount) + Frac(Frame)
+    else
+    f := Frame;
+    f0 := Trunc(f) mod _Mesh.Anims[AnimIndex]^.FrameCount;
+    f1 := (f0 + 1) mod _Mesh.Anims[AnimIndex]^.FrameCount;
+    f := Frac(f);
+    for i := 0 to _Mesh.Anims[AnimIndex]^.NodeCount - 1 do
+    begin
+      s0 := G2LerpVec3(
+        _Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f0].Scaling,
+        _Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f1].Scaling,
+        f
+      );
+      r0 := G2QuatSlerp(
+        _Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f0].Rotation,
+        _Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f1].Rotation,
+        f
+      );
+      t0 := G2LerpVec3(
+        _Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f0].Translation,
+        _Mesh.Anims[AnimIndex]^.Nodes[i].Frames[f1].Translation,
+        f
+      );
+      ms := G2MatScaling(s0);
+      mr := G2MatRotation(r0);
+      mt := G2MatTranslation(t0);
+      Transforms[_Mesh.Anims[AnimIndex]^.Nodes[i].NodeID].TransformCur := ms * mr * mt;
+    end;
+    if _AutoComputeTransforms then ComputeTransforms;
+  end;
 end;
 
 procedure TG2LegacyMeshInst.ComputeTransforms;
+  procedure ComputeNode(const NodeID: TG2IntS32);
+    var i: TG2IntS32;
+  begin
+    if _Mesh.Nodes[NodeID]^.OwnerID > -1 then
+    Transforms[NodeID].TransformCom := Transforms[NodeID].TransformCur * Transforms[_Mesh.Nodes[NodeID]^.OwnerID].TransformCom
+    else
+    Transforms[NodeID].TransformCom := Transforms[NodeID].TransformCur;
+    for i := 0 to _Mesh.Nodes[NodeID]^.SubNodesID.Count - 1 do
+    ComputeNode(_Mesh.Nodes[NodeID]^.SubNodesID[i]);
+  end;
+  var i: TG2IntS32;
 begin
+  for i := 0 to _RootNodes.Count - 1 do
+  ComputeNode(_RootNodes[i]);
+  ComputeSkinTransforms;
+end;
 
+procedure TG2LegacyMeshInst.Render(const W, V, P: TG2Mat);
+begin
+  g2.Gfx.LegacyMesh.RenderInstance(Self, W, V, P);
 end;
 //TG2LegacyMeshInst END
 

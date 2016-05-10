@@ -9,6 +9,7 @@ uses
   G2Utils,
   G2DataManager,
   G2Scene2D,
+  G2MeshG2M,
   Types,
   Classes;
 
@@ -16,6 +17,8 @@ type
   TGame = class
   protected
   public
+    var Mesh: TG2LegacyMesh;
+    var Inst: TG2LegacyMeshInst;
     var Display: TG2Display2D;
     var Scene: TG2Scene2D;
     var Entity: TG2Scene2DEntity;
@@ -75,6 +78,9 @@ end;
 
 procedure TGame.Initialize;
 begin
+  Mesh := TG2LegacyMesh.Create;
+  Mesh.Load('Box.g2m');
+  Inst := TG2LegacyMeshInst.Create(Mesh);
   Display := TG2Display2D.Create;
   Scene := TG2Scene2D.Create;
   Display.Position := G2Vec2(0, 0);
@@ -85,6 +91,8 @@ end;
 
 procedure TGame.Finalize;
 begin
+  Inst.Free;
+  Mesh.Free;
   Entity.Free;
   Scene.Free;
   Display.Free;
@@ -97,7 +105,12 @@ begin
 end;
 
 procedure TGame.Render;
+  var V, P: TG2Mat;
 begin
+  g2.Clear($ff808080);
+  V := G2MatView(G2Vec3(-5, 5, -5), G2Vec3, G2Vec3(0, 1, 0));
+  P := G2MatProj(Pi * 0.7, g2.Params.Width / g2.Params.Height, 0.1, 1000);
+  Inst.Render(V, P);
   Scene.Render(Display);
 end;
 
