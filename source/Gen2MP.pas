@@ -2282,7 +2282,7 @@ type
   private
     type TBufferData = record
       Skinned: Boolean;
-      WVP: TG2Mat;
+      W, V, P: TG2Mat;
       VertexBuffer: TG2VertexBuffer;
       IndexBuffer: TG2IndexBuffer;
       {$if defined(G2RM_SM2)}
@@ -3634,7 +3634,8 @@ type
 
   TG2LegacyMeshInstSkin = object
     {$if defined(G2RM_FF)}
-    VB: TG2VertexBuffer;
+    VB: array[0..1] of TG2VertexBuffer;
+    VBReady: array[0..1] of Boolean;
     {$endif}
     Transforms: array of TG2Mat;
   end;
@@ -3652,6 +3653,9 @@ type
     function GetAABox: TG2AABox;
     function GetSkin(const Index: TG2IntS32): PG2LegacyMeshInstSkin; inline;
     procedure ComputeSkinTransforms;
+    {$if defined(G2RM_FF)}
+    procedure UpdateSkin(const GeomID, QueueID: TG2IntS32);
+    {$endif}
   public
     var Transforms: array of record
       TransformDef: TG2Mat;
@@ -14569,10 +14573,148 @@ end;
 
 //TG2RenderControlLegacyMesh BEGIN
 {$if defined(G2Gfx_D3D9)}
+{$if defined(G2RM_FF)}
 procedure TG2RenderControlLegacyMesh.RenderD3D9(const p: PBufferData);
+  var PrevDepthEnable: Boolean;
+  var g, CurStage: TG2IntS32;
+  var Ambient: TG2Color;
 begin
-
+  Ambient := $ff404040;
+  PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := True;
+  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+  _Gfx.Device.SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(1, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(2, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetTransform(D3DTS_WORLD, p^.W);
+  _Gfx.Device.SetTransform(D3DTS_VIEW, p^.V);
+  _Gfx.Device.SetTransform(D3DTS_PROJECTION, p^.P);
+  p^.VertexBuffer.Bind;
+  p^.IndexBuffer.Bind;
+  for g := 0 to p^.GroupCount - 1 do
+  begin
+    if p^.Groups[g].LightTexture <> nil then
+    begin
+      _Gfx.Device.SetTexture(0, p^.Groups[g].LightTexture.GetTexture);
+      _Gfx.Device.SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+      _Gfx.Device.SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
+      _Gfx.Device.SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
+      _Gfx.Device.SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_ADD);
+      _Gfx.Device.SetTextureStageState(1, D3DTSS_COLORARG1, D3DTA_CURRENT);
+      _Gfx.Device.SetTextureStageState(1, D3DTSS_COLORARG2, D3DTA_CONSTANT);
+      _Gfx.Device.SetTextureStageState(1, D3DTSS_CONSTANT, Ambient);
+      _Gfx.Device.SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+      _Gfx.Device.SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+      _Gfx.Device.SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 1);
+      _Gfx.Device.SetTextureStageState(2, D3DTSS_TEXCOORDINDEX, 0);
+      CurStage := 2;
+      _Gfx.Device.SetTextureStageState(3, D3DTSS_COLOROP, D3DTOP_DISABLE);
+    end
+    else
+    begin
+      CurStage := 0;
+      _Gfx.Device.SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);
+      _Gfx.Device.SetTextureStageState(2, D3DTSS_TEXCOORDINDEX, 2);
+      _Gfx.Device.SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+    end;
+    if p^.Groups[g].ColorTexture <> nil then
+    begin
+      _Gfx.Device.SetTexture(CurStage, p^.Groups[g].ColorTexture.GetTexture);
+      _Gfx.Device.SetTextureStageState(CurStage, D3DTSS_COLOROP, D3DTOP_MODULATE);
+      if CurStage = 0 then
+      _Gfx.Device.SetTextureStageState(CurStage, D3DTSS_COLORARG1, D3DTA_DIFFUSE)
+      else
+      _Gfx.Device.SetTextureStageState(CurStage, D3DTSS_COLORARG1, D3DTA_CURRENT);
+      _Gfx.Device.SetTextureStageState(CurStage, D3DTSS_COLORARG2, D3DTA_TEXTURE);
+      _Gfx.Device.SetSamplerState(CurStage, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+      _Gfx.Device.SetSamplerState(CurStage, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+      if CurStage = 0 then
+      begin
+        Inc(CurStage);
+        _Gfx.Device.SetTextureStageState(CurStage, D3DTSS_COLOROP, D3DTOP_MODULATE);
+        _Gfx.Device.SetTextureStageState(CurStage, D3DTSS_COLORARG1, D3DTA_CURRENT);
+        _Gfx.Device.SetTextureStageState(CurStage, D3DTSS_COLORARG2, D3DTA_CONSTANT);
+        _Gfx.Device.SetTextureStageState(1, D3DTSS_CONSTANT, Ambient);
+      end;
+    end;
+    _Gfx.Device.DrawIndexedPrimitive(
+      D3DPT_TRIANGLELIST,
+      0,
+      p^.Groups[g].VertexStart, p^.Groups[g].VertexCount,
+      p^.Groups[g].IndexStart, p^.Groups[g].PrimCount
+    );
+  end;
+  p^.IndexBuffer.Unbind;
+  p^.VertexBuffer.Unbind;
+  _Gfx.Device.SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+  _Gfx.Device.SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
+  _Gfx.Device.SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
+  _Gfx.Device.SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);
+  _Gfx.Device.SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+  _Gfx.Device.SetTextureStageState(2, D3DTSS_COLOROP, D3DTOP_DISABLE);
+  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+  _Gfx.DepthEnable := PrevDepthEnable;
 end;
+{$else}
+procedure TG2RenderControlLegacyMesh.RenderD3D9(const p: PBufferData);
+  var WVP: TG2Mat;
+  var g, PrevMethod: TG2IntS32;
+  var PrevDepthEnable: Boolean;
+  var Ambient: TG2Color;
+begin
+  Ambient := $ff404040;
+  PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := True;
+  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+  _Gfx.Device.SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(1, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+  p^.VertexBuffer.Bind;
+  p^.IndexBuffer.Bind;
+  WVP := p^.W * p^.V * p^.P;
+  PrevMethod := -1;
+  for g := 0 to p^.GroupCount - 1 do
+  begin
+    if PrevMethod <> p^.Groups[g].Method then
+    begin
+      _ShaderGroup.MethodIndex := p^.Groups[g].Method;
+      _ShaderGroup.UniformMatrix4x4('WVP', WVP);
+      _ShaderGroup.UniformFloat4('LightAmbient', Ambient);
+      if p^.Skinned then
+      begin
+        _ShaderGroup.UniformMatrix4x3Arr('SkinPallete', @p^.SkinPallete[0], 0, p^.BoneCount);
+      end;
+    end;
+    if p^.Groups[g].ColorTexture <> nil then
+    begin
+      _ShaderGroup.Sampler('Tex0', p^.Groups[g].ColorTexture, 0);
+    end;
+    if p^.Groups[g].LightTexture <> nil then
+    begin
+      _ShaderGroup.Sampler('Tex1', p^.Groups[g].LightTexture, 1);
+    end;
+    _Gfx.Device.DrawIndexedPrimitive(
+      D3DPT_TRIANGLELIST,
+      0,
+      p^.Groups[g].VertexStart, p^.Groups[g].VertexCount,
+      p^.Groups[g].IndexStart, p^.Groups[g].PrimCount
+    );
+  end;
+  p^.IndexBuffer.Unbind;
+  p^.VertexBuffer.Unbind;
+  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+  _Gfx.DepthEnable := PrevDepthEnable;
+end;
+{$endif}
 {$elseif defined(G2Gfx_OGL)}
 procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
 begin
@@ -14600,8 +14742,7 @@ end;
 
 procedure TG2RenderControlLegacyMesh.RenderInstance(const Instance: TG2LegacyMeshInst; const W, V, P: TG2Mat);
   var pb: PBufferData;
-  var WVP, MWVP: TG2Mat;
-  var i, g, w: TG2IntS32;
+  var i, g, wc: TG2IntS32;
   var Geom: PG2LegacyMeshGeom;
   var DataStatic: PG2LegacyGeomDataStatic;
   var DataSkinned: PG2LegacyGeomDataSkinned;
@@ -14610,7 +14751,6 @@ procedure TG2RenderControlLegacyMesh.RenderInstance(const Instance: TG2LegacyMes
   var ShaderMethod: String;
   {$endif}
 begin
-  WVP := W * V * P;
   for i := 0 to Instance.Mesh.Geoms.Count - 1 do
   if Instance.Mesh.Geoms[i]^.Visible then
   begin
@@ -14618,25 +14758,29 @@ begin
     pb := _Queue[_FillID^][_QueueCount[_FillID^]];
     Geom := Instance.Mesh.Geoms[i];
     pb^.Skinned := Geom^.Skinned;
-    MWVP := Instance.Transforms[Geom^.NodeID].TransformCom * WVP;
+    pb^.V := V;
+    pb^.P := P;
     if pb^.Skinned then
     begin
       DataSkinned := PG2LegacyGeomDataSkinned(Geom^.Data);
       {$if defined(G2RM_FF)}
-      pb^.VertexBuffer := Instance.Skins[i]^.VB;
+      Instance.UpdateSkin(i, _FillID^);
+      pb^.VertexBuffer := Instance.Skins[i]^.VB[_FillID^];
       {$else}
       pb^.VertexBuffer := DataSkinned^.VB;
       pb^.BoneCount := DataSkinned^.BoneCount;
       if Length(pb^.SkinPallete) < pb^.BoneCount then SetLength(pb^.SkinPallete, pb^.BoneCount);
       Move(Instance.SkinTransforms[i]^, pb^.SkinPallete[0], SizeOf(TG2Mat) * pb^.BoneCount);
       {$endif}
-      w := DataSkinned^.MaxWeights;
+      wc := DataSkinned^.MaxWeights;
+      pb^.W := W;
     end
     else
     begin
       DataStatic := PG2LegacyGeomDataStatic(Geom^.Data);
       pb^.VertexBuffer := DataStatic^.VB;
-      w := 0;
+      wc := 0;
+      pb^.W := Instance.Transforms[Geom^.NodeID].TransformCom * W;
     end;
     pb^.VertexBuffer.LockAsset(_FillID^);
     pb^.IndexBuffer := Geom^.IB;
@@ -14659,7 +14803,7 @@ begin
       if Assigned(pb^.Groups[g].ColorTexture) then pb^.Groups[g].ColorTexture.LockAsset(_FillID^);
       if Assigned(pb^.Groups[g].LightTexture) then pb^.Groups[g].LightTexture.LockAsset(_FillID^);
       {$if defined(G2RM_SM2)}
-      ShaderMethod := 'SceneB' + IntToStr(w);
+      ShaderMethod := 'SceneB' + IntToStr(wc);
       if Assigned(pb^.Groups[g].LightTexture) then ShaderMethod += 'L';
       pb^.Groups[g].Method := _ShaderGroup.FindMethodIndex(ShaderMethod);
       {$endif}
@@ -14675,12 +14819,20 @@ end;
 
 procedure TG2RenderControlLegacyMesh.RenderBegin;
 begin
-
+  {$if defined(G2Gfx_D3D9)}
+  {$if defined(G2RM_FF)}
+  _Gfx.Device.SetRenderState(D3DRS_LIGHTING, 0);
+  {$endif}
+  {$endif}
 end;
 
 procedure TG2RenderControlLegacyMesh.RenderEnd;
 begin
-
+  {$if defined(G2Gfx_D3D9)}
+  {$if defined(G2RM_FF)}
+  _Gfx.Device.SetRenderState(D3DRS_LIGHTING, 0);
+  {$endif}
+  {$endif}
 end;
 
 procedure TG2RenderControlLegacyMesh.RenderData(const Data: Pointer);
@@ -17567,12 +17719,21 @@ begin
         if DataSkinned^.MaxWeights = 1 then
         BlendIndices^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[0].BoneID
         else
-        for n := 0 to DataSkinned^.MaxWeights - 1 do
         begin
-          BlendIndices^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].BoneID;
-          Inc(BlendIndices);
-          BlendWeights^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].Weight;
-          Inc(BlendWeights);
+          for n := 0 to MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].WeightCount - 1 do
+          begin
+            BlendIndices^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].BoneID;
+            Inc(BlendIndices);
+            BlendWeights^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].Weight;
+            Inc(BlendWeights);
+          end;
+          for n := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].WeightCount to DataSkinned^.MaxWeights - 1 do
+          begin
+            BlendIndices^ := 0;
+            Inc(BlendIndices);
+            BlendWeights^ := 0;
+            Inc(BlendWeights);
+          end;
         end;
       end;
       DataSkinned^.VB.UnLock;
@@ -19142,7 +19303,7 @@ procedure TG2Scene3D.RenderD3D9;
 begin
   _Frustum.Update;
   PrevDepthEnable := _Gfx.DepthEnable;
-  //_Gfx.DepthEnable := True;
+  _Gfx.DepthEnable := True;
   _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
   _Gfx.Device.SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
   _Gfx.Device.SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
@@ -20100,7 +20261,7 @@ begin
   Res := TG2Res.List;
   while Res <> nil do
   begin
-    if (Res is TG2Mesh)
+    if (Res is TG2LegacyMesh)
     and (TG2LegacyMesh(Res).AssetName = SharedAssetName)
     and (Res.RefCount > 0) then
     begin
@@ -20167,6 +20328,7 @@ begin
     ml.Load(FileName);
     ml.ExportMeshData(@md);
     ml.Free;
+    md.LimitSkins(4);
     Load(md);
     Break;
   end;
@@ -20186,8 +20348,8 @@ procedure TG2LegacyMesh.Load(const MeshData: TG2MeshData);
   var BlendWeights: PG2Float;
   var BlendIndices: PG2Float;
   {$endif}
-  var DataStatic: PG2S3DGeomDataStatic;
-  var DataSkinned: PG2S3DGeomDataSkinned;
+  var DataStatic: PG2LegacyGeomDataStatic;
+  var DataSkinned: PG2LegacyGeomDataSkinned;
 begin
   Nodes.Allocate(MeshData.NodeCount);
   for i := 0 to Nodes.Count - 1 do
@@ -20238,12 +20400,12 @@ begin
       SetLength(DataSkinned^.Vertices, Geoms[i]^.VCount);
       for j := 0 to Geoms[i]^.VCount - 1 do
       begin
-        SetLength(DataSkinned^.Vertices[j].TexCoord, Geoms[i].TCount);
+        SetLength(DataSkinned^.Vertices[j].TexCoord, Geoms[i]^.TCount);
         SetLength(DataSkinned^.Vertices[j].Bones, DataSkinned^.MaxWeights);
         SetLength(DataSkinned^.Vertices[j].Weights, DataSkinned^.MaxWeights);
         DataSkinned^.Vertices[j].Position := MeshData.Geoms[i].Vertices[j].Position;
         DataSkinned^.Vertices[j].Normal := MeshData.Geoms[i].Vertices[j].Normal;
-        for n := 0 to Geoms[i].TCount - 1 do
+        for n := 0 to Geoms[i]^.TCount - 1 do
         DataSkinned^.Vertices[j].TexCoord[n] := MeshData.Geoms[i].Vertices[j].TexCoords[n];
         DataSkinned^.Vertices[j].BoneWeightCount := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].WeightCount;
         for n := 0 to MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].WeightCount - 1 do
@@ -20291,12 +20453,21 @@ begin
           BlendIndices^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[0].BoneID
         end
         else
-        for n := 0 to DataSkinned^.MaxWeights - 1 do
         begin
-          BlendIndices^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].BoneID;
-          Inc(BlendIndices);
-          BlendWeights^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].Weight;
-          Inc(BlendWeights);
+          for n := 0 to MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].WeightCount - 1 do
+          begin
+            BlendIndices^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].BoneID;
+            Inc(BlendIndices);
+            BlendWeights^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].Weight;
+            Inc(BlendWeights);
+          end;
+          for n := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].WeightCount to DataSkinned^.MaxWeights - 1 do
+          begin
+            BlendIndices^ := 0;
+            Inc(BlendIndices);
+            BlendWeights^ := 0;
+            Inc(BlendWeights);
+          end;
         end;
       end;
       DataSkinned^.VB.UnLock;
@@ -20370,11 +20541,7 @@ begin
     begin
       Materials[i]^.Channels[j].Name := MeshData.Materials[i].Channels[j].Name;
       Materials[i]^.Channels[j].TwoSided := MeshData.Materials[i].Channels[j].TwoSided;
-      {$if defined(G2Target_Android)}
       if Length(MeshData.Materials[i].Channels[j].DiffuseMap) > 0 then
-      {$else}
-      if G2FileExists(MeshData.Materials[i].Channels[j].DiffuseMap) then
-      {$endif}
       begin
         Materials[i]^.Channels[j].MapDiffuse := TG2Texture2D.SharedAsset(MeshData.Materials[i].Channels[j].DiffuseMap, {$if defined(G2Target_Android)}tuDefault{$else}tu3D{$endif});
         if Assigned(Materials[i]^.Channels[j].MapDiffuse) then
@@ -20386,11 +20553,7 @@ begin
       begin
         Materials[i]^.Channels[j].MapDiffuse := nil;
       end;
-      {$if defined(G2Target_Android)}
       if Length(MeshData.Materials[i].Channels[j].LightMap) > 0 then
-      {$else}
-      if G2FileExists(MeshData.Materials[i].Channels[j].LightMap) then
-      {$endif}
       begin
         Materials[i]^.Channels[j].MapLight := TG2Texture2D.SharedAsset(MeshData.Materials[i].Channels[j].LightMap, tuDefault);
         if Assigned(Materials[i]^.Channels[j].MapLight) then
@@ -20440,7 +20603,7 @@ end;
 
 function TG2LegacyMesh.NewInst: TG2LegacyMeshInst;
 begin
-
+  Result := TG2LegacyMeshInst.Create(Self);
 end;
 //TG2LegacyMesh END
 
@@ -20461,13 +20624,13 @@ begin
 end;
 
 function TG2LegacyMeshInst.GetGeomBBox(const Index: TG2IntS32): TG2Box;
-  var DataSkinned: PG2GeomDataSkinned;
+  var DataSkinned: PG2LegacyGeomDataSkinned;
   var i, j: TG2IntS32;
   var b: TG2AABox;
 begin
   if _Mesh.Geoms[Index]^.Skinned then
   begin
-    DataSkinned := PG2GeomDataSkinned(_Mesh.Geoms[Index]^.Data);
+    DataSkinned := PG2LegacyGeomDataSkinned(_Mesh.Geoms[Index]^.Data);
     for i := 0 to DataSkinned^.BoneCount - 1 do
     if DataSkinned^.Bones[i].VCount > 0 then
     begin
@@ -20480,7 +20643,7 @@ begin
     Result := b;
   end
   else
-  Result := PG2GeomDataStatic(_Mesh.Geoms[Index]^.Data)^.BBox.Transform(Transforms[_Mesh.Geoms[Index]^.NodeID].TransformCom);
+  Result := PG2LegacyGeomDataStatic(_Mesh.Geoms[Index]^.Data)^.BBox.Transform(Transforms[_Mesh.Geoms[Index]^.NodeID].TransformCom);
 end;
 
 function TG2LegacyMeshInst.GetSkinTransforms(const Index: TG2IntS32): PG2Mat;
@@ -20495,12 +20658,12 @@ end;
 
 function TG2LegacyMeshInst.GetSkin(const Index: TG2IntS32): PG2LegacyMeshInstSkin;
 begin
-  Result := @_Skins[Index];
+  Result := _Skins[Index];
 end;
 
 procedure TG2LegacyMeshInst.ComputeSkinTransforms;
-  var i, j: TG2IntS32;
   var DataSkinned: PG2LegacyGeomDataSkinned;
+  var i, j: TG2IntS32;
 begin
   for i := 0 to _Mesh.Geoms.Count - 1 do
   if _Mesh.Geoms[i]^.Skinned then
@@ -20511,52 +20674,75 @@ begin
       _Skins[i]^.Transforms[j] := DataSkinned^.Bones[j].Bind * Transforms[DataSkinned^.Bones[j].NodeID].TransformCom;
     end;
     {$if defined(G2RM_FF)}
-    _Skins[i]^.VB.Lock;
-    for j := 0 to _Mesh.Geoms[i]^.VCount - 1 do
+    for j := 0 to 1 do
     begin
-      Vertex := PVertex(_Skins[i]^.VB.Data + TG2IntS32(_Skins[i]^.VB.VertexSize) * j);
-      TexCoords := PG2Vec2(Pointer(Vertex) + SizeOf(TVertex));
-      vp.SetValue(0, 0, 0);
-      vn.SetValue(0, 0, 0);
-      for n := 0 to DataSkinned^.Vertices[j].BoneWeightCount - 1 do
-      begin
-        vp := vp + DataSkinned^.Vertices[j].Position.Transform4x3(
-          _Skins[i]^.Transforms[DataSkinned^.Vertices[j].Bones[n]]
-        ) * DataSkinned^.Vertices[j].Weights[n];
-        vn := vn + DataSkinned^.Vertices[j].Normal.Transform3x3(
-          _Skins[i]^.Transforms[DataSkinned^.Vertices[j].Bones[n]]
-        ) * DataSkinned^.Vertices[j].Weights[n];
-      end;
-      Vertex^.Position := vp;
-      Vertex^.Normal := vn;
-      for n := 0 to _Mesh.Geoms[i]^.TCount - 1 do
-      begin
-        TexCoords^ := DataSkinned^.Vertices[j].TexCoord[n];
-        Inc(TexCoords);
-      end;
-    end;
-    _Skins[i]^.VB.UnLock;
+      _Skins[i]^.VBReady[j] := False;
+    end
     {$endif}
   end;
 end;
 
+{$if defined(G2RM_FF)}
+procedure TG2LegacyMeshInst.UpdateSkin(const GeomID, QueueID: TG2IntS32);
+  type TVertex = packed record
+    Position: TG2Vec3;
+    Normal: TG2Vec3;
+  end;
+  type PVertex = ^TVertex;
+  var vp, vn: TG2Vec3;
+  var Vertex: PVertex;
+  var TexCoords: PG2Vec2;
+  var i, j: TG2IntS32;
+  var DataSkinned: PG2LegacyGeomDataSkinned;
+begin
+  if not _Mesh.Geoms[GeomID]^.Skinned or _Skins[GeomID]^.VBReady[QueueID] then Exit;
+  DataSkinned := PG2LegacyGeomDataSkinned(_Mesh.Geoms[GeomID]^.Data);
+  _Skins[GeomID]^.VB[QueueID].Lock;
+  for i := 0 to _Mesh.Geoms[GeomID]^.VCount - 1 do
+  begin
+    Vertex := PVertex(_Skins[GeomID]^.VB[QueueID].Data + TG2IntS32(_Skins[GeomID]^.VB[QueueID].VertexSize) * i);
+    TexCoords := PG2Vec2(Pointer(Vertex) + SizeOf(TVertex));
+    vp.SetValue(0, 0, 0);
+    vn.SetValue(0, 0, 0);
+    for j := 0 to DataSkinned^.Vertices[i].BoneWeightCount - 1 do
+    begin
+      vp := vp + DataSkinned^.Vertices[i].Position.Transform4x3(
+        _Skins[GeomID]^.Transforms[DataSkinned^.Vertices[i].Bones[j]]
+      ) * DataSkinned^.Vertices[i].Weights[j];
+      vn := vn + DataSkinned^.Vertices[i].Normal.Transform3x3(
+        _Skins[GeomID]^.Transforms[DataSkinned^.Vertices[i].Bones[j]]
+      ) * DataSkinned^.Vertices[i].Weights[j];
+    end;
+    Vertex^.Position := vp;
+    Vertex^.Normal := vn;
+    for j := 0 to _Mesh.Geoms[GeomID]^.TCount - 1 do
+    begin
+      TexCoords^ := DataSkinned^.Vertices[i].TexCoord[j];
+      Inc(TexCoords);
+    end;
+  end;
+  _Skins[GeomID]^.VB[QueueID].UnLock;
+  _Skins[GeomID]^.VBReady[QueueID] := True;
+end;
+{$endif}
+
 constructor TG2LegacyMeshInst.Create(const AMesh: TG2LegacyMesh);
   var i: TG2IntS32;
+  {$if defined(G2RM_FF)}
+  var j: TG2IntS32;
+  {$endif}
 begin
   inherited Create;
   _Mesh := AMesh;
+  _AutoComputeTransforms := True;
   SetLength(Materials, _Mesh.Materials.Count);
   for i := 0 to _Mesh.Materials.Count - 1 do
   Materials[i] := _Mesh.Materials[i];
   SetLength(Transforms, _Mesh.Nodes.Count);
-  Transform := G2MatIdentity;
   _RootNodes.Clear;
   for i := 0 to _Mesh.Nodes.Count - 1 do
   begin
-    if _Mesh.Nodes[i]^.OwnerID = -1 then
-    begin
-      _RootNodes.Add(i);
-    end;
+    if _Mesh.Nodes[i]^.OwnerID = -1 then _RootNodes.Add(i);
     Transforms[i].TransformDef := _Mesh.Nodes[i]^.Transform;
     Transforms[i].TransformCur := Transforms[i].TransformDef;
     Transforms[i].TransformCom := G2MatIdentity;
@@ -20568,7 +20754,11 @@ begin
     New(_Skins[i]);
     SetLength(_Skins[i]^.Transforms, PG2LegacyGeomDataSkinned(_Mesh.Geoms[i]^.Data)^.BoneCount);
     {$if defined(G2RM_FF)}
-    _Skins[i]^.VB := TG2VertexBuffer.Create(_Mesh.Geoms[i]^.Decl, _Mesh.Geoms[i]^.VCount);
+    for j := 0 to 1 do
+    begin
+      _Skins[i]^.VB[j] := TG2VertexBuffer.Create(_Mesh.Geoms[i]^.Decl, _Mesh.Geoms[i]^.VCount);
+      _Skins[i]^.VBReady[j] := False;
+    end;
     {$endif}
   end;
   ComputeTransforms;
@@ -20576,10 +20766,19 @@ end;
 
 destructor TG2LegacyMeshInst.Destroy;
   var i: TG2IntS32;
+  {$if defined(G2RM_FF)}
+  var j: TG2IntS32;
+  {$endif}
 begin
   for i := 0 to _Mesh.Geoms.Count - 1 do
   if _Mesh.Geoms[i]^.Skinned then
   begin
+    {$if defined(G2RM_FF)}
+    for j := 0 to 1 do
+    begin
+      _Skins[i]^.VB[j].Free;
+    end;
+    {$endif}
     Dispose(_Skins[i]);
   end;
   inherited Destroy;

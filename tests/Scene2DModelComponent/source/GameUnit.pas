@@ -79,7 +79,7 @@ end;
 procedure TGame.Initialize;
 begin
   Mesh := TG2LegacyMesh.Create;
-  Mesh.Load('Box.g2m');
+  Mesh.Load('Zombie.g2m');
   Inst := TG2LegacyMeshInst.Create(Mesh);
   Display := TG2Display2D.Create;
   Scene := TG2Scene2D.Create;
@@ -101,17 +101,18 @@ end;
 
 procedure TGame.Update;
 begin
-
+  Inst.FrameSet('Walk', G2TimeInterval() * Inst.Mesh.Anims[Inst.Mesh.AnimIndex('Walk')]^.FrameCount);
 end;
 
 procedure TGame.Render;
-  var V, P: TG2Mat;
+  var W, V, P: TG2Mat;
 begin
-  g2.Clear($ff808080);
-  V := G2MatView(G2Vec3(-5, 5, -5), G2Vec3, G2Vec3(0, 1, 0));
-  P := G2MatProj(Pi * 0.7, g2.Params.Width / g2.Params.Height, 0.1, 1000);
-  Inst.Render(V, P);
-  Scene.Render(Display);
+  g2.Clear(True, $ff808080);
+  W := G2MatRotationY(G2PiTime());
+  V := G2MatView(G2Vec3(-30, 30, -30), G2Vec3(0, 0, 0), G2Vec3(0, 1, 0));
+  P := G2MatProj(Pi * 0.5, g2.Params.Width / g2.Params.Height, 0.1, 1000);
+  Inst.Render(W, V, P);
+  //Scene.Render(Display);
 end;
 
 procedure TGame.KeyDown(const Key: Integer);
