@@ -268,12 +268,13 @@ type
     var _Lock: array[0..1] of Boolean;
     var _AssetName: String;
     var _MarkForDeletion: Boolean;
+  protected
+    procedure Initialize; override;
+    procedure Finalize; override;
   public
     property AssetName: String read _AssetName write _AssetName;
     class constructor CreateClass;
     class procedure UnlockQueue(const Queue: TG2IntU8);
-    constructor Create; virtual;
-    destructor Destroy; override;
     function IsShared: Boolean; inline;
     procedure LockAsset(const Queue: TG2IntU8);
     procedure UnlockAsset(const Queue: TG2IntU8);
@@ -418,21 +419,9 @@ end;
 //TG2Res END
 
 //TG2Asset BEGIN
-class constructor TG2Asset.CreateClass;
+procedure TG2Asset.Initialize;
 begin
-  ListLocked[0] := nil;
-  ListLocked[1] := nil;
-end;
-
-class procedure TG2Asset.UnlockQueue(const Queue: TG2IntU8);
-begin
-  while ListLocked[Queue] <> nil do
-  ListLocked[Queue].UnlockAsset(Queue);
-end;
-
-constructor TG2Asset.Create;
-begin
-  inherited Create;
+  inherited Initialize;
   _AssetName := '';
   _Lock[0] := False;
   _Lock[1] := False;
@@ -443,9 +432,21 @@ begin
   NextLocked[1] := nil;
 end;
 
-destructor TG2Asset.Destroy;
+procedure TG2Asset.Finalize;
 begin
-  inherited Destroy;
+  inherited Finalize;
+end;
+
+class constructor TG2Asset.CreateClass;
+begin
+  ListLocked[0] := nil;
+  ListLocked[1] := nil;
+end;
+
+class procedure TG2Asset.UnlockQueue(const Queue: TG2IntU8);
+begin
+  while ListLocked[Queue] <> nil do
+  ListLocked[Queue].UnlockAsset(Queue);
 end;
 
 function TG2Asset.IsShared: Boolean;

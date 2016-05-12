@@ -268,6 +268,9 @@ type
     var _Lock: array[0..1] of Boolean;
     var _AssetName: String;
     var _MarkForDeletion: Boolean;
+  protected
+    procedure Initialize; override;
+    procedure Finalize; override;
   public
     property AssetName: String read _AssetName write _AssetName;
     class constructor CreateClass;
@@ -279,15 +282,6 @@ type
     procedure UnlockAsset(const Queue: TG2IntU8);
     procedure Free; reintroduce;
   end;
-
-  {$push}
-  {$interfaces corba}
-  const IG2RenderLocableGUID = '{1B1A3CBF-B65F-4171-BD18-1321E2929B69}';
-  type IG2RenderLocable = interface
-    procedure LockAsset(const Queue: TG2IntU8);
-    procedure UnlockAsset(const Queue: TG2IntU8);
-  end;
-  {$pop}
 
   operator := (c: TG2Color) cr: TG2IntU32;
   operator := (c: TG2IntU32) cr: TG2Color;
@@ -427,21 +421,9 @@ end;
 //TG2Res END
 
 //TG2Asset BEGIN
-class constructor TG2Asset.CreateClass;
+procedure TG2Asset.Initialize;
 begin
-  ListLocked[0] := nil;
-  ListLocked[1] := nil;
-end;
-
-class procedure TG2Asset.UnlockQueue(const Queue: TG2IntU8);
-begin
-  while ListLocked[Queue] <> nil do
-  ListLocked[Queue].UnlockAsset(Queue);
-end;
-
-constructor TG2Asset.Create;
-begin
-  inherited Create;
+  inherited Initialize;
   _AssetName := '';
   _Lock[0] := False;
   _Lock[1] := False;
@@ -452,9 +434,21 @@ begin
   NextLocked[1] := nil;
 end;
 
-destructor TG2Asset.Destroy;
+procedure TG2Asset.Finalize;
 begin
-  inherited Destroy;
+  inherited Finalize;
+end;
+
+class constructor TG2Asset.CreateClass;
+begin
+  ListLocked[0] := nil;
+  ListLocked[1] := nil;
+end;
+
+class procedure TG2Asset.UnlockQueue(const Queue: TG2IntU8);
+begin
+  while ListLocked[Queue] <> nil do
+  ListLocked[Queue].UnlockAsset(Queue);
 end;
 
 function TG2Asset.IsShared: Boolean;
