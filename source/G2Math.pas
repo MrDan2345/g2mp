@@ -158,9 +158,17 @@ type
   private
     function GetArr(const Index: TG2IntS32): TG2Float; inline;
     procedure SetArr(const Index: TG2IntS32; const Value: TG2Float); inline;
+    function GetSize: TG2Vec3; inline;
+    function GetSizeX: TG2Float; inline;
+    function GetSizeY: TG2Float; inline;
+    function GetSizeZ: TG2Float; inline;
   public
     var MinV, MaxV: TG2Vec3;
     property Arr[const Index: TG2IntS32]: TG2Float read GetArr write SetArr; default;
+    property Size: TG2Vec3 read GetSize;
+    property SizeX: TG2Float read GetSizeX;
+    property SizeY: TG2Float read GetSizeY;
+    property SizeZ: TG2Float read GetSizeZ;
     procedure SetValue(const BMinV, BMaxV: TG2Vec3); inline; overload;
     procedure SetValue(const v: TG2Vec3); inline; overload;
     procedure Include(const v: TG2Vec3); inline; overload;
@@ -898,6 +906,26 @@ end;
 procedure TG2AABox.SetArr(const Index: TG2IntS32; const Value: TG2Float);
 begin
   PG2FloatArr(@MinV.x)^[Index] := Value;
+end;
+
+function TG2AABox.GetSize: TG2Vec3;
+begin
+  Result := MaxV - MinV;
+end;
+
+function TG2AABox.GetSizeX: TG2Float;
+begin
+  Result := MaxV.x - MinV.x;
+end;
+
+function TG2AABox.GetSizeY: TG2Float;
+begin
+  Result := MaxV.y - MinV.y;
+end;
+
+function TG2AABox.GetSizeZ: TG2Float;
+begin
+  Result := MaxV.z - MinV.z;
 end;
 
 procedure TG2AABox.SetValue(const BMinV, BMaxV: TG2Vec3);

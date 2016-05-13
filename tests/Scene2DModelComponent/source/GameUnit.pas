@@ -87,6 +87,7 @@ begin
   Entity := TG2Scene2DEntity.Create(Scene);
   Component := TG2Scene2DComponentModel3D.Create(Scene);
   Component.Attach(Entity);
+  Component.Mesh := TG2LegacyMesh.SharedAsset('Zombie.g2m');
 end;
 
 procedure TGame.Finalize;
@@ -111,8 +112,8 @@ begin
   W := G2MatRotationY(G2PiTime());
   V := G2MatView(G2Vec3(-30, 30, -30), G2Vec3(0, 0, 0), G2Vec3(0, 1, 0));
   P := G2MatProj(Pi * 0.5, g2.Params.Width / g2.Params.Height, 0.1, 1000);
-  Inst.Render(W, V, P);
-  //Scene.Render(Display);
+  //Inst.Render(W, V, P);
+  Scene.Render(Display);
 end;
 
 procedure TGame.KeyDown(const Key: Integer);

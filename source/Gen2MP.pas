@@ -921,10 +921,10 @@ type
     g2tso_lerp = 7
   );
   TG2GfxTextureStageArgument = (
-    g2tsa_diffuse,
-    g2tsa_current,
-    g2tsa_texture,
-    g2tsa_constant
+    g2tsa_diffuse = 0,
+    g2tsa_current = 1,
+    g2tsa_texture = 2,
+    g2tsa_constant = 3
   );
   TG2GfxTextureStage = class
   private
@@ -1194,6 +1194,9 @@ type
     _ThreadID: TThreadID;
     _ThreadRef: TG2IntS32;
     {$endif}
+    {$if defined(G2RM_FF)}
+    _DummyTex: TGLuint;
+    {$endif}
     _ActiveTexture: TG2IntU32;
     _ClientActiveTexture: TG2IntU32;
   protected
@@ -1224,6 +1227,9 @@ type
     {$endif}
     property ActiveTexture: TG2IntU8 read GetActiveTexture write SetActiveTexture;
     property ClientActiveTexture: TG2IntU8 read GetClientActiveTexture write SetClientActiveTexture;
+    {$if defined(G2RM_FF)}
+    property DummyTex: TGLuint read _DummyTex;
+    {$endif}
     procedure Initialize; override;
     procedure Finalize; override;
     procedure Render; override;
@@ -2416,6 +2422,7 @@ type
     type TBufferData = record
       Skinned: Boolean;
       W, V, P: TG2Mat;
+      Color: TG2Color;
       VertexBuffer: TG2VertexBuffer;
       IndexBuffer: TG2IndexBuffer;
       {$if defined(G2RM_SM2)}
@@ -3780,6 +3787,7 @@ type
     _RootNodes: TG2QuickListIntS32;
     _Skins: array of PG2LegacyMeshInstSkin;
     _AutoComputeTransforms: Boolean;
+    _Color: TG2Color;
     function GetOBBox: TG2Box;
     function GetGeomBBox(const Index: TG2IntS32): TG2Box;
     function GetSkinTransforms(const Index: TG2IntS32): PG2Mat; inline;
@@ -3800,6 +3808,7 @@ type
     property OBBox: TG2Box read GetOBBox;
     property AABox: TG2AABox read GetAABox;
     property AutoComputeTransforms: Boolean read _AutoComputeTransforms write _AutoComputeTransforms;
+    property Color: TG2Color read _Color write _Color;
     property GeomBBox[const Index: TG2IntS32]: TG2Box read GetGeomBBox;
     property Skins[const Index: TG2IntS32]: PG2LegacyMeshInstSkin read GetSkin;
     property SkinTransforms[const Index: TG2IntS32]: PG2Mat read GetSkinTransforms;
@@ -7511,7 +7520,6 @@ begin
   if Value = _ColorOperation then Exit;
   _ColorOperation := Value;
   _Gfx.ActiveTexture := _Stage;
-  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
   glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, StageOpRemap[TG2IntU8(_ColorOperation)]);
   if _AlphaOperation = g2tso_disable then
   begin
@@ -7542,7 +7550,6 @@ begin
   if Value = _AlphaOperation then Exit;
   _AlphaOperation := Value;
   _Gfx.ActiveTexture := _Stage;
-  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
   if _AlphaOperation = g2tso_disable then
   begin
     glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, StageOpRemap[TG2IntU8(_ColorOperation)]);
@@ -8416,6 +8423,11 @@ end;
 procedure TG2GfxOGL.Finalize;
 begin
   inherited Finalize;
+  {$if defined(G2RM_FF)}
+  ThreadAttach;
+  glDeleteTextures(1, @_DummyTex);
+  ThreadDetach;
+  {$endif}
   {$if not defined(G2Threading)}
   {$if defined(G2Target_Windows)}
   wglMakeCurrent(0, 0);
@@ -8501,6 +8513,9 @@ begin
 end;
 
 procedure TG2GfxOGL.SetDefaults;
+  {$if defined(G2RM_FF)}
+  var TexData: TG2Color;
+  {$endif}
 begin
   if _RenderTarget = nil then
   glViewport(0, 0, g2.Params.Width, g2.Params.Height)
@@ -8509,6 +8524,30 @@ begin
   glClearColor(0.5, 0.5, 0.5, 1);
   glClearDepth(1);
   glEnable(GL_TEXTURE_2D);
+  {$if defined(G2RM_FF)}
+  TexData := $ffffffff;
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  glGenTextures(1, @_DummyTex);
+  glBindTexture(GL_TEXTURE_2D, _DummyTex);
+  glTexImage2D(
+    GL_TEXTURE_2D,
+    0,
+    GL_RGBA,
+    1,
+    1,
+    0,
+    GL_RGBA,
+    GL_UNSIGNED_BYTE,
+    @TexData
+  );
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+  {$endif}
   glShadeModel(GL_SMOOTH);
   glCullFace(GL_FRONT);
   glDisable(GL_CULL_FACE);
@@ -15017,7 +15056,7 @@ procedure TG2RenderControlLegacyMesh.RenderD3D9(const p: PBufferData);
   var g, CurStage: TG2IntS32;
   var Ambient: TG2Color;
 begin
-  Ambient := $ff404040;
+  Ambient := p^.Color;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
   _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
@@ -15037,54 +15076,15 @@ begin
   p^.IndexBuffer.Bind;
   for g := 0 to p^.GroupCount - 1 do
   begin
-    if p^.Groups[g].LightTexture <> nil then
-    begin
-      _Gfx.Device.SetTexture(0, p^.Groups[g].LightTexture.GetTexture);
-      _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
-      _Gfx.TextureStage[0].ColorArgument0 := g2tsa_diffuse;
-      _Gfx.TextureStage[0].ColorArgument1 := g2tsa_texture;
-      _Gfx.TextureStage[1].ColorOperation := g2tso_add;
-      _Gfx.TextureStage[1].ColorArgument0 := g2tsa_current;
-      _Gfx.TextureStage[1].ColorArgument1 := g2tsa_constant;
-      _Gfx.TextureStage[1].ConstantColor := Ambient;
-      _Gfx.TextureStage[0].TexCoordIndex := 1;
-      _Gfx.TextureStage[2].TexCoordIndex := 0;
-      _Gfx.TextureStage[3].ColorOperation := g2tso_disable;
-      _Gfx.Device.SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-      _Gfx.Device.SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-      CurStage := 2;
-      _Gfx.Device.SetTextureStageState(3, D3DTSS_COLOROP, D3DTOP_DISABLE);
-    end
-    else
-    begin
-      CurStage := 0;
-      _Gfx.TextureStage[0].TexCoordIndex := 0;
-      _Gfx.TextureStage[2].TexCoordIndex := 2;
-      _Gfx.TextureStage[1].ColorOperation := g2tso_disable;
-    end;
     if p^.Groups[g].ColorTexture <> nil then
     begin
-      _Gfx.Device.SetTexture(CurStage, p^.Groups[g].ColorTexture.GetTexture);
-      _Gfx.TextureStage[CurStage].ColorOperation := g2tso_modulate;
-      if CurStage = 0 then
-      begin
-        _Gfx.TextureStage[CurStage].ColorArgument0 := g2tsa_diffuse;
-      end
-      else
-      begin
-        _Gfx.TextureStage[CurStage].ColorArgument0 := g2tsa_current;
-      end;
-      _Gfx.TextureStage[CurStage].ColorArgument1 := g2tsa_texture;
-      _Gfx.Device.SetSamplerState(CurStage, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-      _Gfx.Device.SetSamplerState(CurStage, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-      if CurStage = 0 then
-      begin
-        Inc(CurStage);
-        _Gfx.TextureStage[CurStage].ColorOperation := g2tso_modulate;
-        _Gfx.TextureStage[CurStage].ColorArgument0 := g2tsa_current;
-        _Gfx.TextureStage[CurStage].ColorArgument1 := g2tsa_constant;
-        _Gfx.TextureStage[CurStage].ConstantColor := Ambient;
-      end;
+      _Gfx.Device.SetTexture(0, p^.Groups[g].ColorTexture.GetTexture);
+      _Gfx.Device.SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+      _Gfx.Device.SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+      _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
+      _Gfx.TextureStage[0].ColorArgument0 := g2tsa_constant;
+      _Gfx.TextureStage[0].ColorArgument1 := g2tsa_texture;
+      _Gfx.TextureStage[0].ConstantColor := Ambient;
     end;
     _Gfx.Device.DrawIndexedPrimitive(
       D3DPT_TRIANGLELIST,
@@ -15098,9 +15098,6 @@ begin
   _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
   _Gfx.TextureStage[0].ColorArgument0 := g2tsa_diffuse;
   _Gfx.TextureStage[0].ColorArgument1 := g2tsa_texture;
-  _Gfx.TextureStage[0].TexCoordIndex := 0;
-  _Gfx.TextureStage[1].ColorOperation := g2tso_disable;
-  _Gfx.TextureStage[2].ColorOperation := g2tso_disable;
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$else}
@@ -15110,7 +15107,7 @@ procedure TG2RenderControlLegacyMesh.RenderD3D9(const p: PBufferData);
   var PrevDepthEnable: Boolean;
   var Ambient: TG2Color;
 begin
-  Ambient := $ff404040;
+  Ambient := p^.Color;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
   _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
@@ -15164,9 +15161,8 @@ procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
   var g: TG2IntS32;
   var WV: TG2Mat;
   var Ambient: TG2Color;
-  var CurStage: TG2IntU8;
 begin
-  Ambient := $ff404040;
+  Ambient := p^.Color;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
   glEnable(GL_CULL_FACE);
@@ -15179,68 +15175,24 @@ begin
   p^.IndexBuffer.Bind;
   for g := 0 to p^.GroupCount - 1 do
   begin
-    if p^.Groups[g].LightTexture <> nil then
+    if p^.Groups[g].ColorTexture <> nil then
     begin
       _Gfx.ActiveTexture := 0;
       glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, p^.Groups[g].LightTexture.GetTexture);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
-      _Gfx.TextureStage[0].ColorArgument0 := g2tsa_diffuse;
-      _Gfx.TextureStage[0].ColorArgument1 := g2tsa_texture;
-      _Gfx.ClientActiveTexture := 0;
-      glTexCoordPointer(2, GL_FLOAT, p^.VertexBuffer.VertexSize, p^.VertexBuffer.TexCoordIndex[1]);
-      _Gfx.ActiveTexture := 1;
-      glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, p^.Groups[g].LightTexture.GetTexture);
-      _Gfx.Filter := tfLinear;
-      _Gfx.TextureStage[1].ColorOperation := g2tso_add;
-      _Gfx.TextureStage[1].ColorArgument0 := g2tsa_current;
-      _Gfx.TextureStage[1].ColorArgument1 := g2tsa_constant;
-      _Gfx.TextureStage[1].ConstantColor := Ambient;
-      _Gfx.TextureStage[3].ColorOperation := g2tso_disable;
-      CurStage := 2;
-    end
-    else
-    begin
-      CurStage := 0;
-      _Gfx.ActiveTexture := 1;
-      glDisable(GL_TEXTURE_2D);
-    end;
-    if p^.Groups[g].ColorTexture <> nil then
-    begin
-      _Gfx.ActiveTexture := CurStage;
-      glEnable(GL_TEXTURE_2D);
       glBindTexture(GL_TEXTURE_2D, p^.Groups[g].ColorTexture.GetTexture);
       if p^.Groups[g].ColorTexture.Usage = tu3D then
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
-      else
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      _Gfx.ClientActiveTexture := CurStage;
-      glTexCoordPointer(2, GL_FLOAT, p^.VertexBuffer.VertexSize, p^.VertexBuffer.TexCoordIndex[0]);
-      _Gfx.TextureStage[CurStage].ColorOperation := g2tso_modulate;
-      if CurStage = 0 then
       begin
-        _Gfx.TextureStage[CurStage].ColorArgument0 := g2tsa_diffuse;
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
       end
       else
       begin
-        _Gfx.TextureStage[CurStage].ColorArgument0 := g2tsa_current;
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       end;
-      _Gfx.TextureStage[CurStage].ColorArgument1 := g2tsa_texture;
-      if CurStage = 0 then
-      begin
-        Inc(CurStage);
-        _Gfx.ActiveTexture := CurStage;
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, p^.Groups[g].ColorTexture.GetTexture);
-        _Gfx.TextureStage[CurStage].ColorOperation := g2tso_modulate;
-        _Gfx.TextureStage[CurStage].ColorArgument0 := g2tsa_current;
-        _Gfx.TextureStage[CurStage].ColorArgument1 := g2tsa_constant;
-        _Gfx.TextureStage[CurStage].ConstantColor := Ambient;
-      end;
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
+      _Gfx.TextureStage[0].ColorArgument0 := g2tsa_texture;
+      _Gfx.TextureStage[0].ColorArgument1 := g2tsa_constant;
+      _Gfx.TextureStage[0].ConstantColor := Ambient;
     end;
     glDrawElements(
       GL_TRIANGLES,
@@ -15251,12 +15203,6 @@ begin
   end;
   p^.IndexBuffer.Unbind;
   p^.VertexBuffer.Unbind;
-  _Gfx.ActiveTexture := 2;
-  glDisable(GL_TEXTURE_2D);
-  _Gfx.ActiveTexture := 1;
-  glDisable(GL_TEXTURE_2D);
-  _Gfx.ActiveTexture := 0;
-  glEnable(GL_TEXTURE_2D);
   _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
   _Gfx.TextureStage[0].ColorArgument0 := g2tsa_diffuse;
   _Gfx.TextureStage[0].ColorArgument1 := g2tsa_texture;
@@ -15270,7 +15216,7 @@ procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
   var PrevDepthEnable: Boolean;
   var Ambient: TG2Color;
 begin
-  Ambient := $ff404040;
+  Ambient := p^.Color;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
   glEnable(GL_CULL_FACE);
@@ -15312,13 +15258,68 @@ begin
 end;
 {$endif}
 {$elseif defined(G2Gfx_GLES)}
-procedure TG2RenderControlLegacyMesh.RenderGLES(const p: PBufferData);
+{$if defined(G2RM_FF)}
+procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
+  var PrevDepthEnable: Boolean;
+  var g: TG2IntS32;
+  var WV: TG2Mat;
+  var Ambient: TG2Color;
+begin
+  Ambient := p^.Color;
+  PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := True;
+  glEnable(GL_CULL_FACE);
+  glMatrixMode(GL_PROJECTION);
+  glLoadMatrixf(@p^.P);
+  glMatrixMode(GL_MODELVIEW);
+  WV := p^.W * p^.V;
+  glLoadMatrixf(@WV);
+  p^.VertexBuffer.Bind;
+  p^.IndexBuffer.Bind;
+  for g := 0 to p^.GroupCount - 1 do
+  begin
+    if p^.Groups[g].ColorTexture <> nil then
+    begin
+      _Gfx.ActiveTexture := 0;
+      glEnable(GL_TEXTURE_2D);
+      glBindTexture(GL_TEXTURE_2D, p^.Groups[g].ColorTexture.GetTexture);
+      if p^.Groups[g].ColorTexture.Usage = tu3D then
+      begin
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
+      end
+      else
+      begin
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      end;
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
+      _Gfx.TextureStage[0].ColorArgument0 := g2tsa_texture;
+      _Gfx.TextureStage[0].ColorArgument1 := g2tsa_constant;
+      _Gfx.TextureStage[0].ConstantColor := Ambient;
+    end;
+    glDrawElements(
+      GL_TRIANGLES,
+      p^.Groups[g].PrimCount * 3,
+      GL_UNSIGNED_SHORT,
+      PGLVoid(p^.Groups[g].IndexStart * 2)
+    );
+  end;
+  p^.IndexBuffer.Unbind;
+  p^.VertexBuffer.Unbind;
+  _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
+  _Gfx.TextureStage[0].ColorArgument0 := g2tsa_diffuse;
+  _Gfx.TextureStage[0].ColorArgument1 := g2tsa_texture;
+  glDisable(GL_CULL_FACE);
+  _Gfx.DepthEnable := PrevDepthEnable;
+end;
+{$else}
+procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
   var WVP: TG2Mat;
   var g, PrevMethod: TG2IntS32;
   var PrevDepthEnable: Boolean;
   var Ambient: TG2Color;
 begin
-  Ambient := $ff404040;
+  Ambient := p^.Color;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
   glEnable(GL_CULL_FACE);
@@ -15359,6 +15360,7 @@ begin
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$endif}
+{$endif}
 
 procedure TG2RenderControlLegacyMesh.CheckCapacity;
   var n, i: TG2IntS32;
@@ -15390,6 +15392,7 @@ begin
   begin
     CheckCapacity;
     pb := _Queue[_FillID^][_QueueCount[_FillID^]];
+    pb^.Color := Instance.Color;
     Geom := Instance.Mesh.Geoms[i];
     pb^.Skinned := Geom^.Skinned;
     pb^.V := V;
@@ -21371,6 +21374,7 @@ begin
   inherited Create;
   _Mesh := AMesh;
   _AutoComputeTransforms := True;
+  _Color := $ffffffff;
   SetLength(Materials, _Mesh.Materials.Count);
   for i := 0 to _Mesh.Materials.Count - 1 do
   Materials[i] := _Mesh.Materials[i];

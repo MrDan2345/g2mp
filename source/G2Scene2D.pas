@@ -380,7 +380,6 @@ type
     var _Color: TG2Color;
     var _BlendMode: TG2BlendMode;
     var _Visible: Boolean;
-    function GetLayer: TG2IntS32; inline;
     procedure SetLayer(const Value: TG2IntS32); inline;
     procedure SetPicture(const Value: TG2Picture); inline;
     procedure SetPosition(const Value: TG2Vec2); inline;
@@ -397,7 +396,7 @@ type
     class constructor CreateClass;
     class function GetName: String; override;
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
-    property Layer: TG2IntS32 read GetLayer write SetLayer;
+    property Layer: TG2IntS32 read _Layer write SetLayer;
     property Picture: TG2Picture read _Picture write SetPicture;
     property Width: TG2Float read _Width write _Width;
     property Height: TG2Float read _Height write _Height;
@@ -417,8 +416,13 @@ type
 
   TG2Scene2DComponentModel3D = class (TG2Scene2DComponent)
   private
-    var _Scene3D: TG2Scene3D;
-    var Mesh: TG2S3DMesh;
+    var _Mesh: TG2LegacyMesh;
+    var _Inst: TG2LegacyMeshInst;
+    var _RenderHook: TG2Scene2DRenderHook;
+    var _Scale: TG2Float;
+    var _Layer: TG2IntS32;
+    procedure SetMesh(const Value: TG2LegacyMesh);
+    procedure SetLayer(const Value: TG2IntS32); inline;
   protected
     procedure OnInitialize; override;
     procedure OnFinalize; override;
@@ -426,6 +430,11 @@ type
     procedure OnDetach; override;
     procedure OnRender(const Display: TG2Display2D);
   public
+    class constructor CreateClass;
+    class function GetName: String; override;
+    class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
+    property Mesh: TG2LegacyMesh read _Mesh write SetMesh;
+    property Layer: TG2IntS32 read _Layer write SetLayer;
     procedure Save(const dm: TG2DataManager); override;
     procedure Load(const dm: TG2DataManager); override;
   end;
@@ -2754,11 +2763,6 @@ end;
 //TG2Scene2D END
 
 //TG2Scene2DComponentSprite BEGIN
-function TG2Scene2DComponentSprite.GetLayer: TG2IntS32;
-begin
-  Result := _Layer;
-end;
-
 procedure TG2Scene2DComponentSprite.SetLayer(const Value: TG2IntS32);
 begin
   _Layer := Value;
@@ -2933,31 +2937,82 @@ end;
 //TG2Scene2DComponentSprite END
 
 //TG2Scene2DComponentModel3D BEGIN
+procedure TG2Scene2DComponentModel3D.SetMesh(const Value: TG2LegacyMesh);
+  var MeshBounds: TG2AABox;
+begin
+  if Value = _Mesh then Exit;
+  if _Mesh <> nil then
+  begin
+    _Inst.Free;
+    if _Mesh.IsShared then _Mesh.RefDec;
+  end;
+  _Mesh := Value;
+  if _Mesh <> nil then
+  begin
+    if _Mesh.IsShared then _Mesh.RefInc;
+    _Inst := _Mesh.NewInst;
+    MeshBounds := _Inst.AABox;
+    _Scale := 1 / G2Min(G2Min(MeshBounds.SizeX, MeshBounds.SizeY), MeshBounds.SizeZ);
+  end;
+end;
+
+procedure TG2Scene2DComponentModel3D.SetLayer(const Value: TG2IntS32);
+begin
+  _Layer := Value;
+  if _RenderHook <> nil then _RenderHook.Layer := _Layer;
+end;
+
 procedure TG2Scene2DComponentModel3D.OnInitialize;
 begin
   inherited OnInitialize;
-  _Scene3D := TG2Scene3D.Create;
+  _Mesh := nil;
+  _Inst := nil;
+  _Scale := 1;
 end;
 
 procedure TG2Scene2DComponentModel3D.OnFinalize;
 begin
-  _Scene3D.Free;
+  Mesh := nil;
   inherited OnFinalize;
 end;
 
 procedure TG2Scene2DComponentModel3D.OnAttach;
 begin
   inherited OnAttach;
+  _RenderHook := Scene.RenderHookAdd(@OnRender, _Layer);
 end;
 
 procedure TG2Scene2DComponentModel3D.OnDetach;
 begin
+  Scene.RenderHookRemove(_RenderHook);
   inherited OnDetach;
 end;
 
 procedure TG2Scene2DComponentModel3D.OnRender(const Display: TG2Display2D);
+  var VecC, VecY, VecX: TG2Vec2;
+  var W, V, P: TG2Mat;
 begin
+  if _Inst = nil then Exit;
+  W := G2MatRotationY(G2PiTime());
+  V := G2MatView(G2Vec3(-30, 30, -30), G2Vec3(0, 0, 0), G2Vec3(0, 1, 0));
+  P := G2MatOrth(g2.Params.Width, g2.Params.Height, 0.1, 1000) * G2MatTranslation(-0.5, -0.5, 0);
+  _Inst.Render(W, V, P);
+end;
 
+class constructor TG2Scene2DComponentModel3D.CreateClass;
+begin
+  SetLength(ComponentList, Length(ComponentList) + 1);
+  ComponentList[High(ComponentList)] := CG2Scene2DComponent(ClassType);
+end;
+
+class function TG2Scene2DComponentModel3D.GetName: String;
+begin
+  Result := 'Model 3D';
+end;
+
+class function TG2Scene2DComponentModel3D.CanAttach(const Node: TG2Scene2DEntity): Boolean;
+begin
+  Result := True;
 end;
 
 procedure TG2Scene2DComponentModel3D.Save(const dm: TG2DataManager);
