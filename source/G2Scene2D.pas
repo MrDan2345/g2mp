@@ -420,6 +420,16 @@ type
     var _Inst: TG2LegacyMeshInst;
     var _RenderHook: TG2Scene2DRenderHook;
     var _Scale: TG2Float;
+    var _Color: TG2Color;
+    var _CameraPitch: TG2Float;
+    var _CameraYaw: TG2Float;
+    var _CameraRoll: TG2Float;
+    var _CameraDistance: TG2Float;
+    var _CameraFOV: TG2Float;
+    var _CameraNear: TG2Float;
+    var _CameraFar: TG2Float;
+    var _CameraOrtho: Boolean;
+    var _CameraTarget: TG2Vec3;
     var _Layer: TG2IntS32;
     procedure SetMesh(const Value: TG2LegacyMesh);
     procedure SetLayer(const Value: TG2IntS32); inline;
@@ -434,7 +444,19 @@ type
     class function GetName: String; override;
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
     property Mesh: TG2LegacyMesh read _Mesh write SetMesh;
+    property Instance: TG2LegacyMeshInst read _Inst;
     property Layer: TG2IntS32 read _Layer write SetLayer;
+    property Scale: TG2Float read _Scale write _Scale;
+    property Color: TG2Color read _Color write _Color;
+    property CameraPitch: TG2Float read _CameraPitch write _CameraPitch;
+    property CameraYaw: TG2Float read _CameraYaw write _CameraYaw;
+    property CameraRoll: TG2Float read _CameraRoll write _CameraRoll;
+    property CameraDistance: TG2Float read _CameraDistance write _CameraDistance;
+    property CameraFOV: TG2Float read _CameraFOV write _CameraFOV;
+    property CameraNear: TG2Float read _CameraNear write _CameraNear;
+    property CameraFar: TG2Float read _CameraFar write _CameraFar;
+    property CameraOrtho: Boolean read _CameraOrtho write _CameraOrtho;
+    property CameraTarget: TG2Vec3 read _CameraTarget write _CameraTarget;
     procedure Save(const dm: TG2DataManager); override;
     procedure Load(const dm: TG2DataManager); override;
   end;
@@ -2952,7 +2974,8 @@ begin
     if _Mesh.IsShared then _Mesh.RefInc;
     _Inst := _Mesh.NewInst;
     MeshBounds := _Inst.AABox;
-    _Scale := 1 / G2Min(G2Min(MeshBounds.SizeX, MeshBounds.SizeY), MeshBounds.SizeZ);
+    _Scale := G2Max(G2Max(MeshBounds.SizeX, MeshBounds.SizeY), MeshBounds.SizeZ);
+    if _Scale > G2EPS2 then _Scale := 1 / _Scale else _Scale := 1;
   end;
 end;
 
@@ -2968,6 +2991,16 @@ begin
   _Mesh := nil;
   _Inst := nil;
   _Scale := 1;
+  _CameraYaw := 0;
+  _CameraPitch := 0;
+  _CameraRoll := 0;
+  _CameraTarget := G2Vec3(0, 0, 0);
+  _CameraOrtho := True;
+  _CameraNear := 0.01;
+  _CameraFar := 100;
+  _CameraDistance := 2;
+  _Color := $ffffffff;
+  _CameraFOV := Pi * 0.2;
 end;
 
 procedure TG2Scene2DComponentModel3D.OnFinalize;
@@ -2990,12 +3023,43 @@ end;
 
 procedure TG2Scene2DComponentModel3D.OnRender(const Display: TG2Display2D);
   var VecC, VecY, VecX: TG2Vec2;
-  var W, V, P: TG2Mat;
+  var W, V, P, Sc: TG2Mat;
+  var sw_rcp, sh_rcp, sy, cy, sp, cp, sp2, cp2: TG2Float;
+  var CamPos, Up: TG2Vec3;
 begin
   if _Inst = nil then Exit;
-  W := G2MatRotationY(G2PiTime());
-  V := G2MatView(G2Vec3(-30, 30, -30), G2Vec3(0, 0, 0), G2Vec3(0, 1, 0));
-  P := G2MatOrth(g2.Params.Width, g2.Params.Height, 0.1, 1000) * G2MatTranslation(-0.5, -0.5, 0);
+  G2SinCos(_CameraYaw - G2HalfPi, sy, cy);
+  G2SinCos(_CameraPitch, sp, cp);
+  sp2 := cp; cp2 := -sp;
+  CamPos := _CameraTarget + G2Vec3(cy * cp, sp, sy * cp) * _CameraDistance;
+  Up := G2Vec3(cy * cp2, sp2, sy * cp2);
+  VecC := Display.CoordToScreen(Owner.Position);
+  VecX := Display.CoordToScreen(Owner.Position + Owner.Rotation.AxisX);
+  VecY := Display.CoordToScreen(Owner.Position + Owner.Rotation.AxisY);
+  sw_rcp := 1 / g2.Params.WidthRT; sh_rcp := 1 / g2.Params.HeightRT;
+  VecC := (VecC * G2Vec2(sw_rcp, sh_rcp) - G2Vec2(0.5, 0.5)) * G2Vec2(2, -2);
+  VecX := (VecX * G2Vec2(sw_rcp, sh_rcp) - G2Vec2(0.5, 0.5)) * G2Vec2(2, -2);
+  VecY := (VecY * G2Vec2(sw_rcp, sh_rcp) - G2Vec2(0.5, 0.5)) * G2Vec2(2, -2);
+  VecX := VecX - VecC; VecY := VecY - VecC;
+  Sc := G2MatIdentity;
+  Sc.SetValue(
+    VecX.x, -VecY.x, 0, 0,
+    VecX.y, -VecY.y, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+  );
+  W := G2MatScaling(_Scale);
+  V := G2MatView(CamPos, _CameraTarget, Up) * G2MatRotationZ(_CameraRoll);
+  if _CameraOrtho then
+  begin
+    P := G2MatOrth(1, 1, _CameraNear, _CameraFar);
+  end
+  else
+  begin
+    P := G2MatProj(_CameraFOV, 1, _CameraNear, _CameraFar);
+  end;
+  P := Sc * P * G2MatTranslation(VecC.x, VecC.y, 0);
+  _Inst.Color := _Color;
   _Inst.Render(W, V, P);
 end;
 

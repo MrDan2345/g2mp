@@ -23,6 +23,7 @@ type
     var Scene: TG2Scene2D;
     var Entity: TG2Scene2DEntity;
     var Component: TG2Scene2DComponentModel3D;
+    var Sprite: TG2Scene2DComponentSprite;
     constructor Create;
     destructor Destroy; override;
     procedure Initialize;
@@ -84,10 +85,18 @@ begin
   Display := TG2Display2D.Create;
   Scene := TG2Scene2D.Create;
   Display.Position := G2Vec2(0, 0);
+  Display.Width := 10;
+  Display.Height := 10;
   Entity := TG2Scene2DEntity.Create(Scene);
   Component := TG2Scene2DComponentModel3D.Create(Scene);
   Component.Attach(Entity);
+  Component.Layer := 10;
   Component.Mesh := TG2LegacyMesh.SharedAsset('Zombie.g2m');
+  Sprite := TG2Scene2DComponentSprite.Create(Scene);
+  Sprite.Attach(Entity);
+  Sprite.Layer := 0;
+  Sprite.Picture := TG2Picture.SharedAsset('Zp.png', tu2D);
+  Sprite.Scale := 1;
 end;
 
 procedure TGame.Finalize;

@@ -2527,6 +2527,7 @@ type
     _VertColors: array of TG2Vec4;
     _VertTexCoords: array of TG2Vec2;
     {$endif}
+    _PrevDepthEnable: Boolean;
     procedure CheckCapacity;
     procedure Flush;
   public
@@ -2604,6 +2605,7 @@ type
     _VertColors: array of TG2Vec4;
     _Indices: array of TG2IntU16;
     {$endif}
+    _PrevDepthEnable: Boolean;
     procedure CheckCapacity;
     procedure Flush;
   public
@@ -2761,6 +2763,7 @@ type
     _VertTexCoords: array of TG2Vec2;
     _Indices: array of TG2IntU16;
     {$endif}
+    _PrevDepthEnable: Boolean;
     procedure CheckCapacity;
     procedure Flush;
   public
@@ -15057,18 +15060,10 @@ procedure TG2RenderControlLegacyMesh.RenderD3D9(const p: PBufferData);
   var Ambient: TG2Color;
 begin
   Ambient := p^.Color;
+  _Gfx.BlendMode := bmDisable;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
   _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
-  _Gfx.Device.SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-  _Gfx.Device.SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-  _Gfx.Device.SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
-  _Gfx.Device.SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-  _Gfx.Device.SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-  _Gfx.Device.SetSamplerState(1, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
-  _Gfx.Device.SetSamplerState(2, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-  _Gfx.Device.SetSamplerState(2, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-  _Gfx.Device.SetSamplerState(2, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
   _Gfx.Device.SetTransform(D3DTS_WORLD, p^.W);
   _Gfx.Device.SetTransform(D3DTS_VIEW, p^.V);
   _Gfx.Device.SetTransform(D3DTS_PROJECTION, p^.P);
@@ -15081,6 +15076,7 @@ begin
       _Gfx.Device.SetTexture(0, p^.Groups[g].ColorTexture.GetTexture);
       _Gfx.Device.SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
       _Gfx.Device.SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+      _Gfx.Device.SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
       _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
       _Gfx.TextureStage[0].ColorArgument0 := g2tsa_constant;
       _Gfx.TextureStage[0].ColorArgument1 := g2tsa_texture;
@@ -15108,6 +15104,7 @@ procedure TG2RenderControlLegacyMesh.RenderD3D9(const p: PBufferData);
   var Ambient: TG2Color;
 begin
   Ambient := p^.Color;
+  _Gfx.BlendMode := bmDisable;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
   _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
@@ -15163,6 +15160,7 @@ procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
   var Ambient: TG2Color;
 begin
   Ambient := p^.Color;
+  _Gfx.BlendMode := bmDisable;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
   glEnable(GL_CULL_FACE);
@@ -15573,6 +15571,8 @@ procedure TG2RenderControlPic2D.RenderBegin;
   var WVP: TG2Mat;
 {$endif}
 begin
+  _PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := False;
   _CurTexture := nil;
   _CurBlendMode := bmInvalid;
   _CurFilter := tfNone;
@@ -15624,6 +15624,7 @@ begin
   {$elseif defined(G2RM_SM2)}
 
   {$endif}
+  _Gfx.DepthEnable := _PrevDepthEnable;
 end;
 
 procedure TG2RenderControlPic2D.RenderData(const Data: Pointer);
@@ -15921,6 +15922,8 @@ procedure TG2RenderControlPrim2D.RenderBegin;
   var WVP: TG2Mat;
 {$endif}
 begin
+  _PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := False;
   _CurPoint := 0;
   _CurPrimType := ptNone;
   _CurBlendMode := bmInvalid;
@@ -15976,6 +15979,7 @@ begin
   glEnable(GL_TEXTURE_2D);
   {$endif}
   {$endif}
+  _Gfx.DepthEnable := _PrevDepthEnable;
 end;
 
 procedure TG2RenderControlPrim2D.RenderData(const Data: Pointer);
@@ -16529,6 +16533,8 @@ procedure TG2RenderControlPoly2D.RenderBegin;
   var WVP: TG2Mat;
 {$endif}
 begin
+  _PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := False;
   _CurPoint := 0;
   _CurIndex := 0;
   _CurPolyType := ptNone;
@@ -16581,6 +16587,7 @@ begin
   {$elseif defined(G2RM_SM2)}
 
   {$endif}
+  _Gfx.DepthEnable := _PrevDepthEnable;
 end;
 
 procedure TG2RenderControlPoly2D.RenderData(const Data: Pointer);

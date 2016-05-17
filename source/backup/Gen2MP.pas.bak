@@ -909,6 +909,125 @@ type
   PG2ShaderMethod = ^TG2ShaderMethod;
   {$endif}
 
+  {$if defined(G2RM_FF)}
+  TG2GfxTextureStageOperation = (
+    g2tso_disable = 0,
+    g2tso_select_arg0 = 1,
+    g2tso_modulate = 2,
+    g2tso_add = 3,
+    g2tso_add_signed = 4,
+    g2tso_subtract = 5,
+    g2tso_dot = 6,
+    g2tso_lerp = 7
+  );
+  TG2GfxTextureStageArgument = (
+    g2tsa_diffuse = 0,
+    g2tsa_current = 1,
+    g2tsa_texture = 2,
+    g2tsa_constant = 3
+  );
+  TG2GfxTextureStage = class
+  private
+    {$if defined(G2Gfx_D3D9)}
+    const StageOpRemap: array[0..7] of TG2IntU32 = (
+      D3DTOP_DISABLE,
+      D3DTOP_SELECTARG1,
+      D3DTOP_MODULATE,
+      D3DTOP_ADD,
+      D3DTOP_ADDSIGNED,
+      D3DTOP_SUBTRACT,
+      D3DTOP_DOTPRODUCT3,
+      D3DTOP_LERP
+    );
+    const StageArgRemap: array[0..3] of TG2IntU32 = (
+      D3DTA_DIFFUSE,
+      D3DTA_CURRENT,
+      D3DTA_TEXTURE,
+      D3DTA_CONSTANT
+    );
+    {$elseif defined(G2Gfx_OGL)}
+    const StageOpRemap: array[0..7] of TGLenum = (
+      GL_REPLACE,
+      GL_REPLACE,
+      GL_MODULATE,
+      GL_ADD,
+      GL_ADD_SIGNED,
+      GL_SUBTRACT,
+      GL_DOT3_RGB,
+      GL_INTERPOLATE
+    );
+    const StageArgRemap: array[0..3] of TGLenum = (
+      GL_PRIMARY_COLOR,
+      GL_PREVIOUS,
+      GL_TEXTURE,
+      GL_CONSTANT
+    );
+    {$elseif defined(G2Gfx_GLES)}
+    const StageOpRemap: array[0..7] of TGLenum = (
+      GL_REPLACE,
+      GL_REPLACE,
+      GL_MODULATE,
+      GL_ADD,
+      GL_ADD_SIGNED,
+      GL_SUBTRACT,
+      GL_DOT3_RGB,
+      GL_INTERPOLATE
+    );
+    const StageArgRemap: array[0..3] of TGLenum = (
+      GL_PRIMARY_COLOR,
+      GL_PREVIOUS,
+      GL_TEXTURE,
+      GL_CONSTANT
+    );
+    {$endif}
+  private
+    {$if defined(G2Gfx_D3D9)}
+    _Gfx: TG2GfxD3D9;
+    {$elseif defined(G2Gfx_OGL)}
+    _Gfx: TG2GfxOGL;
+    {$elseif defined(G2Gfx_GLES)}
+    _Gfx: TG2GfxGLES;
+    {$endif}
+    _Stage: TG2IntU8;
+    _ColorArgument: array[0..2] of TG2GfxTextureStageArgument;
+    _ColorOperation: TG2GfxTextureStageOperation;
+    _AlphaArgument: array[0..2] of TG2GfxTextureStageArgument;
+    _AlphaOperation: TG2GfxTextureStageOperation;
+    _ConstantColor: TG2Color;
+    {$if defined(G2Gfx_D3D9)}
+    _TexCoordIndex: TG2IntU8;
+    {$endif}
+    procedure SetColorArgument(const Index: TG2IntU8; const Argument: TG2GfxTextureStageArgument);
+    procedure SetAlphaArgument(const Index: TG2IntU8; const Argument: TG2GfxTextureStageArgument);
+    procedure SetColorOperation(const Value: TG2GfxTextureStageOperation);
+    procedure SetAlphaOperation(const Value: TG2GfxTextureStageOperation);
+    procedure SetColorArgument0(const Value: TG2GfxTextureStageArgument);
+    procedure SetColorArgument1(const Value: TG2GfxTextureStageArgument);
+    procedure SetColorArgument2(const Value: TG2GfxTextureStageArgument);
+    procedure SetAlphaArgument0(const Value: TG2GfxTextureStageArgument);
+    procedure SetAlphaArgument1(const Value: TG2GfxTextureStageArgument);
+    procedure SetAlphaArgument2(const Value: TG2GfxTextureStageArgument);
+    procedure SetConstantColor(const Value: TG2Color);
+    {$if defined(G2Gfx_D3D9)}
+    procedure SetTexCoordIndex(const Value: TG2IntU8);
+    {$endif}
+  public
+    constructor Create(const AStage: TG2IntU8);
+    property ColorOperation: TG2GfxTextureStageOperation read _ColorOperation write SetColorOperation;
+    property ColorArgument0: TG2GfxTextureStageArgument read _ColorArgument[0] write SetColorArgument0;
+    property ColorArgument1: TG2GfxTextureStageArgument read _ColorArgument[1] write SetColorArgument1;
+    property ColorArgument2: TG2GfxTextureStageArgument read _ColorArgument[2] write SetColorArgument2;
+    property AlphaOperation: TG2GfxTextureStageOperation read _AlphaOperation write SetAlphaOperation;
+    property AlphaArgument0: TG2GfxTextureStageArgument read _AlphaArgument[0] write SetAlphaArgument0;
+    property AlphaArgument1: TG2GfxTextureStageArgument read _AlphaArgument[1] write SetAlphaArgument1;
+    property AlphaArgument2: TG2GfxTextureStageArgument read _AlphaArgument[2] write SetAlphaArgument2;
+    property ConstantColor: TG2Color read _ConstantColor write SetConstantColor;
+    {$if defined(G2Gfx_D3D9)}
+    property TexCoordIndex: TG2IntU8 read _TexCoordIndex write SetTexCoordIndex;
+    {$endif}
+  end;
+  {$endif}
+
   TG2Gfx = class
   private
     _RenderControls: TG2QuickList;
@@ -930,7 +1049,9 @@ type
     _ControlPoly2D: TG2RenderControlPoly2D;
     _ControlPoly3D: TG2RenderControlPoly3D;
     _ControlManaged: TG2RenderControlManaged;
-    {$if defined(G2RM_SM2)}
+    {$if defined(G2RM_FF)}
+    _TextureStages: array[0..31] of TG2GfxTextureStage;
+    {$elseif defined(G2RM_SM2)}
     _Shaders: TG2QuickList;
     _ShaderMethod: PG2ShaderMethod;
     procedure AddShader(const Name: AnsiString; const Prog: Pointer; const ProgSize: TG2IntS32);
@@ -957,7 +1078,9 @@ type
     procedure SetDepthWriteEnable(const Value: Boolean); virtual; abstract;
     procedure SetVertexBuffer(const Value: TG2VertexBuffer); virtual; abstract;
     procedure SetIndexBuffer(const Value: TG2IndexBuffer); virtual; abstract;
-    {$if defined(G2RM_SM2)}
+    {$if defined(G2RM_FF)}
+    function GetTextureStage(const Stage: TG2IntU8): TG2GfxTextureStage; inline;
+    {$elseif defined(G2RM_SM2)}
     procedure SetShaderMethod(const Value: PG2ShaderMethod); virtual; abstract;
     {$endif}
     procedure Resize(const {%H-}OldWidth, {%H-}OldHeight, NewWidth, NewHeight: TG2IntS32); virtual;
@@ -981,7 +1104,9 @@ type
     property DepthWriteEnable: Boolean read _DepthWriteEnable write SetDepthWriteEnable;
     property VertexBuffer: TG2VertexBuffer read _VertexBuffer write SetVertexBuffer;
     property IndexBuffer: TG2IndexBuffer read _IndexBuffer write SetIndexBuffer;
-    {$if defined(G2RM_SM2)}
+    {$if defined(G2RM_FF)}
+    property TextureStage[const Index: TG2IntU8]: TG2GfxTextureStage read GetTextureStage;
+    {$elseif defined(G2RM_SM2)}
     property ShaderMethod: PG2ShaderMethod read _ShaderMethod write SetShaderMethod;
     {$endif}
     procedure Initialize; virtual;
@@ -1069,6 +1194,11 @@ type
     _ThreadID: TThreadID;
     _ThreadRef: TG2IntS32;
     {$endif}
+    {$if defined(G2RM_FF)}
+    _DummyTex: TGLuint;
+    {$endif}
+    _ActiveTexture: TG2IntU32;
+    _ClientActiveTexture: TG2IntU32;
   protected
     procedure SetRenderTarget(const Value: TG2Texture2DRT); override;
     procedure SetBlendMode(const Value: TG2BlendMode); override;
@@ -1078,6 +1208,10 @@ type
     procedure SetDepthWriteEnable(const Value: Boolean); override;
     procedure SetVertexBuffer(const Value: TG2VertexBuffer); override;
     procedure SetIndexBuffer(const Value: TG2IndexBuffer); override;
+    function GetActiveTexture: TG2IntU8; inline;
+    procedure SetActiveTexture(const Value: TG2IntU8); inline;
+    function GetClientActiveTexture: TG2IntU8; inline;
+    procedure SetClientActiveTexture(const Value: TG2IntU8); inline;
     {$if defined(G2RM_SM2)}
     procedure SetShaderMethod(const Value: PG2ShaderMethod); override;
     {$endif}
@@ -1090,6 +1224,11 @@ type
     property Context: GLXContext read _Context;
     {$elseif defined(G2Target_OSX)}
     property Context: TAGLContext read _Context;
+    {$endif}
+    property ActiveTexture: TG2IntU8 read GetActiveTexture write SetActiveTexture;
+    property ClientActiveTexture: TG2IntU8 read GetClientActiveTexture write SetClientActiveTexture;
+    {$if defined(G2RM_FF)}
+    property DummyTex: TGLuint read _DummyTex;
     {$endif}
     procedure Initialize; override;
     procedure Finalize; override;
@@ -2282,6 +2421,8 @@ type
   private
     type TBufferData = record
       Skinned: Boolean;
+      W, V, P: TG2Mat;
+      Color: TG2Color;
       VertexBuffer: TG2VertexBuffer;
       IndexBuffer: TG2IndexBuffer;
       {$if defined(G2RM_SM2)}
@@ -2386,6 +2527,7 @@ type
     _VertColors: array of TG2Vec4;
     _VertTexCoords: array of TG2Vec2;
     {$endif}
+    _PrevDepthEnable: Boolean;
     procedure CheckCapacity;
     procedure Flush;
   public
@@ -2463,6 +2605,7 @@ type
     _VertColors: array of TG2Vec4;
     _Indices: array of TG2IntU16;
     {$endif}
+    _PrevDepthEnable: Boolean;
     procedure CheckCapacity;
     procedure Flush;
   public
@@ -2620,6 +2763,7 @@ type
     _VertTexCoords: array of TG2Vec2;
     _Indices: array of TG2IntU16;
     {$endif}
+    _PrevDepthEnable: Boolean;
     procedure CheckCapacity;
     procedure Flush;
   public
@@ -3299,7 +3443,7 @@ type
     property Geoms[const Index: TG2IntS32]: PG2S3DMeshGeom read GetGeom;
     property Anims[const Index: TG2IntS32]: PG2S3DMeshAnim read GetAnim;
     property Materials[const Index: TG2IntS32]: PG2S3DMeshMaterial read GetMaterial;
-    constructor Create; override;
+    constructor Create;
     destructor Destroy; override;
     procedure Load(const dm: TG2DataManager); overload;
     procedure Load(const MeshData: TG2MeshData); overload;
@@ -3633,7 +3777,8 @@ type
 
   TG2LegacyMeshInstSkin = object
     {$if defined(G2RM_FF)}
-    VB: TG2VertexBuffer;
+    VB: array[0..1] of TG2VertexBuffer;
+    VBReady: array[0..1] of Boolean;
     {$endif}
     Transforms: array of TG2Mat;
   end;
@@ -3645,12 +3790,16 @@ type
     _RootNodes: TG2QuickListIntS32;
     _Skins: array of PG2LegacyMeshInstSkin;
     _AutoComputeTransforms: Boolean;
+    _Color: TG2Color;
     function GetOBBox: TG2Box;
     function GetGeomBBox(const Index: TG2IntS32): TG2Box;
     function GetSkinTransforms(const Index: TG2IntS32): PG2Mat; inline;
     function GetAABox: TG2AABox;
     function GetSkin(const Index: TG2IntS32): PG2LegacyMeshInstSkin; inline;
     procedure ComputeSkinTransforms;
+    {$if defined(G2RM_FF)}
+    procedure UpdateSkin(const GeomID, QueueID: TG2IntS32);
+    {$endif}
   public
     var Transforms: array of record
       TransformDef: TG2Mat;
@@ -3662,6 +3811,7 @@ type
     property OBBox: TG2Box read GetOBBox;
     property AABox: TG2AABox read GetAABox;
     property AutoComputeTransforms: Boolean read _AutoComputeTransforms write _AutoComputeTransforms;
+    property Color: TG2Color read _Color write _Color;
     property GeomBBox[const Index: TG2IntS32]: TG2Box read GetGeomBBox;
     property Skins[const Index: TG2IntS32]: PG2LegacyMeshInstSkin read GetSkin;
     property SkinTransforms[const Index: TG2IntS32]: PG2Mat read GetSkinTransforms;
@@ -7263,6 +7413,255 @@ begin
 end;
 {$endif}
 
+{$if defined(G2RM_FF)}
+//TG2GfxTextureStage BEGIN
+procedure TG2GfxTextureStage.SetColorArgument(const Index: TG2IntU8; const Argument: TG2GfxTextureStageArgument);
+{$if defined(G2Gfx_D3D9)}
+  const ArgIndexRemap: array[0..2] of TD3DTextureStageStateType = (
+    D3DTSS_COLORARG1,
+    D3DTSS_COLORARG2,
+    D3DTSS_COLORARG0
+  );
+begin
+  if _ColorArgument[Index] = Argument then Exit;
+  _ColorArgument[Index] := Argument;
+  _Gfx.Device.SetTextureStageState(_Stage, ArgIndexRemap[Index], StageArgRemap[TG2IntU8(_ColorArgument[Index])]);
+end;
+{$elseif defined(G2Gfx_OGL)}
+  const ArgIndexRemap: array[0..2] of TGLenum = (
+    GL_SOURCE0_RGB,
+    GL_SOURCE1_RGB,
+    GL_SOURCE2_RGB
+  );
+  const OperandIndexRemap: array[0..2] of TGLenum = (
+    GL_OPERAND0_RGB,
+    GL_OPERAND1_RGB,
+    GL_OPERAND2_RGB
+  );
+begin
+  if _ColorArgument[Index] = Argument then Exit;
+  _ColorArgument[Index] := Argument;
+  glTexEnvi(GL_TEXTURE_ENV, ArgIndexRemap[Index], StageArgRemap[TG2IntU8(_ColorArgument[Index])]);
+  glTexEnvi(GL_TEXTURE_ENV, OperandIndexRemap[Index], GL_SRC_COLOR);
+end;
+{$elseif defined(G2Gfx_GLES)}
+  const ArgIndexRemap: array[0..2] of TGLenum = (
+    GL_SOURCE0_RGB,
+    GL_SOURCE1_RGB,
+    GL_SOURCE2_RGB
+  );
+  const OperandIndexRemap: array[0..2] of TGLenum = (
+    GL_OPERAND0_RGB,
+    GL_OPERAND1_RGB,
+    GL_OPERAND2_RGB
+  );
+begin
+  if _ColorArgument[Index] = Argument then Exit;
+  _ColorArgument[Index] := Argument;
+  glTexEnvi(GL_TEXTURE_ENV, ArgIndexRemap[Index], StageArgRemap[TG2IntU8(_ColorArgument[Index])]);
+  glTexEnvi(GL_TEXTURE_ENV, OperandIndexRemap[Index], GL_SRC_COLOR);
+end;
+{$endif}
+
+procedure TG2GfxTextureStage.SetAlphaArgument(const Index: TG2IntU8; const Argument: TG2GfxTextureStageArgument);
+{$if defined(G2Gfx_D3D9)}
+  const ArgIndexRemap: array[0..2] of TD3DTextureStageStateType = (
+    D3DTSS_ALPHAARG1,
+    D3DTSS_ALPHAARG2,
+    D3DTSS_ALPHAARG0
+  );
+begin
+  if _AlphaArgument[Index] = Argument then Exit;
+  _AlphaArgument[Index] := Argument;
+  _Gfx.Device.SetTextureStageState(_Stage, ArgIndexRemap[Index], StageArgRemap[TG2IntU8(_AlphaArgument[Index])]);
+end;
+{$elseif defined(G2Gfx_OGL)}
+  const ArgIndexRemap: array[0..2] of TGLenum = (
+    GL_SOURCE0_ALPHA,
+    GL_SOURCE1_ALPHA,
+    GL_SOURCE2_ALPHA
+  );
+  const OperandIndexRemap: array[0..2] of TGLenum = (
+    GL_OPERAND0_ALPHA,
+    GL_OPERAND1_ALPHA,
+    GL_OPERAND2_ALPHA
+  );
+begin
+  if _AlphaArgument[Index] = Argument then Exit;
+  _AlphaArgument[Index] := Argument;
+  glTexEnvi(GL_TEXTURE_ENV, ArgIndexRemap[Index], StageArgRemap[TG2IntU8(_AlphaArgument[Index])]);
+  glTexEnvi(GL_TEXTURE_ENV, OperandIndexRemap[Index], GL_SRC_ALPHA);
+end;
+{$elseif defined(G2Gfx_GLES)}
+  const ArgIndexRemap: array[0..2] of TGLenum = (
+    GL_SOURCE0_ALPHA,
+    GL_SOURCE1_ALPHA,
+    GL_SOURCE2_ALPHA
+  );
+  const OperandIndexRemap: array[0..2] of TGLenum = (
+    GL_OPERAND0_ALPHA,
+    GL_OPERAND1_ALPHA,
+    GL_OPERAND2_ALPHA
+  );
+begin
+  if _AlphaArgument[Index] = Argument then Exit;
+  _AlphaArgument[Index] := Argument;
+  glTexEnvi(GL_TEXTURE_ENV, ArgIndexRemap[Index], StageArgRemap[TG2IntU8(_AlphaArgument[Index])]);
+  glTexEnvi(GL_TEXTURE_ENV, OperandIndexRemap[Index], GL_SRC_ALPHA);
+end;
+{$endif}
+
+procedure TG2GfxTextureStage.SetColorOperation(const Value: TG2GfxTextureStageOperation);
+{$if defined(G2Gfx_D3D9)}
+begin
+  if Value = _ColorOperation then Exit;
+  _ColorOperation := Value;
+  _Gfx.Device.SetTextureStageState(_Stage, D3DTSS_COLOROP, StageOpRemap[TG2IntU8(_ColorOperation)]);
+end;
+{$elseif defined(G2Gfx_OGL)}
+begin
+  if Value = _ColorOperation then Exit;
+  _ColorOperation := Value;
+  _Gfx.ActiveTexture := _Stage;
+  glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, StageOpRemap[TG2IntU8(_ColorOperation)]);
+  if _AlphaOperation = g2tso_disable then
+  begin
+    glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, StageOpRemap[TG2IntU8(_ColorOperation)]);
+  end;
+  if _ColorOperation = g2tso_disable then glDisable(GL_TEXTURE_2D);
+end;
+{$elseif defined(G2Gfx_GLES)}
+begin
+  if Value = _ColorOperation then Exit;
+  _ColorOperation := Value;
+  _Gfx.ActiveTexture := _Stage;
+  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+  glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, StageOpRemap[TG2IntU8(_ColorOperation)]);
+  if _ColorOperation = g2tso_disable then glDisable(GL_TEXTURE_2D);
+end;
+{$endif}
+
+procedure TG2GfxTextureStage.SetAlphaOperation(const Value: TG2GfxTextureStageOperation);
+{$if defined(G2Gfx_D3D9)}
+begin
+  if Value = _AlphaOperation then Exit;
+  _AlphaOperation := Value;
+  _Gfx.Device.SetTextureStageState(_Stage, D3DTSS_ALPHAOP, StageOpRemap[TG2IntU8(_ColorOperation)]);
+end;
+{$elseif defined(G2Gfx_OGL)}
+begin
+  if Value = _AlphaOperation then Exit;
+  _AlphaOperation := Value;
+  _Gfx.ActiveTexture := _Stage;
+  if _AlphaOperation = g2tso_disable then
+  begin
+    glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, StageOpRemap[TG2IntU8(_ColorOperation)]);
+  end
+  else
+  begin
+    glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, StageOpRemap[TG2IntU8(_AlphaOperation)]);
+  end;
+end;
+{$elseif defined(G2Gfx_GLES)}
+begin
+  if Value = _AlphaOperation then Exit;
+  _AlphaOperation := Value;
+  _Gfx.ActiveTexture := _Stage;
+  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+  if _AlphaOperation = g2tso_disable then
+  begin
+    glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, StageOpRemap[TG2IntU8(_ColorOperation)]);
+  end
+  else
+  begin
+    glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, StageOpRemap[TG2IntU8(_AlphaOperation)]);
+  end;
+end;
+{$endif}
+
+procedure TG2GfxTextureStage.SetColorArgument0(const Value: TG2GfxTextureStageArgument);
+begin
+  SetColorArgument(0, Value);
+end;
+
+procedure TG2GfxTextureStage.SetColorArgument1(const Value: TG2GfxTextureStageArgument);
+begin
+  SetColorArgument(1, Value);
+end;
+
+procedure TG2GfxTextureStage.SetColorArgument2(const Value: TG2GfxTextureStageArgument);
+begin
+  SetColorArgument(2, Value);
+end;
+
+procedure TG2GfxTextureStage.SetAlphaArgument0(const Value: TG2GfxTextureStageArgument);
+begin
+  SetAlphaArgument(0, Value);
+end;
+
+procedure TG2GfxTextureStage.SetAlphaArgument1(const Value: TG2GfxTextureStageArgument);
+begin
+  SetAlphaArgument(1, Value);
+end;
+
+procedure TG2GfxTextureStage.SetAlphaArgument2(const Value: TG2GfxTextureStageArgument);
+begin
+  SetAlphaArgument(2, Value);
+end;
+
+procedure TG2GfxTextureStage.SetConstantColor(const Value: TG2Color);
+{$if defined(G2Gfx_D3D9)}
+begin
+  if _ConstantColor = Value then Exit;
+  _ConstantColor := Value;
+  _Gfx.Device.SetTextureStageState(_Stage, D3DTSS_CONSTANT, _ConstantColor);
+end;
+{$elseif defined(G2Gfx_OGL)}
+  var v: TG2Vec4;
+begin
+  if _ConstantColor = Value then Exit;
+  _ConstantColor := Value;
+  v := _ConstantColor;
+  _Gfx.ActiveTexture := _Stage;
+  glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, @v);
+end;
+{$elseif defined(G2Gfx_GLES)}
+  var v: TG2Vec4;
+begin
+  if _ConstantColor = Value then Exit;
+  _ConstantColor := Value;
+  v := _ConstantColor;
+  _Gfx.ActiveTexture := _Stage;
+  glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, @v);
+end;
+{$endif}
+
+{$if defined(G2Gfx_D3D9)}
+procedure TG2GfxTextureStage.SetTexCoordIndex(const Value: TG2IntU8);
+begin
+  if _TexCoordIndex = Value then Exit;
+  _TexCoordIndex := Value;
+  _Gfx.Device.SetTextureStageState(_Stage, D3DTSS_TEXCOORDINDEX, _TexCoordIndex);
+end;
+{$endif}
+
+constructor TG2GfxTextureStage.Create(const AStage: TG2IntU8);
+begin
+  inherited Create;
+  {$if defined(G2Gfx_D3D9)}
+  _Gfx := TG2GfxD3D9(g2.Gfx);
+  _TexCoordIndex := _Stage;
+  {$elseif defined(G2Gfx_OGL)}
+  _Gfx := TG2GfxOGL(g2.Gfx);
+  {$elseif defined(G2Gfx_GLES)}
+  _Gfx := TG2GfxGLES(g2.Gfx);
+  {$endif}
+  _Stage := AStage;
+  _ConstantColor := $0;
+end;
+//TG2GfxTextureStage END
+{$endif}
+
 function TG2Gfx.AddRenderControl(const ControlClass: CG2RenderControl): TG2RenderControl;
 begin
   Result := ControlClass.Create;
@@ -7289,6 +7688,13 @@ begin
   CurRenderControl.RenderEnd;
 end;
 
+{$if defined(G2RM_FF)}
+function TG2Gfx.GetTextureStage(const Stage: TG2IntU8): TG2GfxTextureStage;
+begin
+  Result := _TextureStages[Stage];
+end;
+{$endif}
+
 procedure TG2Gfx.Resize(const OldWidth, OldHeight, NewWidth, NewHeight: TG2IntS32);
 begin
   if _RenderTarget = nil then
@@ -7299,6 +7705,9 @@ begin
 end;
 
 procedure TG2Gfx.Initialize;
+  {$if defined(G2RM_FF)}
+  var i: TG2IntS32;
+  {$endif}
 begin
   {$if defined(G2RM_SM2)}
   InitShaders;
@@ -7314,6 +7723,12 @@ begin
   _ControlPoly2D := TG2RenderControlPoly2D(AddRenderControl(TG2RenderControlPoly2D));
   _ControlPoly3D := TG2RenderControlPoly3D(AddRenderControl(TG2RenderControlPoly3D));
   _ControlManaged := TG2RenderControlManaged(AddRenderControl(TG2RenderControlManaged));
+  {$if defined(G2RM_FF)}
+  for i := 0 to High(_TextureStages) do
+  begin
+    _TextureStages[i] := TG2GfxTextureStage.Create(i);
+  end;
+  {$endif}
   _RenderTarget := nil;
   _DepthEnable := False;
   _DepthWriteEnable := True;
@@ -7330,6 +7745,12 @@ procedure TG2Gfx.Finalize;
 begin
   TG2Asset.UnlockQueue(0);
   TG2Asset.UnlockQueue(1);
+  {$if defined(G2RM_FF)}
+  for i := 0 to High(_TextureStages) do
+  begin
+    _TextureStages[i].Free;
+  end;
+  {$endif}
   for i := 0 to _RenderControls.Count - 1 do
   TG2RenderControl(_RenderControls[i]).Free;
   {$if defined(G2RM_SM2)}
@@ -7899,6 +8320,34 @@ begin
   if _IndexBuffer <> nil then _IndexBuffer.Bind;
 end;
 
+function TG2GfxOGL.GetActiveTexture: TG2IntU8;
+begin
+  Result := _ActiveTexture - GL_TEXTURE0;
+end;
+
+procedure TG2GfxOGL.SetActiveTexture(const Value: TG2IntU8);
+  var NewActiveTexture: TGLenum;
+begin
+  NewActiveTexture := GL_TEXTURE0 + Value;
+  if NewActiveTexture = _ActiveTexture then Exit;
+  _ActiveTexture := NewActiveTexture;
+  glActiveTexture(_ActiveTexture);
+end;
+
+function TG2GfxOGL.GetClientActiveTexture: TG2IntU8;
+begin
+  Result := _ClientActiveTexture - GL_TEXTURE0;
+end;
+
+procedure TG2GfxOGL.SetClientActiveTexture(const Value: TG2IntU8);
+  var NewActiveTexture: TGLenum;
+begin
+  NewActiveTexture := GL_TEXTURE0 + Value;
+  if NewActiveTexture = _ClientActiveTexture then Exit;
+  _ClientActiveTexture := NewActiveTexture;
+  glClientActiveTexture(_ClientActiveTexture);
+end;
+
 {$if defined(G2RM_SM2)}
 procedure TG2GfxOGL.SetShaderMethod(const Value: PG2ShaderMethod);
 begin
@@ -7977,6 +8426,11 @@ end;
 procedure TG2GfxOGL.Finalize;
 begin
   inherited Finalize;
+  {$if defined(G2RM_FF)}
+  ThreadAttach;
+  glDeleteTextures(1, @_DummyTex);
+  ThreadDetach;
+  {$endif}
   {$if not defined(G2Threading)}
   {$if defined(G2Target_Windows)}
   wglMakeCurrent(0, 0);
@@ -8062,6 +8516,9 @@ begin
 end;
 
 procedure TG2GfxOGL.SetDefaults;
+  {$if defined(G2RM_FF)}
+  var TexData: TG2Color;
+  {$endif}
 begin
   if _RenderTarget = nil then
   glViewport(0, 0, g2.Params.Width, g2.Params.Height)
@@ -8070,6 +8527,30 @@ begin
   glClearColor(0.5, 0.5, 0.5, 1);
   glClearDepth(1);
   glEnable(GL_TEXTURE_2D);
+  {$if defined(G2RM_FF)}
+  TexData := $ffffffff;
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  glGenTextures(1, @_DummyTex);
+  glBindTexture(GL_TEXTURE_2D, _DummyTex);
+  glTexImage2D(
+    GL_TEXTURE_2D,
+    0,
+    GL_RGBA,
+    1,
+    1,
+    0,
+    GL_RGBA,
+    GL_UNSIGNED_BYTE,
+    @TexData
+  );
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+  {$endif}
   glShadeModel(GL_SMOOTH);
   glCullFace(GL_FRONT);
   glDisable(GL_CULL_FACE);
@@ -8079,6 +8560,8 @@ begin
   _BlendMode := bmInvalid;
   BlendMode := bmNormal;
   _EnableMipMaps := False;
+  _ActiveTexture := GL_TEXTURE0;
+  _ClientActiveTexture := GL_TEXTURE0;
 end;
 
 procedure TG2GfxOGL.ThreadAttach;
@@ -9383,6 +9866,7 @@ end;
 //TG2Atlas BEGIN
 constructor TG2Atlas.Create;
 begin
+  inherited Create;
   Pages.Clear;
   Frames.Clear;
 end;
@@ -9390,6 +9874,7 @@ end;
 destructor TG2Atlas.Destroy;
 begin
   Clear;
+  inherited Destroy;
 end;
 
 class function TG2Atlas.SharedAsset(const SharedAssetName: String): TG2Atlas;
@@ -13974,7 +14459,7 @@ begin
   shid := Param(Name);
   if shid > -1 then
   begin
-    glActiveTexture(GL_TEXTURE0 + Stage);
+    _Gfx.ActiveTexture := Stage;
     glBindTexture(GL_TEXTURE_2D, Texture.BaseTexture);
     glUniform1i(shid, Stage);
   end;
@@ -14568,20 +15053,311 @@ end;
 
 //TG2RenderControlLegacyMesh BEGIN
 {$if defined(G2Gfx_D3D9)}
+{$if defined(G2RM_FF)}
 procedure TG2RenderControlLegacyMesh.RenderD3D9(const p: PBufferData);
+  var PrevDepthEnable: Boolean;
+  var g, CurStage: TG2IntS32;
+  var Ambient: TG2Color;
 begin
-
+  Ambient := p^.Color;
+  _Gfx.BlendMode := bmDisable;
+  PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := True;
+  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+  _Gfx.Device.SetTransform(D3DTS_WORLD, p^.W);
+  _Gfx.Device.SetTransform(D3DTS_VIEW, p^.V);
+  _Gfx.Device.SetTransform(D3DTS_PROJECTION, p^.P);
+  p^.VertexBuffer.Bind;
+  p^.IndexBuffer.Bind;
+  for g := 0 to p^.GroupCount - 1 do
+  begin
+    if p^.Groups[g].ColorTexture <> nil then
+    begin
+      _Gfx.Device.SetTexture(0, p^.Groups[g].ColorTexture.GetTexture);
+      _Gfx.Device.SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+      _Gfx.Device.SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+      _Gfx.Device.SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+      //_Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
+      //_Gfx.TextureStage[0].ColorArgument0 := g2tsa_constant;
+      //_Gfx.TextureStage[0].ColorArgument1 := g2tsa_texture;
+      //_Gfx.TextureStage[0].ConstantColor := Ambient;
+    end;
+    _Gfx.Device.DrawIndexedPrimitive(
+      D3DPT_TRIANGLELIST,
+      0,
+      p^.Groups[g].VertexStart, p^.Groups[g].VertexCount,
+      p^.Groups[g].IndexStart, p^.Groups[g].PrimCount
+    );
+  end;
+  p^.IndexBuffer.Unbind;
+  p^.VertexBuffer.Unbind;
+  _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
+  _Gfx.TextureStage[0].ColorArgument0 := g2tsa_diffuse;
+  _Gfx.TextureStage[0].ColorArgument1 := g2tsa_texture;
+  _Gfx.DepthEnable := PrevDepthEnable;
 end;
+{$else}
+procedure TG2RenderControlLegacyMesh.RenderD3D9(const p: PBufferData);
+  var WVP: TG2Mat;
+  var g, PrevMethod: TG2IntS32;
+  var PrevDepthEnable: Boolean;
+  var Ambient: TG2Color;
+begin
+  Ambient := p^.Color;
+  _Gfx.BlendMode := bmDisable;
+  PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := True;
+  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+  _Gfx.Device.SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+  _Gfx.Device.SetSamplerState(1, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+  p^.VertexBuffer.Bind;
+  p^.IndexBuffer.Bind;
+  WVP := p^.W * p^.V * p^.P;
+  PrevMethod := -1;
+  for g := 0 to p^.GroupCount - 1 do
+  begin
+    if PrevMethod <> p^.Groups[g].Method then
+    begin
+      _ShaderGroup.MethodIndex := p^.Groups[g].Method;
+      _ShaderGroup.UniformMatrix4x4('WVP', WVP);
+      _ShaderGroup.UniformFloat4('LightAmbient', Ambient);
+      if p^.Skinned then
+      begin
+        _ShaderGroup.UniformMatrix4x3Arr('SkinPallete', @p^.SkinPallete[0], 0, p^.BoneCount);
+      end;
+    end;
+    if p^.Groups[g].ColorTexture <> nil then
+    begin
+      _ShaderGroup.Sampler('Tex0', p^.Groups[g].ColorTexture, 0);
+    end;
+    if p^.Groups[g].LightTexture <> nil then
+    begin
+      _ShaderGroup.Sampler('Tex1', p^.Groups[g].LightTexture, 1);
+    end;
+    _Gfx.Device.DrawIndexedPrimitive(
+      D3DPT_TRIANGLELIST,
+      0,
+      p^.Groups[g].VertexStart, p^.Groups[g].VertexCount,
+      p^.Groups[g].IndexStart, p^.Groups[g].PrimCount
+    );
+  end;
+  p^.IndexBuffer.Unbind;
+  p^.VertexBuffer.Unbind;
+  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+  _Gfx.DepthEnable := PrevDepthEnable;
+end;
+{$endif}
 {$elseif defined(G2Gfx_OGL)}
+{$if defined(G2RM_FF)}
 procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
+  var PrevDepthEnable: Boolean;
+  var g: TG2IntS32;
+  var WV: TG2Mat;
+  var Ambient: TG2Color;
 begin
-
+  Ambient := p^.Color;
+  _Gfx.BlendMode := bmDisable;
+  PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := True;
+  glEnable(GL_CULL_FACE);
+  glMatrixMode(GL_PROJECTION);
+  glLoadMatrixf(@p^.P);
+  glMatrixMode(GL_MODELVIEW);
+  WV := p^.W * p^.V;
+  glLoadMatrixf(@WV);
+  p^.VertexBuffer.Bind;
+  p^.IndexBuffer.Bind;
+  for g := 0 to p^.GroupCount - 1 do
+  begin
+    if p^.Groups[g].ColorTexture <> nil then
+    begin
+      _Gfx.ActiveTexture := 0;
+      glEnable(GL_TEXTURE_2D);
+      glBindTexture(GL_TEXTURE_2D, p^.Groups[g].ColorTexture.GetTexture);
+      if p^.Groups[g].ColorTexture.Usage = tu3D then
+      begin
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
+      end
+      else
+      begin
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      end;
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
+      _Gfx.TextureStage[0].ColorArgument0 := g2tsa_texture;
+      _Gfx.TextureStage[0].ColorArgument1 := g2tsa_constant;
+      _Gfx.TextureStage[0].ConstantColor := Ambient;
+    end;
+    glDrawElements(
+      GL_TRIANGLES,
+      p^.Groups[g].PrimCount * 3,
+      GL_UNSIGNED_SHORT,
+      PGLVoid(p^.Groups[g].IndexStart * 2)
+    );
+  end;
+  p^.IndexBuffer.Unbind;
+  p^.VertexBuffer.Unbind;
+  _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
+  _Gfx.TextureStage[0].ColorArgument0 := g2tsa_diffuse;
+  _Gfx.TextureStage[0].ColorArgument1 := g2tsa_texture;
+  glDisable(GL_CULL_FACE);
+  _Gfx.DepthEnable := PrevDepthEnable;
 end;
+{$else}
+procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
+  var WVP: TG2Mat;
+  var g, PrevMethod: TG2IntS32;
+  var PrevDepthEnable: Boolean;
+  var Ambient: TG2Color;
+begin
+  Ambient := p^.Color;
+  PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := True;
+  glEnable(GL_CULL_FACE);
+  p^.VertexBuffer.Bind;
+  p^.IndexBuffer.Bind;
+  WVP := p^.W * p^.V * p^.P;
+  PrevMethod := -1;
+  for g := 0 to p^.GroupCount - 1 do
+  begin
+    if PrevMethod <> p^.Groups[g].Method then
+    begin
+      _ShaderGroup.MethodIndex := p^.Groups[g].Method;
+      _ShaderGroup.UniformMatrix4x4('WVP', WVP);
+      _ShaderGroup.UniformFloat4('LightAmbient', Ambient);
+      if p^.Skinned then
+      begin
+        _ShaderGroup.UniformMatrix4x3Arr('SkinPallete', @p^.SkinPallete[0], 0, p^.BoneCount);
+      end;
+    end;
+    if p^.Groups[g].ColorTexture <> nil then
+    begin
+      _ShaderGroup.Sampler('Tex0', p^.Groups[g].ColorTexture, 0);
+    end;
+    if p^.Groups[g].LightTexture <> nil then
+    begin
+      _ShaderGroup.Sampler('Tex1', p^.Groups[g].LightTexture, 1);
+    end;
+    glDrawElements(
+      GL_TRIANGLES,
+      p^.Groups[g].PrimCount * 3,
+      GL_UNSIGNED_SHORT,
+      PGLVoid(p^.Groups[g].IndexStart * 2)
+    );
+  end;
+  p^.IndexBuffer.Unbind;
+  p^.VertexBuffer.Unbind;
+  glDisable(GL_CULL_FACE);
+  _Gfx.DepthEnable := PrevDepthEnable;
+end;
+{$endif}
 {$elseif defined(G2Gfx_GLES)}
-procedure TG2RenderControlLegacyMesh.RenderGLES(const p: PBufferData);
+{$if defined(G2RM_FF)}
+procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
+  var PrevDepthEnable: Boolean;
+  var g: TG2IntS32;
+  var WV: TG2Mat;
+  var Ambient: TG2Color;
 begin
-
+  Ambient := p^.Color;
+  PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := True;
+  glEnable(GL_CULL_FACE);
+  glMatrixMode(GL_PROJECTION);
+  glLoadMatrixf(@p^.P);
+  glMatrixMode(GL_MODELVIEW);
+  WV := p^.W * p^.V;
+  glLoadMatrixf(@WV);
+  p^.VertexBuffer.Bind;
+  p^.IndexBuffer.Bind;
+  for g := 0 to p^.GroupCount - 1 do
+  begin
+    if p^.Groups[g].ColorTexture <> nil then
+    begin
+      _Gfx.ActiveTexture := 0;
+      glEnable(GL_TEXTURE_2D);
+      glBindTexture(GL_TEXTURE_2D, p^.Groups[g].ColorTexture.GetTexture);
+      if p^.Groups[g].ColorTexture.Usage = tu3D then
+      begin
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
+      end
+      else
+      begin
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      end;
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
+      _Gfx.TextureStage[0].ColorArgument0 := g2tsa_texture;
+      _Gfx.TextureStage[0].ColorArgument1 := g2tsa_constant;
+      _Gfx.TextureStage[0].ConstantColor := Ambient;
+    end;
+    glDrawElements(
+      GL_TRIANGLES,
+      p^.Groups[g].PrimCount * 3,
+      GL_UNSIGNED_SHORT,
+      PGLVoid(p^.Groups[g].IndexStart * 2)
+    );
+  end;
+  p^.IndexBuffer.Unbind;
+  p^.VertexBuffer.Unbind;
+  _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
+  _Gfx.TextureStage[0].ColorArgument0 := g2tsa_diffuse;
+  _Gfx.TextureStage[0].ColorArgument1 := g2tsa_texture;
+  glDisable(GL_CULL_FACE);
+  _Gfx.DepthEnable := PrevDepthEnable;
 end;
+{$else}
+procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
+  var WVP: TG2Mat;
+  var g, PrevMethod: TG2IntS32;
+  var PrevDepthEnable: Boolean;
+  var Ambient: TG2Color;
+begin
+  Ambient := p^.Color;
+  PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := True;
+  glEnable(GL_CULL_FACE);
+  p^.VertexBuffer.Bind;
+  p^.IndexBuffer.Bind;
+  WVP := p^.W * p^.V * p^.P;
+  PrevMethod := -1;
+  for g := 0 to p^.GroupCount - 1 do
+  begin
+    if PrevMethod <> p^.Groups[g].Method then
+    begin
+      _ShaderGroup.MethodIndex := p^.Groups[g].Method;
+      _ShaderGroup.UniformMatrix4x4('WVP', WVP);
+      _ShaderGroup.UniformFloat4('LightAmbient', Ambient);
+      if p^.Skinned then
+      begin
+        _ShaderGroup.UniformMatrix4x3Arr('SkinPallete', @p^.SkinPallete[0], 0, p^.BoneCount);
+      end;
+    end;
+    if p^.Groups[g].ColorTexture <> nil then
+    begin
+      _ShaderGroup.Sampler('Tex0', p^.Groups[g].ColorTexture, 0);
+    end;
+    if p^.Groups[g].LightTexture <> nil then
+    begin
+      _ShaderGroup.Sampler('Tex1', p^.Groups[g].LightTexture, 1);
+    end;
+    glDrawElements(
+      GL_TRIANGLES,
+      p^.Groups[g].PrimCount * 3,
+      GL_UNSIGNED_SHORT,
+      PGLVoid(p^.Groups[g].IndexStart * 2)
+    );
+  end;
+  p^.IndexBuffer.Unbind;
+  p^.VertexBuffer.Unbind;
+  glDisable(GL_CULL_FACE);
+  _Gfx.DepthEnable := PrevDepthEnable;
+end;
+{$endif}
 {$endif}
 
 procedure TG2RenderControlLegacyMesh.CheckCapacity;
@@ -14599,43 +15375,49 @@ end;
 
 procedure TG2RenderControlLegacyMesh.RenderInstance(const Instance: TG2LegacyMeshInst; const W, V, P: TG2Mat);
   var pb: PBufferData;
-  var WVP, MWVP: TG2Mat;
-  var i, g, w: TG2IntS32;
-  var Geom: PG2LegacyMeshGeom;
-  var DataStatic: PG2LegacyGeomDataStatic;
+  var i, g: TG2IntS32;
+  {$if not defined(G2RM_FF)}
+  var wc: TG2IntS32;
   var DataSkinned: PG2LegacyGeomDataSkinned;
-  var Material: PG2LegacyMeshMaterial;
-  {$if defined(G2RM_SM2)}
   var ShaderMethod: String;
   {$endif}
+  var Geom: PG2LegacyMeshGeom;
+  var DataStatic: PG2LegacyGeomDataStatic;
+  var Material: PG2LegacyMeshMaterial;
 begin
-  WVP := W * V * P;
   for i := 0 to Instance.Mesh.Geoms.Count - 1 do
   if Instance.Mesh.Geoms[i]^.Visible then
   begin
     CheckCapacity;
     pb := _Queue[_FillID^][_QueueCount[_FillID^]];
+    pb^.Color := Instance.Color;
     Geom := Instance.Mesh.Geoms[i];
     pb^.Skinned := Geom^.Skinned;
-    MWVP := Instance.Transforms[Geom^.NodeID].TransformCom * WVP;
+    pb^.V := V;
+    pb^.P := P;
     if pb^.Skinned then
     begin
-      DataSkinned := PG2LegacyGeomDataSkinned(Geom^.Data);
       {$if defined(G2RM_FF)}
-      pb^.VertexBuffer := Instance.Skins[i]^.VB;
+      Instance.UpdateSkin(i, _FillID^);
+      pb^.VertexBuffer := Instance.Skins[i]^.VB[_FillID^];
       {$else}
+      DataSkinned := PG2LegacyGeomDataSkinned(Geom^.Data);
       pb^.VertexBuffer := DataSkinned^.VB;
       pb^.BoneCount := DataSkinned^.BoneCount;
       if Length(pb^.SkinPallete) < pb^.BoneCount then SetLength(pb^.SkinPallete, pb^.BoneCount);
       Move(Instance.SkinTransforms[i]^, pb^.SkinPallete[0], SizeOf(TG2Mat) * pb^.BoneCount);
+      wc := DataSkinned^.MaxWeights;
       {$endif}
-      w := DataSkinned^.MaxWeights;
+      pb^.W := W;
     end
     else
     begin
       DataStatic := PG2LegacyGeomDataStatic(Geom^.Data);
       pb^.VertexBuffer := DataStatic^.VB;
-      w := 0;
+      {$if not defined(G2RM_FF)}
+      wc := 0;
+      {$endif}
+      pb^.W := Instance.Transforms[Geom^.NodeID].TransformCom * W;
     end;
     pb^.VertexBuffer.LockAsset(_FillID^);
     pb^.IndexBuffer := Geom^.IB;
@@ -14658,7 +15440,7 @@ begin
       if Assigned(pb^.Groups[g].ColorTexture) then pb^.Groups[g].ColorTexture.LockAsset(_FillID^);
       if Assigned(pb^.Groups[g].LightTexture) then pb^.Groups[g].LightTexture.LockAsset(_FillID^);
       {$if defined(G2RM_SM2)}
-      ShaderMethod := 'SceneB' + IntToStr(w);
+      ShaderMethod := 'SceneB' + IntToStr(wc);
       if Assigned(pb^.Groups[g].LightTexture) then ShaderMethod += 'L';
       pb^.Groups[g].Method := _ShaderGroup.FindMethodIndex(ShaderMethod);
       {$endif}
@@ -14674,12 +15456,20 @@ end;
 
 procedure TG2RenderControlLegacyMesh.RenderBegin;
 begin
-
+  {$if defined(G2Gfx_D3D9)}
+  {$if defined(G2RM_FF)}
+  _Gfx.Device.SetRenderState(D3DRS_LIGHTING, 0);
+  {$endif}
+  {$endif}
 end;
 
 procedure TG2RenderControlLegacyMesh.RenderEnd;
 begin
-
+  {$if defined(G2Gfx_D3D9)}
+  {$if defined(G2RM_FF)}
+  _Gfx.Device.SetRenderState(D3DRS_LIGHTING, 0);
+  {$endif}
+  {$endif}
 end;
 
 procedure TG2RenderControlLegacyMesh.RenderData(const Data: Pointer);
@@ -14781,6 +15571,8 @@ procedure TG2RenderControlPic2D.RenderBegin;
   var WVP: TG2Mat;
 {$endif}
 begin
+  _PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := False;
   _CurTexture := nil;
   _CurBlendMode := bmInvalid;
   _CurFilter := tfNone;
@@ -14832,6 +15624,7 @@ begin
   {$elseif defined(G2RM_SM2)}
 
   {$endif}
+  _Gfx.DepthEnable := _PrevDepthEnable;
 end;
 
 procedure TG2RenderControlPic2D.RenderData(const Data: Pointer);
@@ -15129,6 +15922,8 @@ procedure TG2RenderControlPrim2D.RenderBegin;
   var WVP: TG2Mat;
 {$endif}
 begin
+  _PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := False;
   _CurPoint := 0;
   _CurPrimType := ptNone;
   _CurBlendMode := bmInvalid;
@@ -15184,6 +15979,7 @@ begin
   glEnable(GL_TEXTURE_2D);
   {$endif}
   {$endif}
+  _Gfx.DepthEnable := _PrevDepthEnable;
 end;
 
 procedure TG2RenderControlPrim2D.RenderData(const Data: Pointer);
@@ -15737,6 +16533,8 @@ procedure TG2RenderControlPoly2D.RenderBegin;
   var WVP: TG2Mat;
 {$endif}
 begin
+  _PrevDepthEnable := _Gfx.DepthEnable;
+  _Gfx.DepthEnable := False;
   _CurPoint := 0;
   _CurIndex := 0;
   _CurPolyType := ptNone;
@@ -15789,6 +16587,7 @@ begin
   {$elseif defined(G2RM_SM2)}
 
   {$endif}
+  _Gfx.DepthEnable := _PrevDepthEnable;
 end;
 
 procedure TG2RenderControlPoly2D.RenderData(const Data: Pointer);
@@ -17566,12 +18365,21 @@ begin
         if DataSkinned^.MaxWeights = 1 then
         BlendIndices^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[0].BoneID
         else
-        for n := 0 to DataSkinned^.MaxWeights - 1 do
         begin
-          BlendIndices^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].BoneID;
-          Inc(BlendIndices);
-          BlendWeights^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].Weight;
-          Inc(BlendWeights);
+          for n := 0 to MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].WeightCount - 1 do
+          begin
+            BlendIndices^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].BoneID;
+            Inc(BlendIndices);
+            BlendWeights^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].Weight;
+            Inc(BlendWeights);
+          end;
+          for n := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].WeightCount to DataSkinned^.MaxWeights - 1 do
+          begin
+            BlendIndices^ := 0;
+            Inc(BlendIndices);
+            BlendWeights^ := 0;
+            Inc(BlendWeights);
+          end;
         end;
       end;
       DataSkinned^.VB.UnLock;
@@ -18652,7 +19460,7 @@ begin
   TG2GfxD3D9(g2.Gfx).Device.SetTexture(0, _CurTexture.GetTexture);
   TG2GfxD3D9(g2.Gfx).Device.DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, _CurQuad * 4, 0, _CurQuad * 2);
   {$elseif defined(G2Gfx_OGL)}
-  glActiveTexture(GL_TEXTURE0);
+  TG2GfxOGL(g2.Gfx).ActiveTexture := 0;
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, _CurTexture.GetTexture);
   if _CurTexture.Usage = tu3D then
@@ -18693,7 +19501,7 @@ begin
     GLvoid(0)
   );
   {$elseif defined(G2Gfx_GLES)}
-  glActiveTexture(GL_TEXTURE0);
+  TG2GfxGLES(g2.Gfx).ActiveTexture := 0;
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, _CurTexture.GetTexture);
   g2.Gfx.Filter := _CurFilter;
@@ -19141,7 +19949,7 @@ procedure TG2Scene3D.RenderD3D9;
 begin
   _Frustum.Update;
   PrevDepthEnable := _Gfx.DepthEnable;
-  //_Gfx.DepthEnable := True;
+  _Gfx.DepthEnable := True;
   _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
   _Gfx.Device.SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
   _Gfx.Device.SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
@@ -19336,7 +20144,7 @@ end;
 procedure TG2Scene3D.RenderOGL;
   var i, g, m: TG2IntS32;
   var f: TG2Float;
-  var CurStage: TG2IntU32;
+  var CurStage: TG2IntU8;
   var W, VP: TG2Mat;
   var Mesh: TG2S3DMesh;
   var Inst: TG2S3DMeshInst;
@@ -19382,7 +20190,7 @@ begin
         begin
           if Material^.Channels[0].MapLight <> nil then
           begin
-            glActiveTexture(GL_TEXTURE0);
+            _Gfx.ActiveTexture := 0;
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, Material^.Channels[0].MapLight.GetTexture);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -19401,7 +20209,7 @@ begin
             glClientActiveTexture(GL_TEXTURE0);
             glEnableClientState(GL_TEXTURE_COORD_ARRAY);
             glTexCoordPointer(2, GL_FLOAT, VB.VertexSize, VB.TexCoordIndex[1]);
-            glActiveTexture(GL_TEXTURE1);
+            _Gfx.ActiveTexture := 1;
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, Material^.Channels[0].MapLight.GetTexture);
             _Gfx.Filter := tfLinear;
@@ -19418,17 +20226,17 @@ begin
             glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, @EnvColor);
             glClientActiveTexture(GL_TEXTURE1);
             glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-            CurStage := GL_TEXTURE2;
+            CurStage := 2;
           end
           else
           begin
-            CurStage := GL_TEXTURE0;
-            glActiveTexture(GL_TEXTURE1);
+            CurStage := 0;
+            _Gfx.ActiveTexture := 1;
             glDisable(GL_TEXTURE_2D);
           end;
           if Material^.Channels[0].MapDiffuse <> nil then
           begin
-            glActiveTexture(CurStage);
+            _Gfx.ActiveTexture := CurStage;
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, Material^.Channels[0].MapDiffuse.GetTexture);
             if Material^.Channels[0].MapDiffuse.Usage = tu3D then
@@ -19438,7 +20246,7 @@ begin
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
             glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
-            if CurStage = GL_TEXTURE0 then
+            if CurStage = 0 then
             glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_PRIMARY_COLOR)
             else
             glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_PREVIOUS);
@@ -19446,7 +20254,7 @@ begin
             glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE);
             glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
             glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_MODULATE);
-            if CurStage = GL_TEXTURE0 then
+            if CurStage = 0 then
             glTexEnvi(GL_TEXTURE_2D, GL_SOURCE0_ALPHA, GL_PRIMARY_COLOR)
             else
             glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS);
@@ -19469,9 +20277,9 @@ begin
       VB.Unbind;
     end;
   end;
-  glActiveTexture(GL_TEXTURE2);
+  _Gfx.ActiveTexture := 2;
   glDisable(GL_TEXTURE_2D);
-  glActiveTexture(GL_TEXTURE1);
+  _Gfx.ActiveTexture := 1;
   glDisable(GL_TEXTURE_2D);
   glClientActiveTexture(GL_TEXTURE2);
   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -19479,7 +20287,7 @@ begin
   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
   glClientActiveTexture(GL_TEXTURE0);
   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-  glActiveTexture(GL_TEXTURE0);
+  _Gfx.ActiveTexture := 0;
   glEnable(GL_TEXTURE_2D);
   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
   glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
@@ -19600,7 +20408,7 @@ end;
 procedure TG2Scene3D.RenderGLES;
   var i, g, m: TG2IntS32;
   var f: TG2Float;
-  var CurStage: TG2IntU32;
+  var CurStage: TG2IntU8;
   var W, VP: TG2Mat;
   var Mesh: TG2S3DMesh;
   var Inst: TG2S3DMeshInst;
@@ -19645,15 +20453,15 @@ begin
       for m := 0 to Geom^.GCount - 1 do
       begin
         Material := Inst.Materials[Geom^.Groups[m].Material];
-        glActiveTexture(GL_TEXTURE0);
+        _Gfx.ActiveTexture := 0;
         glDisable(GL_TEXTURE_2D);
         if Material^.ChannelCount > 0 then
         begin
-          CurStage := GL_TEXTURE0;
+          CurStage := 0;
           if Material^.Channels[0].MapLight <> nil then
           begin
             glEnable(GL_LIGHTING);
-            glActiveTexture(CurStage);
+            _Gfx.ActiveTexture := CurStage;
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, Material^.Channels[0].MapLight.GetTexture);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -19678,7 +20486,7 @@ begin
           glDisable(GL_LIGHTING);
           if Material^.Channels[0].MapDiffuse <> nil then
           begin
-            glActiveTexture(CurStage);
+            _Gfx.ActiveTexture := CurStage;
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, Material^.Channels[0].MapDiffuse.GetTexture);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -19720,9 +20528,9 @@ begin
     end;
   end;
   glDisable(GL_LIGHTING);
-  glActiveTexture(GL_TEXTURE2);
+  _Gfx.ActiveTexture := 2;
   glDisable(GL_TEXTURE_2D);
-  glActiveTexture(GL_TEXTURE1);
+  _Gfx.ActiveTexture := 1;
   glDisable(GL_TEXTURE_2D);
   glClientActiveTexture(GL_TEXTURE2);
   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -19730,7 +20538,7 @@ begin
   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
   glClientActiveTexture(GL_TEXTURE0);
   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-  glActiveTexture(GL_TEXTURE0);
+  _Gfx.ActiveTexture := 0;
   glEnable(GL_TEXTURE_2D);
   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
   glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
@@ -20099,7 +20907,7 @@ begin
   Res := TG2Res.List;
   while Res <> nil do
   begin
-    if (Res is TG2Mesh)
+    if (Res is TG2LegacyMesh)
     and (TG2LegacyMesh(Res).AssetName = SharedAssetName)
     and (Res.RefCount > 0) then
     begin
@@ -20166,6 +20974,7 @@ begin
     ml.Load(FileName);
     ml.ExportMeshData(@md);
     ml.Free;
+    md.LimitSkins(4);
     Load(md);
     Break;
   end;
@@ -20185,8 +20994,8 @@ procedure TG2LegacyMesh.Load(const MeshData: TG2MeshData);
   var BlendWeights: PG2Float;
   var BlendIndices: PG2Float;
   {$endif}
-  var DataStatic: PG2S3DGeomDataStatic;
-  var DataSkinned: PG2S3DGeomDataSkinned;
+  var DataStatic: PG2LegacyGeomDataStatic;
+  var DataSkinned: PG2LegacyGeomDataSkinned;
 begin
   Nodes.Allocate(MeshData.NodeCount);
   for i := 0 to Nodes.Count - 1 do
@@ -20237,12 +21046,12 @@ begin
       SetLength(DataSkinned^.Vertices, Geoms[i]^.VCount);
       for j := 0 to Geoms[i]^.VCount - 1 do
       begin
-        SetLength(DataSkinned^.Vertices[j].TexCoord, Geoms[i].TCount);
+        SetLength(DataSkinned^.Vertices[j].TexCoord, Geoms[i]^.TCount);
         SetLength(DataSkinned^.Vertices[j].Bones, DataSkinned^.MaxWeights);
         SetLength(DataSkinned^.Vertices[j].Weights, DataSkinned^.MaxWeights);
         DataSkinned^.Vertices[j].Position := MeshData.Geoms[i].Vertices[j].Position;
         DataSkinned^.Vertices[j].Normal := MeshData.Geoms[i].Vertices[j].Normal;
-        for n := 0 to Geoms[i].TCount - 1 do
+        for n := 0 to Geoms[i]^.TCount - 1 do
         DataSkinned^.Vertices[j].TexCoord[n] := MeshData.Geoms[i].Vertices[j].TexCoords[n];
         DataSkinned^.Vertices[j].BoneWeightCount := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].WeightCount;
         for n := 0 to MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].WeightCount - 1 do
@@ -20290,12 +21099,21 @@ begin
           BlendIndices^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[0].BoneID
         end
         else
-        for n := 0 to DataSkinned^.MaxWeights - 1 do
         begin
-          BlendIndices^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].BoneID;
-          Inc(BlendIndices);
-          BlendWeights^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].Weight;
-          Inc(BlendWeights);
+          for n := 0 to MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].WeightCount - 1 do
+          begin
+            BlendIndices^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].BoneID;
+            Inc(BlendIndices);
+            BlendWeights^ := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].Weights[n].Weight;
+            Inc(BlendWeights);
+          end;
+          for n := MeshData.Skins[MeshData.Geoms[i].SkinID].Vertices[j].WeightCount to DataSkinned^.MaxWeights - 1 do
+          begin
+            BlendIndices^ := 0;
+            Inc(BlendIndices);
+            BlendWeights^ := 0;
+            Inc(BlendWeights);
+          end;
         end;
       end;
       DataSkinned^.VB.UnLock;
@@ -20369,11 +21187,7 @@ begin
     begin
       Materials[i]^.Channels[j].Name := MeshData.Materials[i].Channels[j].Name;
       Materials[i]^.Channels[j].TwoSided := MeshData.Materials[i].Channels[j].TwoSided;
-      {$if defined(G2Target_Android)}
       if Length(MeshData.Materials[i].Channels[j].DiffuseMap) > 0 then
-      {$else}
-      if G2FileExists(MeshData.Materials[i].Channels[j].DiffuseMap) then
-      {$endif}
       begin
         Materials[i]^.Channels[j].MapDiffuse := TG2Texture2D.SharedAsset(MeshData.Materials[i].Channels[j].DiffuseMap, {$if defined(G2Target_Android)}tuDefault{$else}tu3D{$endif});
         if Assigned(Materials[i]^.Channels[j].MapDiffuse) then
@@ -20385,11 +21199,7 @@ begin
       begin
         Materials[i]^.Channels[j].MapDiffuse := nil;
       end;
-      {$if defined(G2Target_Android)}
       if Length(MeshData.Materials[i].Channels[j].LightMap) > 0 then
-      {$else}
-      if G2FileExists(MeshData.Materials[i].Channels[j].LightMap) then
-      {$endif}
       begin
         Materials[i]^.Channels[j].MapLight := TG2Texture2D.SharedAsset(MeshData.Materials[i].Channels[j].LightMap, tuDefault);
         if Assigned(Materials[i]^.Channels[j].MapLight) then
@@ -20439,7 +21249,7 @@ end;
 
 function TG2LegacyMesh.NewInst: TG2LegacyMeshInst;
 begin
-
+  Result := TG2LegacyMeshInst.Create(Self);
 end;
 //TG2LegacyMesh END
 
@@ -20460,13 +21270,13 @@ begin
 end;
 
 function TG2LegacyMeshInst.GetGeomBBox(const Index: TG2IntS32): TG2Box;
-  var DataSkinned: PG2GeomDataSkinned;
+  var DataSkinned: PG2LegacyGeomDataSkinned;
   var i, j: TG2IntS32;
   var b: TG2AABox;
 begin
   if _Mesh.Geoms[Index]^.Skinned then
   begin
-    DataSkinned := PG2GeomDataSkinned(_Mesh.Geoms[Index]^.Data);
+    DataSkinned := PG2LegacyGeomDataSkinned(_Mesh.Geoms[Index]^.Data);
     for i := 0 to DataSkinned^.BoneCount - 1 do
     if DataSkinned^.Bones[i].VCount > 0 then
     begin
@@ -20479,7 +21289,7 @@ begin
     Result := b;
   end
   else
-  Result := PG2GeomDataStatic(_Mesh.Geoms[Index]^.Data)^.BBox.Transform(Transforms[_Mesh.Geoms[Index]^.NodeID].TransformCom);
+  Result := PG2LegacyGeomDataStatic(_Mesh.Geoms[Index]^.Data)^.BBox.Transform(Transforms[_Mesh.Geoms[Index]^.NodeID].TransformCom);
 end;
 
 function TG2LegacyMeshInst.GetSkinTransforms(const Index: TG2IntS32): PG2Mat;
@@ -20494,12 +21304,12 @@ end;
 
 function TG2LegacyMeshInst.GetSkin(const Index: TG2IntS32): PG2LegacyMeshInstSkin;
 begin
-  Result := @_Skins[Index];
+  Result := _Skins[Index];
 end;
 
 procedure TG2LegacyMeshInst.ComputeSkinTransforms;
-  var i, j: TG2IntS32;
   var DataSkinned: PG2LegacyGeomDataSkinned;
+  var i, j: TG2IntS32;
 begin
   for i := 0 to _Mesh.Geoms.Count - 1 do
   if _Mesh.Geoms[i]^.Skinned then
@@ -20510,52 +21320,76 @@ begin
       _Skins[i]^.Transforms[j] := DataSkinned^.Bones[j].Bind * Transforms[DataSkinned^.Bones[j].NodeID].TransformCom;
     end;
     {$if defined(G2RM_FF)}
-    _Skins[i]^.VB.Lock;
-    for j := 0 to _Mesh.Geoms[i]^.VCount - 1 do
+    for j := 0 to 1 do
     begin
-      Vertex := PVertex(_Skins[i]^.VB.Data + TG2IntS32(_Skins[i]^.VB.VertexSize) * j);
-      TexCoords := PG2Vec2(Pointer(Vertex) + SizeOf(TVertex));
-      vp.SetValue(0, 0, 0);
-      vn.SetValue(0, 0, 0);
-      for n := 0 to DataSkinned^.Vertices[j].BoneWeightCount - 1 do
-      begin
-        vp := vp + DataSkinned^.Vertices[j].Position.Transform4x3(
-          _Skins[i]^.Transforms[DataSkinned^.Vertices[j].Bones[n]]
-        ) * DataSkinned^.Vertices[j].Weights[n];
-        vn := vn + DataSkinned^.Vertices[j].Normal.Transform3x3(
-          _Skins[i]^.Transforms[DataSkinned^.Vertices[j].Bones[n]]
-        ) * DataSkinned^.Vertices[j].Weights[n];
-      end;
-      Vertex^.Position := vp;
-      Vertex^.Normal := vn;
-      for n := 0 to _Mesh.Geoms[i]^.TCount - 1 do
-      begin
-        TexCoords^ := DataSkinned^.Vertices[j].TexCoord[n];
-        Inc(TexCoords);
-      end;
-    end;
-    _Skins[i]^.VB.UnLock;
+      _Skins[i]^.VBReady[j] := False;
+    end
     {$endif}
   end;
 end;
 
+{$if defined(G2RM_FF)}
+procedure TG2LegacyMeshInst.UpdateSkin(const GeomID, QueueID: TG2IntS32);
+  type TVertex = packed record
+    Position: TG2Vec3;
+    Normal: TG2Vec3;
+  end;
+  type PVertex = ^TVertex;
+  var vp, vn: TG2Vec3;
+  var Vertex: PVertex;
+  var TexCoords: PG2Vec2;
+  var i, j: TG2IntS32;
+  var DataSkinned: PG2LegacyGeomDataSkinned;
+begin
+  if not _Mesh.Geoms[GeomID]^.Skinned or _Skins[GeomID]^.VBReady[QueueID] then Exit;
+  DataSkinned := PG2LegacyGeomDataSkinned(_Mesh.Geoms[GeomID]^.Data);
+  _Skins[GeomID]^.VB[QueueID].Lock;
+  for i := 0 to _Mesh.Geoms[GeomID]^.VCount - 1 do
+  begin
+    Vertex := PVertex(_Skins[GeomID]^.VB[QueueID].Data + TG2IntS32(_Skins[GeomID]^.VB[QueueID].VertexSize) * i);
+    TexCoords := PG2Vec2(Pointer(Vertex) + SizeOf(TVertex));
+    vp.SetValue(0, 0, 0);
+    vn.SetValue(0, 0, 0);
+    for j := 0 to DataSkinned^.Vertices[i].BoneWeightCount - 1 do
+    begin
+      vp := vp + DataSkinned^.Vertices[i].Position.Transform4x3(
+        _Skins[GeomID]^.Transforms[DataSkinned^.Vertices[i].Bones[j]]
+      ) * DataSkinned^.Vertices[i].Weights[j];
+      vn := vn + DataSkinned^.Vertices[i].Normal.Transform3x3(
+        _Skins[GeomID]^.Transforms[DataSkinned^.Vertices[i].Bones[j]]
+      ) * DataSkinned^.Vertices[i].Weights[j];
+    end;
+    Vertex^.Position := vp;
+    Vertex^.Normal := vn;
+    for j := 0 to _Mesh.Geoms[GeomID]^.TCount - 1 do
+    begin
+      TexCoords^ := DataSkinned^.Vertices[i].TexCoord[j];
+      Inc(TexCoords);
+    end;
+  end;
+  _Skins[GeomID]^.VB[QueueID].UnLock;
+  _Skins[GeomID]^.VBReady[QueueID] := True;
+end;
+{$endif}
+
 constructor TG2LegacyMeshInst.Create(const AMesh: TG2LegacyMesh);
   var i: TG2IntS32;
+  {$if defined(G2RM_FF)}
+  var j: TG2IntS32;
+  {$endif}
 begin
   inherited Create;
   _Mesh := AMesh;
+  _AutoComputeTransforms := True;
+  _Color := $ffffffff;
   SetLength(Materials, _Mesh.Materials.Count);
   for i := 0 to _Mesh.Materials.Count - 1 do
   Materials[i] := _Mesh.Materials[i];
   SetLength(Transforms, _Mesh.Nodes.Count);
-  Transform := G2MatIdentity;
   _RootNodes.Clear;
   for i := 0 to _Mesh.Nodes.Count - 1 do
   begin
-    if _Mesh.Nodes[i]^.OwnerID = -1 then
-    begin
-      _RootNodes.Add(i);
-    end;
+    if _Mesh.Nodes[i]^.OwnerID = -1 then _RootNodes.Add(i);
     Transforms[i].TransformDef := _Mesh.Nodes[i]^.Transform;
     Transforms[i].TransformCur := Transforms[i].TransformDef;
     Transforms[i].TransformCom := G2MatIdentity;
@@ -20567,7 +21401,11 @@ begin
     New(_Skins[i]);
     SetLength(_Skins[i]^.Transforms, PG2LegacyGeomDataSkinned(_Mesh.Geoms[i]^.Data)^.BoneCount);
     {$if defined(G2RM_FF)}
-    _Skins[i]^.VB := TG2VertexBuffer.Create(_Mesh.Geoms[i]^.Decl, _Mesh.Geoms[i]^.VCount);
+    for j := 0 to 1 do
+    begin
+      _Skins[i]^.VB[j] := TG2VertexBuffer.Create(_Mesh.Geoms[i]^.Decl, _Mesh.Geoms[i]^.VCount);
+      _Skins[i]^.VBReady[j] := False;
+    end;
     {$endif}
   end;
   ComputeTransforms;
@@ -20575,10 +21413,19 @@ end;
 
 destructor TG2LegacyMeshInst.Destroy;
   var i: TG2IntS32;
+  {$if defined(G2RM_FF)}
+  var j: TG2IntS32;
+  {$endif}
 begin
   for i := 0 to _Mesh.Geoms.Count - 1 do
   if _Mesh.Geoms[i]^.Skinned then
   begin
+    {$if defined(G2RM_FF)}
+    for j := 0 to 1 do
+    begin
+      _Skins[i]^.VB[j].Free;
+    end;
+    {$endif}
     Dispose(_Skins[i]);
   end;
   inherited Destroy;

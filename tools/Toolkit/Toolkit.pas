@@ -15,6 +15,7 @@ uses
   G2DataManager,
   G2Image,
   G2ImagePNG,
+  G2MeshG2M,
   Types,
   SysUtils,
   Classes,
@@ -3642,6 +3643,32 @@ type
   end;
 //TScene2DComponentDataSprite END
 
+//TScene2DComponentDataModel3D BEIGN
+  TScene2DComponentDataModel3D = class (TScene2DComponentData)
+  private
+    var Layer: TG2IntS32;
+    var MeshPath: String;
+    var CameraPitch: TG2Float;
+    var CameraYaw: TG2Float;
+    var CameraRoll: TG2Float;
+    var CameraFOV: TG2Float;
+  public
+    var Component: TG2Scene2DComponentModel3D;
+    class function GetName: String; override;
+    destructor Destroy; override;
+    function PickLayer: Integer; override;
+    function Pick(const x, y: TG2Float): Boolean; override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
+    procedure OnChangeLayer(const Sender: Pointer);
+    procedure OnChangeModel(const Sender: Pointer);
+    procedure OnChangeCameraYaw(const Sender: Pointer);
+    procedure OnChangeCameraPitch(const Sender: Pointer);
+    procedure OnChangeCameraRoll(const Sender: Pointer);
+    procedure OnChangeCameraFOV(const Sender: Pointer);
+    procedure OnTagsChange(const Sender: Pointer);
+  end;
+//TScene2DComponentDataModel3D END
+
 //TScene2DComponentDataText BEIGN
   TScene2DComponentDataText = class (TScene2DComponentData)
   private
@@ -4147,6 +4174,7 @@ type
     function CreateComponentText: TG2Scene2DComponentText;
     function CreateComponentBackground: TG2Scene2DComponentBackground;
     function CreateComponentSpineAnimation: TG2Scene2DComponentSpineAnimation;
+    function CreateComponentModel3D: TG2Scene2DComponentModel3D;
     function CreateComponentEffect: TG2Scene2DComponentEffect;
     function CreateComponentRigidBody: TG2Scene2DComponentRigidBody;
     function CreateComponentCharacter: TG2Scene2DComponentCharacter;
@@ -4166,6 +4194,7 @@ type
     procedure BtnComponentText;
     procedure BtnComponentBackground;
     procedure BtnComponentSpineAnimation;
+    procedure BtnComponentModel3D;
     procedure BtnComponentEffect;
     procedure BtnComponentRigidBody;
     procedure BtnComponentCharacter;
@@ -4245,6 +4274,15 @@ type
 //TAssetImage END
 
 //TAssetImage BEGIN
+  TAssetMesh = class (TAsset)
+  public
+    class function GetAssetName: String; override;
+    class function CheckExtension(const Ext: String): Boolean; override;
+    class function ProcessFile(const FilePath: String): TG2QuickListString; override;
+  end;
+//TAssetImage END
+
+//TAssetImage BEGIN
   TAssetFont = class (TAsset)
   public
     class function GetAssetName: String; override;
@@ -4301,6 +4339,7 @@ type
     function GetTexture(const Path: String): TG2Texture2D;
     function GetFont(const Path: String): TG2Font;
     function GetImage(const Path: String): TG2Picture;
+    function GetMesh(const Path: String): TG2LegacyMesh;
     function GetEffect(const Path: String): TG2Effect2D;
     procedure Initialize;
     procedure Finalize;
@@ -5322,6 +5361,7 @@ begin
   _AssetTypes.Clear;
   AddAssetType(TAssetAny);
   AddAssetType(TAssetImage);
+  AddAssetType(TAssetMesh);
   AddAssetType(TAssetTexture);
   AddAssetType(TAssetFont);
   AddAssetType(TAssetEffect2D);
@@ -18644,7 +18684,7 @@ end;
 
 procedure TG2Toolkit.Render;
 begin
-  g2.Gfx.StateChange.StateClear($ffffffff);
+  g2.Gfx.StateChange.StateClear(True, $ffffffff);
   ParticleData.Render;
   UI.Render;
 end;
@@ -29411,6 +29451,12 @@ begin
       Component.UserData := ComponentData;
       TScene2DComponentDataSpineAnimation(ComponentData).Component := TG2Scene2DComponentSpineAnimation(Component);
     end
+    else if Component is TG2Scene2DComponentModel3D then
+    begin
+      ComponentData := TScene2DComponentDataModel3D.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataModel3D(ComponentData).Component := TG2Scene2DComponentModel3D(Component);
+    end
     else if Component is TG2Scene2DComponentEffect then
     begin
       ComponentData := TScene2DComponentDataEffect.Create;
@@ -29882,6 +29928,97 @@ begin
   SyncTags(Component);
 end;
 //TScene2DComponentDataSprite END
+
+//TScene2DComponentDataModel3D BEGIN
+class function TScene2DComponentDataModel3D.GetName: String;
+begin
+  Result := 'Model 3D';
+end;
+
+destructor TScene2DComponentDataModel3D.Destroy;
+begin
+  inherited Destroy;
+end;
+
+function TScene2DComponentDataModel3D.PickLayer: Integer;
+begin
+  Result := inherited PickLayer;
+end;
+
+function TScene2DComponentDataModel3D.Pick(const x, y: TG2Float): Boolean;
+begin
+  Result := inherited Pick(x, y);
+end;
+
+procedure TScene2DComponentDataModel3D.AddToProperties(const PropertySet: TPropertySet);
+  var Group: TPropertySet.TProperty;
+  var CameraGroup, AnimationGroup: TPropertySet.TProperty;
+begin
+  SyncTags(Component);
+  Group := PropertySet.PropComponent('Model 3D', Component);
+  Layer := Component.Layer;
+  CameraYaw := Component.CameraYaw * G2RadToDeg;
+  CameraPitch := Component.CameraPitch * G2RadToDeg;
+  CameraRoll := Component.CameraRoll * G2RadToDeg;
+  CameraFOV := Component.CameraFOV * G2RadToDeg;
+  if Assigned(Component.Mesh) then
+  MeshPath := Component.Mesh.AssetName
+  else
+  MeshPath := '';
+  PropertySet.PropPath('Mesh', @MeshPath, TAssetMesh, Group, @OnChangeModel);
+  PropertySet.PropFloat('Scale', @Component.Scale, Group, nil);
+  PropertySet.PropColor('Color', @Component.Color, Group, nil);
+  CameraGroup := PropertySet.PropGroup('Camera', Group);
+  PropertySet.PropBool('Orthogonal', @Component.CameraOrtho, CameraGroup, nil);
+  PropertySet.PropFloat('Yaw', @CameraYaw, CameraGroup, @OnChangeCameraYaw);
+  PropertySet.PropFloat('Pitch', @CameraPitch, CameraGroup, @OnChangeCameraPitch);
+  PropertySet.PropFloat('Roll', @CameraRoll, CameraGroup, @OnChangeCameraRoll);
+  PropertySet.PropFloat('Distance', @Component.CameraDistance, CameraGroup, nil);
+  PropertySet.PropFloat('FOV', @CameraFOV, CameraGroup, @OnChangeCameraFOV);
+  PropertySet.PropFloat('Near', @Component.CameraNear, CameraGroup, nil);
+  PropertySet.PropFloat('Far', @Component.CameraFar, CameraGroup, nil);
+  PropertySet.PropVec3('Target', @Component.CameraTarget, CameraGroup, nil);
+  //AnimationGroup := PropertySet.PropGroup('Animation', Group);
+  //PropertySet.PropEnum('Animation Name', );
+  PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
+end;
+
+procedure TScene2DComponentDataModel3D.OnChangeLayer(const Sender: Pointer);
+begin
+  Component.Layer := Layer;
+end;
+
+procedure TScene2DComponentDataModel3D.OnChangeModel(const Sender: Pointer);
+begin
+  Component.Mesh := App.AssetManager.GetMesh(MeshPath);
+end;
+
+procedure TScene2DComponentDataModel3D.OnChangeCameraYaw(const Sender: Pointer);
+begin
+  Component.CameraYaw := CameraYaw * G2DegToRad;
+end;
+
+procedure TScene2DComponentDataModel3D.OnChangeCameraPitch(const Sender: Pointer);
+begin
+  Component.CameraPitch := CameraPitch * G2DegToRad;
+end;
+
+procedure TScene2DComponentDataModel3D.OnChangeCameraRoll(const Sender: Pointer);
+begin
+  Component.CameraRoll := CameraRoll * G2DegToRad;
+end;
+
+procedure TScene2DComponentDataModel3D.OnChangeCameraFOV(const Sender: Pointer);
+begin
+  Component.CameraFOV := CameraFOV * G2DegToRad;
+end;
+
+procedure TScene2DComponentDataModel3D.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
+end;
+//TScene2DComponentDataModel3D END
 
 //TScene2DComponentDataText BEGIN
 class function TScene2DComponentDataText.GetName: String;
@@ -32338,6 +32475,13 @@ begin
   Result.Scale := G2Vec2(0.002, 0.002);
 end;
 
+function TScene2DData.CreateComponentModel3D: TG2Scene2DComponentModel3D;
+begin
+  Result := TG2Scene2DComponentModel3D.Create(_Scene);
+  Result.UserData := TScene2DComponentDataModel3D.Create;
+  TScene2DComponentDataModel3D(Result.UserData).Component := Result;
+end;
+
 function TScene2DData.CreateComponentEffect: TG2Scene2DComponentEffect;
 begin
   Result := TG2Scene2DComponentEffect.Create(_Scene);
@@ -32542,6 +32686,18 @@ begin
   if Selection.Count = 1 then
   begin
     Component := CreateComponentSpineAnimation;
+    Component.Attach(Selection[0]);
+    SelectionUpdateStart;
+    SelectionUpdateEnd;
+  end;
+end;
+
+procedure TScene2DData.BtnComponentModel3D;
+  var Component: TG2Scene2DComponentModel3D;
+begin
+  if Selection.Count = 1 then
+  begin
+    Component := CreateComponentModel3D;
     Component.Attach(Selection[0]);
     SelectionUpdateStart;
     SelectionUpdateEnd;
@@ -32779,6 +32935,7 @@ begin
   AddComponentTypePair(TG2Scene2DComponentText, TScene2DComponentDataText, @BtnComponentText);
   AddComponentTypePair(TG2Scene2DComponentBackground, TScene2DComponentDataBackground, @BtnComponentBackground);
   AddComponentTypePair(TG2Scene2DComponentSpineAnimation, TScene2DComponentDataSpineAnimation, @BtnComponentSpineAnimation);
+  AddComponentTypePair(TG2Scene2DComponentModel3D, TScene2DComponentDataModel3D, @BtnComponentModel3D);
   AddComponentTypePair(TG2Scene2DComponentEffect, TScene2DComponentDataEffect, @BtnComponentEffect);
   AddComponentTypePair(TG2Scene2DComponentPoly, TScene2DComponentDataPoly, @BtnComponentPoly);
   AddComponentTypePair(TG2Scene2DComponentRigidBody, TScene2DComponentDataRigidBody, @BtnComponentRigidBody);
@@ -33094,6 +33251,32 @@ begin
 end;
 //TAssetImage END
 
+//TAssetMesh BEGIN
+class function TAssetMesh.GetAssetName: String;
+begin
+  Result := 'Mesh';
+end;
+
+class function TAssetMesh.CheckExtension(const Ext: String): Boolean;
+begin
+  Result := (LowerCase(Ext) = 'g2m');
+end;
+
+class function TAssetMesh.ProcessFile(const FilePath: String): TG2QuickListString;
+  var Ext: String;
+begin
+  Ext := ExtractFileExt(FilePath);
+  Delete(Ext, 1, 1);
+  if LowerCase(Ext) = 'g2m' then
+  begin
+    {$Warnings off}
+    Result.Clear;
+    {$Warnings on}
+    Result.Add(FilePath);
+  end;
+end;
+//TAssetMesh END
+
 //TAssetFont BEGIN
 class function TAssetFont.GetAssetName: String;
 begin
@@ -33220,6 +33403,11 @@ end;
 function TAssetManager.GetImage(const Path: String): TG2Picture;
 begin
   Result := TG2Picture.SharedAsset(Path);
+end;
+
+function TAssetManager.GetMesh(const Path: String): TG2LegacyMesh;
+begin
+  Result := TG2LegacyMesh.SharedAsset(Path);
 end;
 
 function TAssetManager.GetEffect(const Path: String): TG2Effect2D;
