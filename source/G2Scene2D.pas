@@ -10,6 +10,7 @@ uses
   Gen2MP,
   G2Math,
   G2DataManager,
+  G2MeshG2M,
   box2d,
   Spine,
   G2Spine;
@@ -153,6 +154,7 @@ type
     constructor Create(const OwnerScene: TG2Scene2D); virtual;
     destructor Destroy; override;
     procedure NewGUID;
+    function FindChildByName(const ChildName: String): TG2Scene2DEntity;
     function HasTag(const Tag: AnsiString): Boolean;
     procedure AddTag(const Tag: AnsiString);
     procedure RemoveTag(const Tag: AnsiString);
@@ -431,14 +433,21 @@ type
     var _CameraOrtho: Boolean;
     var _CameraTarget: TG2Vec3;
     var _Layer: TG2IntS32;
+    var _AnimName: String;
+    var _AnimFrame: TG2Float;
+    var _AnimIndex: TG2IntS32;
+    var _AnimSpeed: TG2Float;
+    var _AnimLoop: Boolean;
     procedure SetMesh(const Value: TG2LegacyMesh);
     procedure SetLayer(const Value: TG2IntS32); inline;
+    procedure SetAnimName(const Value: String);
   protected
     procedure OnInitialize; override;
     procedure OnFinalize; override;
     procedure OnAttach; override;
     procedure OnDetach; override;
     procedure OnRender(const Display: TG2Display2D);
+    procedure OnUpdate;
   public
     class constructor CreateClass;
     class function GetName: String; override;
@@ -457,6 +466,10 @@ type
     property CameraFar: TG2Float read _CameraFar write _CameraFar;
     property CameraOrtho: Boolean read _CameraOrtho write _CameraOrtho;
     property CameraTarget: TG2Vec3 read _CameraTarget write _CameraTarget;
+    property AnimName: String read _AnimName write SetAnimName;
+    property AnimSpeed: TG2Float read _AnimSpeed write _AnimSpeed;
+    property AnimFrame: TG2Float read _AnimFrame write _AnimFrame;
+    property AnimLoop: Boolean read _AnimLoop write _AnimLoop;
     procedure Save(const dm: TG2DataManager); override;
     procedure Load(const dm: TG2DataManager); override;
   end;
@@ -1585,6 +1598,18 @@ procedure TG2Scene2DEntity.NewGUID;
 begin
   CreateGUID(new_guid);
   _GUID := GUIDToString(new_guid);
+end;
+
+function TG2Scene2DEntity.FindChildByName(const ChildName: String): TG2Scene2DEntity;
+  var i: TG2IntS32;
+begin
+  for i := 0 to _Children.Count - 1 do
+  if _Children[i].Name = ChildName then
+  begin
+    Result := _Children[i];
+    Exit;
+  end;
+  Result := nil;
 end;
 
 function TG2Scene2DEntity.HasTag(const Tag: AnsiString): Boolean;
@@ -2977,12 +3002,29 @@ begin
     _Scale := G2Max(G2Max(MeshBounds.SizeX, MeshBounds.SizeY), MeshBounds.SizeZ);
     if _Scale > G2EPS2 then _Scale := 1 / _Scale else _Scale := 1;
   end;
+  _AnimName := '';
+  _AnimIndex := -1;
 end;
 
 procedure TG2Scene2DComponentModel3D.SetLayer(const Value: TG2IntS32);
 begin
   _Layer := Value;
   if _RenderHook <> nil then _RenderHook.Layer := _Layer;
+end;
+
+procedure TG2Scene2DComponentModel3D.SetAnimName(const Value: String);
+begin
+  if _AnimName = Value then Exit;
+  _AnimName := Value;
+  if _Inst <> nil then
+  begin
+    _AnimIndex := _Mesh.AnimIndex(_AnimName);
+  end
+  else
+  begin
+    _AnimIndex := -1;
+  end;
+  _AnimFrame := 0;
 end;
 
 procedure TG2Scene2DComponentModel3D.OnInitialize;
@@ -3001,6 +3043,10 @@ begin
   _CameraDistance := 2;
   _Color := $ffffffff;
   _CameraFOV := Pi * 0.2;
+  _AnimName := '';
+  _AnimIndex := -1;
+  _AnimSpeed := 1;
+  _AnimLoop := True;
 end;
 
 procedure TG2Scene2DComponentModel3D.OnFinalize;
@@ -3013,10 +3059,12 @@ procedure TG2Scene2DComponentModel3D.OnAttach;
 begin
   inherited OnAttach;
   _RenderHook := Scene.RenderHookAdd(@OnRender, _Layer);
+  g2.CallbackUpdateAdd(@OnUpdate);
 end;
 
 procedure TG2Scene2DComponentModel3D.OnDetach;
 begin
+  g2.CallbackUpdateRemove(@OnUpdate);
   Scene.RenderHookRemove(_RenderHook);
   inherited OnDetach;
 end;
@@ -3063,6 +3111,26 @@ begin
   _Inst.Render(W, V, P);
 end;
 
+procedure TG2Scene2DComponentModel3D.OnUpdate;
+begin
+  if (_Inst <> nil) and (_AnimIndex > -1) then
+  begin
+    _AnimFrame += g2.DeltaTimeSec * _AnimSpeed;
+    if _AnimFrame >= _Mesh.Anims[_AnimIndex]^.FrameCount then
+    begin
+      if _AnimLoop then
+      begin
+        _AnimFrame := Frac(_AnimFrame) + Trunc(_AnimFrame) mod _Mesh.Anims[_AnimIndex]^.FrameCount;
+      end
+      else
+      begin
+        _AnimFrame := _Mesh.Anims[_AnimIndex]^.FrameCount - 1;
+      end;
+    end;
+    _Inst.FrameSet(_AnimName, _AnimFrame);
+  end;
+end;
+
 class constructor TG2Scene2DComponentModel3D.CreateClass;
 begin
   SetLength(ComponentList, Length(ComponentList) + 1);
@@ -3081,12 +3149,66 @@ end;
 
 procedure TG2Scene2DComponentModel3D.Save(const dm: TG2DataManager);
 begin
-  inherited Save(dm);
+  SaveClassType(dm);
+  SaveTags(dm);
+  if Assigned(_Mesh)
+  and (_Mesh.IsShared) then
+  begin
+    dm.WriteStringA(_Mesh.AssetName);
+  end
+  else
+  begin
+    dm.WriteIntS32(0);
+  end;
+  dm.WriteBool(_CameraOrtho);
+  dm.WriteFloat(_CameraYaw);
+  dm.WriteFloat(_CameraPitch);
+  dm.WriteFloat(_CameraRoll);
+  dm.WriteFloat(_CameraDistance);
+  dm.WriteFloat(_CameraNear);
+  dm.WriteFloat(_CameraFar);
+  dm.WriteFloat(_CameraFOV);
+  dm.WriteVec3(_CameraTarget);
+  dm.WriteFloat(_Scale);
+  dm.WriteColor(_Color);
+  dm.WriteStringA(_AnimName);
+  dm.WriteIntS32(_AnimIndex);
+  dm.WriteFloat(_AnimFrame);
+  dm.WriteFloat(_AnimSpeed);
+  dm.WriteBool(_AnimLoop);
+  dm.WriteIntS32(_Layer);
 end;
 
 procedure TG2Scene2DComponentModel3D.Load(const dm: TG2DataManager);
+  var MeshFile: String;
 begin
-  inherited Load(dm);
+  LoadTags(dm);
+  MeshFile := dm.ReadStringA;
+  if Length(MeshFile) > 0 then
+  begin
+    Mesh := TG2LegacyMesh.SharedAsset(MeshFile);
+  end
+  else
+  begin
+    Mesh := nil;
+  end;
+  _CameraOrtho := dm.ReadBool;
+  _CameraYaw := dm.ReadFloat;
+  _CameraPitch := dm.ReadFloat;
+  _CameraRoll := dm.ReadFloat;
+  _CameraDistance := dm.ReadFloat;
+  _CameraNear := dm.ReadFloat;
+  _CameraFar := dm.ReadFloat;
+  _CameraFOV := dm.ReadFloat;
+  _CameraTarget := dm.ReadVec3;
+  _Scale := dm.ReadFloat;
+  _Color := dm.ReadColor;
+  _AnimName := dm.ReadStringA;
+  _AnimIndex := dm.ReadIntS32;
+  _AnimFrame := dm.ReadFloat;
+  _AnimSpeed := dm.ReadFloat;
+  _AnimLoop := dm.ReadBool;
+  Layer := dm.ReadIntS32;
 end;
 //TG2Scene2DComponentModel3D END
 

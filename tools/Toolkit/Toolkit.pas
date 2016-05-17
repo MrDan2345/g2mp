@@ -3606,6 +3606,7 @@ type
   protected
     Tags: AnsiString;
     procedure SyncTags(const Cmp: TG2Scene2DComponent);
+    procedure OnLoad; virtual;
   public
     class function GetName: String; virtual;
     constructor Create; virtual;
@@ -3652,6 +3653,9 @@ type
     var CameraYaw: TG2Float;
     var CameraRoll: TG2Float;
     var CameraFOV: TG2Float;
+    var AnimIndex: Byte;
+    var AnimList: TPropertySet.TPropertyEnum;
+    procedure UpdateAnimList;
   public
     var Component: TG2Scene2DComponentModel3D;
     class function GetName: String; override;
@@ -3665,6 +3669,7 @@ type
     procedure OnChangeCameraPitch(const Sender: Pointer);
     procedure OnChangeCameraRoll(const Sender: Pointer);
     procedure OnChangeCameraFOV(const Sender: Pointer);
+    procedure OnChangeAnimation(const Sender: Pointer);
     procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataModel3D END
@@ -29427,6 +29432,7 @@ begin
   for i := 0 to Entity.ComponentCount - 1 do
   begin
     Component := Entity.Components[i];
+    ComponentData := nil;
     if Component is TG2Scene2DComponentSprite then
     begin
       ComponentData := TScene2DComponentDataSprite.Create;
@@ -29514,6 +29520,7 @@ begin
       TScene2DComponentDataPoly(ComponentData).Component := TG2Scene2DComponentPoly(Component);
       TScene2DComponentDataPoly(ComponentData).GenerateData;
     end;
+    if Assigned(ComponentData) then ComponentData.OnLoad;
   end;
   UpdateProperties;
 end;
@@ -29600,6 +29607,11 @@ begin
     if i > 0 then Tags += ', ';
     Tags += Cmp.Tags[i];
   end;
+end;
+
+procedure TScene2DComponentData.OnLoad;
+begin
+
 end;
 
 class function TScene2DComponentData.GetName: String;
@@ -29930,6 +29942,26 @@ end;
 //TScene2DComponentDataSprite END
 
 //TScene2DComponentDataModel3D BEGIN
+procedure TScene2DComponentDataModel3D.UpdateAnimList;
+  var i, n: Integer;
+begin
+  AnimList.Clear;
+  AnimList.AddValue('None', 0);
+  n := 0;
+  if Assigned(Component.Mesh) then
+  begin
+    for i := 0 to Component.Mesh.Anims.Count - 1 do
+    begin
+      AnimList.AddValue(Component.Mesh.Anims[i]^.Name, i + 1);
+      if Component.Mesh.Anims[i]^.Name = Component.AnimName then
+      begin
+        n := i + 1;
+      end;
+    end;
+  end;
+  AnimList.Selection := n;
+end;
+
 class function TScene2DComponentDataModel3D.GetName: String;
 begin
   Result := 'Model 3D';
@@ -29968,6 +30000,7 @@ begin
   PropertySet.PropPath('Mesh', @MeshPath, TAssetMesh, Group, @OnChangeModel);
   PropertySet.PropFloat('Scale', @Component.Scale, Group, nil);
   PropertySet.PropColor('Color', @Component.Color, Group, nil);
+  PropertySet.PropInt('Layer', @Layer, Group, @OnChangeLayer);
   CameraGroup := PropertySet.PropGroup('Camera', Group);
   PropertySet.PropBool('Orthogonal', @Component.CameraOrtho, CameraGroup, nil);
   PropertySet.PropFloat('Yaw', @CameraYaw, CameraGroup, @OnChangeCameraYaw);
@@ -29978,9 +30011,12 @@ begin
   PropertySet.PropFloat('Near', @Component.CameraNear, CameraGroup, nil);
   PropertySet.PropFloat('Far', @Component.CameraFar, CameraGroup, nil);
   PropertySet.PropVec3('Target', @Component.CameraTarget, CameraGroup, nil);
-  //AnimationGroup := PropertySet.PropGroup('Animation', Group);
-  //PropertySet.PropEnum('Animation Name', );
+  AnimationGroup := PropertySet.PropGroup('Animation', Group);
+  AnimList := PropertySet.PropEnum('Name', @AnimIndex, AnimationGroup, @OnChangeAnimation);
+  PropertySet.PropBool('Loop', @Component.AnimLoop, AnimationGroup, nil);
+  PropertySet.PropFloat('Speed', @Component.AnimSpeed, AnimationGroup, nil);
   PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
+  UpdateAnimList;
 end;
 
 procedure TScene2DComponentDataModel3D.OnChangeLayer(const Sender: Pointer);
@@ -29991,6 +30027,7 @@ end;
 procedure TScene2DComponentDataModel3D.OnChangeModel(const Sender: Pointer);
 begin
   Component.Mesh := App.AssetManager.GetMesh(MeshPath);
+  UpdateAnimList;
 end;
 
 procedure TScene2DComponentDataModel3D.OnChangeCameraYaw(const Sender: Pointer);
@@ -30011,6 +30048,18 @@ end;
 procedure TScene2DComponentDataModel3D.OnChangeCameraFOV(const Sender: Pointer);
 begin
   Component.CameraFOV := CameraFOV * G2DegToRad;
+end;
+
+procedure TScene2DComponentDataModel3D.OnChangeAnimation(const Sender: Pointer);
+begin
+  if AnimIndex > 0 then
+  begin
+    Component.AnimName := AnimList[AnimIndex].Name;
+  end
+  else
+  begin
+    Component.AnimName := '';
+  end;
 end;
 
 procedure TScene2DComponentDataModel3D.OnTagsChange(const Sender: Pointer);
