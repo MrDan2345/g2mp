@@ -65,12 +65,15 @@ type
     function GetTagCount: TG2IntS32; inline;
   protected
     var _EventDispatchers: specialize TG2QuickListG<TG2Scene2DEventDispatcher>;
+    function GetCurrentVersion: TG2IntU16; virtual;
     procedure OnInitialize; virtual;
     procedure OnFinalize; virtual;
     procedure OnAttach; virtual;
     procedure OnDetach; virtual;
     procedure SaveClassType(const dm: TG2DataManager);
     procedure SaveTags(const dm: TG2DataManager);
+    procedure SaveVersion(const dm: TG2DataManager);
+    function LoadVersion(const dm: TG2DataManager): TG2IntU16;
     procedure LoadTags(const dm: TG2DataManager);
   public
     class constructor CreateClass;
@@ -130,6 +133,7 @@ type
     var _Components: TG2Scene2DComponentList;
     var _Transform: TG2Transform2;
     var _Name: AnsiString;
+    function GetCurrentVersion: TG2IntU16; virtual;
     procedure SetTransform(const Value: TG2Transform2); virtual;
     procedure AddChild(const Child: TG2Scene2DEntity); virtual;
     procedure RemoveChild(const Child: TG2Scene2DEntity); virtual;
@@ -179,8 +183,11 @@ type
     var _Enabled: Boolean;
   protected
     var _Joint: pb2_joint;
+    function GetCurrentVersion: TG2IntU16; virtual;
     procedure SetEnabled(const Value: Boolean); virtual;
     procedure SaveClassType(const dm: TG2DataManager);
+    procedure SaveVersion(const dm: TG2DataManager);
+    function LoadVersion(const dm: TG2DataManager): TG2IntU16;
   public
     property UserData: Pointer read _UserData write _UserData;
     property Scene: TG2Scene2D read _Scene;
@@ -295,6 +302,7 @@ type
       procedure pre_solve(const contact: pb2_contact; const old_manifold: pb2_manifold); override;
       procedure post_solve(const contact: pb2_contact; const impulse: pb2_contact_impulse); override;
     end;
+    const CurrentVersion = $0001;
     var _Entities: TG2Scene2DEntityList;
     var _Joints: TG2Scene2DJointList;
     var _RenderHooks: TRenderHookList;
@@ -389,6 +397,7 @@ type
     procedure SetRotation(const Value: TG2Rotation2); inline;
     function GetRotation: TG2Rotation2; inline;
   protected
+    function GetCurrentVersion: TG2IntU16; override;
     procedure OnInitialize; override;
     procedure OnFinalize; override;
     procedure OnAttach; override;
@@ -1249,6 +1258,11 @@ begin
   Result := _Tags.Count;
 end;
 
+function TG2Scene2DComponent.GetCurrentVersion: TG2IntU16;
+begin
+  Result := $0001;
+end;
+
 procedure TG2Scene2DComponent.OnInitialize;
 begin
 
@@ -1282,6 +1296,16 @@ begin
   begin
     dm.WriteStringA(_Tags[i]);
   end;
+end;
+
+procedure TG2Scene2DComponent.SaveVersion(const dm: TG2DataManager);
+begin
+  dm.WriteIntU16(GetCurrentVersion);
+end;
+
+function TG2Scene2DComponent.LoadVersion(const dm: TG2DataManager): TG2IntU16;
+begin
+  Result := dm.ReadIntU16;
 end;
 
 procedure TG2Scene2DComponent.LoadTags(const dm: TG2DataManager);
@@ -1508,6 +1532,11 @@ begin
   SetTransform(G2Transform2(_Transform.p, Value));
 end;
 
+function TG2Scene2DEntity.GetCurrentVersion: TG2IntU16;
+begin
+  Result := $0001;
+end;
+
 procedure TG2Scene2DEntity.SetTransform(const Value: TG2Transform2);
   var Origin: TG2Vec2;
   var xfm: TG2Transform2;
@@ -1696,6 +1725,7 @@ end;
 procedure TG2Scene2DEntity.Save(const dm: TG2DataManager);
   var i: TG2IntS32;
 begin
+  dm.WriteIntU16(GetCurrentVersion);
   dm.WriteBuffer(@_Transform, SizeOf(_Transform));
   dm.WriteStringA(_Name);
   dm.WriteStringA(_GUID);
@@ -1717,11 +1747,13 @@ begin
 end;
 
 procedure TG2Scene2DEntity.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
   var i, j, tc, ec, cc: TG2IntS32;
   var e: TG2Scene2DEntity;
   var c: TG2Scene2DComponent;
   var CName: String;
 begin
+  Version := dm.ReadIntU16;
   dm.ReadBuffer(@_Transform, SizeOf(_Transform));
   _Name := dm.ReadStringA;
   _GUID := dm.ReadStringA;
@@ -1755,6 +1787,11 @@ end;
 //TG2Scene2DEntity END
 
 //TG2Scene2DJoint BEGIN
+function TG2Scene2DJoint.GetCurrentVersion: TG2IntU16;
+begin
+  Result := $0001;
+end;
+
 procedure TG2Scene2DJoint.SetEnabled(const Value: Boolean);
 begin
   _Enabled := Value;
@@ -1763,6 +1800,16 @@ end;
 procedure TG2Scene2DJoint.SaveClassType(const dm: TG2DataManager);
 begin
   dm.WriteStringA(ClassName);
+end;
+
+procedure TG2Scene2DJoint.SaveVersion(const dm: TG2DataManager);
+begin
+  dm.WriteIntU16(GetCurrentVersion);
+end;
+
+function TG2Scene2DJoint.LoadVersion(const dm: TG2DataManager): TG2IntU16;
+begin
+  Result := dm.ReadIntU16;
 end;
 
 class constructor TG2Scene2DJoint.ClassCreate;
@@ -1885,6 +1932,7 @@ end;
 procedure TG2Scene2DDistanceJoint.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   if _RigidBodyA = nil then
   begin
     dm.WriteIntS32(0);
@@ -1908,9 +1956,11 @@ begin
 end;
 
 procedure TG2Scene2DDistanceJoint.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
   var GUID: String;
   var e: TG2Scene2DEntity;
 begin
+  Version := LoadVersion(dm);
   GUID := dm.ReadStringA;
   e := _Scene.FindEntity(GUID);
   if e <> nil then
@@ -2005,6 +2055,7 @@ end;
 procedure TG2Scene2DRevoluteJoint.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   if _RigidBodyA = nil then
   begin
     dm.WriteIntS32(0);
@@ -2026,9 +2077,11 @@ begin
 end;
 
 procedure TG2Scene2DRevoluteJoint.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
   var GUID: String;
   var e: TG2Scene2DEntity;
 begin
+  Version := LoadVersion(dm);
   GUID := dm.ReadStringA;
   e := _Scene.FindEntity(GUID);
   if e <> nil then
@@ -2742,6 +2795,7 @@ procedure TG2Scene2D.Save(const dm: TG2DataManager);
   var i, n: TG2IntS32;
 begin
   dm.WriteBuffer(@Header, SizeOf(Header));
+  dm.WriteIntU16(CurrentVersion);
   dm.WriteVec2(_Gravity);
   dm.WriteBool(_GridEnable);
   dm.WriteFloat(_GridSizeX);
@@ -2762,6 +2816,7 @@ end;
 
 procedure TG2Scene2D.Load(const dm: TG2DataManager);
   var Header: array[0..3] of AnsiChar;
+  var Version: TG2IntU16;
   var i, j, n: TG2IntS32;
   var CName: String;
   var Joint: TG2Scene2DJoint;
@@ -2770,6 +2825,7 @@ begin
   dm.ReadBuffer(@Header, SizeOf(Header));
   {$Hints on}
   if Header <> 'G2S2' then Exit;
+  Version := dm.ReadIntU16;
   _Gravity := dm.ReadVec2;
   _PhysWorld.set_gravity(_Gravity);
   _GridEnable := dm.ReadBool;
@@ -2844,6 +2900,11 @@ end;
 function TG2Scene2DComponentSprite.GetRotation: TG2Rotation2;
 begin
   Result := _Transform.r;
+end;
+
+function TG2Scene2DComponentSprite.GetCurrentVersion: TG2IntU16;
+begin
+  Result := $0002;
 end;
 
 procedure TG2Scene2DComponentSprite.OnInitialize;
@@ -2938,6 +2999,7 @@ end;
 procedure TG2Scene2DComponentSprite.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   SaveTags(dm);
   if Assigned(_Picture)
   and (_Picture.IsShared) then
@@ -2954,6 +3016,9 @@ begin
   dm.WriteFloat(_Scale);
   dm.WriteBool(_FlipX);
   dm.WriteBool(_FlipY);
+  //Version $0002 BEGIN
+  dm.WriteColor(_Color);
+  //Version $0002 END
   dm.WriteBuffer(@_Transform, SizeOf(_Transform));
   dm.WriteBuffer(@_Filter, SizeOf(_Filter));
   dm.WriteBuffer(@_BlendMode, SizeOf(_BlendMode));
@@ -2961,9 +3026,11 @@ begin
 end;
 
 procedure TG2Scene2DComponentSprite.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
   var Usage: TG2TextureUsage;
   var TexFile: String;
 begin
+  Version := LoadVersion(dm);
   LoadTags(dm);
   TexFile := dm.ReadStringA;
   if Length(TexFile) > 0 then
@@ -2976,6 +3043,10 @@ begin
   _Scale := dm.ReadFloat;
   _FlipX := dm.ReadBool;
   _FlipY := dm.ReadBool;
+  if Version >= $0002 then
+  begin
+    _Color := dm.ReadColor;
+  end;
   dm.ReadBuffer(@_Transform, SizeOf(_Transform));
   dm.ReadBuffer(@_Filter, SizeOf(_Filter));
   dm.ReadBuffer(@_BlendMode, SizeOf(_BlendMode));
@@ -3150,6 +3221,7 @@ end;
 procedure TG2Scene2DComponentModel3D.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   SaveTags(dm);
   if Assigned(_Mesh)
   and (_Mesh.IsShared) then
@@ -3180,8 +3252,10 @@ begin
 end;
 
 procedure TG2Scene2DComponentModel3D.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
   var MeshFile: String;
 begin
+  Version := LoadVersion(dm);
   LoadTags(dm);
   MeshFile := dm.ReadStringA;
   if Length(MeshFile) > 0 then
@@ -3373,6 +3447,7 @@ end;
 procedure TG2Scene2DComponentText.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   SaveTags(dm);
   if Assigned(_Font)
   and (_Font.IsShared) then
@@ -3395,8 +3470,10 @@ begin
 end;
 
 procedure TG2Scene2DComponentText.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
   var FontFile: String;
 begin
+  Version := LoadVersion(dm);
   LoadTags(dm);
   FontFile := dm.ReadStringA;
   if Length(FontFile) > 0 then
@@ -3596,6 +3673,7 @@ procedure TG2Scene2DComponentEffect.Save(const dm: TG2DataManager);
   var b: Boolean;
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   SaveTags(dm);
   if Assigned(_EffectInst)
   and _EffectInst.Effect.IsShared then
@@ -3622,8 +3700,10 @@ begin
 end;
 
 procedure TG2Scene2DComponentEffect.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
   var EffectFile: String;
 begin
+  Version := LoadVersion(dm);
   LoadTags(dm);
   EffectFile := dm.ReadStringA;
   Layer := dm.ReadIntS32;
@@ -3860,6 +3940,7 @@ end;
 procedure TG2Scene2DComponentBackground.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   SaveTags(dm);
   if Assigned(_Texture)
   and _Texture.IsShared then
@@ -3883,8 +3964,10 @@ begin
 end;
 
 procedure TG2Scene2DComponentBackground.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
   var TexFile: String;
 begin
+  Version := LoadVersion(dm);
   LoadTags(dm);
   TexFile := dm.ReadStringA;
   if Length(TexFile) > 0 then
@@ -4089,6 +4172,7 @@ end;
 procedure TG2Scene2DComponentSpineAnimation.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   SaveTags(dm);
   if Assigned(_Skeleton) then
   begin
@@ -4109,6 +4193,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
   var SkeletonPath: String;
   var AtlasPath: String;
   var Atlas: TSpineAtlas;
@@ -4117,6 +4202,7 @@ procedure TG2Scene2DComponentSpineAnimation.Load(const dm: TG2DataManager);
   var sd: TSpineSkeletonData;
   var al: TSpineAtlasList;
 begin
+  Version := LoadVersion(dm);
   LoadTags(dm);
   SkeletonPath := dm.ReadStringA;
   Layer := dm.ReadIntS32;
@@ -4376,9 +4462,14 @@ end;
 procedure TG2Scene2DComponentRigidBody.OnUpdate;
 begin
   if Owner = nil then Exit;
-  if (BodyType = g2_s2d_rbt_dynamic_body)
-  or (BodyType = g2_s2d_rbt_kinematic_body) then
-  Owner.Transform := Transform;
+  if (BodyType = g2_s2d_rbt_dynamic_body) then
+  begin
+    Owner.Transform := Transform;
+  end
+  else if (BodyType = g2_s2d_rbt_kinematic_body) then
+  begin
+    UpdateFromOwner;
+  end;
 end;
 
 procedure TG2Scene2DComponentRigidBody.AddShape(const Shape: TG2Scene2DComponentCollisionShape);
@@ -4472,6 +4563,7 @@ procedure TG2Scene2DComponentRigidBody.Save(const dm: TG2DataManager);
   var xf: TG2Transform2;
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   SaveTags(dm);
   xf := Transform;
   dm.WriteBuffer(@xf, SizeOf(xf));
@@ -4480,8 +4572,10 @@ begin
 end;
 
 procedure TG2Scene2DComponentRigidBody.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
   var xf: TG2Transform2;
 begin
+  Version := LoadVersion(dm);
   LoadTags(dm);
   {$Hints off}
   dm.ReadBuffer(@xf, SizeOf(xf));
@@ -4849,6 +4943,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapeEdge.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   SaveTags(dm);
   dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   dm.WriteBuffer(@_EdgeShape.vertex0, SizeOf(_EdgeShape.vertex0));
@@ -4864,7 +4959,9 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeEdge.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
 begin
+  Version := LoadVersion(dm);
   LoadTags(dm);
   dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_EdgeShape;
@@ -4944,6 +5041,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapePoly.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   SaveTags(dm);
   dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   dm.WriteIntS32(_PolyShape.count);
@@ -4957,7 +5055,9 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapePoly.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
 begin
+  Version := LoadVersion(dm);
   LoadTags(dm);
   dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_PolyShape;
@@ -5053,6 +5153,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapeBox.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   SaveTags(dm);
   dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   dm.WriteFloat(_Width);
@@ -5066,7 +5167,9 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeBox.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
 begin
+  Version := LoadVersion(dm);
   LoadTags(dm);
   dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_PolyShape;
@@ -5143,6 +5246,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapeCircle.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   SaveTags(dm);
   dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   dm.WriteBuffer(@_CircleShape.center, SizeOf(_CircleShape.center));
@@ -5154,7 +5258,9 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeCircle.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
 begin
+  Version := LoadVersion(dm);
   LoadTags(dm);
   dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_CircleShape;
@@ -5233,6 +5339,7 @@ end;
 procedure TG2Scene2DComponentCollisionShapeChain.Save(const dm: TG2DataManager);
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   SaveTags(dm);
   dm.WriteBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   dm.WriteIntS32(_ChainShape.count);
@@ -5250,7 +5357,9 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeChain.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
 begin
+  Version := LoadVersion(dm);
   LoadTags(dm);
   dm.ReadBuffer(@_FixtureDef, SizeOf(_FixtureDef));
   _FixtureDef.shape := @_ChainShape;
@@ -5575,6 +5684,7 @@ procedure TG2Scene2DComponentCharacter.Save(const dm: TG2DataManager);
   var xf: TG2Transform2;
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   SaveTags(dm);
   xf := Transform;
   dm.WriteBuffer(@xf, SizeOf(xf));
@@ -5589,9 +5699,11 @@ begin
 end;
 
 procedure TG2Scene2DComponentCharacter.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
   var b: Boolean;
   var xf: TG2Transform2;
 begin
+  Version := LoadVersion(dm);
   LoadTags(dm);
   {$Hints off}
   dm.ReadBuffer(@xf, SizeOf(xf));
@@ -5945,6 +6057,7 @@ procedure TG2Scene2DComponentPoly.Save(const dm: TG2DataManager);
   var i: TG2IntS32;
 begin
   SaveClassType(dm);
+  SaveVersion(dm);
   SaveTags(dm);
   dm.WriteIntS32(Length(_Vertices));
   dm.WriteBuffer(@_Vertices[0], TG2IntS64(SizeOf(TG2Scene2DComponentPolyVertex)) * Length(_Vertices));
@@ -5970,9 +6083,11 @@ begin
 end;
 
 procedure TG2Scene2DComponentPoly.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
   var i, n: TG2IntS32;
   var TexFile: String;
 begin
+  Version := LoadVersion(dm);
   LoadTags(dm);
   n := dm.ReadIntS32;
   SetLength(_Vertices, n);
