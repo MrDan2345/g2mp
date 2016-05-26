@@ -4057,12 +4057,15 @@ type
   protected
     var _Joint: TG2Scene2DJoint;
     var _Position: TG2Vec2;
+    var _Properties: TPropertySet;
     function GetEditor: TScene2DEditor; virtual;
     function GetPosition: TG2Vec2; virtual;
     procedure SetPosition(const Value: TG2Vec2); virtual;
+    procedure UpdateProperties; virtual;
   public
     property Position: TG2Vec2 read GetPosition write SetPosition;
     property Editor: TScene2DEditor read GetEditor;
+    property Properties: TPropertySet read _Properties;
     constructor Create; virtual;
     destructor Destroy; override;
     procedure DebugDraw(const Display: TG2Display2D); virtual;
@@ -4103,6 +4106,9 @@ type
 //TScene2DJointDataRevolute BEGIN
   TScene2DJointDataRevolute = class (TScene2DJointData)
   private
+    var _EnableLimits: Boolean;
+    var _LimitMin: TG2Float;
+    var _LimitMax: TG2Float;
     function GetJoint: TG2Scene2DRevoluteJoint;
     procedure SetJoint(const Value: TG2Scene2DRevoluteJoint);
     function GetRigidBodyA: TScene2DComponentDataRigidBody;
@@ -4115,6 +4121,10 @@ type
     function GetPosition: TG2Vec2; override;
     procedure SetPosition(const Value: TG2Vec2); override;
     function GetEditor: TScene2DEditor; override;
+    procedure UpdateProperties; override;
+    procedure OnChangeEnableLimits(const Sender: Pointer);
+    procedure OnChangeLimitMin(const Sender: Pointer);
+    procedure OnChangeLimitMax(const Sender: Pointer);
   public
     property Joint: TG2Scene2DRevoluteJoint read GetJoint write SetJoint;
     property RigidBodyA: TScene2DComponentDataRigidBody read GetRigidBodyA write SetRigidBodyA;
@@ -4124,6 +4134,7 @@ type
     destructor Destroy; override;
     function Select(const Display: TG2Display2D; const x, y: TG2Float): Boolean; override;
     procedure DebugDraw(const Display: TG2Display2D); override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
   end;
 //TScene2DJointDataRevolute END
 
@@ -31618,13 +31629,20 @@ begin
   _Position := Value;
 end;
 
-constructor TScene2DJointData.Create;
+procedure TScene2DJointData.UpdateProperties;
 begin
 
 end;
 
+constructor TScene2DJointData.Create;
+begin
+  _Properties := TPropertySet.Create;
+  AddToProperties(_Properties);
+end;
+
 destructor TScene2DJointData.Destroy;
 begin
+  _Properties.Free;
   inherited Destroy;
 end;
 
@@ -31965,6 +31983,28 @@ begin
   TScene2DEditorJointRevolute.Instance.Joint := Self;
 end;
 
+procedure TScene2DJointDataRevolute.UpdateProperties;
+begin
+  _EnableLimits := Joint.EnableLimits;
+  _LimitMin := Joint.LimitMin * G2RadToDeg;
+  _LimitMax := Joint.LimitMax * G2RadToDeg;
+end;
+
+procedure TScene2DJointDataRevolute.OnChangeEnableLimits(const Sender: Pointer);
+begin
+  Joint.EnableLimits := _EnableLimits;
+end;
+
+procedure TScene2DJointDataRevolute.OnChangeLimitMin(const Sender: Pointer);
+begin
+  Joint.LimitMin := _LimitMin * G2DegToRad;
+end;
+
+procedure TScene2DJointDataRevolute.OnChangeLimitMax(const Sender: Pointer);
+begin
+  Joint.LimitMax := _LimitMax * G2DegToRad;
+end;
+
 constructor TScene2DJointDataRevolute.Create;
 begin
   inherited Create;
@@ -32036,6 +32076,13 @@ begin
     c,
     App.UI.TexLink, bmNormal, tfPoint
   );
+end;
+
+procedure TScene2DJointDataRevolute.AddToProperties(const PropertySet: TPropertySet);
+begin
+  PropertySet.PropBool('Enable Limits', @_EnableLimits, nil, @OnChangeEnableLimits);
+  PropertySet.PropFloat('Limit Min', @_LimitMin, nil, @OnChangeLimitMin);
+  PropertySet.PropFloat('Limit Max', @_LimitMax, nil, @OnChangeLimitMax);
 end;
 //TScene2DJointDataRevolute END
 
@@ -33088,6 +33135,8 @@ begin
   if Assigned(SelectJoint) then
   begin
     Editor := SelectJoint.Editor;
+    SelectJoint.UpdateProperties;
+    PropertySet := SelectJoint.Properties;
   end;
 end;
 

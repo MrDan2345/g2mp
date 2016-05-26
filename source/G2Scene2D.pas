@@ -230,15 +230,25 @@ type
     var _Anchor: TG2Vec2;
     var _OffsetA: TG2Vec2;
     var _OffsetB: TG2Vec2;
+    var _EnableLimits: Boolean;
+    var _LimitMin: TG2Float;
+    var _LimitMax: TG2Float;
+    procedure SetEnableLimits(const Value: Boolean);
+    procedure SetLimitMax(const Value: TG2Float);
+    procedure SetLimitMin(const Value: TG2Float);
     function Valid: Boolean; inline;
     function GetAnchor: TG2Vec2;
     procedure SetAnchor(const Value: TG2Vec2);
   protected
+    function GetCurrentVersion: TG2IntU16; override;
     procedure SetEnabled(const Value: Boolean); override;
   public
     property RigidBodyA: TG2Scene2DComponentRigidBody read _RigidBodyA write _RigidBodyA;
     property RigidBodyB: TG2Scene2DComponentRigidBody read _RigidBodyB write _RigidBodyB;
     property Anchor: TG2Vec2 read GetAnchor write SetAnchor;
+    property EnableLimits: Boolean read _EnableLimits write SetEnableLimits;
+    property LimitMin: TG2Float read _LimitMin write SetLimitMin;
+    property LimitMax: TG2Float read _LimitMax write SetLimitMax;
     class constructor CreateClass;
     constructor Create(const OwnerScene: TG2Scene2D); override;
     destructor Destroy; override;
@@ -1989,6 +1999,36 @@ begin
   );
 end;
 
+procedure TG2Scene2DRevoluteJoint.SetEnableLimits(const Value: Boolean);
+begin
+  if _EnableLimits = Value then Exit;
+  _EnableLimits := Value;
+  if _Enabled then
+  begin
+    pb2_revolute_joint(_Joint)^.enable_limit(_EnableLimits);
+  end;
+end;
+
+procedure TG2Scene2DRevoluteJoint.SetLimitMax(const Value: TG2Float);
+begin
+  if _LimitMax = Value then Exit;
+  _LimitMax := Value;
+  if _Enabled then
+  begin
+    pb2_revolute_joint(_Joint)^.set_limits(_LimitMin, _LimitMax);
+  end;
+end;
+
+procedure TG2Scene2DRevoluteJoint.SetLimitMin(const Value: TG2Float);
+begin
+  if _LimitMin = Value then Exit;
+  _LimitMin := Value;
+  if _Enabled then
+  begin
+    pb2_revolute_joint(_Joint)^.set_limits(_LimitMin, _LimitMax);
+  end;
+end;
+
 function TG2Scene2DRevoluteJoint.GetAnchor: TG2Vec2;
 begin
   if Valid then Result := (_RigidBodyA.Owner.Transform.p + _OffsetA + _RigidBodyB.Owner.Transform.p + _OffsetB) * 0.5
@@ -2003,6 +2043,11 @@ begin
     _OffsetA := _Anchor - _RigidBodyA.Owner.Transform.p;
     _OffsetB := _Anchor - _RigidBodyB.Owner.Transform.p;
   end;
+end;
+
+function TG2Scene2DRevoluteJoint.GetCurrentVersion: TG2IntU16;
+begin
+  Result := $0002;
 end;
 
 procedure TG2Scene2DRevoluteJoint.SetEnabled(const Value: Boolean);
@@ -2023,6 +2068,9 @@ begin
       _RigidBodyB.PhysBody,
       Anchor
     );
+    def.enable_limit := _EnableLimits;
+    def.lower_angle := _LimitMin;
+    def.upper_angle := _LimitMax;
     _Joint := _Scene.PhysWorld.create_joint(def);
   end
   else
@@ -2045,6 +2093,9 @@ begin
   _RigidBodyA := nil;
   _RigidBodyB := nil;
   _Anchor.SetZero;
+  _EnableLimits := False;
+  _LimitMin := 0;
+  _LimitMax := 0;
 end;
 
 destructor TG2Scene2DRevoluteJoint.Destroy;
@@ -2073,6 +2124,11 @@ begin
     dm.WriteStringA(_RigidBodyB.Owner.GUID);
   end;
   dm.WriteVec2(Anchor);
+  //Version $0002 BEGIN
+  dm.WriteBool(_EnableLimits);
+  dm.WriteFloat(_LimitMin);
+  dm.WriteFloat(_LimitMax);
+  //Vertsion $0002 END
   dm.WriteBool(_Enabled);
 end;
 
@@ -2096,6 +2152,12 @@ begin
   _RigidBodyB := nil;
   _Anchor := dm.ReadVec2;
   SetAnchor(_Anchor);
+  if Version >= $0002 then
+  begin
+    _EnableLimits := dm.ReadBool;
+    _LimitMin := dm.ReadFloat;
+    _LimitMax := dm.ReadFloat;
+  end;
   Enabled := dm.ReadBool;
 end;
 //TG2Scene2DRevoluteJoint END
