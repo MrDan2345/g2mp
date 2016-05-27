@@ -471,9 +471,11 @@ type
     end;
     type TPropertyButton = class (TProperty)
     protected
-      var _Proc: TG2ProcObj;
+      var _Proc: TG2ProcPtrObj;
+      var _Reference: Pointer;
     public
-      property Proc: TG2ProcObj read _Proc write _Proc;
+      property Proc: TG2ProcPtrObj read _Proc write _Proc;
+      property Reference: Pointer read _Reference write _Reference;
       constructor Create; override;
     end;
     type TPropertyBool = class (TProperty)
@@ -609,7 +611,7 @@ type
     ): TPropertyPath;
     function PropButton(
       const Name: String;
-      const OnClick: TG2ProcObj;
+      const OnClick: TG2ProcPtrObj;
       const Parent: TProperty = nil
     ): TPropertyButton;
     function PropBool(
@@ -3819,8 +3821,8 @@ type
     function PickLayer: Integer; override;
     function Pick(const x, y: TG2Float): Boolean; override;
     procedure AddToProperties(const PropertySet: TPropertySet); override;
-    procedure OnAddLayer;
-    procedure OnEdit;
+    procedure OnAddLayer(const Sender: Pointer);
+    procedure OnEdit(const Sender: Pointer);
     procedure GenerateData;
     procedure CompleteData;
     procedure Clear;
@@ -3853,8 +3855,8 @@ type
     procedure OnChangeFixedOrientation(const Sender: Pointer);
     procedure OnChangeEffect(const Sender: Pointer);
     procedure OnTagsChange(const Sender: Pointer);
-    procedure OnPlay;
-    procedure OnStop;
+    procedure OnPlay(const Sender: Pointer);
+    procedure OnStop(const Sender: Pointer);
   end;
 //TScene2DComponentDataEffect END
 
@@ -3935,7 +3937,7 @@ type
     procedure OnChangeRestitution(const Sender: Pointer);
     procedure OnChangeSensor(const Sender: Pointer);
     procedure OnTagsChange(const Sender: Pointer);
-    procedure OnEdit;
+    procedure OnEdit(const Sender: Pointer);
   end;
 //TScene2DComponentDataShapePoly END
 
@@ -4018,7 +4020,7 @@ type
     destructor Destroy; override;
     procedure DebugDraw(const Display: TG2Display2D); override;
     procedure AddToProperties(const PropertySet: TPropertySet); override;
-    procedure OnEdit;
+    procedure OnEdit(const Sender: Pointer);
     procedure OnChangeFriction(const Sender: Pointer);
     procedure OnChangeDensity(const Sender: Pointer);
     procedure OnChangeRestitution(const Sender: Pointer);
@@ -4043,7 +4045,7 @@ type
     destructor Destroy; override;
     procedure DebugDraw(const Display: TG2Display2D); override;
     procedure AddToProperties(const PropertySet: TPropertySet); override;
-    procedure OnEdit;
+    procedure OnEdit(const Sender: Pointer);
     procedure OnChangeFriction(const Sender: Pointer);
     procedure OnChangeDensity(const Sender: Pointer);
     procedure OnChangeRestitution(const Sender: Pointer);
@@ -4051,6 +4053,39 @@ type
     procedure OnTagsChange(const Sender: Pointer);
   end;
 //TScene2DComponentDataShapeChain END
+
+//TScene2DComponentDataProperties BEGIN
+  TScene2DComponentDataProperties = class (TScene2DComponentData)
+  private
+    var PropSet: TPropertySet;
+    var Group: TPropertySet.TProperty;
+    procedure UpdateProperties;
+  public
+    var Component: TG2Scene2DComponentProperties;
+    class function GetName: String; override;
+    destructor Destroy; override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
+    procedure OnTagsChange(const Sender: Pointer);
+    procedure OnChangeProperties(const Sender: Pointer);
+    procedure OnDeleteProperty(const Sender: Pointer);
+    procedure OnAddProperty(const Sender: Pointer);
+  end;
+//TScene2DComponentDataProperties END
+
+//TScene2DComponentDataStrings BEGIN
+  TScene2DComponentDataStrings = class (TScene2DComponentData)
+  private
+    var TextAssetName: String;
+    var Group: TPropertySet.TProperty;
+  public
+    var Component: TG2Scene2DComponentStrings;
+    class function GetName: String; override;
+    destructor Destroy; override;
+    procedure AddToProperties(const PropertySet: TPropertySet); override;
+    procedure OnTagsChange(const Sender: Pointer);
+    procedure OnChangeStrings(const Sender: Pointer);
+  end;
+//TScene2DComponentDataStrings END
 
 //TScene2DJointData BEGIN
   TScene2DJointData = class
@@ -4142,7 +4177,7 @@ type
   TComponentTypePair = record
     Component: CG2Scene2DComponent;
     ComponentData: CScene2DComponentData;
-    AddProc: TG2ProcObj;
+    AddProc: TG2ProcPtrObj;
   end;
   PComponentTypePair = ^TComponentTypePair;
   TComponentList = specialize TG2QuickListG<PComponentTypePair>;
@@ -4158,7 +4193,7 @@ type
     var _ComponentSet: TPropertySet;
     var _Editor: TScene2DEditor;
     procedure UpdateProperties;
-    procedure AddComponentTypePair(const ComponentClass: CG2Scene2DComponent; const ComponentDataClass: CScene2DComponentData; const AddProc: TG2ProcObj);
+    procedure AddComponentTypePair(const ComponentClass: CG2Scene2DComponent; const ComponentDataClass: CScene2DComponentData; const AddProc: TG2ProcPtrObj);
     procedure SetEditor(const Value: TScene2DEditor); inline;
     procedure OnGravityChange(const Sender: Pointer);
     procedure OnGridSizeXChange(const Sender: Pointer);
@@ -4200,27 +4235,31 @@ type
     function CreateComponentShapeEdge: TG2Scene2DComponentCollisionShapeEdge;
     function CreateComponentShapeChain: TG2Scene2DComponentCollisionShapeChain;
     function CreateComponentPoly: TG2Scene2DComponentPoly;
+    function CreateComponentProperties: TG2Scene2DComponentProperties;
+    function CreateComponentStrings: TG2Scene2DComponentStrings;
     function Pick(const ScenePos: TG2Vec2): TG2Scene2DEntity;
     procedure DeleteComponent(var Component: TG2Scene2DComponent);
     procedure SelectionUpdateStart;
     procedure SelectionUpdateEnd;
     procedure UpdateSelectionPos;
-    procedure BtnAddComponent;
-    procedure BtnComponentSprite;
-    procedure BtnComponentText;
-    procedure BtnComponentBackground;
-    procedure BtnComponentSpineAnimation;
-    procedure BtnComponentModel3D;
-    procedure BtnComponentEffect;
-    procedure BtnComponentRigidBody;
-    procedure BtnComponentCharacter;
-    procedure BtnComponentShapePoly;
-    procedure BtnComponentShapeBox;
-    procedure BtnComponentShapeCircle;
-    procedure BtnComponentShapeEdge;
-    procedure BtnComponentShapeChain;
-    procedure BtnComponentPoly;
-    procedure BtnComponentCancel;
+    procedure BtnAddComponent(const Sender: Pointer);
+    procedure BtnComponentSprite(const Sender: Pointer);
+    procedure BtnComponentText(const Sender: Pointer);
+    procedure BtnComponentBackground(const Sender: Pointer);
+    procedure BtnComponentSpineAnimation(const Sender: Pointer);
+    procedure BtnComponentModel3D(const Sender: Pointer);
+    procedure BtnComponentEffect(const Sender: Pointer);
+    procedure BtnComponentRigidBody(const Sender: Pointer);
+    procedure BtnComponentCharacter(const Sender: Pointer);
+    procedure BtnComponentShapePoly(const Sender: Pointer);
+    procedure BtnComponentShapeBox(const Sender: Pointer);
+    procedure BtnComponentShapeCircle(const Sender: Pointer);
+    procedure BtnComponentShapeEdge(const Sender: Pointer);
+    procedure BtnComponentShapeChain(const Sender: Pointer);
+    procedure BtnComponentPoly(const Sender: Pointer);
+    procedure BtnComponentProperties(const Sender: Pointer);
+    procedure BtnComponentStrings(const Sender: Pointer);
+    procedure BtnComponentCancel(const Sender: Pointer);
     procedure LoadScene(const SceneName: String);
     procedure ClearScene;
     procedure Simulate;
@@ -4289,23 +4328,23 @@ type
   end;
 //TAssetImage END
 
-//TAssetImage BEGIN
+//TAssetMesh BEGIN
   TAssetMesh = class (TAsset)
   public
     class function GetAssetName: String; override;
     class function CheckExtension(const Ext: String): Boolean; override;
     class function ProcessFile(const FilePath: String): TG2QuickListString; override;
   end;
-//TAssetImage END
+//TAssetMesh END
 
-//TAssetImage BEGIN
+//TAssetFont BEGIN
   TAssetFont = class (TAsset)
   public
     class function GetAssetName: String; override;
     class function CheckExtension(const Ext: String): Boolean; override;
     class function ProcessFile(const FilePath: String): TG2QuickListString; override;
   end;
-//TAssetImage END
+//TAssetFont END
 
 //TAssetEffect2D BEGIN
   TAssetEffect2D = class (TAsset)
@@ -4327,6 +4366,15 @@ type
 
 //TAssetPrefab2D BEGIN
   TAssetPrefab2D = class (TAsset)
+  public
+    class function GetAssetName: String; override;
+    class function CheckExtension(const Ext: String): Boolean; override;
+    class function ProcessFile(const FilePath: String): TG2QuickListString; override;
+  end;
+//TAssetPrefab2D END
+
+//TAssetText BEGIN
+  TAssetText = class (TAsset)
   public
     class function GetAssetName: String; override;
     class function CheckExtension(const Ext: String): Boolean; override;
@@ -5383,6 +5431,7 @@ begin
   AddAssetType(TAssetEffect2D);
   AddAssetType(TAssetScene2D);
   AddAssetType(TAssetPrefab2D);
+  AddAssetType(TAssetText);
   _ItemSize := App.UI.Font1.TextHeight('A') + 4;
 end;
 
@@ -6586,6 +6635,7 @@ constructor TPropertySet.TPropertyButton.Create;
 begin
   inherited Create;
   _PropertyType := pt_button;
+  _Reference := nil;
 end;
 
 constructor TPropertySet.TPropertyBool.Create;
@@ -6773,7 +6823,7 @@ end;
 
 function TPropertySet.PropButton(
   const Name: String;
-  const OnClick: TG2ProcObj;
+  const OnClick: TG2ProcPtrObj;
   const Parent: TProperty
 ): TPropertyButton;
 begin
@@ -13312,7 +13362,7 @@ procedure TUIWorkspaceProperties.OnMouseDown(const Button, x, y: Integer);
   var PropFloat: TPropertySet.TPropertyFloat absolute Prop;
   var PropString: TPropertySet.TPropertyString absolute Prop;
   var InExpand, InEdit: Boolean;
-  var r, pr: TG2Rect;
+  var r, nr, pr, tr: TG2Rect;
   procedure StartEditing;
     var AllowEmpty: Boolean;
   begin
@@ -13350,7 +13400,9 @@ begin
       if InExpand and (Prop.Children^.Count > 0) then Prop.Open := not Prop.Open;
       if InEdit then
       begin
+        nr := pr;
         pr.l := pr.l + pr.w * _Splitter + 1;
+        nr.r := pr.l - 1;
         case Prop.PropertyType of
           TPropertySet.TPropertyType.pt_int:
           begin
@@ -13406,7 +13458,7 @@ begin
     if (Prop is TPropertySet.TPropertyButton) then
     begin
       if not InExpand and Assigned(TPropertySet.TPropertyButton(Prop).Proc) then
-      TPropertySet.TPropertyButton(Prop).Proc;
+      TPropertySet.TPropertyButton(Prop).Proc(Prop);
     end
     else if (Prop is TPropertySet.TPropertyColor) then
     begin
@@ -30556,7 +30608,7 @@ begin
   UpdateGroup;
 end;
 
-procedure TScene2DComponentDataPoly.OnAddLayer;
+procedure TScene2DComponentDataPoly.OnAddLayer(const Sender: Pointer);
   var Layer: TScene2DComponentDataPolyLayer;
   var i: Integer;
 begin
@@ -30570,7 +30622,7 @@ begin
   UpdateGroup;
 end;
 
-procedure TScene2DComponentDataPoly.OnEdit;
+procedure TScene2DComponentDataPoly.OnEdit(const Sender: Pointer);
 begin
   if App.Scene2DData.Editor = TScene2DEditorPoly.Instance then
   App.Scene2DData.Editor := nil
@@ -30804,12 +30856,12 @@ begin
   SyncTags(Component);
 end;
 
-procedure TScene2DComponentDataEffect.OnPlay;
+procedure TScene2DComponentDataEffect.OnPlay(const Sender: Pointer);
 begin
   Component.Play;
 end;
 
-procedure TScene2DComponentDataEffect.OnStop;
+procedure TScene2DComponentDataEffect.OnStop(const Sender: Pointer);
 begin
   Component.Stop;
 end;
@@ -31120,7 +31172,7 @@ begin
   SyncTags(Component);
 end;
 
-procedure TScene2DComponentDataShapePoly.OnEdit;
+procedure TScene2DComponentDataShapePoly.OnEdit(const Sender: Pointer);
 begin
   if App.Scene2DData.Editor = TScene2DEditorShapePoly.Instance then
   App.Scene2DData.Editor := nil
@@ -31466,7 +31518,7 @@ begin
   PropertySet.PropString('Event After Contact Solve', @Component.EventAfterContactSolve.Name, EventGroup);
 end;
 
-procedure TScene2DComponentDataShapeEdge.OnEdit;
+procedure TScene2DComponentDataShapeEdge.OnEdit(const Sender: Pointer);
 begin
   if App.Scene2DData.Editor = TScene2DEditorEdge.Instance then
   App.Scene2DData.Editor := nil
@@ -31575,7 +31627,7 @@ begin
   PropertySet.PropString('Event After Contact Solve', @Component.EventAfterContactSolve.Name, EventGroup);
 end;
 
-procedure TScene2DComponentDataShapeChain.OnEdit;
+procedure TScene2DComponentDataShapeChain.OnEdit(const Sender: Pointer);
 begin
   if App.Scene2DData.Editor = TScene2DEditorChain.Instance then
   App.Scene2DData.Editor := nil
@@ -31612,6 +31664,112 @@ begin
   SyncTags(Component);
 end;
 //TScene2DComponentDataShapeChain END
+
+//TScene2DComponentDataProperties BEGIN
+procedure TScene2DComponentDataProperties.UpdateProperties;
+  var i: Integer;
+  var Prop: TPropertySet.TPropertyString;
+begin
+  Group.Clear;
+  for i := 0 to Component.Count - 1 do
+  begin
+    Prop := PropSet.PropString(Component.Items[i]^.Name, @Component.Items[i]^.Value, Group, nil);
+    Prop.AllowEmpty := True;
+    PropSet.PropString('Name', @Component.Items[i]^.Name, Prop, @OnChangeProperties);
+    PropSet.PropString('Value', @Component.Items[i]^.Value, Prop, nil);
+    PropSet.PropButton('Delete Property', @OnDeleteProperty, Prop).Reference := Component.Items[i];
+  end;
+  PropSet.PropButton('Add Property', @OnAddProperty, Group);
+  PropSet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
+end;
+
+class function TScene2DComponentDataProperties.GetName: String;
+begin
+  Result := 'Properties';
+end;
+
+destructor TScene2DComponentDataProperties.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TScene2DComponentDataProperties.AddToProperties(const PropertySet: TPropertySet);
+begin
+  PropSet := PropertySet;
+  SyncTags(Component);
+  Group := PropertySet.PropComponent(GetName, Component);
+  UpdateProperties;
+end;
+
+procedure TScene2DComponentDataProperties.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
+end;
+
+procedure TScene2DComponentDataProperties.OnAddProperty(const Sender: Pointer);
+begin
+  Component.Add('Property', '');
+  UpdateProperties;
+end;
+
+procedure TScene2DComponentDataProperties.OnChangeProperties(const Sender: Pointer);
+begin
+  UpdateProperties;
+end;
+
+procedure TScene2DComponentDataProperties.OnDeleteProperty(const Sender: Pointer);
+  var i: Integer;
+begin
+  for i := 0 to Component.Count - 1 do
+  if Component.Items[i] = TPropertySet.TPropertyButton(Sender).Reference then
+  begin
+    Component.Delete(i);
+    UpdateProperties;
+    Break;
+  end;
+end;
+//TScene2DComponentDataProperties END
+
+//TScene2DComponentDataStrings BEGIN
+class function TScene2DComponentDataStrings.GetName: String;
+begin
+  Result := 'Text Data';
+end;
+
+destructor TScene2DComponentDataStrings.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TScene2DComponentDataStrings.AddToProperties(const PropertySet: TPropertySet);
+begin
+  SyncTags(Component);
+  if Assigned(Component.Text)
+  and Component.Text.IsShared then
+  begin
+    TextAssetName := Component.Text.AssetName;
+  end
+  else
+  begin
+    TextAssetName := '';
+  end;
+  Group := PropertySet.PropComponent(GetName, Component);
+  PropertySet.PropPath('Text Data', @TextAssetName, TAssetText, Group, @OnChangeStrings);
+  PropertySet.PropString('Tags', @Tags, Group, @OnTagsChange).AllowEmpty := True;
+end;
+
+procedure TScene2DComponentDataStrings.OnTagsChange(const Sender: Pointer);
+begin
+  Component.ParseTags(Tags);
+  SyncTags(Component);
+end;
+
+procedure TScene2DComponentDataStrings.OnChangeStrings(const Sender: Pointer);
+begin
+  Component.Text := TG2TextAsset.SharedAsset('TextAssetName');
+end;
+//TScene2DComponentDataStrings END
 
 //TScene2DJointData BEGIN
 function TScene2DJointData.GetEditor: TScene2DEditor;
@@ -32097,7 +32255,7 @@ end;
 procedure TScene2DData.AddComponentTypePair(
   const ComponentClass: CG2Scene2DComponent;
   const ComponentDataClass: CScene2DComponentData;
-  const AddProc: TG2ProcObj
+  const AddProc: TG2ProcPtrObj
 );
   var Pair: PComponentTypePair;
 begin
@@ -32643,6 +32801,20 @@ begin
   TScene2DComponentDataPoly(Result.UserData).UpdateComponent;
 end;
 
+function TScene2DData.CreateComponentProperties: TG2Scene2DComponentProperties;
+begin
+  Result := TG2Scene2DComponentProperties.Create(_Scene);
+  Result.UserData := TScene2DComponentDataProperties.Create;
+  TScene2DComponentDataProperties(Result.UserData).Component := Result;
+end;
+
+function TScene2DData.CreateComponentStrings: TG2Scene2DComponentStrings;
+begin
+  Result := TG2Scene2DComponentStrings.Create(_Scene);
+  Result.UserData := TScene2DComponentDataStrings.Create;
+  TScene2DComponentDataStrings(Result.UserData).Component := Result;
+end;
+
 function TScene2DData.Pick(const ScenePos: TG2Vec2): TG2Scene2DEntity;
   var Entity: TG2Scene2DEntity;
   var Component: TG2Scene2DComponent;
@@ -32726,7 +32898,7 @@ begin
   sxf.p *= 1 / Selection.Count;
 end;
 
-procedure TScene2DData.BtnAddComponent;
+procedure TScene2DData.BtnAddComponent(const Sender: Pointer);
   var i: Integer;
 begin
   if Selection.Count = 1 then
@@ -32740,7 +32912,7 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentSprite;
+procedure TScene2DData.BtnComponentSprite(const Sender: Pointer);
   var Component: TG2Scene2DComponentSprite;
 begin
   if Selection.Count = 1 then
@@ -32752,7 +32924,7 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentText;
+procedure TScene2DData.BtnComponentText(const Sender: Pointer);
   var Component: TG2Scene2DComponentText;
 begin
   if Selection.Count = 1 then
@@ -32764,7 +32936,7 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentBackground;
+procedure TScene2DData.BtnComponentBackground(const Sender: Pointer);
   var Component: TG2Scene2DComponentBackground;
 begin
   if Selection.Count = 1 then
@@ -32776,7 +32948,7 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentSpineAnimation;
+procedure TScene2DData.BtnComponentSpineAnimation(const Sender: Pointer);
   var Component: TG2Scene2DComponentSpineAnimation;
 begin
   if Selection.Count = 1 then
@@ -32788,7 +32960,7 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentModel3D;
+procedure TScene2DData.BtnComponentModel3D(const Sender: Pointer);
   var Component: TG2Scene2DComponentModel3D;
 begin
   if Selection.Count = 1 then
@@ -32800,7 +32972,7 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentEffect;
+procedure TScene2DData.BtnComponentEffect(const Sender: Pointer);
   var Component: TG2Scene2DComponentEffect;
 begin
   if Selection.Count = 1 then
@@ -32812,7 +32984,7 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentRigidBody;
+procedure TScene2DData.BtnComponentRigidBody(const Sender: Pointer);
   var Component: TG2Scene2DComponentRigidBody;
 begin
   if Selection.Count = 1 then
@@ -32824,7 +32996,7 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentCharacter;
+procedure TScene2DData.BtnComponentCharacter(const Sender: Pointer);
   var Component: TG2Scene2DComponentCharacter;
 begin
   if Selection.Count = 1 then
@@ -32836,7 +33008,7 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentShapePoly;
+procedure TScene2DData.BtnComponentShapePoly(const Sender: Pointer);
   var Component: TG2Scene2DComponentCollisionShapePoly;
 begin
   if Selection.Count = 1 then
@@ -32848,7 +33020,7 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentShapeBox;
+procedure TScene2DData.BtnComponentShapeBox(const Sender: Pointer);
   var Component: TG2Scene2DComponentCollisionShapePoly;
 begin
   if Selection.Count = 1 then
@@ -32860,7 +33032,7 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentShapeCircle;
+procedure TScene2DData.BtnComponentShapeCircle(const Sender: Pointer);
   var Component: TG2Scene2DComponentCollisionShapeCircle;
 begin
   if Selection.Count = 1 then
@@ -32872,7 +33044,7 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentShapeEdge;
+procedure TScene2DData.BtnComponentShapeEdge(const Sender: Pointer);
   var Component: TG2Scene2DComponentCollisionShapeEdge;
 begin
   if Selection.Count = 1 then
@@ -32884,7 +33056,7 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentShapeChain;
+procedure TScene2DData.BtnComponentShapeChain(const Sender: Pointer);
   var Component: TG2Scene2DComponentCollisionShapeChain;
 begin
   if Selection.Count = 1 then
@@ -32896,7 +33068,7 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentPoly;
+procedure TScene2DData.BtnComponentPoly(const Sender: Pointer);
   var Component: TG2Scene2DComponentPoly;
 begin
   if Selection.Count = 1 then
@@ -32908,7 +33080,31 @@ begin
   end;
 end;
 
-procedure TScene2DData.BtnComponentCancel;
+procedure TScene2DData.BtnComponentProperties(const Sender: Pointer);
+  var Component: TG2Scene2DComponentProperties;
+begin
+  if Selection.Count = 1 then
+  begin
+    Component := CreateComponentProperties;
+    Component.Attach(Selection[0]);
+    SelectionUpdateStart;
+    SelectionUpdateEnd;
+  end;
+end;
+
+procedure TScene2DData.BtnComponentStrings(const Sender: Pointer);
+  var Component: TG2Scene2DComponentStrings;
+begin
+  if Selection.Count = 1 then
+  begin
+    Component := CreateComponentStrings;
+    Component.Attach(Selection[0]);
+    SelectionUpdateStart;
+    SelectionUpdateEnd;
+  end;
+end;
+
+procedure TScene2DData.BtnComponentCancel(const Sender: Pointer);
 begin
   SelectionUpdateStart;
   SelectionUpdateEnd;
@@ -33041,6 +33237,8 @@ begin
   AddComponentTypePair(TG2Scene2DComponentCollisionShapeCircle, TScene2DComponentDataShapeCircle, @BtnComponentShapeCircle);
   AddComponentTypePair(TG2Scene2DComponentCollisionShapeEdge, TScene2DComponentDataShapeEdge, @BtnComponentShapeEdge);
   AddComponentTypePair(TG2Scene2DComponentCollisionShapeChain, TScene2DComponentDataShapeChain, @BtnComponentShapeChain);
+  AddComponentTypePair(TG2Scene2DComponentProperties, TScene2DComponentDataProperties, @BtnComponentProperties);
+  AddComponentTypePair(TG2Scene2DComponentStrings, TScene2DComponentDataStrings, @BtnComponentStrings);
   SceneProperties := TPropertySet.Create;
   SceneProperties.PropVec2('Gravity', @_PropGravity, nil, @OnGravityChange);
   Prop := SceneProperties.PropGroup('Grid');
@@ -33478,6 +33676,32 @@ begin
   end;
 end;
 //TAssetPrefab2D END
+
+//TAssetText BEGIN
+class function TAssetText.GetAssetName: String;
+begin
+  Result := 'Text';
+end;
+
+class function TAssetText.CheckExtension(const Ext: String): Boolean;
+begin
+  Result := (LowerCase(Ext) = 'txt');
+end;
+
+class function TAssetText.ProcessFile(const FilePath: String): TG2QuickListString;
+  var Ext: String;
+begin
+  Ext := ExtractFileExt(FilePath);
+  Delete(Ext, 1, 1);
+  if LowerCase(Ext) = 'txt' then
+  begin
+    {$Warnings off}
+    Result.Clear;
+    {$Warnings on}
+    Result.Add(FilePath);
+  end;
+end;
+//TAssetText END
 
 //TAssetManager BEIGN
 function TAssetManager.VerifyPath(const Path: String): String;

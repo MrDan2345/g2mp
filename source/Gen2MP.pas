@@ -1298,6 +1298,20 @@ type
   end;
   {$endif}
 
+  TG2TextAsset = class (TG2Asset)
+  protected
+    var _Lines: TStringList;
+    procedure Initialize; override;
+    procedure Finalize; override;
+  public
+    property Lines: TStringList read _Lines;
+    class function SharedAsset(const SharedAssetName: String): TG2TextAsset;
+    function Load(const FileName: String): Boolean;
+    function Load(const Stream: TStream): Boolean;
+    function Load(const Buffer: Pointer; const Size: TG2IntS32): Boolean;
+    function Load(const DataManager: TG2DataManager): Boolean;
+  end;
+
   TG2Snd = class
   protected
     _ListenerPos: TG2Vec3;
@@ -8945,6 +8959,85 @@ begin
 end;
 //TG2GfxGLES END
 {$endif}
+
+//TG2TextAsset BEGIN
+procedure TG2TextAsset.Initialize;
+begin
+  inherited Initialize;
+  _Lines := TStringList.Create;
+end;
+
+procedure TG2TextAsset.Finalize;
+begin
+  _Lines.Free;
+  inherited Finalize;
+end;
+
+class function TG2TextAsset.SharedAsset(const SharedAssetName: String): TG2TextAsset;
+  var Res: TG2Res;
+  var dm: TG2DataManager;
+begin
+  Res := TG2Res.List;
+  while Res <> nil do
+  begin
+    if (Res is TG2TextAsset)
+    and (TG2TextAsset(Res).AssetName = SharedAssetName)
+    and (Res.RefCount > 0) then
+    begin
+      Result := TG2TextAsset(Res);
+      Exit;
+    end;
+    Res := Res.Next;
+  end;
+  dm := TG2DataManager.Create(SharedAssetName, dmAsset);
+  Result := TG2TextAsset.Create;
+  Result.AssetName := SharedAssetName;
+  Result.Load(dm);
+  dm.Free;
+end;
+
+function TG2TextAsset.Load(const FileName: String): Boolean;
+  var dm: TG2DataManager;
+begin
+  dm := TG2DataManager.Create(FileName);
+  try
+    Load(dm);
+  finally
+    dm.Free;
+  end;
+end;
+
+function TG2TextAsset.Load(const Stream: TStream): Boolean;
+  var dm: TG2DataManager;
+begin
+  dm := TG2DataManager.Create(Stream);
+  try
+    Load(dm);
+  finally
+    dm.Free;
+  end;
+end;
+
+function TG2TextAsset.Load(const Buffer: Pointer; const Size: TG2IntS32): Boolean;
+  var dm: TG2DataManager;
+begin
+  dm := TG2DataManager.Create(Buffer, Size);
+  try
+    Load(dm);
+  finally
+    dm.Free;
+  end;
+end;
+
+function TG2TextAsset.Load(const DataManager: TG2DataManager): Boolean;
+  var Buffer: array of AnsiChar;
+begin
+  SetLength(Buffer, DataManager.Size + 1);
+  DataManager.ReadBuffer(@Buffer[0], DataManager.Size);
+  Buffer[DataManager.Size] := #0;
+  _Lines.SetText(@Buffer[0]);
+end;
+//TG2TextAsset END
 
 //TG2Snd BEGIN
 constructor TG2Snd.Create;

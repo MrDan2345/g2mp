@@ -1175,6 +1175,48 @@ type
     procedure Load(const dm: TG2DataManager); override;
   end;
 
+  TG2Scene2DComponentProperties = class (TG2Scene2DComponent)
+  public
+    type TProp = object
+      Name: String;
+      Value: String;
+      function IsInt: Boolean;
+      function IsFloat: Boolean;
+      function AsInt: TG2IntS32;
+      function AsFloat: TG2Float;
+    end;
+    PProp = ^TProp;
+  private
+    function GetCount: TG2IntS32; inline;
+    function GetProp(const Index: TG2IntS32): PProp; inline;
+  protected
+    var _Props: array of PProp;
+  public
+    property Count: TG2IntS32 read GetCount;
+    property Items[const Index: TG2IntS32]: PProp read GetProp;
+    class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
+    function Find(const Name: String): TG2IntS32;
+    procedure Add(const Name: String; const Value: String);
+    procedure Delete(const Index: TG2IntS32); overload;
+    procedure Delete(const Name: String); overload;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
+  end;
+
+  TG2Scene2DComponentStrings = class (TG2Scene2DComponent)
+  private
+    var _Text: TG2TextAsset;
+    procedure SetText(const Value: TG2TextAsset);
+  protected
+    procedure OnInitialize; override;
+    procedure OnFinalize; override;
+  public
+    property Text: TG2TextAsset read _Text write SetText;
+    class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
+    procedure Save(const dm: TG2DataManager); override;
+    procedure Load(const dm: TG2DataManager); override;
+  end;
+
   operator := (v: tb2_vec2): TG2Vec2; inline;
   operator := (v: TG2Vec2): tb2_vec2; inline;
   operator := (r: tb2_rot): TG2Rotation2; inline;
@@ -6174,6 +6216,179 @@ begin
   end;
 end;
 //TG2Scene2DComponentPoly END
+
+//TG2Scene2DComponentProperties BEGIN
+function TG2Scene2DComponentProperties.TProp.IsInt: Boolean;
+begin
+  Result := StrToIntDef(Value, 0) = StrToIntDef(Value, 1);
+end;
+
+function TG2Scene2DComponentProperties.TProp.IsFloat: Boolean;
+begin
+  Result := Abs(StrToFloatDef(Value, 1) - StrToFloatDef(Value, 0)) < G2EPS2;
+end;
+
+function TG2Scene2DComponentProperties.TProp.AsInt: TG2IntS32;
+begin
+  Result := StrToIntDef(Value, 0);
+end;
+
+function TG2Scene2DComponentProperties.TProp.AsFloat: TG2Float;
+begin
+  Result := StrToFloatDef(Value, 0);
+end;
+
+function TG2Scene2DComponentProperties.GetCount: TG2IntS32;
+begin
+  Result := Length(_Props);
+end;
+
+function TG2Scene2DComponentProperties.GetProp(const Index: TG2IntS32): PProp;
+begin
+  Result := _Props[Index];
+end;
+
+class function TG2Scene2DComponentProperties.CanAttach(const Node: TG2Scene2DEntity): Boolean;
+begin
+  Result := Node.ComponentOfType[TG2Scene2DComponentProperties] = nil;
+end;
+
+function TG2Scene2DComponentProperties.Find(const Name: String): TG2IntS32;
+  var i: TG2IntS32;
+begin
+  for i := 0 to High(_Props) do
+  if _Props[i]^.Name = Name then
+  begin
+    Result := i;
+    Exit;
+  end;
+  Result := -1;
+end;
+
+procedure TG2Scene2DComponentProperties.Add(const Name: String; const Value: String);
+  var i: TG2IntS32;
+  var Prop: PProp;
+begin
+  New(Prop);
+  Prop^.Name := Name;
+  Prop^.Value := Value;
+  i := Length(_Props);
+  SetLength(_Props, i + 1);
+  _Props[i] := Prop;
+end;
+
+procedure TG2Scene2DComponentProperties.Delete(const Index: TG2IntS32);
+  var i: TG2IntS32;
+begin
+  if (Index < 0) or (Index > High(_Props)) then Exit;
+  Dispose(_Props[Index]);
+  for i := High(_Props) - 1 downto Index do
+  begin
+    _Props[i] := _Props[i + 1];
+  end;
+  SetLength(_Props, Length(_Props) - 1);
+end;
+
+procedure TG2Scene2DComponentProperties.Delete(const Name: String);
+  var i: TG2IntS32;
+begin
+  i := Find(Name);
+  if i > -1 then
+  begin
+    Delete(i);
+  end;
+end;
+
+procedure TG2Scene2DComponentProperties.Save(const dm: TG2DataManager);
+  var i: TG2IntS32;
+begin
+  SaveClassType(dm);
+  SaveVersion(dm);
+  SaveTags(dm);
+  dm.WriteIntS32(Length(_Props));
+  for i := 0 to High(_Props) do
+  begin
+    dm.WriteStringA(_Props[i]^.Name);
+    dm.WriteStringA(_Props[i]^.Value);
+  end;
+end;
+
+procedure TG2Scene2DComponentProperties.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
+  var i, n: TG2IntS32;
+begin
+  Version := LoadVersion(dm);
+  LoadTags(dm);
+  n := dm.ReadIntS32;
+  SetLength(_Props, n);
+  for i := 0 to n - 1 do
+  begin
+    New(_Props[i]);
+    _Props[i]^.Name := dm.ReadStringA;
+    _Props[i]^.Value := dm.ReadStringA;
+  end;
+end;
+//TG2Scene2DComponentProperties END
+
+//TG2Scene2DComponentStrings BEGIN
+procedure TG2Scene2DComponentStrings.SetText(const Value: TG2TextAsset);
+begin
+  if _Text = Value then Exit;
+  if Assigned(_Text) and _Text.IsShared then _Text.RefDec;
+  _Text := Value;
+  if Assigned(_Text) and _Text.IsShared then _Text.RefInc;
+end;
+
+procedure TG2Scene2DComponentStrings.OnInitialize;
+begin
+  inherited OnInitialize;
+  _Text := nil;
+end;
+
+procedure TG2Scene2DComponentStrings.OnFinalize;
+begin
+  inherited OnFinalize;
+end;
+
+class function TG2Scene2DComponentStrings.CanAttach(const Node: TG2Scene2DEntity): Boolean;
+begin
+  Result := True;
+end;
+
+procedure TG2Scene2DComponentStrings.Save(const dm: TG2DataManager);
+  var n, i: TG2IntS32;
+begin
+  SaveClassType(dm);
+  SaveVersion(dm);
+  SaveTags(dm);
+  if Assigned(_Text)
+  and _Text.IsShared then
+  begin
+    dm.WriteStringA(_Text.AssetName);
+  end
+  else
+  begin
+    dm.WriteStringA('');
+  end;
+end;
+
+procedure TG2Scene2DComponentStrings.Load(const dm: TG2DataManager);
+  var Version: TG2IntU16;
+  var AssetName: String;
+begin
+  Version := LoadVersion(dm);
+  LoadTags(dm);
+  AssetName := dm.ReadStringA;
+  if Length(AssetName) > 0 then
+  begin
+    Text := TG2TextAsset.SharedAsset(AssetName);
+  end
+  else
+  begin
+    Text := nil;
+  end;
+end;
+//TG2Scene2DComponentStrings END
 
 operator := (v: tb2_vec2): TG2Vec2;
 begin

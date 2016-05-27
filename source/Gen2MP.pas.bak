@@ -909,6 +909,12 @@ type
   PG2ShaderMethod = ^TG2ShaderMethod;
   {$endif}
 
+  TG2CullMode = (
+    g2cm_none = 0,
+    g2cm_ccw = 1,
+    g2cm_cw = 2
+  );
+
   {$if defined(G2RM_FF)}
   TG2GfxTextureStageOperation = (
     g2tso_disable = 0,
@@ -1062,6 +1068,7 @@ type
   protected
     _BlendMode: TG2BlendMode;
     _Filter: TG2Filter;
+    _CullMode: TG2CullMode;
     _RenderTarget: TG2Texture2DRT;
     _DepthEnable: Boolean;
     _DepthWriteEnable: Boolean;
@@ -1073,6 +1080,7 @@ type
     procedure SetRenderTarget(const Value: TG2Texture2DRT); virtual; abstract;
     procedure SetBlendMode(const Value: TG2BlendMode); virtual; abstract;
     procedure SetFilter(const Value: TG2Filter); virtual; abstract;
+    procedure SetCullMode(const Value: TG2CullMode); virtual; abstract;
     procedure SetScissor(const Value: PRect); virtual; abstract;
     procedure SetDepthEnable(const Value: Boolean); virtual; abstract;
     procedure SetDepthWriteEnable(const Value: Boolean); virtual; abstract;
@@ -1100,6 +1108,7 @@ type
     property RenderTarget: TG2Texture2DRT read _RenderTarget write SetRenderTarget;
     property BlendMode: TG2BlendMode read _BlendMode write SetBlendMode;
     property Filter: TG2Filter read _Filter write SetFilter;
+    property CullMode: TG2CullMode read _CullMode write SetCullMode;
     property DepthEnable: Boolean read _DepthEnable write SetDepthEnable;
     property DepthWriteEnable: Boolean read _DepthWriteEnable write SetDepthWriteEnable;
     property VertexBuffer: TG2VertexBuffer read _VertexBuffer write SetVertexBuffer;
@@ -1152,6 +1161,7 @@ type
     procedure SetRenderTarget(const Value: TG2Texture2DRT); override;
     procedure SetBlendMode(const Value: TG2BlendMode); override;
     procedure SetFilter(const Value: TG2Filter); override;
+    procedure SetCullMode(const Value: TG2CullMode); override;
     procedure SetScissor(const Value: PRect); override;
     procedure SetDepthEnable(const Value: Boolean); override;
     procedure SetDepthWriteEnable(const Value: Boolean); override;
@@ -1203,6 +1213,7 @@ type
     procedure SetRenderTarget(const Value: TG2Texture2DRT); override;
     procedure SetBlendMode(const Value: TG2BlendMode); override;
     procedure SetFilter(const Value: TG2Filter); override;
+    procedure SetCullMode(const Value: TG2CullMode); override;
     procedure SetScissor(const Value: PRect); override;
     procedure SetDepthEnable(const Value: Boolean); override;
     procedure SetDepthWriteEnable(const Value: Boolean); override;
@@ -1260,6 +1271,7 @@ type
     procedure SetRenderTarget(const Value: TG2Texture2DRT); override;
     procedure SetBlendMode(const Value: TG2BlendMode); override;
     procedure SetFilter(const Value: TG2Filter); override;
+    procedure SetCullMode(const Value: TG2CullMode); override;
     procedure SetScissor(const Value: PRect); override;
     procedure SetDepthEnable(const Value: Boolean); override;
     procedure SetDepthWriteEnable(const Value: Boolean); override;
@@ -1285,6 +1297,20 @@ type
     destructor Destroy; override;
   end;
   {$endif}
+
+  TG2TextAsset = class (TG2Asset)
+  protected
+    var _Lines: TStringList;
+    procedure Initialize; override;
+    procedure Finalize; override;
+  public
+    property Lines: TStringList read _Lines;
+    class function SharedAsset(const SharedAssetName: String): TG2TextAsset;
+    function Load(const FileName: String): Boolean;
+    function Load(const Stream: TStream): Boolean;
+    function Load(const Buffer: Pointer; const Size: TG2IntS32): Boolean;
+    function Load(const DataManager: TG2DataManager): Boolean;
+  end;
 
   TG2Snd = class
   protected
@@ -7736,6 +7762,7 @@ begin
   _BlendSeparate := False;
   _VertexBuffer := nil;
   _IndexBuffer := nil;
+  _CullMode := g2cm_none;
   BlendMode := bmNormal;
   Filter := tfPoint;
 end;
@@ -7943,6 +7970,18 @@ begin
       end;
     end;
   end;
+end;
+
+procedure TG2GfxD3D9.SetCullMode(const Value: TG2CullMode);
+  const CullModeRemap: array[0..2] of TG2IntU32 = (
+    D3DCULL_NONE,
+    D3DCULL_CCW,
+    D3DCULL_CW
+  );
+begin
+  if _CullMode = Value then Exit;
+  _CullMode := Value;
+  _Device.SetRenderState(D3DRS_CULLMODE, CullModeRemap[TG2IntU8(_CullMode)]);
 end;
 
 procedure TG2GfxD3D9.SetScissor(const Value: PRect);
@@ -8272,6 +8311,28 @@ begin
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       end;
+    end;
+  end;
+end;
+
+procedure TG2GfxOGL.SetCullMode(const Value: TG2CullMode);
+begin
+  if _CullMode = Value then Exit;
+  _CullMode := Value;
+  case _CullMode of
+    g2cm_none:
+    begin
+      glDisable(GL_CULL_FACE);
+    end;
+    g2cm_ccw:
+    begin
+      glEnable(GL_CULL_FACE);
+      glFrontFace(GL_CCW);
+    end;
+    g2cm_cw:
+    begin
+      glEnable(GL_CULL_FACE);
+      glFrontFace(GL_CW);
     end;
   end;
 end;
@@ -8708,6 +8769,28 @@ begin
   end;
 end;
 
+procedure TG2GfxOGL.SetCullMode(const Value: TG2CullMode);
+begin
+  if _CullMode = Value then Exit;
+  _CullMode := Value;
+  case _CullMode of
+    g2cm_none:
+    begin
+      glDisable(GL_CULL_FACE);
+    end;
+    g2cm_ccw:
+    begin
+      glEnable(GL_CULL_FACE);
+      glFrontFace(GL_CCW);
+    end;
+    g2cm_cw:
+    begin
+      glEnable(GL_CULL_FACE);
+      glFrontFace(GL_CW);
+    end;
+  end;
+end;
+
 procedure TG2GfxGLES.SetScissor(const Value: PRect);
 begin
   if Value <> nil then
@@ -8876,6 +8959,85 @@ begin
 end;
 //TG2GfxGLES END
 {$endif}
+
+//TG2TextAsset BEGIN
+procedure TG2TextAsset.Initialize;
+begin
+  inherited Initialize;
+  _Lines := TStringList.Create;
+end;
+
+procedure TG2TextAsset.Finalize;
+begin
+  _Lines.Free;
+  inherited Finalize;
+end;
+
+class function TG2TextAsset.SharedAsset(const SharedAssetName: String): TG2TextAsset;
+  var Res: TG2Res;
+  var dm: TG2DataManager;
+begin
+  Res := TG2Res.List;
+  while Res <> nil do
+  begin
+    if (Res is TG2TextAsset)
+    and (TG2TextAsset(Res).AssetName = SharedAssetName)
+    and (Res.RefCount > 0) then
+    begin
+      Result := TG2TextAsset(Res);
+      Exit;
+    end;
+    Res := Res.Next;
+  end;
+  dm := TG2DataManager.Create(SharedAssetName, dmAsset);
+  Result := TG2TextAsset.Create;
+  Result.AssetName := SharedAssetName;
+  Result.Load(dm);
+  dm.Free;
+end;
+
+function TG2TextAsset.Load(const FileName: String): Boolean;
+  var dm: TG2DataManager;
+begin
+  dm := TG2DataManager.Create(FileName);
+  try
+    Load(dm);
+  finally
+    dm.Free;
+  end;
+end;
+
+function TG2TextAsset.Load(const Stream: TStream): Boolean;
+  var dm: TG2DataManager;
+begin
+  dm := TG2DataManager.Create(Stream);
+  try
+    Load(dm);
+  finally
+    dm.Free;
+  end;
+end;
+
+function TG2TextAsset.Load(const Buffer: Pointer; const Size: TG2IntS32): Boolean;
+  var dm: TG2DataManager;
+begin
+  dm := TG2DataManager.Create(Buffer, Size);
+  try
+    Load(dm);
+  finally
+    dm.Free;
+  end;
+end;
+
+function TG2TextAsset.Load(const DataManager: TG2DataManager): Boolean;
+  var Buffer: array of AnsiChar;
+begin
+  SetLength(Buffer, DataManager.Size + 1);
+  DataManager.ReadBuffer(@Buffer[0], DataManager.Size);
+  Buffer[DataManager.Size] := 0;
+  _Lines.SetText(@Buffer[0]);
+end;
+//TG2TextAsset END
 
 //TG2Snd BEGIN
 constructor TG2Snd.Create;
@@ -15063,7 +15225,7 @@ begin
   _Gfx.BlendMode := bmDisable;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+  _Gfx.CullMode := g2cm_ccw;
   _Gfx.Device.SetTransform(D3DTS_WORLD, p^.W);
   _Gfx.Device.SetTransform(D3DTS_VIEW, p^.V);
   _Gfx.Device.SetTransform(D3DTS_PROJECTION, p^.P);
@@ -15106,8 +15268,7 @@ begin
   Ambient := p^.Color;
   _Gfx.BlendMode := bmDisable;
   PrevDepthEnable := _Gfx.DepthEnable;
-  _Gfx.DepthEnable := False;//True;
-  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+  _Gfx.DepthEnable := True;
   _Gfx.Device.SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
   _Gfx.Device.SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
   _Gfx.Device.SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
@@ -15147,7 +15308,6 @@ begin
   end;
   p^.IndexBuffer.Unbind;
   p^.VertexBuffer.Unbind;
-  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$endif}
@@ -15163,7 +15323,6 @@ begin
   _Gfx.BlendMode := bmDisable;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  glEnable(GL_CULL_FACE);
   glMatrixMode(GL_PROJECTION);
   glLoadMatrixf(@p^.P);
   glMatrixMode(GL_MODELVIEW);
@@ -15204,7 +15363,6 @@ begin
   _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
   _Gfx.TextureStage[0].ColorArgument0 := g2tsa_diffuse;
   _Gfx.TextureStage[0].ColorArgument1 := g2tsa_texture;
-  glDisable(GL_CULL_FACE);
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$else}
@@ -15217,7 +15375,6 @@ begin
   Ambient := p^.Color;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  glEnable(GL_CULL_FACE);
   p^.VertexBuffer.Bind;
   p^.IndexBuffer.Bind;
   WVP := p^.W * p^.V * p^.P;
@@ -15251,7 +15408,6 @@ begin
   end;
   p^.IndexBuffer.Unbind;
   p^.VertexBuffer.Unbind;
-  glDisable(GL_CULL_FACE);
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$endif}
@@ -15266,7 +15422,6 @@ begin
   Ambient := p^.Color;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  glEnable(GL_CULL_FACE);
   glMatrixMode(GL_PROJECTION);
   glLoadMatrixf(@p^.P);
   glMatrixMode(GL_MODELVIEW);
@@ -15307,7 +15462,6 @@ begin
   _Gfx.TextureStage[0].ColorOperation := g2tso_modulate;
   _Gfx.TextureStage[0].ColorArgument0 := g2tsa_diffuse;
   _Gfx.TextureStage[0].ColorArgument1 := g2tsa_texture;
-  glDisable(GL_CULL_FACE);
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$else}
@@ -15320,7 +15474,6 @@ begin
   Ambient := p^.Color;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  glEnable(GL_CULL_FACE);
   p^.VertexBuffer.Bind;
   p^.IndexBuffer.Bind;
   WVP := p^.W * p^.V * p^.P;
@@ -15354,7 +15507,6 @@ begin
   end;
   p^.IndexBuffer.Unbind;
   p^.VertexBuffer.Unbind;
-  glDisable(GL_CULL_FACE);
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$endif}
@@ -15456,6 +15608,7 @@ end;
 
 procedure TG2RenderControlLegacyMesh.RenderBegin;
 begin
+  _Gfx.CullMode := g2cm_ccw;
   {$if defined(G2Gfx_D3D9)}
   {$if defined(G2RM_FF)}
   _Gfx.Device.SetRenderState(D3DRS_LIGHTING, 0);
@@ -15573,6 +15726,7 @@ procedure TG2RenderControlPic2D.RenderBegin;
 begin
   _PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := False;
+  _Gfx.CullMode := g2cm_none;
   _CurTexture := nil;
   _CurBlendMode := bmInvalid;
   _CurFilter := tfNone;
@@ -15924,6 +16078,7 @@ procedure TG2RenderControlPrim2D.RenderBegin;
 begin
   _PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := False;
+  _Gfx.CullMode := g2cm_none;
   _CurPoint := 0;
   _CurPrimType := ptNone;
   _CurBlendMode := bmInvalid;
@@ -16273,6 +16428,7 @@ begin
   {$endif}
   {$endif}
   _Gfx.BlendMode := bmNormal;
+  _Gfx.CullMode := g2cm_none;
 end;
 
 procedure TG2RenderControlPrim3D.RenderEnd;
@@ -16535,6 +16691,7 @@ procedure TG2RenderControlPoly2D.RenderBegin;
 begin
   _PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := False;
+  _Gfx.CullMode := g2cm_none;
   _CurPoint := 0;
   _CurIndex := 0;
   _CurPolyType := ptNone;
@@ -16909,6 +17066,7 @@ begin
   _AttribTexCoord := _ShaderGroup.Attribute('a_TexCoord0');
   {$endif}
   {$endif}
+  _Gfx.CullMode := g2cm_none;
   _Gfx.BlendMode := bmNormal;
 end;
 
@@ -19950,7 +20108,7 @@ begin
   _Frustum.Update;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+  _Gfx.CullMode := g2cm_ccw;
   _Gfx.Device.SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
   _Gfx.Device.SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
   _Gfx.Device.SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
@@ -20041,7 +20199,6 @@ begin
   _Gfx.Device.SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
   _Gfx.Device.SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);
   _Gfx.Device.SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
-  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$elseif defined(G2RM_SM2)}
@@ -20060,7 +20217,7 @@ begin
   _Frustum.Update;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+  _Gfx.CullMode := g2cm_ccw;
   _Gfx.Device.SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
   _Gfx.Device.SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
   _Gfx.Device.SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
@@ -20135,7 +20292,6 @@ begin
       VB.Unbind;
     end;
   end;
-  _Gfx.Device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$endif}
@@ -20157,7 +20313,7 @@ begin
   _Frustum.Update;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  glEnable(GL_CULL_FACE);
+  _Gfx.CullMode := g2cm_ccw;
   VP := V * P;
   glMatrixMode(GL_PROJECTION);
   glLoadMatrixf(@VP);
@@ -20300,7 +20456,6 @@ begin
   glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_ALPHA, GL_TEXTURE);
   glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA);
   glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_ALPHA, GL_SRC_ALPHA);
-  glDisable(GL_CULL_FACE);
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$elseif defined(G2RM_SM2)}
@@ -20321,7 +20476,7 @@ begin
   _Frustum.Update;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  glEnable(GL_CULL_FACE);
+  _Gfx.CullMode := g2cm_ccw;
   VP := V * P;
   Tex[0] := nil;
   Tex[1] := nil;
@@ -20399,7 +20554,6 @@ begin
       Geom^.IB.Unbind;
     end;
   end;
-  glDisable(GL_CULL_FACE);
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$endif}
@@ -20421,7 +20575,7 @@ begin
   _Frustum.Update;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  glEnable(GL_CULL_FACE);
+  _Gfx.CullMode := g2cm_ccw;
   VP := V * P;
   glMatrixMode(GL_PROJECTION);
   glLoadMatrixf(@VP);
@@ -20551,7 +20705,6 @@ begin
   glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_ALPHA, GL_TEXTURE);
   glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA);
   glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_ALPHA, GL_SRC_ALPHA);
-  glDisable(GL_CULL_FACE);
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$elseif defined(G2RM_SM2)}
@@ -20572,7 +20725,7 @@ begin
   _Frustum.Update;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  glEnable(GL_CULL_FACE);
+  _Gfx.CullMode := g2cm_ccw;
   VP := V * P;
   Tex[0] := nil;
   Tex[1] := nil;
@@ -20650,7 +20803,6 @@ begin
       Geom^.IB.Unbind;
     end;
   end;
-  glDisable(GL_CULL_FACE);
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$endif}
