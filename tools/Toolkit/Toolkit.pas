@@ -31767,7 +31767,7 @@ end;
 
 procedure TScene2DComponentDataStrings.OnChangeStrings(const Sender: Pointer);
 begin
-  Component.Text := TG2TextAsset.SharedAsset('TextAssetName');
+  Component.Text := TG2TextAsset.SharedAsset(TextAssetName);
 end;
 //TScene2DComponentDataStrings END
 

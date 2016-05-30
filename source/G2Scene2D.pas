@@ -1194,6 +1194,7 @@ type
   public
     property Count: TG2IntS32 read GetCount;
     property Items[const Index: TG2IntS32]: PProp read GetProp;
+    class constructor CreateClass;
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
     function Find(const Name: String): TG2IntS32;
     procedure Add(const Name: String; const Value: String);
@@ -1212,7 +1213,9 @@ type
     procedure OnFinalize; override;
   public
     property Text: TG2TextAsset read _Text write SetText;
+    class constructor CreateClass;
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
+    class function GetName: String; override;
     procedure Save(const dm: TG2DataManager); override;
     procedure Load(const dm: TG2DataManager); override;
   end;
@@ -6248,6 +6251,12 @@ begin
   Result := _Props[Index];
 end;
 
+class constructor TG2Scene2DComponentProperties.CreateClass;
+begin
+  SetLength(ComponentList, Length(ComponentList) + 1);
+  ComponentList[High(ComponentList)] := CG2Scene2DComponent(ClassType);
+end;
+
 class function TG2Scene2DComponentProperties.CanAttach(const Node: TG2Scene2DEntity): Boolean;
 begin
   Result := Node.ComponentOfType[TG2Scene2DComponentProperties] = nil;
@@ -6350,9 +6359,20 @@ begin
   inherited OnFinalize;
 end;
 
+class constructor TG2Scene2DComponentStrings.CreateClass;
+begin
+  SetLength(ComponentList, Length(ComponentList) + 1);
+  ComponentList[High(ComponentList)] := CG2Scene2DComponent(ClassType);
+end;
+
 class function TG2Scene2DComponentStrings.CanAttach(const Node: TG2Scene2DEntity): Boolean;
 begin
   Result := True;
+end;
+
+class function TG2Scene2DComponentStrings.GetName: String;
+begin
+  Result := 'Text Data';
 end;
 
 procedure TG2Scene2DComponentStrings.Save(const dm: TG2DataManager);
