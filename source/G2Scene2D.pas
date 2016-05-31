@@ -768,7 +768,8 @@ type
     procedure MakeStatic; inline;
     procedure MakeKinematic; inline;
     procedure MakeDynamic; inline;
-    procedure UpdateFromOwner;
+    procedure UpdateFromOwner; inline;
+    procedure ApplyToOwner; inline;
     procedure ApplyLinearImpulse(const Impulse, Point: TG2Vec2; const Wake: Boolean = True); inline;
     procedure ApplyAngularImpulse(const Impulse: TG2Float; const Wake: Boolean = True); inline;
     procedure ApplyForce(const Force, Point: TG2Vec2; const Wake: Boolean = True);
@@ -4572,7 +4573,7 @@ begin
   if Owner = nil then Exit;
   if (BodyType = g2_s2d_rbt_dynamic_body) then
   begin
-    Owner.Transform := Transform;
+    ApplyToOwner;
   end
   else if (BodyType = g2_s2d_rbt_kinematic_body) then
   begin
@@ -4631,6 +4632,11 @@ procedure TG2Scene2DComponentRigidBody.UpdateFromOwner;
 begin
   SetTransform(Owner.Transform);
   _Body^.set_awake(true);
+end;
+
+procedure TG2Scene2DComponentRigidBody.ApplyToOwner;
+begin
+  Owner.Transform := Transform;
 end;
 
 procedure TG2Scene2DComponentRigidBody.ApplyLinearImpulse(
