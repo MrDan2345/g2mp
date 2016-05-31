@@ -29582,6 +29582,18 @@ begin
       Component.UserData := ComponentData;
       TScene2DComponentDataPoly(ComponentData).Component := TG2Scene2DComponentPoly(Component);
       TScene2DComponentDataPoly(ComponentData).GenerateData;
+    end
+    else if Component is TG2Scene2DComponentStrings then
+    begin
+      ComponentData := TScene2DComponentDataStrings.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataStrings(ComponentData).Component := TG2Scene2DComponentStrings(Component);
+    end
+    else if Component is TG2Scene2DComponentProperties then
+    begin
+      ComponentData := TScene2DComponentDataProperties.Create;
+      Component.UserData := ComponentData;
+      TScene2DComponentDataProperties(ComponentData).Component := TG2Scene2DComponentProperties(Component);
     end;
     if Assigned(ComponentData) then ComponentData.OnLoad;
   end;

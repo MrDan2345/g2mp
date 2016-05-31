@@ -1196,7 +1196,8 @@ type
     property Items[const Index: TG2IntS32]: PProp read GetProp;
     class constructor CreateClass;
     class function CanAttach(const Node: TG2Scene2DEntity): Boolean; override;
-    function Find(const Name: String): TG2IntS32;
+    function FindIndex(const Name: String): TG2IntS32;
+    function Find(const Name: String): PProp;
     procedure Add(const Name: String; const Value: String);
     procedure Delete(const Index: TG2IntS32); overload;
     procedure Delete(const Name: String); overload;
@@ -6262,7 +6263,7 @@ begin
   Result := Node.ComponentOfType[TG2Scene2DComponentProperties] = nil;
 end;
 
-function TG2Scene2DComponentProperties.Find(const Name: String): TG2IntS32;
+function TG2Scene2DComponentProperties.FindIndex(const Name: String): TG2IntS32;
   var i: TG2IntS32;
 begin
   for i := 0 to High(_Props) do
@@ -6272,6 +6273,14 @@ begin
     Exit;
   end;
   Result := -1;
+end;
+
+function TG2Scene2DComponentProperties.Find(const Name: String): PProp;
+  var i: TG2IntS32;
+begin
+  i := FindIndex(Name);
+  if i > -1 then Exit(_Props[i]);
+  Result := nil;
 end;
 
 procedure TG2Scene2DComponentProperties.Add(const Name: String; const Value: String);
@@ -6301,7 +6310,7 @@ end;
 procedure TG2Scene2DComponentProperties.Delete(const Name: String);
   var i: TG2IntS32;
 begin
-  i := Find(Name);
+  i := FindIndex(Name);
   if i > -1 then
   begin
     Delete(i);
