@@ -246,7 +246,7 @@ type
   public
     property Text: AnsiString read GetText;
     property Len: TG2IntS32 read GetLen;
-    property Position: TG2IntS32 read _Position;
+    property Position: TG2IntS32 read _Position write _Position;
     property Line: TG2IntS32 read _Line;
     property CommentCount: TG2IntS32 read GetCommentCount;
     property Comments[const Index: TG2IntS32]: AnsiString read GetComment;
@@ -336,6 +336,54 @@ type
     procedure NodeValue(const NodeName: AnsiString; const Value: Boolean); overload;
   end;
 //TG2MLWriter END
+
+//TG2XMLNode BEGIN
+  TG2XMLNode = class
+  public
+    type TAttribute = object
+      Name: AnsiString;
+      Value: AnsiString;
+      function AsInt: TG2IntS32;
+      function AsFloat: TG2Float;
+    end;
+    type PAttribute = ^TAttribute;
+  private
+    var _Parent: TG2XMLNode;
+    var _Sibling: TG2XMLNode;
+    var _Child: TG2XMLNode;
+    var _Name: AnsiString;
+    var _Data: AnsiString;
+    var _Attributes: array of TAttribute;
+    procedure SetParent(const Value: TG2XMLNode); inline;
+    procedure SetSibling(const Value: TG2XMLNode); inline;
+    procedure SetChild(const Value: TG2XMLNode); inline;
+    procedure SetName(const Value: AnsiString); inline;
+    procedure SetData(const Value: AnsiString); inline;
+    procedure AddChild(const Node: TG2XMLNode);
+    function GetXML: AnsiString;
+    procedure SetXML(const Value: AnsiString);
+    function GetAttribute(const Index: TG2IntS32): PAttribute; inline;
+    function GetAttributeCount: TG2IntS32; inline;
+  public
+    property Parent: TG2XMLNode read _Parent;
+    property Sibling: TG2XMLNode read _Sibling;
+    property Child: TG2XMLNode read _Child;
+    property Name: AnsiString read _Name;
+    property Data: AnsiString read _Data;
+    property XML: AnsiString read GetXML write SetXML;
+    property Attribute[const Index: TG2IntS32]: PAttribute read GetAttribute;
+    property AttributeCount: TG2IntS32 read GetAttributeCount;
+    constructor Create;
+    destructor Destroy; override;
+    procedure AddAttribute(const AttribName, AttribValue: AnsiString);
+    procedure AddData(const Value: AnsiString);
+    function AsInt: TG2IntS32;
+    function AsFloat: TG2Float;
+    function FindChildByName(const ChildName: AnsiString): TG2XMLNode;
+    function FindNodeByName(const NodeName: AnsiString): TG2XMLNode;
+    function FindAttribute(const AttribName: AnsiString): PAttribute;
+  end;
+//TG2XMLNode END
 
   TG2AtlasPlacement = record
     Page: TG2IntS32;
@@ -1774,6 +1822,312 @@ begin
   end;
 end;
 //TG2MLWriter END
+
+//TG2XMLNode BEGIN
+function TG2XMLNode.TAttribute.AsInt: TG2IntS32;
+begin
+  Result := StrToIntDef(Value, 0);
+end;
+
+function TG2XMLNode.TAttribute.AsFloat: TG2Float;
+begin
+  Result := StrToFloatDef(Value, 0);
+end;
+
+procedure TG2XMLNode.SetParent(const Value: TG2XMLNode);
+begin
+  _Parent := Value;
+end;
+
+procedure TG2XMLNode.SetSibling(const Value: TG2XMLNode);
+begin
+  _Sibling := Value;
+end;
+
+procedure TG2XMLNode.SetChild(const Value: TG2XMLNode);
+begin
+  _Child := Value;
+end;
+
+procedure TG2XMLNode.SetName(const Value: AnsiString);
+begin
+  _Name := Value;
+end;
+
+procedure TG2XMLNode.SetData(const Value: AnsiString);
+begin
+  _Data := Value;
+end;
+
+procedure TG2XMLNode.AddChild(const Node: TG2XMLNode);
+  var Target: ^TG2XMLNode;
+begin
+  Target := @_Child;
+  while Assigned(Target^) do
+  begin
+    Target := @Target^._Sibling;
+  end;
+  Target^ := Node;
+  Node.SetParent(Self);
+end;
+
+function TG2XMLNode.GetXML: AnsiString;
+  var Tab: TG2IntS32;
+  procedure WriteNode(const Node: TG2XMLNode; var Output: AnsiString);
+    var i: TG2IntS32;
+    var TabStr: AnsiString;
+    var c: TG2XMLNode;
+  begin
+    TabStr := '';
+    for i := 0 to Tab - 1 do TabStr += '  ';
+    Output += TabStr + '<' + Node._Name;
+    for i := 0 to High(Node._Attributes) do
+    begin
+      Output += ' ' + Node._Attributes[i].Name + ' = ' + Node._Attributes[i].Value;
+    end;
+    if Assigned(Node._Child) then
+    begin
+      Output += '>'#$D#$A;
+      Inc(Tab);
+      c := Node._Child;
+      while Assigned(c) do
+      begin
+        WriteNode(c, Output);
+        c := c._Sibling;
+      end;
+      Dec(Tab);
+      Output += TabStr + '</' + Node._Name + '>'#$D#$A;
+    end
+    else if Length(Node._Data) > 0 then
+    begin
+      Output += Node._Data + '</' + Node._Name + '>'#$D#$A;
+    end
+    else
+    begin
+      Output += '/>'#$D#$A;
+    end;
+  end;
+begin
+  Result := '<?xml version="1.0" encoding="utf-8"?>';
+  Tab := 0;
+  WriteNode(Self, Result);
+end;
+
+procedure TG2XMLNode.SetXML(const Value: AnsiString);
+  procedure ReadNode(const Parser: TG2Parser; const Node: TG2XMLNode);
+    var tt: TG2TokenType;
+    var Token: AnsiString;
+    var c: TG2XMLNode;
+    var AttributeName: AnsiString;
+    var p: Integer;
+  begin
+    tt := ttError;
+    repeat
+      Token := Parser.NextToken(tt);
+      case tt of
+        ttSymbol:
+        begin
+          if Token = '<' then
+          begin
+            Token := Parser.NextToken(tt);
+            if tt = ttWord then
+            begin
+              c := TG2XMLNode.Create;
+              c.SetName(LowerCase(Token));
+              Node.AddChild(c);
+              repeat
+                Token := Parser.NextToken(tt);
+                case tt of
+                  ttSymbol:
+                  begin
+                    if Token = '>' then
+                    begin
+                      ReadNode(Parser, c);
+                      Break;
+                    end
+                    else if Token = '/>' then
+                    begin
+                      Break;
+                    end;
+                  end;
+                  ttWord:
+                  begin
+                    AttributeName := LowerCase(Token);
+                    p := Parser.Position;
+                    Token := Parser.NextToken(tt);
+                    if (tt = ttSymbol)
+                    and (Token = '=') then
+                    begin
+                      Token := Parser.NextToken(tt);
+                      if tt <> ttSymbol then
+                      begin
+                        c.AddAttribute(AttributeName, Token);
+                      end
+                      else
+                      begin
+                        Parser.Position := p;
+                      end;
+                    end
+                    else
+                    begin
+                      Parser.Position := p;
+                    end;
+                  end;
+                end;
+              until tt = ttEOF;
+            end
+            else
+            begin
+              tt := ttError;
+              Break;
+            end;
+          end
+          else if Token = '</' then
+          begin
+            repeat
+              Token := Parser.NextToken(tt);
+              if (tt = ttSymbol)
+              and (Token = '>') then
+              begin
+                Break;
+              end;
+            until tt = ttEOF;
+            Break;
+          end;
+        end;
+        else
+        begin
+          Node.AddData(Token);
+        end;
+      end;
+    until (tt = ttEOF) or (tt = ttError);
+  end;
+  var Parser: TG2Parser;
+  var tt: TG2TokenType;
+  var Token: AnsiString;
+begin
+  Parser := TG2Parser.Create(Value);
+  Parser.AddComment('<!--', '-->');
+  Parser.AddComment('<?', '?>');
+  Parser.AddSymbol('/>');
+  Parser.AddSymbol('</');
+  Parser.AddSymbol('<');
+  Parser.AddSymbol('>');
+  Parser.AddSymbol('=');
+  Parser.AddString('"');
+  tt := ttError;
+  ReadNode(Parser, Self);
+  Parser.Free;
+end;
+
+function TG2XMLNode.GetAttribute(const Index: TG2IntS32): PAttribute;
+begin
+  Result := @_Attributes[Index];
+end;
+
+function TG2XMLNode.GetAttributeCount: TG2IntS32;
+begin
+  Result := Length(_Attributes);
+end;
+
+constructor TG2XMLNode.Create;
+begin
+  _Parent := nil;
+  _Sibling := nil;
+  _Child := nil;
+  _Data := '';
+end;
+
+destructor TG2XMLNode.Destroy;
+  var c: TG2XMLNode;
+begin
+  while Assigned(_Child) do
+  begin
+    c := _Child;
+    _Child := _Child.Sibling;
+    c.Free;
+  end;
+  inherited Destroy;
+end;
+
+procedure TG2XMLNode.AddAttribute(const AttribName, AttribValue: AnsiString);
+begin
+  SetLength(_Attributes, Length(_Attributes) + 1);
+  _Attributes[High(_Attributes)].Name := AttribName;
+  _Attributes[High(_Attributes)].Value := AttribValue;
+end;
+
+procedure TG2XMLNode.AddData(const Value: AnsiString);
+begin
+  if Length(_Data) > 0 then
+  begin
+    _Data := _Data + ' ' + Value;
+  end
+  else
+  begin
+    _Data := Value;
+  end;
+end;
+
+function TG2XMLNode.AsInt: TG2IntS32;
+begin
+  Result := StrToIntDef(_Data, 0);
+end;
+
+function TG2XMLNode.AsFloat: TG2Float;
+begin
+  Result := StrToFloatDef(_Data, 0);
+end;
+
+function TG2XMLNode.FindChildByName(const ChildName: AnsiString): TG2XMLNode;
+  var c: TG2XMLNode;
+begin
+  c := _Child;
+  while Assigned(c) do
+  begin
+    if c.Name = ChildName then
+    begin
+      Result := c;
+      Exit;
+    end;
+    c := c.Sibling;
+  end;
+  Result := nil;
+end;
+
+function TG2XMLNode.FindNodeByName(const NodeName: AnsiString): TG2XMLNode;
+  var c: TG2XMLNode;
+begin
+  Result := nil;
+  c := _Child;
+  while Assigned(c) do
+  begin
+    if c.Name = NodeName then
+    begin
+      Result := c;
+      Exit;
+    end
+    else
+    begin
+      Result := c.FindNodeByName(NodeName);
+    end;
+    if Assigned(Result) then Exit;
+    c := c.Sibling;
+  end;
+end;
+
+function TG2XMLNode.FindAttribute(const AttribName: AnsiString): PAttribute;
+  var i: TG2IntS32;
+begin
+  for i := 0 to High(_Attributes) do
+  if _Attributes[i].Name = AttribName then
+  begin
+    Result := @_Attributes[i];
+    Exit;
+  end;
+  Result := nil;
+end;
+//TG2XMLNode END
 
 operator = (md5a, md5b: TG2MD5) r: Boolean;
   type TDWordArr4 = array[0..3] of TG2IntU32;
