@@ -196,11 +196,11 @@ type
   TG2StrArrW = array of WideString;
 
   TG2Color = packed record
-    {$if defined(G2Gfx_D3D9)}
+    //{$if defined(G2Gfx_D3D9)}
     b, g, r, a: TG2IntU8;
-    {$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
-    r, g, b, a: TG2IntU8;
-    {$endif}
+    //{$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
+    //r, g, b, a: TG2IntU8;
+    //{$endif}
   end;
   PG2Color = ^TG2Color;
   PPG2Color = ^PG2Color;
@@ -489,23 +489,23 @@ end;
 
 operator := (c: TG2Color) cr: TG2IntU32;
 begin
-  {$if defined(G2Gfx_D3D9)}
+  //{$if defined(G2Gfx_D3D9)}
   Result := PG2IntU32(@c)^;
-  {$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
-  Result := c.b or (c.g shl 8) or (c.r shl 16) or (c.a shl 24);
-  {$endif}
+  //{$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
+  //Result := c.b or (c.g shl 8) or (c.r shl 16) or (c.a shl 24);
+  //{$endif}
 end;
 
 operator := (c: TG2IntU32) cr: TG2Color;
 begin
-  {$if defined(G2Gfx_D3D9)}
+  //{$if defined(G2Gfx_D3D9)}
   Result := PG2Color(@c)^;
-  {$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
-  Result.r := PG2Color(@c)^.b;
-  Result.g := PG2Color(@c)^.g;
-  Result.b := PG2Color(@c)^.r;
-  Result.a := PG2Color(@c)^.a;
-  {$endif}
+  //{$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
+  //Result.r := PG2Color(@c)^.b;
+  //Result.g := PG2Color(@c)^.g;
+  //Result.b := PG2Color(@c)^.r;
+  //Result.a := PG2Color(@c)^.a;
+  //{$endif}
 end;
 
 operator + (c0, c1: TG2Color) cr: TG2Color;

@@ -14222,13 +14222,12 @@ procedure TG2ShaderGroup.Load(const DataManager: TG2DataManager);
   {$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
   procedure SkipParams;
     var i, n: TG2IntS32;
-    var Str: AnsiString;
   begin
     n := DataManager.ReadIntS32;
     for i := 0 to n - 1 do
     begin
       DataManager.Skip(1);
-      Str := DataManager.ReadStringA;
+      DataManager.ReadStringA;
       DataManager.Skip(8);
     end;
   end;
@@ -16384,9 +16383,6 @@ procedure TG2RenderControlPrim3D.RenderBegin;
 {$if defined(G2Gfx_D3D9) and defined(G2RM_FF)}
   var m: TG2Mat;
 {$endif}
-{$if defined(G2Gfx_OGL) and defined(G2RM_SM2)}
-  var WVP: TG2Mat;
-{$endif}
 begin
   _CurPoint := 0;
   _CurPrimType := ptNone;
@@ -16421,10 +16417,6 @@ begin
   {$elseif defined(G2Gfx_OGL)}
   _AttribPosition := _ShaderGroup.Attribute('a_Position0');
   _AttribColor := _ShaderGroup.Attribute('a_Color0');
-  if _Gfx.RenderTarget = nil then
-  WVP := G2MatOrth2D(_Gfx.SizeRT.x, _Gfx.SizeRT.y, 0, 1)
-  else
-  WVP := G2MatOrth2D(_Gfx.SizeRT.x, _Gfx.SizeRT.y, 0, 1, False, False);
   glDisable(GL_TEXTURE_2D);
   {$endif}
   {$endif}
@@ -20300,7 +20292,6 @@ end;
 {$if defined(G2RM_FF)}
 procedure TG2Scene3D.RenderOGL;
   var i, g, m: TG2IntS32;
-  var f: TG2Float;
   var CurStage: TG2IntU8;
   var W, VP: TG2Mat;
   var Mesh: TG2S3DMesh;
@@ -20462,8 +20453,6 @@ end;
 {$elseif defined(G2RM_SM2)}
 procedure TG2Scene3D.RenderOGL;
   var i, g, m: TG2IntS32;
-  var f: TG2Float;
-  var CurStage: TG2IntU32;
   var W, VP, WVP: TG2Mat;
   var Mesh: TG2S3DMesh;
   var Inst: TG2S3DMeshInst;
