@@ -9001,7 +9001,7 @@ function TG2TextAsset.Load(const FileName: String): Boolean;
 begin
   dm := TG2DataManager.Create(FileName);
   try
-    Load(dm);
+    Result := Load(dm);
   finally
     dm.Free;
   end;
@@ -9012,7 +9012,7 @@ function TG2TextAsset.Load(const Stream: TStream): Boolean;
 begin
   dm := TG2DataManager.Create(Stream);
   try
-    Load(dm);
+    Result := Load(dm);
   finally
     dm.Free;
   end;
@@ -9023,7 +9023,7 @@ function TG2TextAsset.Load(const Buffer: Pointer; const Size: TG2IntS32): Boolea
 begin
   dm := TG2DataManager.Create(Buffer, Size);
   try
-    Load(dm);
+    Result := Load(dm);
   finally
     dm.Free;
   end;
@@ -9036,6 +9036,7 @@ begin
   DataManager.ReadBuffer(@Buffer[0], DataManager.Size);
   Buffer[DataManager.Size] := #0;
   _Lines.SetText(@Buffer[0]);
+  Result := True;
 end;
 //TG2TextAsset END
 

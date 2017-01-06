@@ -2003,8 +2003,6 @@ procedure TG2XMLNode.SetXML(const Value: AnsiString);
     until (tt = ttEOF) or (tt = ttError);
   end;
   var Parser: TG2Parser;
-  var tt: TG2TokenType;
-  var Token: AnsiString;
 begin
   Parser := TG2Parser.Create(Value);
   Parser.AddComment('<!--', '-->');
@@ -2015,7 +2013,6 @@ begin
   Parser.AddSymbol('>');
   Parser.AddSymbol('=');
   Parser.AddString('"');
-  tt := ttError;
   ReadNode(Parser, Self);
   Parser.Free;
 end;

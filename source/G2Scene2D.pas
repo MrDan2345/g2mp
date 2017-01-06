@@ -1804,7 +1804,7 @@ begin
 end;
 
 procedure TG2Scene2DEntity.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
   var i, j, tc, ec, cc: TG2IntS32;
   var e: TG2Scene2DEntity;
   var c: TG2Scene2DComponent;
@@ -2013,7 +2013,7 @@ begin
 end;
 
 procedure TG2Scene2DDistanceJoint.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
   var GUID: String;
   var e: TG2Scene2DEntity;
 begin
@@ -2925,7 +2925,7 @@ end;
 
 procedure TG2Scene2D.Load(const dm: TG2DataManager);
   var Header: array[0..3] of AnsiChar;
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
   var i, j, n: TG2IntS32;
   var CName: String;
   var Joint: TG2Scene2DJoint;
@@ -3361,7 +3361,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentModel3D.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
   var MeshFile: String;
 begin
   Version := LoadVersion(dm);
@@ -3579,7 +3579,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentText.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
   var FontFile: String;
 begin
   Version := LoadVersion(dm);
@@ -3809,7 +3809,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentEffect.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
   var EffectFile: String;
 begin
   Version := LoadVersion(dm);
@@ -4073,7 +4073,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentBackground.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
   var TexFile: String;
 begin
   Version := LoadVersion(dm);
@@ -4302,7 +4302,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
   var SkeletonPath: String;
   var AtlasPath: String;
   var Atlas: TSpineAtlas;
@@ -4686,7 +4686,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentRigidBody.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
   var xf: TG2Transform2;
 begin
   Version := LoadVersion(dm);
@@ -5073,7 +5073,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeEdge.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
 begin
   Version := LoadVersion(dm);
   LoadTags(dm);
@@ -5169,7 +5169,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapePoly.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
 begin
   Version := LoadVersion(dm);
   LoadTags(dm);
@@ -5281,7 +5281,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeBox.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
 begin
   Version := LoadVersion(dm);
   LoadTags(dm);
@@ -5372,7 +5372,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeCircle.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
 begin
   Version := LoadVersion(dm);
   LoadTags(dm);
@@ -5471,7 +5471,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentCollisionShapeChain.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
 begin
   Version := LoadVersion(dm);
   LoadTags(dm);
@@ -5813,7 +5813,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentCharacter.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
   var b: Boolean;
   var xf: TG2Transform2;
 begin
@@ -6197,7 +6197,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentPoly.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
   var i, n: TG2IntS32;
   var TexFile: String;
 begin
@@ -6338,7 +6338,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentProperties.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
   var i, n: TG2IntS32;
 begin
   Version := LoadVersion(dm);
@@ -6391,7 +6391,6 @@ begin
 end;
 
 procedure TG2Scene2DComponentStrings.Save(const dm: TG2DataManager);
-  var n, i: TG2IntS32;
 begin
   SaveClassType(dm);
   SaveVersion(dm);
@@ -6408,7 +6407,7 @@ begin
 end;
 
 procedure TG2Scene2DComponentStrings.Load(const dm: TG2DataManager);
-  var Version: TG2IntU16;
+  var {%H-}Version: TG2IntU16;
   var AssetName: String;
 begin
   Version := LoadVersion(dm);
