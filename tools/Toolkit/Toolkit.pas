@@ -1721,6 +1721,18 @@ type
   end;
 //TUIWorkspaceSettings END
 
+//TUIWorkspacePlugins BEGIN
+  TUIWorkspacePlugins = class (TUIWorkspaceCustom)
+  protected
+    procedure OnInitialize; override;
+    procedure OnUpdate; override;
+  public
+    class function GetWorkspaceName: AnsiString; override;
+    function GetMinWidth: Single; override;
+    function GetMinHeight: Single; override;
+  end;
+//TUIWorkspacePlugins END
+
 //TUIWorkspaceProperties BEGIN
   TUIWorkspaceProperties = class (TUIWorkspace)
   private
@@ -12500,6 +12512,34 @@ begin
 end;
 //TUIWorkspaceSettings END
 
+//TUIWorkspacePlugins BEGIN
+procedure TUIWorkspacePlugins.OnInitialize;
+begin
+  inherited OnInitialize;
+  Panel;
+end;
+
+procedure TUIWorkspacePlugins.OnUpdate;
+begin
+  inherited OnUpdate;
+end;
+
+class function TUIWorkspacePlugins.GetWorkspaceName: AnsiString;
+begin
+  Result := 'Plugins';
+end;
+
+function TUIWorkspacePlugins.GetMinWidth: Single;
+begin
+  Result := inherited GetMinWidth;
+end;
+
+function TUIWorkspacePlugins.GetMinHeight: Single;
+begin
+  Result := inherited GetMinHeight;
+end;
+//TUIWorkspacePlugins END
+
 //TUIWorkspaceProperties BEGIN
 procedure TUIWorkspaceProperties.OnEditFinish;
   var i: Integer;
@@ -18698,6 +18738,7 @@ begin
   UI.RegisterWorkspace(TUIWorkspaceProject);
   UI.RegisterWorkspace(TUIWorkspaceProjectBrowser);
   UI.RegisterWorkspace(TUIWorkspaceSettings);
+  UI.RegisterWorkspace(TUIWorkspacePlugins);
   //UI.RegisterWorkspace(TUIWorkspaceEmpty);
   UI.RegisterWorkspace(TUIWorkspaceLog);
   UI.RegisterWorkspace(TUIWorkspaceConsole);
