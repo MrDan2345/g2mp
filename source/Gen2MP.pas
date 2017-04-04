@@ -15218,7 +15218,7 @@ end;
 {$if defined(G2RM_FF)}
 procedure TG2RenderControlLegacyMesh.RenderD3D9(const p: PBufferData);
   var PrevDepthEnable: Boolean;
-  var g, CurStage: TG2IntS32;
+  var g: TG2IntS32;
   var Ambient: TG2Color;
 begin
   Ambient := p^.Color;
@@ -15371,19 +15371,27 @@ procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
   var g, PrevMethod: TG2IntS32;
   var PrevDepthEnable: Boolean;
   var Ambient: TG2Color;
+  var BuffersBound: Boolean;
 begin
   Ambient := p^.Color;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  p^.VertexBuffer.Bind;
-  p^.IndexBuffer.Bind;
   WVP := p^.W * p^.V * p^.P;
   PrevMethod := -1;
+  BuffersBound := False;
   for g := 0 to p^.GroupCount - 1 do
   begin
     if PrevMethod <> p^.Groups[g].Method then
     begin
       _ShaderGroup.MethodIndex := p^.Groups[g].Method;
+      if BuffersBound then
+      begin
+        p^.IndexBuffer.Unbind;
+        p^.VertexBuffer.Unbind;
+      end;
+      p^.VertexBuffer.Bind;
+      p^.IndexBuffer.Bind;
+      BuffersBound := True;
       _ShaderGroup.UniformMatrix4x4('WVP', WVP);
       _ShaderGroup.UniformFloat4('LightAmbient', Ambient);
       if p^.Skinned then
@@ -15406,8 +15414,11 @@ begin
       PGLVoid(p^.Groups[g].IndexStart * 2)
     );
   end;
-  p^.IndexBuffer.Unbind;
-  p^.VertexBuffer.Unbind;
+  if BuffersBound then
+  begin
+    p^.IndexBuffer.Unbind;
+    p^.VertexBuffer.Unbind;
+  end;
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$endif}
@@ -15470,12 +15481,11 @@ procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
   var g, PrevMethod: TG2IntS32;
   var PrevDepthEnable: Boolean;
   var Ambient: TG2Color;
+  var BuffersBound: Boolean;
 begin
   Ambient := p^.Color;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  p^.VertexBuffer.Bind;
-  p^.IndexBuffer.Bind;
   WVP := p^.W * p^.V * p^.P;
   PrevMethod := -1;
   for g := 0 to p^.GroupCount - 1 do
@@ -15483,6 +15493,14 @@ begin
     if PrevMethod <> p^.Groups[g].Method then
     begin
       _ShaderGroup.MethodIndex := p^.Groups[g].Method;
+      if BuffersBound then
+      begin
+        p^.IndexBuffer.Unbind;
+        p^.VertexBuffer.Unbind;
+      end;
+      p^.VertexBuffer.Bind;
+      p^.IndexBuffer.Bind;
+      BuffersBound := True;
       _ShaderGroup.UniformMatrix4x4('WVP', WVP);
       _ShaderGroup.UniformFloat4('LightAmbient', Ambient);
       if p^.Skinned then
@@ -15505,8 +15523,11 @@ begin
       PGLVoid(p^.Groups[g].IndexStart * 2)
     );
   end;
-  p^.IndexBuffer.Unbind;
-  p^.VertexBuffer.Unbind;
+  if BuffersBound then
+  begin
+    p^.IndexBuffer.Unbind;
+    p^.VertexBuffer.Unbind;
+  end;
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$endif}

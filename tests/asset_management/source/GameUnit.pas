@@ -76,7 +76,7 @@ end;
 
 procedure TGame.Finalize;
 begin
-
+  Free;
 end;
 
 procedure TGame.Update;
@@ -88,7 +88,8 @@ procedure TGame.Render;
 begin
   Tex := TG2Texture2D.SharedAsset('Tex.png');
   Tex.RefInc;
-  g2.PicRect(0, 0, $ffffffff, Tex);
+  g2.Clear($ff0080ff);
+  g2.PicRect(0, 0, $ff0080ff, Tex);
   Tex.RefDec;
 end;
 

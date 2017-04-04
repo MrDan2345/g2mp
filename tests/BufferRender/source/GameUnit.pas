@@ -54,7 +54,7 @@ begin
   g2.Params.MaxFPS := 100;
   g2.Params.Width := 1024;
   g2.Params.Height := 768;
-  g2.Params.ScreenMode := smMaximized;
+  g2.Params.ScreenMode := smWindow;
 end;
 
 destructor TGame.Destroy;
@@ -115,6 +115,7 @@ begin
   Tex.RefDec;
   IB.Free;
   VB.Free;
+  Free;
 end;
 
 procedure TGame.Update;
@@ -125,7 +126,8 @@ end;
 procedure TGame.Render;
   var W, V, P, WVP: TG2Mat;
 begin
-  g2.Clear($ff808080);
+  g2.Gfx.StateChange.StateDepthEnable := True;
+  g2.Clear(True, $ff0080ff);
   W := G2MatRotationY(G2PiTime());
   V := G2MatView(G2Vec3(0, 0, -5), G2Vec3(0, 0, 0), G2Vec3(0, 1, 0));
   P := G2MatProj(Pi * 0.4, g2.Params.Width / g2.Params.Height, 0.1, 100);
