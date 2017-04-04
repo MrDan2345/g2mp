@@ -9001,7 +9001,7 @@ function TG2TextAsset.Load(const FileName: String): Boolean;
 begin
   dm := TG2DataManager.Create(FileName);
   try
-    Load(dm);
+    Result := Load(dm);
   finally
     dm.Free;
   end;
@@ -9012,7 +9012,7 @@ function TG2TextAsset.Load(const Stream: TStream): Boolean;
 begin
   dm := TG2DataManager.Create(Stream);
   try
-    Load(dm);
+    Result := Load(dm);
   finally
     dm.Free;
   end;
@@ -9023,7 +9023,7 @@ function TG2TextAsset.Load(const Buffer: Pointer; const Size: TG2IntS32): Boolea
 begin
   dm := TG2DataManager.Create(Buffer, Size);
   try
-    Load(dm);
+    Result := Load(dm);
   finally
     dm.Free;
   end;
@@ -9036,6 +9036,7 @@ begin
   DataManager.ReadBuffer(@Buffer[0], DataManager.Size);
   Buffer[DataManager.Size] := #0;
   _Lines.SetText(@Buffer[0]);
+  Result := True;
 end;
 //TG2TextAsset END
 
@@ -14221,13 +14222,12 @@ procedure TG2ShaderGroup.Load(const DataManager: TG2DataManager);
   {$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
   procedure SkipParams;
     var i, n: TG2IntS32;
-    var Str: AnsiString;
   begin
     n := DataManager.ReadIntS32;
     for i := 0 to n - 1 do
     begin
       DataManager.Skip(1);
-      Str := DataManager.ReadStringA;
+      DataManager.ReadStringA;
       DataManager.Skip(8);
     end;
   end;
@@ -15218,7 +15218,7 @@ end;
 {$if defined(G2RM_FF)}
 procedure TG2RenderControlLegacyMesh.RenderD3D9(const p: PBufferData);
   var PrevDepthEnable: Boolean;
-  var g, CurStage: TG2IntS32;
+  var g: TG2IntS32;
   var Ambient: TG2Color;
 begin
   Ambient := p^.Color;
@@ -15371,19 +15371,27 @@ procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
   var g, PrevMethod: TG2IntS32;
   var PrevDepthEnable: Boolean;
   var Ambient: TG2Color;
+  var BuffersBound: Boolean;
 begin
   Ambient := p^.Color;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  p^.VertexBuffer.Bind;
-  p^.IndexBuffer.Bind;
   WVP := p^.W * p^.V * p^.P;
   PrevMethod := -1;
+  BuffersBound := False;
   for g := 0 to p^.GroupCount - 1 do
   begin
     if PrevMethod <> p^.Groups[g].Method then
     begin
       _ShaderGroup.MethodIndex := p^.Groups[g].Method;
+      if BuffersBound then
+      begin
+        p^.IndexBuffer.Unbind;
+        p^.VertexBuffer.Unbind;
+      end;
+      p^.VertexBuffer.Bind;
+      p^.IndexBuffer.Bind;
+      BuffersBound := True;
       _ShaderGroup.UniformMatrix4x4('WVP', WVP);
       _ShaderGroup.UniformFloat4('LightAmbient', Ambient);
       if p^.Skinned then
@@ -15406,8 +15414,11 @@ begin
       PGLVoid(p^.Groups[g].IndexStart * 2)
     );
   end;
-  p^.IndexBuffer.Unbind;
-  p^.VertexBuffer.Unbind;
+  if BuffersBound then
+  begin
+    p^.IndexBuffer.Unbind;
+    p^.VertexBuffer.Unbind;
+  end;
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$endif}
@@ -15470,12 +15481,11 @@ procedure TG2RenderControlLegacyMesh.RenderOGL(const p: PBufferData);
   var g, PrevMethod: TG2IntS32;
   var PrevDepthEnable: Boolean;
   var Ambient: TG2Color;
+  var BuffersBound: Boolean;
 begin
   Ambient := p^.Color;
   PrevDepthEnable := _Gfx.DepthEnable;
   _Gfx.DepthEnable := True;
-  p^.VertexBuffer.Bind;
-  p^.IndexBuffer.Bind;
   WVP := p^.W * p^.V * p^.P;
   PrevMethod := -1;
   for g := 0 to p^.GroupCount - 1 do
@@ -15483,6 +15493,14 @@ begin
     if PrevMethod <> p^.Groups[g].Method then
     begin
       _ShaderGroup.MethodIndex := p^.Groups[g].Method;
+      if BuffersBound then
+      begin
+        p^.IndexBuffer.Unbind;
+        p^.VertexBuffer.Unbind;
+      end;
+      p^.VertexBuffer.Bind;
+      p^.IndexBuffer.Bind;
+      BuffersBound := True;
       _ShaderGroup.UniformMatrix4x4('WVP', WVP);
       _ShaderGroup.UniformFloat4('LightAmbient', Ambient);
       if p^.Skinned then
@@ -15505,8 +15523,11 @@ begin
       PGLVoid(p^.Groups[g].IndexStart * 2)
     );
   end;
-  p^.IndexBuffer.Unbind;
-  p^.VertexBuffer.Unbind;
+  if BuffersBound then
+  begin
+    p^.IndexBuffer.Unbind;
+    p^.VertexBuffer.Unbind;
+  end;
   _Gfx.DepthEnable := PrevDepthEnable;
 end;
 {$endif}
@@ -16383,9 +16404,6 @@ procedure TG2RenderControlPrim3D.RenderBegin;
 {$if defined(G2Gfx_D3D9) and defined(G2RM_FF)}
   var m: TG2Mat;
 {$endif}
-{$if defined(G2Gfx_OGL) and defined(G2RM_SM2)}
-  var WVP: TG2Mat;
-{$endif}
 begin
   _CurPoint := 0;
   _CurPrimType := ptNone;
@@ -16420,10 +16438,6 @@ begin
   {$elseif defined(G2Gfx_OGL)}
   _AttribPosition := _ShaderGroup.Attribute('a_Position0');
   _AttribColor := _ShaderGroup.Attribute('a_Color0');
-  if _Gfx.RenderTarget = nil then
-  WVP := G2MatOrth2D(_Gfx.SizeRT.x, _Gfx.SizeRT.y, 0, 1)
-  else
-  WVP := G2MatOrth2D(_Gfx.SizeRT.x, _Gfx.SizeRT.y, 0, 1, False, False);
   glDisable(GL_TEXTURE_2D);
   {$endif}
   {$endif}
@@ -20299,7 +20313,6 @@ end;
 {$if defined(G2RM_FF)}
 procedure TG2Scene3D.RenderOGL;
   var i, g, m: TG2IntS32;
-  var f: TG2Float;
   var CurStage: TG2IntU8;
   var W, VP: TG2Mat;
   var Mesh: TG2S3DMesh;
@@ -20461,8 +20474,6 @@ end;
 {$elseif defined(G2RM_SM2)}
 procedure TG2Scene3D.RenderOGL;
   var i, g, m: TG2IntS32;
-  var f: TG2Float;
-  var CurStage: TG2IntU32;
   var W, VP, WVP: TG2Mat;
   var Mesh: TG2S3DMesh;
   var Inst: TG2S3DMeshInst;

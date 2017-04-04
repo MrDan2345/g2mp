@@ -1,0 +1,107 @@
+{#g2fx
+ name = "Dust"
+ scale = 1
+ {#atlas
+  {#page
+   texture = "Dust_fx_atlas_0.png"
+   width = 132
+   height = 132
+   {#frame
+    name = "DustBlurSmall.png"
+    pos_l = 2
+    pos_t = 2
+    width = 128
+    height = 128
+   #}
+  #}
+ #}
+ {#emitter
+  name = "Emitter"
+  frame = "DustBlurSmall.png"
+  time_start = 0
+  time_end = 0.173999995
+  orientation = 0
+  shape = 0
+  shape_radius_0 = 0
+  shape_radius_1 = 0.3999999166
+  shape_angle = 6.283185482
+  shape_width_0 = 0
+  shape_width_1 = 1
+  shape_height_0 = 0
+  shape_height_1 = 1
+  emission = 7
+  layer = 0
+  infinite = 0
+  particle_center_x = 0.5
+  particle_center_y = 0.5
+  particle_width_min = 1
+  particle_width_max = 1
+  particle_height_min = 1
+  particle_height_max = 1
+  particle_scale_min = 1
+  particle_scale_max = 2.399999857
+  particle_duration_min = 0.6000001431
+  particle_duration_max = 1.499999523
+  particle_rotation_min = 0
+  particle_rotation_max = 6.283185482
+  particle_rotation_local = 1
+  particle_orientation_min = 0
+  particle_orientation_max = 0
+  particle_velocity_min = 0.1599999815
+  particle_velocity_max = 0.1599999815
+  particle_color_0 = "747474"
+  particle_color_1 = "FFFFFF"
+  particle_opacity = 0.360784322
+  {#blend_mode
+   ColorSrc = "SrcAlpha"
+   ColorDst = "InvSrcAlpha"
+   AlphaSrc = "One"
+   AlphaDst = "One"
+  #}
+  {#mod
+   name = "Opacity Graph"
+   guid = "df171382-9708-47aa-84e6-728073083b92"
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 0
+    #}
+    {#point
+     x = 0.1329787225
+     y = 1
+    #}
+    {#point
+     x = 0.7712765932
+     y = 0.5625
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+  {#mod
+   name = "Scale Graph"
+   guid = "cc60e497-dce8-4682-81ef-cc0b1865ff8c"
+   graph_scale = 2
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 2
+    {#point
+     x = 0
+     y = 1
+    #}
+    {#point
+     x = 1
+     y = 1.431818247
+    #}
+   #}
+  #}
+ #}
+#}

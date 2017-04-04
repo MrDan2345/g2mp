@@ -1,0 +1,341 @@
+{#g2fx
+ name = "AsteroidBreak"
+ scale = 1
+ {#atlas
+  {#page
+   texture = "AsteroidBreak_fx_atlas_0.png"
+   width = 264
+   height = 264
+   {#frame
+    name = "DustBlurSmall.png"
+    pos_l = 2
+    pos_t = 2
+    width = 128
+    height = 128
+   #}
+   {#frame
+    name = "03.png"
+    pos_l = 2
+    pos_t = 134
+    width = 128
+    height = 128
+   #}
+   {#frame
+    name = "07.png"
+    pos_l = 134
+    pos_t = 2
+    width = 128
+    height = 128
+   #}
+  #}
+ #}
+ {#emitter
+  name = "Emitter"
+  frame = "07.png"
+  time_start = 0
+  time_end = 0.1059999987
+  orientation = 0
+  shape = 0
+  shape_radius_0 = 0
+  shape_radius_1 = 0.4999999106
+  shape_angle = 6.283185482
+  shape_width_0 = 0
+  shape_width_1 = 1
+  shape_height_0 = 0
+  shape_height_1 = 1
+  emission = 2
+  layer = 0
+  infinite = 0
+  particle_center_x = 0.5
+  particle_center_y = 0.5
+  particle_width_min = 1
+  particle_width_max = 1
+  particle_height_min = 1
+  particle_height_max = 1
+  particle_scale_min = 0.4999999106
+  particle_scale_max = 0.4999999106
+  particle_duration_min = 0.7800001502
+  particle_duration_max = 1.139999866
+  particle_rotation_min = 0
+  particle_rotation_max = 6.283185482
+  particle_rotation_local = 1
+  particle_orientation_min = 0
+  particle_orientation_max = 0
+  particle_velocity_min = 0.1399998963
+  particle_velocity_max = 0.5199999213
+  particle_color_0 = "FFFFFF"
+  particle_color_1 = "FFFFFF"
+  particle_opacity = 1
+  {#blend_mode
+   ColorSrc = "SrcAlpha"
+   ColorDst = "InvSrcAlpha"
+   AlphaSrc = "One"
+   AlphaDst = "One"
+  #}
+  {#mod
+   name = "Rotation Graph"
+   guid = "69d28969-766a-4365-a560-d8f116cd4e1a"
+   graph_scale = 3
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = -3
+    y_max = 3
+    {#point
+     x = 0
+     y = 0
+    #}
+    {#point
+     x = 1
+     y = 3
+    #}
+   #}
+  #}
+  {#mod
+   name = "Scale Graph"
+   guid = "cc60e497-dce8-4682-81ef-cc0b1865ff8c"
+   graph_scale = 5
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 5
+    {#point
+     x = 0
+     y = 1
+    #}
+    {#point
+     x = 0.7765362859
+     y = 0.7386363745
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+  {#mod
+   name = "Opacity Graph"
+   guid = "df171382-9708-47aa-84e6-728073083b92"
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 1
+    #}
+    {#point
+     x = 0.7932960391
+     y = 0.9829545617
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+ #}
+ {#emitter
+  name = "Emitter1"
+  frame = "03.png"
+  time_start = 0
+  time_end = 0.1019999981
+  orientation = 0
+  shape = 0
+  shape_radius_0 = 0
+  shape_radius_1 = 0.4999999106
+  shape_angle = 6.283185482
+  shape_width_0 = 0
+  shape_width_1 = 1
+  shape_height_0 = 0
+  shape_height_1 = 1
+  emission = 3
+  layer = 0
+  infinite = 0
+  particle_center_x = 0.5
+  particle_center_y = 0.5
+  particle_width_min = 1
+  particle_width_max = 1
+  particle_height_min = 1
+  particle_height_max = 1
+  particle_scale_min = 0.3000000119
+  particle_scale_max = 0.5
+  particle_duration_min = 0.6000003219
+  particle_duration_max = 1.259999752
+  particle_rotation_min = 0
+  particle_rotation_max = 0
+  particle_rotation_local = 1
+  particle_orientation_min = 0
+  particle_orientation_max = 0
+  particle_velocity_min = 0.1399999857
+  particle_velocity_max = 0.5800002217
+  particle_color_0 = "FFFFFF"
+  particle_color_1 = "FFFFFF"
+  particle_opacity = 1
+  {#blend_mode
+   ColorSrc = "SrcAlpha"
+   ColorDst = "InvSrcAlpha"
+   AlphaSrc = "One"
+   AlphaDst = "One"
+  #}
+  {#mod
+   name = "Rotation Graph"
+   guid = "69d28969-766a-4365-a560-d8f116cd4e1a"
+   graph_scale = 3
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = -3
+    y_max = 3
+    {#point
+     x = 0
+     y = 0
+    #}
+    {#point
+     x = 1
+     y = -1.909090877
+    #}
+   #}
+  #}
+  {#mod
+   name = "Scale Graph"
+   guid = "cc60e497-dce8-4682-81ef-cc0b1865ff8c"
+   graph_scale = 5
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 5
+    {#point
+     x = 0
+     y = 1
+    #}
+    {#point
+     x = 0.7932960391
+     y = 0.8806818724
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+  {#mod
+   name = "Opacity Graph"
+   guid = "df171382-9708-47aa-84e6-728073083b92"
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 1
+    #}
+    {#point
+     x = 0.812849164
+     y = 1
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+ #}
+ {#emitter
+  name = "Emitter2"
+  frame = "DustBlurSmall.png"
+  time_start = 0
+  time_end = 0.04800000042
+  orientation = 0
+  shape = 0
+  shape_radius_0 = 0
+  shape_radius_1 = 0
+  shape_angle = 6.283185482
+  shape_width_0 = 0
+  shape_width_1 = 1
+  shape_height_0 = 0
+  shape_height_1 = 1
+  emission = 8
+  layer = 10
+  infinite = 0
+  particle_center_x = 0.5
+  particle_center_y = 0.5
+  particle_width_min = 1
+  particle_width_max = 1
+  particle_height_min = 1
+  particle_height_max = 1
+  particle_scale_min = 0.3999999762
+  particle_scale_max = 1.499999762
+  particle_duration_min = 0.3800002933
+  particle_duration_max = 0.7600001693
+  particle_rotation_min = 0
+  particle_rotation_max = 6.283185482
+  particle_rotation_local = 1
+  particle_orientation_min = 0
+  particle_orientation_max = 0
+  particle_velocity_min = 0
+  particle_velocity_max = 0.1999999732
+  particle_color_0 = "FFFFFF"
+  particle_color_1 = "FFFFFF"
+  particle_opacity = 0.7882353067
+  {#blend_mode
+   ColorSrc = "SrcAlpha"
+   ColorDst = "InvSrcAlpha"
+   AlphaSrc = "One"
+   AlphaDst = "One"
+  #}
+  {#mod
+   name = "Opacity Graph"
+   guid = "df171382-9708-47aa-84e6-728073083b92"
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 1
+    #}
+    {#point
+     x = 0.4734042287
+     y = 0.8863636851
+    #}
+    {#point
+     x = 0.7765957117
+     y = 0.5454545617
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+  {#mod
+   name = "Scale Graph"
+   guid = "cc60e497-dce8-4682-81ef-cc0b1865ff8c"
+   graph_scale = 5
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 5
+    {#point
+     x = 0
+     y = 1
+    #}
+    {#point
+     x = 0.2458100468
+     y = 1.363636374
+    #}
+    {#point
+     x = 1
+     y = 2.045454502
+    #}
+   #}
+  #}
+ #}
+#}

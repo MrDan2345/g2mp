@@ -1,0 +1,200 @@
+{#g2fx
+ name = "Damage"
+ scale = 1
+ {#atlas
+  {#page
+   texture = "Damage_fx_atlas_0.png"
+   width = 68
+   height = 68
+   {#frame
+    name = "Flare.png"
+    pos_l = 2
+    pos_t = 2
+    width = 64
+    height = 64
+   #}
+   {#frame
+    name = "Flare.png"
+    pos_l = 2
+    pos_t = 2
+    width = 64
+    height = 64
+   #}
+  #}
+ #}
+ {#emitter
+  name = "Emitter"
+  frame = "Flare.png"
+  time_start = 0
+  time_end = 0.04199999809
+  orientation = 0
+  shape = 1
+  shape_radius_0 = 0
+  shape_radius_1 = 1
+  shape_angle = 1.570796394
+  shape_width_0 = 0
+  shape_width_1 = 0
+  shape_height_0 = 0
+  shape_height_1 = 0
+  emission = 1
+  layer = 0
+  infinite = 0
+  particle_center_x = 0.5
+  particle_center_y = 0.5
+  particle_width_min = 1
+  particle_width_max = 1
+  particle_height_min = 1
+  particle_height_max = 1
+  particle_scale_min = 1
+  particle_scale_max = 1
+  particle_duration_min = 0.1800002479
+  particle_duration_max = 0.1800002479
+  particle_rotation_min = 0
+  particle_rotation_max = 0
+  particle_rotation_local = 1
+  particle_orientation_min = 0
+  particle_orientation_max = 0
+  particle_velocity_min = 0
+  particle_velocity_max = 0
+  particle_color_0 = "FFFFFF"
+  particle_color_1 = "FFFFFF"
+  particle_opacity = 1
+  {#blend_mode
+   ColorSrc = "SrcAlpha"
+   ColorDst = "DstAlpha"
+   AlphaSrc = "One"
+   AlphaDst = "One"
+  #}
+  {#mod
+   name = "Opacity Graph"
+   guid = "df171382-9708-47aa-84e6-728073083b92"
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 0
+    #}
+    {#point
+     x = 0.2260638236
+     y = 1
+    #}
+    {#point
+     x = 0.7313829421
+     y = 1
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+  {#mod
+   name = "Scale Graph"
+   guid = "cc60e497-dce8-4682-81ef-cc0b1865ff8c"
+   graph_scale = 2
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 2
+    {#point
+     x = 0
+     y = 0
+    #}
+    {#point
+     x = 0.06424580574
+     y = 0.7045454978
+    #}
+    {#point
+     x = 0.312849164
+     y = 0.9886363983
+    #}
+    {#point
+     x = 0.6843575477
+     y = 0.9886363983
+    #}
+    {#point
+     x = 0.9022346496
+     y = 0.6931818008
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+ #}
+ {#emitter
+  name = "Emitter1"
+  frame = "Flare.png"
+  time_start = 0
+  time_end = 0.03400000333
+  orientation = 0
+  shape = 0
+  shape_radius_0 = 0
+  shape_radius_1 = 0.3999999046
+  shape_angle = 6.283185482
+  shape_width_0 = 0
+  shape_width_1 = 1
+  shape_height_0 = 0
+  shape_height_1 = 1
+  emission = 14
+  layer = 0
+  infinite = 0
+  particle_center_x = 0.5
+  particle_center_y = 0.5
+  particle_width_min = 1
+  particle_width_max = 3.999998855
+  particle_height_min = 0.4999999046
+  particle_height_max = 0.4999999046
+  particle_scale_min = 0.1999999237
+  particle_scale_max = 0.2999999237
+  particle_duration_min = 0.42000041
+  particle_duration_max = 0.42000041
+  particle_rotation_min = 0
+  particle_rotation_max = 0
+  particle_rotation_local = 1
+  particle_orientation_min = 0
+  particle_orientation_max = 0
+  particle_velocity_min = 0.8199998855
+  particle_velocity_max = 1.519999504
+  particle_color_0 = "F2AC28"
+  particle_color_1 = "F45B5B"
+  particle_opacity = 1
+  {#blend_mode
+   ColorSrc = "SrcAlpha"
+   ColorDst = "DstAlpha"
+   AlphaSrc = "One"
+   AlphaDst = "One"
+  #}
+  {#mod
+   name = "Opacity Graph"
+   guid = "df171382-9708-47aa-84e6-728073083b92"
+   {#graph
+    x_min = 0
+    x_max = 1
+    y_min = 0
+    y_max = 1
+    {#point
+     x = 0
+     y = 0
+    #}
+    {#point
+     x = 0.1196808452
+     y = 1
+    #}
+    {#point
+     x = 0.6808510303
+     y = 1
+    #}
+    {#point
+     x = 1
+     y = 0
+    #}
+   #}
+  #}
+ #}
+#}
