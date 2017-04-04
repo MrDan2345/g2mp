@@ -20,7 +20,7 @@ uses
   w3application,
   w3components,
   w3graphics,
-  w3c.webgl,
+  Khronos.WebGl,
   w3c.TypedArray,
   G2Types,
   G2Utils,

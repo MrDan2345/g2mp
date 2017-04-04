@@ -2865,10 +2865,13 @@ type
   TProject = object
   private
     type TOutputProcess = record
-      sl: TStringList;
+      TextOut: TStringList;
+      TextErr: TStringList;
       ProcOutput: TMemoryStream;
+      ProcStderr: TMemoryStream;
       Proc: TProcess;
-      ReadBytes, NumBytes: Integer;
+      ReadBytesOut, NumBytesOut: Integer;
+      ReadBytesErr, NumBytesErr: Integer;
     end;
     var _TargetPlatform: Integer;
     var _Open: Boolean;
@@ -23061,41 +23064,64 @@ begin
     App.Console.AddLine(FailMessage);
     Exit(False);
   end;
-  Process.sl := TStringList.Create;
+  Process.TextOut := TStringList.Create;
+  Process.TextErr := TStringList.Create;
   Process.ProcOutput := TMemoryStream.Create;
+  Process.ProcStderr := TMemoryStream.Create;
   Process.Proc := TProcessUTF8.Create(nil);
   Process.Proc.CommandLine := Executable + CommandLine;
   Process.Proc.Executable := Executable;
   if ShowOutput then Process.Proc.Options := Process.Proc.Options + [poUsePipes];
   Process.Proc.ShowWindow := swoHIDE;
-  Process.ReadBytes := 0;
+  Process.ReadBytesOut := 0;
+  Process.ReadBytesErr := 0;
   Process.Proc.Execute;
   if poUsePipes in Process.Proc.Options then
   while True do
   begin
     if Process.Proc.Output.NumBytesAvailable > 0 then
     begin
-      Process.ProcOutput.SetSize(Process.ReadBytes + READ_BYTES);
-      Process.NumBytes := Process.Proc.Output.Read((Process.ProcOutput.Memory + Process.ReadBytes)^, READ_BYTES);
+      Process.ProcOutput.SetSize(Process.ReadBytesOut + READ_BYTES);
+      Process.NumBytesOut := Process.Proc.Output.Read((Process.ProcOutput.Memory + Process.ReadBytesOut)^, READ_BYTES);
     end
     else
-    Process.NumBytes := 0;
-    if Process.NumBytes > 0 then
+    Process.NumBytesOut := 0;
+    if Process.NumBytesOut > 0 then
     begin
-      Inc(Process.ReadBytes, Process.NumBytes);
+      Inc(Process.ReadBytesOut, Process.NumBytesOut);
+    end;
+    if Process.Proc.Stderr.NumBytesAvailable > 0 then
+    begin
+      Process.ProcStderr.SetSize(Process.ReadBytesErr + READ_BYTES);
+      Process.NumBytesErr := Process.Proc.Stderr.Read((Process.ProcStderr.Memory + Process.ReadBytesErr)^, READ_BYTES);
     end
-    else if not Process.Proc.Running then Break;
+    else
+    Process.NumBytesErr := 0;
+    if Process.NumBytesErr > 0 then
+    begin
+      Inc(Process.ReadBytesErr, Process.NumBytesErr);
+    end;
+    if (Process.NumBytesOut = 0)
+    and (Process.NumBytesErr = 0)
+    and not Process.Proc.Running then Break;
   end;
-  while Process.Proc.Running do;
   if poUsePipes in Process.Proc.Options then
   begin
-    Process.ProcOutput.SetSize(Process.ReadBytes);
-    Process.sl.LoadFromStream(Process.ProcOutput);
+    Process.ProcOutput.SetSize(Process.ReadBytesOut);
+    Process.ProcStderr.SetSize(Process.ReadBytesErr);
+    Process.TextOut.LoadFromStream(Process.ProcOutput);
+    Process.TextErr.LoadFromStream(Process.ProcStderr);
+  end;
+  for i := 0 to Process.TextOut.Count - 1 do
+  begin
+    App.Console.AddLine(Process.TextOut[i]);
+  end;
+  for i := 0 to Process.TextErr.Count - 1 do
+  begin
+    App.Console.AddLine(Process.TextErr[i]);
   end;
   if Process.Proc.ExitStatus = 0 then
   begin
-    for i := 0 to Process.sl.Count - 1 do
-    App.Console.AddLine(Process.sl[i]);
     if Length(SuccessMessage) > 0 then
     begin
       App.Log.Log(SuccessMessage);
@@ -23105,8 +23131,6 @@ begin
   end
   else
   begin
-    for i := 0 to Process.sl.Count - 2 do
-    App.Console.AddLine(Process.sl[i]);
     if Length(FailMessage) > 0 then
     begin
       App.Log.Log(FailMessage);
@@ -23116,7 +23140,9 @@ begin
   end;
   Process.Proc.Free;
   Process.ProcOutput.Free;
-  Process.sl.Free;
+  Process.ProcStderr.Free;
+  Process.TextOut.Free;
+  Process.TextErr.Free;
 end;
 
 function TProject.GetPlatformName(const Platform: TG2TargetPlatform): String;
@@ -23412,8 +23438,8 @@ procedure TProject.BuildWindows32;
   begin
     CommandLine := CommandLine + ' ' + Option;
   end;
-  var CompilerProcess, ExeProcess: TOutputProcess;
   var cf: TCodeFile;
+  var ExecutablePath: String;
   var CompilerPath: String;
   var i: Integer;
   const READ_BYTES = 2048;
@@ -23454,81 +23480,25 @@ begin
   for i := 0 to High(_ProjectIncludeSource) do
   AddUnit(G2StrReplace(_ProjectIncludeSource[i], '$(project_root)', _FilePath));
   CommandLine := CommandLine + ' "' + _FilePath + 'build' + G2PathSep + _FileName + '"';
-  CompilerProcess.sl := TStringList.Create;
-  CompilerProcess.ProcOutput := TMemoryStream.Create;
-  CompilerProcess.Proc := TProcessUTF8.Create(nil);
-  CompilerProcess.Proc.Executable := CompilerPath;
-  CompilerProcess.Proc.CommandLine := CompilerProcess.Proc.Executable + CommandLine;
-  CompilerProcess.Proc.Options := CompilerProcess.Proc.Options + [poUsePipes];
-  CompilerProcess.Proc.ShowWindow := swoHIDE;
-  CompilerProcess.ReadBytes := 0;
-  WriteLn(CompilerProcess.Proc.CommandLine);
-  CompilerProcess.Proc.Execute;
-  while True do
+  if ExecuteProcess(
+    CompilerPath,
+    CompilerPath + CommandLine,
+    'Build Succeeded',
+    'Build Failed',
+    True
+  ) then
   begin
-    CompilerProcess.ProcOutput.SetSize(CompilerProcess.ReadBytes + READ_BYTES);
-    CompilerProcess.NumBytes := CompilerProcess.Proc.Output.Read((CompilerProcess.ProcOutput.Memory + CompilerProcess.ReadBytes)^, READ_BYTES);
-    if CompilerProcess.NumBytes > 0 then
+    ExecutablePath := _FilePath + 'bin' + G2PathSep + ProjectName + '.exe';
+    if LazFileUtils.FileExistsUTF8(ExecutablePath) then
     begin
-      Inc(CompilerProcess.ReadBytes, CompilerProcess.NumBytes);
-    end
-    else
-    Break;
-  end;
-  CompilerProcess.Proc.WaitOnExit;
-  CompilerProcess.ProcOutput.SetSize(CompilerProcess.ReadBytes);
-  CompilerProcess.sl.LoadFromStream(CompilerProcess.ProcOutput);
-  if CompilerProcess.Proc.ExitStatus = 0 then
-  begin
-    for i := 0 to CompilerProcess.sl.Count - 1 do
-    App.Console.AddLine(CompilerProcess.sl[i]);
-    App.Log.Log('Build Succeeded');
-    App.Console.AddLine('Build Succeeded');
-    if LazFileUtils.FileExistsUTF8(_FilePath + 'bin' + G2PathSep + ProjectName + '.exe') then
-    begin
-      ExeProcess.sl := TStringList.Create;
-      ExeProcess.ProcOutput := TMemoryStream.Create;
-      ExeProcess.Proc := TProcessUTF8.Create(nil);
-      ExeProcess.Proc.Executable := _FilePath + 'bin' + G2PathSep + ProjectName + '.exe';
-      ExeProcess.Proc.CurrentDirectory := _FilePath + 'bin' + G2PathSep;
-      ExeProcess.Proc.CommandLine := ExeProcess.Proc.Executable;
-      ExeProcess.Proc.Options := ExeProcess.Proc.Options + [poUsePipes];
-      ExeProcess.Proc.ShowWindow := swoShowDefault;
-      ExeProcess.ReadBytes := 0;
-      ExeProcess.Proc.Execute;
-      while True do
-      begin
-        ExeProcess.ProcOutput.SetSize(ExeProcess.ReadBytes + READ_BYTES);
-        ExeProcess.NumBytes := ExeProcess.Proc.Output.Read((ExeProcess.ProcOutput.Memory + ExeProcess.ReadBytes)^, READ_BYTES);
-        if ExeProcess.NumBytes > 0 then
-        begin
-          Inc(ExeProcess.ReadBytes, ExeProcess.NumBytes);
-        end
-        else
-        Break;
-      end;
-      ExeProcess.Proc.WaitOnExit;
-      ExeProcess.ProcOutput.SetSize(ExeProcess.ReadBytes);
-      ExeProcess.sl.LoadFromStream(ExeProcess.ProcOutput);
-      for i := 0 to ExeProcess.sl.Count - 1 do
-      App.Console.AddLine(ExeProcess.sl[i]);
-      ExeProcess.Proc.Free;
-      ExeProcess.ProcOutput.Free;
-      ExeProcess.sl.Free;
-      //SysUtils.ExecuteProcess(UTF8ToSys(_FilePath + 'bin' + G2PathSep + ProjectName + '.exe'), '', []);
+      CommandLine := ExecutablePath;
+      ExecuteProcess(
+        ExecutablePath,
+        CommandLine,
+        '', '', True
+      );
     end;
-  end
-  else
-  begin
-    for i := 0 to CompilerProcess.sl.Count - 2 do
-    App.Console.AddLine(CompilerProcess.sl[i]);
-    App.Log.Log('Build Failed');
-    App.Console.AddLine('Build Failed');
   end;
-  CompilerProcess.Proc.Free;
-  CompilerProcess.ProcOutput.Free;
-  CompilerProcess.sl.Free;
-  //App.Log.Log(Deploy.Build(CompilerPath, ProjectPath));
   G2RemoveDir(_FilePath + 'build');
 end;
 
@@ -24327,14 +24297,15 @@ begin
   AddOption('-compress-css=yes');
   AddOption('-inline=yes');
   AddOption('-optimization=yes');
-  AddOption('-emit-manifest=no');
+  //AddOption('-emit-manifest=no');
   AddOption('-emit-chrome-manifest=no');
+  AddOption('-logo=no');
   CompileSucceeded := ExecuteProcess(
     CompilerPath,
     CommandLine,
     'Build Succeeded',
     'Build Failed',
-    False
+    True
   );
   if CompileSucceeded then
   begin
