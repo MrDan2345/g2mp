@@ -1,0 +1,3 @@
+this sample demonstrates some simple texure loading and 2d rendering routines. there are many more 2d rendering methods than shown here.
+currently g2mp only supports png image format. more image formats will be added in the future.
+all resources used by the project must be placed in the assets directory.

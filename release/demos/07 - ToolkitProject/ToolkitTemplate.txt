@@ -1,4 +1,0 @@
-Toolkit Template
-
-The easiest way to create a g2mp project is by using the g2mp toolkit. All you need is to click New in the Project workspace and select the location to create a new project.
-If you prefer you can also create a lazarus project by clicking Create LPR.

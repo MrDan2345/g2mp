@@ -1,0 +1,6 @@
+g2mp is a cross platform opensource game engine, released under MPL-1.1 lisense.
+
+the easiest way to get started is to run tools/Toolkit/g2mp_toolkit.exe, in the project
+settings click "New" button and select a location for your project and save it. after that
+you can already build your new project, edit code files using the built-in text editor or
+lazarus x86. "Create LPR" button will create a project for lazarus.

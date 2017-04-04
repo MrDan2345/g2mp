@@ -1,8 +1,0 @@
-g2mp is a cross platform opensource game engine, released undeg MPL-1.1 lisense.
-
-g2mp is compiled using the fpc compiler 2.4.2 or newer. and is currently only compatiable with
-the 32 bit cpu architecture.
-
-any questions regarding the engine can be send to dan.soft.studio@gmail.com
-the easiest way to get started with g2mp is using lazarus (http://www.lazarus.freepascal.org/)
-you will need to link the lazarus and fpc to the src directory of the engine and you will be set.
