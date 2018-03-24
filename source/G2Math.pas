@@ -702,11 +702,15 @@ begin
 end;
 
 function TG2Vec2.Angle(const v: TG2Vec2): TG2Float;
-  var VLen: TG2Float;
+  var VLen, dv: TG2Float;
 begin
   VLen := Len * v.Len;
   if VLen > 0 then
-  Result := G2ArcCos(Dot(v) / VLen)
+  begin
+    dv := Dot(v) / VLen;
+    if dv > 1 then dv := 1 else if dv < -1 then dv := -1;
+    Result := G2ArcCos(dv);
+  end
   else
   Result := 0;
 end;
