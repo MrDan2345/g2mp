@@ -1,5 +1,0 @@
-[package]
-name=rtl
-version=2.6.2
-[require]
-packages_win32_i386=

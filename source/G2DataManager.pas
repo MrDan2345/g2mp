@@ -1169,7 +1169,7 @@ begin
     else
     _Control := TG2DataControlAndroidFile.Create(fs, Mode);
     {$else}
-    if (Mode = dmAsset) and Assigned(G2AssetSourceManager) then
+    if (Mode in [dmAsset, dmAssetNoPacks]) and Assigned(G2AssetSourceManager) then
     begin
       _Control := G2AssetSourceManager.FindAsset(FileName);
       if _Control = nil then

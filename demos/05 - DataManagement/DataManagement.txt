@@ -1,0 +1,10 @@
+because g2mp is a crossplatform engine, it is recommended that the game developer manages all the data using the built in engine functions. this means that using the language features such as assign, read, write etc. is not portable and should not be used with g2mp otherwise the portability will be lost. to compensate for this the engine introduces its own data management system. the TG2DataManager can be used for a large variety of tasks such as reading/writing files, loading resources and it includes a built in zlib compression algorithm.
+
+TG2DataManager can be created with one of the following flags:
+dmAsset, dmRead, dmWrite.
+
+dmAsset - this flag must be used when loading the game resources such as game levels etc. this flag is always used internally when loading fonts, textures, meshes and other engine resources. the developer should assume that these resources cannot be modified by the game since this flag only allows reading the files. the main difference between dmAsset and dmRead is on the android systems, dmRead has no access to the asset files, and dmAsset has no access to the writable application files. also dmAsset allows reading from the linked gen2 pack files.
+
+dmRead - this flag is used when the game needs to read a file created with dmWrite. this can be a save game file, a gamer profile file ect.
+
+dmWrite - this flag is used for writing files which can then be read using the dmRead flag.
