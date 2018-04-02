@@ -128,6 +128,7 @@ const
   G2Rcp255 = 1 / $ff;
   G2EPS = 1E-6;
   G2EPS2 = 1E-5;
+  G2EPS3 = 1E-4;
   G2DegToRad = Pi / 180;
   G2RadToDeg = 180 / Pi;
 

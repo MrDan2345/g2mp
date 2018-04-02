@@ -256,7 +256,8 @@ type
     D3DDEVTYPE_HAL = 1,
     D3DDEVTYPE_REF = 2,
     D3DDEVTYPE_SW = 3,
-    D3DDEVTYPE_NULLREF = 4
+    D3DDEVTYPE_NULLREF = 4,
+    D3DDEVTYPE_FORCE_DWORD = $ffffffff
   );
 
   TD3DResourceType = (
@@ -694,7 +695,7 @@ type
   end;
 
   PD3DPresentParameters = ^TD3DPresentParameters;
-  TD3DPresentParameters = packed record
+  TD3DPresentParameters = record
     BackBufferWidth: LongWord;
     BackBufferHeight: LongWord;
     BackBufferFormat: TD3DFormat;
@@ -840,13 +841,13 @@ type
   end;
 
   PD3DLockedRect = ^TD3DLockedRect;
-  TD3DLockedRect = packed record
+  TD3DLockedRect = record
     Pitch: Integer;
     pBits: Pointer;
   end;
 
   PD3DVolumeDesc = ^TD3DVolumeDesc;
-  TD3DVolumeDesc = packed record
+  TD3DVolumeDesc = record
     Format: TD3DFormat;
     _Type: TD3DResourceType;
     Usage: DWord;

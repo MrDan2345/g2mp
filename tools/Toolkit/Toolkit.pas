@@ -22487,7 +22487,7 @@ begin
   c3 := G2LerpColor(Color1, $ff000000, 0.1);
   cx := (R.Left + R.Right) * 0.5;
   cy := (R.Top + R.Bottom) * 0.5;
-  r1 := G2Min(R.Right - R.Left, R.Bottom - R.Top) * 0.5;
+  r1 := G2Min(TG2Float(R.Right - R.Left), TG2Float(R.Bottom - R.Top)) * 0.5;
   r0 := r1 * 0.85;
   DrawSmoothCircle(G2Vec2(cx, cy), r0, r1, Segments, c2, c1, c0);
   if Checked then

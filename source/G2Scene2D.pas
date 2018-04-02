@@ -4148,8 +4148,8 @@ begin
   rx1 := -_Skeleton.ry; ry1 := _Skeleton.rx;
   p := G2Vec2(Bone.WorldX * sx, Bone.WorldY * sy);
   Result.p := G2Vec2(p.x * rx0 + p.y * ry0 + tx, p.x * rx1 + p.y * ry1 + ty);
-  Result.r.c := (Bone.m00 + Bone.m01) * rx0 + (Bone.m00 + Bone.m01) * ry0;
-  Result.r.s := (Bone.m10 + Bone.m11) * rx1 + (Bone.m10 + Bone.m11) * ry1;
+  Result.r.c := (Bone.a + Bone.b) * rx0 + (Bone.a + Bone.b) * ry0;
+  Result.r.s := (Bone.c + Bone.d) * rx1 + (Bone.d + Bone.d) * ry1;
 end;
 
 procedure TG2Scene2DComponentSpineAnimation.SetLayer(const Value: TG2IntS32);

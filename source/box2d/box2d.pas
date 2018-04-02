@@ -4862,7 +4862,7 @@ begin
     if node^.height <= 1 then continue;
     child1 := node^.child1;
     child2 := node^.child2;
-    balance_1 := b2_abs(_nodes^[child2].height - _nodes^[child1].height);
+    balance_1 := b2_abs(tb2_int32(_nodes^[child2].height - _nodes^[child1].height));
     result := b2_max(result, balance_1);
   end;
 end;

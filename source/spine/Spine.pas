@@ -13,6 +13,8 @@ type
   TSpineSkeletonData = class;
   TSpineEventData = class;
   TSpineIKConstraintData = class;
+  TSpineTransformConstraintData = class;
+  TSpinePathConstraintData = class;
   TSpineBone = class;
   TSpineSlot = class;
   TSpineSkeleton = class;
@@ -20,6 +22,7 @@ type
   TSpineIKConstraint = class;
   TSpineAttachment = class;
   TSpineBoundingBoxAttachment = class;
+  TSpinePathAttachment = class;
   TSpineSkin = class;
   TSpinePolygon = class;
   TSpineAnimation = class;
@@ -28,6 +31,10 @@ type
   TSpineAtlasPage = class;
   TSpineAtlasRegion = class;
   TSpineAtlas = class;
+
+  TSpineMatrix3 = array[0..8] of Single;
+  TSpineVector2 = array[0..1] of Single;
+  TSpineColor = array[0..3] of Single;
 
   TSpineClass = class
   private
@@ -131,6 +138,8 @@ type
   TSpineSlotDataList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineSlotData>;
   TSpineEventDataList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineEventData>;
   TSpineIKConstraintDataList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineIKConstraintData>;
+  TSpineTransformConstraintDataList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineTransformConstraintData>;
+  TSpinePathConstraintDataList = {$ifdef fpc}specialize {$endif}TSpineList<TSpinePathConstraintData>;
   TSpineBoneList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineBone>;
   TSpineSlotList = {$ifdef fpc}specialize {$endif}TSpineList<TspineSlot>;
   TSpineSkinList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineSkin>;
@@ -181,7 +190,16 @@ type
   );
 
   TSpineBoneData = class (TSpineClass)
+  public
+    type TTransformMode = (
+      tm_normal,
+      tm_only_translation,
+      tm_no_rotation_or_reflection,
+      tm_no_scale,
+      tm_no_scale_or_reflection
+    );
   private
+    var _Index: Integer;
     var _Parent: TSpineBoneData;
     var _Name: AnsiString;
     var _BoneLength: Single;
@@ -190,11 +208,11 @@ type
     var _Rotation: Single;
     var _ScaleX: Single;
     var _ScaleY: Single;
-    var _FlipX: Boolean;
-    var _FlipY: Boolean;
-    var _InheritScale: Boolean;
-    var _InheritRotation: Boolean;
+    var _ShearX: Single;
+    var _ShearY: Single;
+    var _TransformMode: TTransformMode;
   public
+    property Index: Integer read _Index;
     property Parent: TSpineBoneData read _Parent;
     property Name: AnsiString read _Name;
     property BoneLength: Single read _BoneLength write _BoneLength;
@@ -203,15 +221,16 @@ type
     property Rotation: Single read _Rotation write _Rotation;
     property ScaleX: Single read _ScaleX write _ScaleX;
     property ScaleY: Single read _ScaleY write _ScaleY;
-    property FlipX: Boolean read _FlipX write _FlipX;
-    property FlipY: Boolean read _FlipY write _FlipY;
-    property InheritScale: Boolean read _InheritScale write _InheritScale;
-    property InheritRotation: Boolean read _InheritRotation write _InheritRotation;
-    constructor Create(const AName: AnsiString; const AParent: TSpineBoneData);
+    property ShearX: Single read _ShearX write _ShearX;
+    property ShearY: Single read _ShearY write _ShearY;
+    property TransformMode: TTransformMode read _TransformMode write _TransformMode;
+    constructor Create(const AIndex: Integer; const AName: AnsiString; const AParent: TSpineBoneData);
+    constructor Create(const ABoneData: TSpineBoneData; const AParentBoneData: TSpineBoneData);
   end;
 
   TSpineSlotData = class (TSpineClass)
   private
+    var _Index: Integer;
     var _Name: AnsiString;
     var _BoneData: TSpineBoneData;
     var _AttachmentName: AnsiString;
@@ -221,6 +240,7 @@ type
     var _b: Single;
     var _a: Single;
   public
+    property Index: Integer read _Index;
     property Name: AnsiString read _Name;
     property BoneData: TSpineBoneData read _BoneData;
     property r: Single read _r write _r;
@@ -229,7 +249,7 @@ type
     property a: Single read _a write _a;
     property AttachmentName: AnsiString read _AttachmentName write _AttachmentName;
     property BlendMode: TSpineBlendMode read _BlendMode write _BlendMode;
-    constructor Create(const AName: AnsiString; const ABoneData: TSpineBoneData);
+    constructor Create(const AIndex: Integer; const AName: AnsiString; const ABoneData: TSpineBoneData);
   end;
 
   TSpineSkeletonData = class (TSpineClass)
@@ -242,11 +262,14 @@ type
     var _Events: TSpineEventDataList;
     var _Animations: TSpineAnimationList;
     var _IKConstraints: TSpineIKConstraintDataList;
+    var _TransformConstraints: TSpineTransformConstraintDataList;
+    var _PathConstraints: TSpinePathConstraintDataList;
     var _Width: Single;
     var _Height: Single;
     var _Version: AnsiString;
     var _Hash: AnsiString;
     var _ImagePath: AnsiString;
+    var _FPS: Single;
   public
     property Name: AnsiString read _Name write _Name;
     property Bones: TSpineBoneDataList read _Bones;
@@ -256,11 +279,14 @@ type
     property Events: TSpineEventDataList read _Events;
     property Animations: TSpineAnimationList read _Animations;
     property IKConstraints: TSpineIKConstraintDataList read _IKConstraints;
+    property TransformConstraints: TSpineTransformConstraintDataList read _TransformConstraints;
+    property PathConstraints: TSpinePathConstraintDataList read _PathConstraints;
     property Width: Single read _Width write _Width;
     property Height: Single read _Height write _Height;
     property Version: AnsiString read _Version write _Version;
     property Hash: AnsiString read _Hash write _Hash;
     property ImagePath: AnsiString read _ImagePath write _ImagePath;
+    property FPS: Single read _FPS write _FPS;
     constructor Create;
     destructor Destroy; override;
     function FindBone(const BoneName: AnsiString): TSpineBoneData;
@@ -275,6 +301,8 @@ type
     function FindAnimationIndex(const AnimationName: AnsiString): Integer;
     function FindIKConstraint(const IKConstraintName: AnsiString): TSpineIKConstraintData;
     function FindIKConstraintIndex(const IKConstraintName: AnsiString): Integer;
+    function FindTransformConstraint(const TransformConstraintName: AnsiString): TSpineTransformConstraintData;
+    function FindTransformConstraintIndex(const TransformConstraintName: AnsiString): Integer;
   end;
 
   TSpineEventData = class (TSpineClass)
@@ -294,12 +322,14 @@ type
   TSpineIKConstraintData = class (TSpineClass)
   private
     var _Name: AnsiString;
+    var _Order: Integer;
     var _Bones: TSpineBoneDataList;
     var _Target: TSpineBoneData;
     var _BendDirection: Integer;
     var _Mix: Single;
   public
     property Name: AnsiString read _Name;
+    property Order: Integer read _Order write _Order;
     property Bones: TSpineBoneDataList read _Bones;
     property Target: TSpineBoneData read _Target write _Target;
     property BendDirection: Integer read _BendDirection write _BendDirection;
@@ -308,12 +338,89 @@ type
     destructor Destroy; override;
   end;
 
-  TSpineBone = class (TSpineClass)
-  public
-    class var YDown: Boolean;
+  TSpineTransformConstraintData = class (TSpineClass)
   private
-    var _FlipX: Boolean;
-    var _FlipY: Boolean;
+    var _Name: AnsiString;
+    var _Order: Integer;
+    var _Bones: TSpineBoneDataList;
+    var _Target: TSpineBoneData;
+    var _RotateMix: Single;
+    var _TranslateMix: Single;
+    var _ScaleMix: Single;
+    var _ShearMix: Single;
+    var _OffsetRotation: Single;
+    var _OffsetX: Single;
+    var _OffsetY: Single;
+    var _OffsetScaleX: Single;
+    var _OffsetScaleY: Single;
+    var _OffsetShearY: Single;
+  public
+    property Name: AnsiString read _Name;
+    property Order: Integer read _Order write _Order;
+    property Bones: TSpineBoneDataList read _Bones;
+    property Target: TSpineBoneData read _Target write _Target;
+    property RotateMix: Single read _RotateMix write _RotateMix;
+    property TranslateMix: Single read _TranslateMix write _TranslateMix;
+    property ScaleMix: Single read _ScaleMix write _ScaleMix;
+    property ShearMix: Single read _ShearMix write _ShearMix;
+    property OffsetRotation: Single read _OffsetRotation write _OffsetRotation;
+    property OffsetX: Single read _OffsetX write _OffsetX;
+    property OffsetY: Single read _OffsetY write _OffsetY;
+    property OffsetScaleX: Single read _OffsetScaleX write _OffsetScaleX;
+    property OffsetScaleY: Single read _OffsetScaleY write _OffsetScaleY;
+    property OffsetShearY: Single read _OffsetShearY write _OffsetShearY;
+    constructor Create(const AName: AnsiString);
+    destructor Destroy; override;
+  end;
+
+  TSpinePathConstraintData = class (TSpineClass)
+  public
+    type TPositionMode = (
+      pm_fixed,
+      pm_percent
+    );
+    type TSpacingMode = (
+      sm_length,
+      sm_fixed,
+      sm_percent
+    );
+    type TRotateMode = (
+      rm_tangent,
+      rm_chain,
+      rm_chain_scale
+    );
+  private
+    var _Name: AnsiString;
+    var _Order: Integer;
+    var _Bones: TSpineBoneDataList;
+    var _Target: TSpineSlotData;
+    var _PositionMode: TPositionMode;
+    var _SpacingMode: TSpacingMode;
+    var _RotateMode: TRotateMode;
+    var _OffsetRotation: Single;
+    var _Position: Single;
+    var _Spacing: Single;
+    var _RotateMix: Single;
+    var _TranslateMix: Single;
+  public
+    property Name: AnsiString read _Name;
+    property Order: Integer read _Order write _Order;
+    property Bones: TSpineBoneDataList read _Bones;
+    property Target: TSpineSlotData read _Target write _Target;
+    property PositionMode: TPositionMode read _PositionMode write _PositionMode;
+    property SpacingMode: TSpacingMode read _SpacingMode write _SpacingMode;
+    property RotateMode: TRotateMode read _RotateMode write _RotateMode;
+    property OffsetRotation: Single read _OffsetRotation write _OffsetRotation;
+    property Position: Single read _Position write _Position;
+    property Spacing: Single read _Spacing write _Spacing;
+    property RotateMix: Single read _RotateMix write _RotateMix;
+    property TranslateMix: Single read _TranslateMix write _TranslateMix;
+    constructor Create(const AName: AnsiString);
+    destructor Destroy; override;
+  end;
+
+  TSpineBone = class (TSpineClass)
+  private
     var _Data: TSpineBoneData;
     var _Skeleton: TSpineSkeleton;
     var _Parent: TSpineBone;
@@ -321,20 +428,31 @@ type
     var _x: Single;
     var _y: Single;
     var _Rotation: Single;
-    var _RotationIK: Single;
     var _ScaleX: Single;
     var _ScaleY: Single;
+    var _ShearX: Single;
+    var _ShearY: Single;
+    var _ax: Single;
+    var _ay: Single;
+    var _ARotation: Single;
+    var _AScaleX: Single;
+    var _AScaleY: Single;
+    var _AShearX: Single;
+    var _AShearY: Single;
+    var _AppliedValid: Boolean;
+    var _a: Single;
+    var _b: Single;
     var _WorldX: Single;
+    var _c: Single;
+    var _d: Single;
     var _WorldY: Single;
-    var _WorldRotation: Single;
-    var _WorldScaleX: Single;
-    var _WorldScaleY: Single;
-    var _WorldFlipX: Boolean;
-    var _WorldFlipY: Boolean;
-    var _m00: Single;
-    var _m01: Single;
-    var _m10: Single;
-    var _m11: Single;
+    var _Sorted: Boolean;
+    function GetWorldRotationX: Single; inline;
+    function GetWorldRotationY: Single; inline;
+    function GetWorldScaleX: Single; inline;
+    function GetWorldScaleY: Single; inline;
+    function GetWorldToLocalRotationX: Single; inline;
+    function GetWorldToLocalRotationY: Single; inline;
   public
     property Data: TSpineBoneData read _Data;
     property Skeleton: TSpineSkeleton read _Skeleton;
@@ -343,29 +461,35 @@ type
     property x: Single read _x write _x;
     property y: Single read _y write _y;
     property Rotation: Single read _Rotation write _Rotation;
-    property RotationIK: Single read _RotationIK write _RotationIK;
     property ScaleX: Single read _ScaleX write _ScaleX;
     property ScaleY: Single read _ScaleY write _ScaleY;
-    property FlipX: Boolean read _FlipX write _FlipX;
-    property FlipY: Boolean read _FlipY write _FlipY;
-    property m00: Single read _m00;
-    property m01: Single read _m01;
-    property m10: Single read _m10;
-    property m11: Single read _m11;
-    property WorldX: Single read _WorldX;
-    property WorldY: Single read _WorldY;
-    property WorldRotation: Single read _WorldRotation;
-    property WorldScaleX: Single read _WorldScaleX;
-    property WorldScaleY: Single read _WorldScaleY;
-    property WorldFlipX: Boolean read _WorldFlipX write _WorldFlipX;
-    property WorldFlipY: Boolean read _WorldFlipY write _WorldFlipY;
-    class constructor CreateClass;
+    property ShearX: Single read _ShearX write _ShearX;
+    property ShearY: Single read _ShearY write _ShearY;
+    property a: Single read _a write _a;
+    property b: Single read _b write _b;
+    property WorldX: Single read _WorldX write _WorldX;
+    property c: Single read _c write _c;
+    property d: Single read _d write _d;
+    property WorldY: Single read _WorldY write _WorldY;
+    property WorldRotationX: Single read GetWorldRotationX;
+    property WorldRotationY: Single read GetWorldRotationY;
+    property WorldScaleX: Single read GetWorldScaleX;
+    property WorldScaleY: Single read GetWorldScaleY;
+    property WorldToLocalRotationX: Single read GetWorldToLocalRotationX;
+    property WorldToLocalRotationY: Single read GetWorldToLocalRotationY;
+    property AppliedValid: Boolean read _AppliedValid write _AppliedValid;
     constructor Create(const AData: TSpineBoneData; const ASkeleton: TSpineSkeleton; const AParent: TSpineBone);
+    constructor Create(const ABone: TSpineBone; const ASkeleton: TSpineSkeleton; const AParent: TSpineBone);
     destructor Destroy; override;
+    procedure Update; inline;
     procedure UpdateWorldTransform;
+    procedure UpdateWorldTransform(const nx, ny, NewRotation, NewScaleX, NewScaleY, NewShearX, NewShearY: Single); overload;
     procedure SetToSetupPose;
-    procedure WorldToLocal(const InWorldX, InWorldY: Single; var OutLocalX, OutLocalY: Single);
-    procedure LocalToWorld(const InLocalX, InLocalY: Single; var OutWorldX, OutWorldY: Single);
+    procedure RotateWorld(const Degrees: Single);
+    procedure UpdateAppliedTransform;
+    function GetWorldTransform(const WorldTransform: TSpineMatrix3): TSpineMatrix3;
+    function WorldToLocal(const World: TSpineVector2): TSpineVector2;
+    function LocalToWorld(const Local: TSpineVector2): TSpineVector2;
   end;
 
   TSpineSlot = class (TSpineClass)
@@ -402,6 +526,94 @@ type
     destructor Destroy; override;
     procedure SetToSetupPose(const SlotIndex: Integer); overload;
     procedure SetToSetupPose; overload;
+  end;
+
+  TSpineTransformConstraint = class (TSpineClass)
+  private
+    var _Data: TSpineTransformConstraintData;
+    var _Bones: TSpineBoneList;
+    var _Target: TSpineBone;
+    var _RotateMix: Single;
+    var _TranslateMix: Single;
+    var _ScaleMix: Single;
+    var _ShearMix: Single;
+    var _Temp: TSpineVector2;
+  public
+    property Data: TSpineTransformConstraintData read _Data;
+    property Bones: TSpineBoneList read _Bones;
+    property Target: TSpineBone read _Target write _Target;
+    property RotateMix: Single read _RotateMix write _RotateMix;
+    property TranslateMix: Single read _TranslateMix write _TranslateMix;
+    property ScaleMix: Single read _ScaleMix write _ScaleMix;
+    property ShearMix: Single read _ShearMix write _ShearMix;
+    constructor Create(const AData: TSpineTransformConstraintData; const Skeleton: TSpineSkeleton); overload;
+    constructor Create(const AConstraint: TSpineTransformConstraint; const Skeleton: TSpineSkeleton); overload;
+    destructor Destroy; override;
+    procedure Apply; inline;
+    procedure Update;
+  end;
+
+  TSpinePathConstraint = class (TSpineClass)
+  private
+    const NONE = -1;
+    const BEFORE = -2;
+    const AFTER = -3;
+    var _Data: TSpinePathConstraintData;
+    var _Bones: TSpineBoneList;
+    var _Target: TSpineSlot;
+    var _Position: Single;
+    var _Spacing: Single;
+    var _RotateMix: Single;
+    var _TranslateMix: Single;
+    var _Spaces: TSpineFloatArray;
+    var _Positions: TSpineFloatArray;
+    var _World: TSpineFloatArray;
+    var _Curves: TSpineFloatArray;
+    var _Lengths: TSpineFloatArray;
+    var _Segments: array[0..9] of Single;
+    function GetOrder: Integer; inline;
+    procedure AddBeforePosition(
+      const p: Single;
+      const temp: TSpineFloatArray;
+      const i: Integer;
+      var OutVar: TSpineFloatArray;
+      const o: Integer
+    );
+    procedure AddAfterPosition(
+      const p: Single;
+      const temp: TSpineFloatArray;
+      const i: Integer;
+      var OutVar: TSpineFloatArray;
+      const o: Integer
+    );
+    procedure AddCurvePosition(
+      const p: Single;
+      const x1, y1, cx1, cy1, cx2, cy2, x2, y2: Single;
+      var OutVar: TSpineFloatArray;
+      const o: Integer;
+      const Tangents: Boolean
+    );
+  public
+    property Data: TSpinePathConstraintData read _Data;
+    property Order: Integer read GetOrder;
+    property Position: Single read _Position write _Position;
+    property Spacing: Single read _Spacing write _Spacing;
+    property RotateMix: Single read _RotateMix write _RotateMix;
+    property TranslateMix: Single read _TranslateMix write _TranslateMix;
+    property Bones: TSpineBoneList read _Bones;
+    property Target: TSpineSlot read _Target;
+    constructor Create(const AData: TSpinePathConstraintData; const ASkeleton: TSpineSkeleton); overload;
+    constructor Create(const APathConstraint: TSpinePathConstraint; const ASkeleton: TSpineSkeleton); overload;
+    destructor Destroy; override;
+    procedure Apply; inline;
+    procedure Update;
+    function ComputeWorldPositions(
+      const PathAttachment: TSpinePathAttachment;
+      const SpacesCount: Integer;
+      const Tangents: Boolean;
+      const PercentPosition: Boolean;
+      const PercentSpacing: Boolean
+    ): TSpineFloatArray;
   end;
 
   TSpineBoneCacheList = {$ifdef fpc}specialize {$endif}TSpineList<TSpineBoneList>;
@@ -1165,6 +1377,46 @@ type
     procedure Draw(const Render: TSpineRender; const Slot: TSpineSlot); override;
   end;
 
+  TSpineVertexAttachment = class (TSpineAttachment)
+  private
+    var _ID: Integer;
+    var _Bones: TSpineIntArray;
+    var _Vertices: TSpineFloatArray;
+    var _WorldVerticesLength: Integer;
+    class var _NextID: Integer;
+    class function GetNextID: Integer;
+  public
+    class constructor CreateClass;
+    property ID: Integer read _ID;
+    property Bones: TSpineIntArray read _Bones;
+    property Vertices: TSpineFloatArray read _Vertices;
+    property WorldVerticesLength: Integer read _WorldVerticesLength write _WorldVerticesLength;
+    constructor Create(const AName: AnsiString); override;
+    procedure ComputeWorldVertices(
+      const Slot: TSpineSlot;
+      const Start, Count: Integer;
+      var WorldVertices: TSpineFloatArray;
+      const Offset, Stride: Integer
+    );
+    function ApplyDeform(const SourceAttachment: TSpineVertexAttachment): Boolean;
+    procedure SetBones(const NewBones: array of Integer);
+    procedure SetVertices(const NewVertices: array of Single);
+  end;
+
+  TSpinePathAttachment = class (TSpineVertexAttachment)
+  private
+    var _Lengths: TSpineFloatArray;
+    var _Closed: Boolean;
+    var _ConstantSpeed: Boolean;
+    var _Color: TSpineColor;
+  public
+    property Closed: Boolean read _Closed write _Closed;
+    property ConstantSpeed: Boolean read _ConstantSpeed write _ConstantSpeed;
+    property Lengths: TSpineFloatArray read _Lengths write _Lengths;
+    property Color: TSpineColor read _Color;
+    constructor Create(const AName: AnsiString); override;
+  end;
+
   TSpineAttachmentLoader = class (TSpineClass)
   public
     function NewRegionAttachment(const Skin: TSpineSkin; const Name, Path: AnsiString): TSpineRegionAttachment; virtual; abstract;
@@ -1228,10 +1480,23 @@ type
     function ReadSkeletonData(const Provider: TSpineDataProvider): TSpineSkeletonData; overload;
   end;
 
+function SpineColor(const r, g, b, a: Single): TSpineColor; inline;
+function SpineIsNan(const v: Single): Boolean; inline;
+
 const
   SP_DEG_TO_RAD = Pi / 180;
   SP_RAD_TO_DEG = 180 / Pi;
   SP_RCP_255 = 1 / 255;
+  SP_M00 = 0;
+  SP_M01 = 1;
+  SP_M02 = 2;
+  SP_M10 = 3;
+  SP_M11 = 4;
+  SP_M12 = 5;
+  SP_M20 = 6;
+  SP_M21 = 7;
+  SP_M22 = 8;
+  SP_EPS = 1E-6;
 
 var
   SpineDataProvider: CSpineDataProvider = TSpineDataProvider;
@@ -1339,18 +1604,37 @@ end;
 //TSpineDataProvider END
 
 //TSpineBoneData BEGIN
-constructor TSpineBoneData.Create(const AName: AnsiString; const AParent: TSpineBoneData);
+constructor TSpineBoneData.Create(const AIndex: Integer; const AName: AnsiString; const AParent: TSpineBoneData);
 begin
+  inherited Create;
+  _Index := AIndex;
   _Name := AName;
   _Parent := AParent;
   _ScaleX := 1;
   _ScaleY := 1;
 end;
+
+constructor TSpineBoneData.Create(const ABoneData: TSpineBoneData; const AParentBoneData: TSpineBoneData);
+begin
+  inherited Create;
+  _Index := ABoneData.Index;
+  _Name := ABoneData.Name;
+  _Parent := AParentBoneData;
+  _BoneLength := ABoneData.BoneLength;
+  _x := ABoneData.x;
+  _y := ABoneData.y;
+  _Rotation := ABoneData.Rotation;
+  _ScaleX := ABoneData.ScaleX;
+  _ScaleY := ABoneData.ScaleY;
+  _ShearX := ABoneData.ShearX;
+  _ShearY := ABoneData.ShearY;
+end;
 //TSpineBoneData END
 
 //TSpineSlotData BEGIN
-constructor TSpineSlotData.Create(const AName: AnsiString; const ABoneData: TSpineBoneData);
+constructor TSpineSlotData.Create(const AIndex: Integer; const AName: AnsiString; const ABoneData: TSpineBoneData);
 begin
+  _Index := AIndex;
   _Name := AName;
   _BoneData := ABoneData;
   _r := 1;
@@ -1369,6 +1653,8 @@ begin
   _Events := TSpineEventDataList.Create;
   _Animations := TSpineAnimationList.Create;
   _IKConstraints := TSpineIKConstraintDataList.Create;
+  _TransformConstraints := TSpineTransformConstraintDataList.Create;
+  _PathConstraints := TSpinePathConstraintDataList.Create;
 end;
 
 destructor TSpineSkeletonData.Destroy;
@@ -1379,6 +1665,8 @@ begin
   _Events.Free;
   _Animations.Free;
   _IKConstraints.Free;
+  _TransformConstraints.Free;
+  _PathConstraints.Free;
   inherited Destroy;
 end;
 
@@ -1393,8 +1681,7 @@ function TSpineSkeletonData.FindBoneIndex(const BoneName: AnsiString): Integer;
   var i: Integer;
 begin
   for i := 0 to _Bones.Count - 1 do
-  if _Bones[i].Name = BoneName then
-  Exit(i);
+  if _Bones[i].Name = BoneName then Exit(i);
   Result := -1;
 end;
 
@@ -1409,8 +1696,7 @@ function TSpineSkeletonData.FindSlotIndex(const SlotName: AnsiString): Integer;
   var i: Integer;
 begin
   for i := 0 to _Slots.Count - 1 do
-  if _Slots[i].Name = SlotName then
-  Exit(i);
+  if _Slots[i].Name = SlotName then Exit(i);
   Result := -1;
 end;
 
@@ -1425,8 +1711,7 @@ function TSpineSkeletonData.FindSkinIndex(const SkinName: AnsiString): Integer;
   var i: Integer;
 begin
   for i := 0 to _Skins.Count - 1 do
-  if _Skins[i].Name = SkinName then
-  Exit(i);
+  if _Skins[i].Name = SkinName then Exit(i);
   Result := -1;
 end;
 
@@ -1441,8 +1726,7 @@ function TSpineSkeletonData.FindEventIndex(const EventName: AnsiString): Integer
   var i: Integer;
 begin
   for i := 0 to _Events.Count - 1 do
-  if _Events[i].Name = EventName then
-  Exit(i);
+  if _Events[i].Name = EventName then Exit(i);
   Result := -1;
 end;
 
@@ -1457,8 +1741,7 @@ function TSpineSkeletonData.FindAnimationIndex(const AnimationName: AnsiString):
   var i: Integer;
 begin
   for i := 0 to _Animations.Count - 1 do
-  if _Animations[i].Name = AnimationName then
-  Exit(i);
+  if _Animations[i].Name = AnimationName then Exit(i);
   Result := -1;
 end;
 
@@ -1473,8 +1756,22 @@ function TSpineSkeletonData.FindIKConstraintIndex(const IKConstraintName: AnsiSt
   var i: Integer;
 begin
   for i := 0 to _IKConstraints.Count - 1 do
-  if _IKConstraints[i].Name = IKConstraintName then
-  Exit(i);
+  if _IKConstraints[i].Name = IKConstraintName then Exit(i);
+  Result := -1;
+end;
+
+function TSpineSkeletonData.FindTransformConstraint(const TransformConstraintName: AnsiString): TSpineTransformConstraintData;
+  var i: Integer;
+begin
+  i := FindTransformConstraintIndex(TransformConstraintName);
+  if i > -1 then Result := _TransformConstraints[i] else Result := nil;
+end;
+
+function TSpineSkeletonData.FindTransformConstraintIndex(const TransformConstraintName: AnsiString): Integer;
+  var i: Integer;
+begin
+  for i := 0 to _TransformConstraints.Count - 1 do
+  if _TransformConstraints[i].Name = TransformConstraintName then Exit(i);
   Result := -1;
 end;
 //TSpineSkeletonData END
@@ -1482,6 +1779,7 @@ end;
 //TSpineEventData BEGIN
 constructor TSpineEventData.Create(const AName: AnsiString);
 begin
+  inherited Create;
   _Name := AName;
   _IntValue := 0;
   _FloatValue := 0;
@@ -1492,8 +1790,9 @@ end;
 //TSpineIKConstraintData BEGIN
 constructor TSpineIKConstraintData.Create(const AName: AnsiString);
 begin
-  _Name := AName;
+  inherited Create;
   _Bones := TSpineBoneDataList.Create;
+  _Name := AName;
 end;
 
 destructor TSpineIKConstraintData.Destroy;
@@ -1503,85 +1802,256 @@ begin
 end;
 //TSpineIKConstraintData END
 
-//TSpineBone BEGIN
-class constructor TSpineBone.CreateClass;
+//TSpineTransformConstraintData BEGIN
+constructor TSpineTransformConstraintData.Create(const AName: AnsiString);
 begin
-  YDown := True;
+  inherited Create;
+  _Bones := TSpineBoneDataList.Create;
+  _Name := AName;
+end;
+
+destructor TSpineTransformConstraintData.Destroy;
+begin
+  _Bones.Free;
+  inherited Destroy;
+end;
+//TSpineTransformConstraintData END
+
+//TSpinePathConstraintData BEIGN
+constructor TSpinePathConstraintData.Create(const AName: AnsiString);
+begin
+  inherited Create;
+  _Bones := TSpineBoneDataList.Create;
+  _Name := AName;
+end;
+
+destructor TSpinePathConstraintData.Destroy;
+begin
+  _Bones.Free;
+  inherited Destroy;
+end;
+//TSpinePathConstraintData END
+
+//TSpineBone BEGIN
+function TSpineBone.GetWorldRotationX: Single;
+begin
+  Result := SpineArcTan2(_c, _a) * SP_RAD_TO_DEG;
+end;
+
+function TSpineBone.GetWorldRotationY: Single;
+begin
+  Result := SpineArcTan2(_d, _b) * SP_RAD_TO_DEG;
+end;
+
+function TSpineBone.GetWorldScaleX: Single;
+begin
+  Result := sqrt(_a * _a + _c * _c);
+end;
+
+function TSpineBone.GetWorldScaleY: Single;
+begin
+  Result := sqrt(_b * _b + _d * _d);
+end;
+
+function TSpineBone.GetWorldToLocalRotationX: Single;
+begin
+  if not Assigned(_Parent) then Exit(_ARotation);
+  Result := SpineArcTan2(_Parent.a * _c - _Parent.c * _a, _Parent.d * _a - _Parent.b * _c) * SP_RAD_TO_DEG;
+end;
+
+function TSpineBone.GetWorldToLocalRotationY: Single;
+begin
+  if not Assigned(_Parent) then Exit(_ARotation);
+  Result := SpineArcTan2(_Parent.a * _d - _Parent.c * _b, _Parent.d * _b - _Parent.b * _d) * SP_RAD_TO_DEG;
 end;
 
 constructor TSpineBone.Create(const AData: TSpineBoneData; const ASkeleton: TSpineSkeleton; const AParent: TSpineBone);
 begin
+  inherited Create;
   _Children := TSpineBoneList.Create;
   _Data := AData;
   _Data.RefInc;
   _Skeleton := ASkeleton;
+  _Skeleton.RefInc;
   _Parent := AParent;
   SetToSetupPose;
+end;
+
+constructor TSpineBone.Create(const ABone: TSpineBone; const ASkeleton: TSpineSkeleton; const AParent: TSpineBone);
+begin
+  inherited Create;
+  _Children := TSpineBoneList.Create;
+  _Data := ABone.Data;
+  _Data.RefInc;
+  _Skeleton := ASkeleton;
+  _Skeleton.RefInc;
+  _Parent := AParent;
+  _x := ABone.x;
+  _y := ABone.y;
+  _Rotation := ABone.Rotation;
+  _ScaleX := ABone.ScaleX;
+  _ScaleY := ABone.ScaleY;
+  _ShearX := ABone.ShearX;
+  _ShearY := ABone.ShearY;
 end;
 
 destructor TSpineBone.Destroy;
 begin
   _Data.RefDec;
+  _Skeleton.RefDec;
   _Children.Free;
   inherited Destroy;
 end;
 
-procedure TSpineBone.UpdateWorldTransform;
-  var Radians, c, s: Single;
+procedure TSpineBone.Update;
 begin
-  if Assigned(_Parent) then
+  UpdateWorldTransform(_x, _y, _Rotation, _ScaleX, _ScaleY, _ShearX, _ShearY);
+end;
+
+procedure TSpineBone.UpdateWorldTransform;
+begin
+  UpdateWorldTransform(_x, _y, _Rotation, _ScaleX, _ScaleY, _ShearX, _ShearY);
+end;
+
+procedure TSpineBone.UpdateWorldTransform(const nx, ny, NewRotation, NewScaleX, NewScaleY, NewShearX, NewShearY: Single);
+  var rotation_y, prx, rx, ry, s, r, cc, ss: Single;
+  var la, lb, lc, ld: Single;
+  var pa, pb, pc, pd: Single;
+  var za, zb, zc, zd: Single;
+begin
+  _ax := nx;
+  _ay := ny;
+  _ARotation := NewRotation;
+  _AScaleX := NewScaleX;
+  _AScaleY := NewScaleY;
+  _AShearX := NewShearX;
+  _AShearY := NewShearY;
+  _AppliedValid := true;
+  if not Assigned(_Parent) then
   begin
-    _WorldX := _x * _Parent.m00 + _y * _Parent.m01 + _Parent.WorldX;
-    _WorldY := _x * _Parent.m10 + _y * _Parent.m11 + _Parent.WorldY;
-    if _Data.InheritScale then
+    rotation_y := NewRotation + 90 + NewShearY;
+    la := cos((NewRotation + NewShearX) * SP_DEG_TO_RAD) * NewScaleX;
+    lb := cos(rotation_y * SP_DEG_TO_RAD) * NewScaleY;
+    lc := sin((NewRotation + NewShearX) * SP_DEG_TO_RAD) * NewScaleX;
+    ld := sin(rotation_y * SP_DEG_TO_RAD) * NewScaleY;
+    if _Skeleton.FlipX then
     begin
-      _WorldScaleX := _Parent.WorldScaleX * _ScaleX;
-      _WorldScaleY := _Parent.WorldScaleY * _ScaleY;
+      _WorldX := _Skeleton.x - nx;
+      la := -la;
+      lb := -lb;
     end
     else
     begin
-      _WorldScaleX := _ScaleX;
-      _WorldScaleY := _ScaleY;
+      _WorldX := _Skeleton.x + nx;
     end;
-    if _Data.InheritRotation then
-    _WorldRotation := _Parent.WorldRotation + _RotationIK
+    if _Skeleton.FlipY then
+    begin
+      _WorldY := _Skeleton.y - ny;
+      lc := -lc;
+      ld := -ld;
+    end
     else
-    _WorldRotation := _RotationIK;
-    _WorldFlipX := _Parent.WorldFlipX xor FlipX;
-    _WorldFlipY := _Parent.WorldFlipY xor FlipY;
-  end
-  else
-  begin
-    if _Skeleton.FlipX then _WorldX := -x else _WorldX := x;
-    if _Skeleton.FlipY <> YDown then _WorldY := -y else _WorldY := y;
-    _WorldScaleX := _ScaleX;
-    _WorldScaleY := _ScaleY;
-    _WorldRotation := _RotationIK;
-    _WorldFlipX := _Skeleton.FlipX xor _FlipX;
-    _WorldFlipY := _Skeleton.FlipY xor _FlipY;
+    begin
+      _WorldY := _Skeleton.y + ny;
+    end;
+    _a := la;
+    _b := lb;
+    _c := lc;
+    _d := ld;
+    Exit;
   end;
-  Radians := _WorldRotation * SP_DEG_TO_RAD;
-  c := Cos(Radians);
-  s := Sin(Radians);
-  if _WorldFlipX then
-  begin
-    _m00 := -c * _WorldScaleX;
-    _m01 := s * _WorldScaleY;
-  end
-  else
-  begin
-    _m00 := c * _WorldScaleX;
-    _m01 := -s * _WorldScaleY;
+  pa := _Parent.a; pb := _Parent.b; pc := _Parent.c; pd := _Parent.d;
+  _WorldX := pa * nx + pb * ny + _Parent.worldX;
+  _WorldY := pc * nx + pd * ny + _Parent.worldY;
+  case _Data.TransformMode of
+    tm_normal:
+    begin
+      rotation_y := NewRotation + 90 + NewShearY;
+      la := cos((NewRotation + NewShearX) * SP_DEG_TO_RAD) * NewScaleX;
+      lb := cos(rotation_y * SP_DEG_TO_RAD) * NewScaleY;
+      lc := sin((NewRotation + NewShearX) * SP_DEG_TO_RAD) * NewScaleX;
+      ld := sin(rotation_y) * NewScaleY;
+      _a := pa * la + pb * lc;
+      _b := pa * lb + pb * ld;
+      _c := pc * la + pd * lc;
+      _d := pc * lb + pd * ld;
+      Exit;
+    end;
+    tm_only_translation:
+    begin
+      rotation_y := NewRotation + 90 + NewShearY;
+      _a := cos((NewRotation + NewShearX) * SP_DEG_TO_RAD) * NewScaleX;
+      _b := cos(rotation_y * SP_DEG_TO_RAD) * NewScaleY;
+      _c := sin((NewRotation + NewShearX) * SP_DEG_TO_RAD) * NewScaleX;
+      _d := sin(rotation_y * SP_DEG_TO_RAD) * NewScaleY;
+    end;
+    tm_no_rotation_or_reflection:
+    begin
+      s := pa * pa + pc * pc;
+      if s > 0.0001 then
+      begin
+	s := abs(pa * pd - pb * pc) / s;
+	pb := pc * s;
+	pd := pa * s;
+	prx := SpineArcTan2(pc, pa) * SP_RAD_TO_DEG;
+      end
+      else
+      begin
+	pa := 0;
+	pc := 0;
+	prx := 90 - SpineArcTan2(pd, pb) * SP_RAD_TO_DEG;
+      end;
+      rx := NewRotation + NewShearX - prx;
+      ry := NewRotation + NewShearY - prx + 90;
+      la := cos(rx * SP_DEG_TO_RAD) * NewScaleX;
+      lb := cos(ry * SP_DEG_TO_RAD) * NewScaleY;
+      lc := sin(rx * SP_DEG_TO_RAD) * NewScaleX;
+      ld := sin(ry * SP_DEG_TO_RAD) * NewScaleY;
+      _a := pa * la - pb * lc;
+      _b := pa * lb - pb * ld;
+      _c := pc * la + pd * lc;
+      _d := pc * lb + pd * ld;
+    end;
+    tm_no_scale, tm_no_scale_or_reflection:
+    begin
+      cc := cos(NewRotation * SP_DEG_TO_RAD);
+      ss := sin(NewRotation * SP_DEG_TO_RAD);
+      za := pa * cc + pb * ss;
+      zc := pc * cc + pd * ss;
+      s := sqrt(za * za + zc * zc);
+      if s > 0.00001 then s := 1 / s;
+      za *= s;
+      zc *= s;
+      s := sqrt(za * za + zc * zc);
+      r := Pi / 2 + SpineArcTan2(zc, za);
+      zb := cos(r) * s;
+      zd := sin(r) * s;
+      la := cos(NewShearX * SP_DEG_TO_RAD) * NewScaleX;
+      lb := cos((90 + NewShearY) * SP_DEG_TO_RAD) * NewScaleY;
+      lc := sin(NewShearX * SP_DEG_TO_RAD) * NewScaleX;
+      ld := sin((90 + NewShearY) * SP_DEG_TO_RAD) * NewScaleY;
+      _a := za * la + zb * lc;
+      _b := za * lb + zb * ld;
+      _c := zc * la + zd * lc;
+      _d := zc * lb + zd * ld;
+      if ((_Data.TransformMode = tm_no_scale_or_reflection) and (_Skeleton.FlipX <> _Skeleton.FlipY))
+      or ((_Data.TransformMode <> tm_no_scale_or_reflection) and (pa * pd - pb * pc < 0)) then
+      begin
+	_b := -_b;
+	_d := -_d;
+      end;
+      Exit;
+    end;
   end;
-  if _WorldFlipY <> YDown then
+  if _Skeleton.FlipX then
   begin
-    _m10 := -s * _WorldScaleX;
-    _m11 := -c * _WorldScaleY;
-  end
-  else
+    _a := -_a;
+    _b := -_b;
+  end;
+  if _Skeleton.FlipY then
   begin
-    _m10 := s * _WorldScaleX;
-    _m11 := c * _WorldScaleY;
+    _c := -_c;
+    _d := -_d;
   end;
 end;
 
@@ -1590,34 +2060,100 @@ begin
   _x := _Data.x;
   _y := _Data.y;
   _Rotation := _Data.Rotation;
-  _RotationIK := _Rotation;
   _ScaleX := _Data.ScaleX;
   _ScaleY := _Data.ScaleY;
-  _FlipX := _Data.FlipX;
-  _FlipY := _Data.FlipY;
+  _ShearX := _Data.ShearX;
+  _ShearY := _Data.ShearY;
 end;
 
-procedure TSpineBone.WorldToLocal(const InWorldX, InWorldY: Single; var OutLocalX, OutLocalY: Single);
-  var dx, dy, dm00, dm11, RcpDet: Single;
+procedure TSpineBone.RotateWorld(const Degrees: Single);
+  var cc, ss: Single;
 begin
-  dx := InWorldX - _WorldX;
-  dy := InWorldY - _WorldY;
-  dm00 := _m00;
-  dm11 := _m11;
-  if _WorldFlipX <> (WorldFlipY <> YDown) then
+  cc := cos(Degrees * SP_DEG_TO_RAD);
+  ss := sin(Degrees * SP_DEG_TO_RAD);
+  _a := cc * _a - ss * _c;
+  _b := cc * _b - ss * _d;
+  _c := ss * _a + cc * _c;
+  _d := ss * _b + cc * _d;
+  _AppliedValid := False;
+end;
+
+procedure TSpineBone.UpdateAppliedTransform;
+  var pid, dx, dy, det: Single;
+  var pa, pb, pc, pd: Single;
+  var ia, ib, ic, id: Single;
+  var ra, rb, rc, rd: Single;
+begin
+  _AppliedValid := True;
+  if not Assigned(_Parent) then
   begin
-    dm00 := -dm00;
-    dm11 := -dm11;
+    _ax := _WorldX;
+    _ay := _WorldY;
+    _ARotation := SpineArcTan2(_c, _a) * SP_RAD_TO_DEG;
+    _AScaleX := sqrt(_a * _a + _c * _c);
+    _AScaleY := sqrt(_b * _b + _d * _d);
+    _AShearX := 0;
+    _AShearY := SpineArcTan2(_a * _b + _c * _d, _a * _d - _b * _c) * SP_RAD_TO_DEG;
+    Exit;
   end;
-  RcpDet := 1 / (dm00 * dm11 - _m01 * _m10);
-  OutLocalX := (dx * dm00 * RcpDet - dy * m01 * RcpDet);
-  OutLocalY := (dy * dm11 * RcpDet - dx * m10 * RcpDet);
+  pa := _Parent.a; pb := _Parent.b; pc := _Parent.c; pd := _Parent.d;
+  pid := 1 / (pa * pd - pb * pc);
+  dx := _WorldX - _Parent.WorldX; dy := _WorldY - _Parent.WorldY;
+  _ax := (dx * pd * pid - dy * pb * pid);
+  _ay := (dy * pa * pid - dx * pc * pid);
+  ia := pid * pd;
+  id := pid * pa;
+  ib := pid * pb;
+  ic := pid * pc;
+  ra := ia * a - ib * c;
+  rb := ia * b - ib * d;
+  rc := id * c - ic * a;
+  rd := id * d - ic * b;
+  _AShearX := 0;
+  _AScaleX := sqrt(ra * ra + rc * rc);
+  if _AScaleX > 0.0001 then
+  begin
+    det := ra * rd - rb * rc;
+    _AScaleY := det / _AScaleX;
+    _AShearY := SpineArcTan2(ra * rb + rc * rd, det) * SP_RAD_TO_DEG;
+    _ARotation := SpineArcTan2(rc, ra) * SP_RAD_TO_DEG;
+  end
+  else
+  begin
+    _AScaleX := 0;
+    _AScaleY := sqrt(rb * rb + rd * rd);
+    _AShearY := 0;
+    _ARotation := 90 - SpineArcTan2(rd, rb) * SP_RAD_TO_DEG;
+  end;
 end;
 
-procedure TSpineBone.LocalToWorld(const InLocalX, InLocalY: Single; var OutWorldX, OutWorldY: Single);
+function TSpineBone.GetWorldTransform(const WorldTransform: TSpineMatrix3): TSpineMatrix3;
 begin
-  OutWorldX := InLocalX * _m00 + InLocalY * _m01 + _WorldX;
-  OutWorldY := InLocalX * _m10 + InLocalY * _m11 + _WorldY;
+  Result[SP_M00] := _a;
+  Result[SP_M01] := _b;
+  Result[SP_M10] := _c;
+  Result[SP_M11] := _d;
+  Result[SP_M02] := _WorldX;
+  Result[SP_M12] := _WorldY;
+  Result[SP_M20] := 0;
+  Result[SP_M21] := 0;
+  Result[SP_M22] := 1;
+end;
+
+function TSpineBone.WorldToLocal(const World: TSpineVector2): TSpineVector2;
+  var det_rcp: Single;
+  var wx, wy: Single;
+begin
+  det_rcp := 1 / (_a * _d - _b * _c);
+  wx := World[0] - _WorldX; wy := World[1] - _WorldY;
+  Result[0] := wx * _d * det_rcp - _y * _b * det_rcp;
+  Result[1] := wy * _a * det_rcp - _x * _c * det_rcp;
+end;
+
+function TSpineBone.LocalToWorld(const Local: TSpineVector2): TSpineVector2;
+begin
+  Result[0] := Local[0] * _a + Local[1] * _b + _WorldX;
+  Result[1] := Local[0] * _c + Local[1] * _d + _WorldY;
 end;
 //TSpineBone END
 
@@ -1682,6 +2218,660 @@ begin
   SetToSetupPose(_Bone.Skeleton.Data.Slots.Find(_Data));
 end;
 //TSpineSlot END
+
+//TSpineTransformConstraint BEGIN
+constructor TSpineTransformConstraint.Create(const AData: TSpineTransformConstraintData; const Skeleton: TSpineSkeleton);
+  var i: Integer;
+begin
+  inherited Create;
+  _Bones := TSpineBoneList.Create;
+  _Data := AData;
+  _Data.RefInc;
+  _RotateMix := _Data.RotateMix;
+  _TranslateMix := _Data.translateMix;
+  _ScaleMix := _Data.ScaleMix;
+  _ShearMix := _Data._ShearMix;
+  for i := 0 to _Data.Bones.Count - 1 do
+  begin
+    _Bones.Add(Skeleton.FindBone(_Data.Bones[i].Name));
+  end;
+  _Target := Skeleton.FindBone(_Data.Target.Name);
+end;
+
+constructor TSpineTransformConstraint.Create(const AConstraint: TSpineTransformConstraint; const Skeleton: TSpineSkeleton);
+  var i: Integer;
+begin
+  inherited Create;
+  _Bones := TSpineBoneList.Create;
+  _Data := AConstraint.Data;
+  _Data.RefInc;
+  for i := 0 to AConstraint.Bones.Count - 1 do
+  begin
+    _Bones.Add(Skeleton.Bones[AConstraint.Bones[i].Data.Index]);
+  end;
+  _Target := Skeleton.Bones[AConstraint.Target.Data.Index];
+  _RotateMix := AConstraint.RotateMix;
+  _TranslateMix := AConstraint.TranslateMix;
+  _ScaleMix := AConstraint.ScaleMix;
+  _ShearMix := AConstraint.ShearMix;
+end;
+
+destructor TSpineTransformConstraint.Destroy;
+begin
+  inherited Destroy;
+  _Data.RefDec;
+  _Bones.Free;
+end;
+
+procedure TSpineTransformConstraint.Apply;
+begin
+  Update();
+end;
+
+procedure TSpineTransformConstraint.Update;
+  var ta, tb, tc, td: Single;
+  var ba, bb, bc, bd: Single;
+  var r, ss, cc, s, ts, by: Single;
+  var deg_rad_reflect, offset_rotation, offset_shear_y: Single;
+  var i: Integer;
+  var bone: TSpineBone;
+  var modified: Boolean;
+begin
+  ta := _Target.a; tb := _Target.b; tc := _Target.c; td := _Target.d;
+  if ta * td - tb * tc > 0 then deg_rad_reflect := SP_DEG_TO_RAD else deg_rad_reflect := -SP_DEG_TO_RAD;
+  offset_rotation := _Data.OffsetRotation * deg_rad_reflect; offset_shear_y := _Data.OffsetShearY * deg_rad_reflect;
+  for i := 0 to _Bones.Count - 1 do
+  begin
+    bone := _Bones[i];
+    modified := False;
+    if _RotateMix <> 0 then
+    begin
+      ba := bone.a; bb := bone.b; bc := bone.c; bd := bone.d;
+      r := SpineArcTan2(tc, ta) - SpineArcTan2(bc, ba) + offset_rotation;
+      if (r > Pi) then r -= Pi * 2
+      else if (r < -Pi) then r += Pi * 2;
+      r *= _RotateMix;
+      cc := cos(r); ss := sin(r);
+      bone.a := cc * ba - ss * bc;
+      bone.b := cc * bb - ss * bd;
+      bone.c := ss * ba + cc * bc;
+      bone.d := ss * bb + cc * bd;
+      modified := True;
+    end;
+    if _TranslateMix <> 0 then
+    begin
+      _Temp[0] := _Data.OffsetX; _Temp[1] := _Data.OffsetY;
+      _Temp := _Target.LocalToWorld(_Temp);
+      bone.WorldX := bone.WorldX + (_Temp[0] - bone.WorldX) * _TranslateMix;
+      bone.WorldY := bone.WorldY + (_Temp[1] - bone.WorldY) * _TranslateMix;
+      modified := True;
+    end;
+    if _ScaleMix > 0 then
+    begin
+      s := sqrt(bone.a * bone.a + bone.c * bone.c);
+      ts := sqrt(ta * ta + tc * tc);
+      if s > 0.00001 then s := (s + (ts - s + _Data.OffsetScaleX) * _ScaleMix) / s;
+      bone.a := bone.a * s;
+      bone.c := bone.c * s;
+      s := sqrt(bone.b * bone.b + bone.d * bone.d);
+      ts := sqrt(tb * tb + td * td);
+      if s > 0.00001 then s := (s + (ts - s + _Data.OffsetScaleY) * _ScaleMix) / s;
+      bone.b := bone.b * s;
+      bone.d := bone.d * s;
+      modified := True;
+    end;
+    if _ShearMix > 0 then
+    begin
+      bb := bone.b; bd := bone.d;
+      by := SpineArcTan2(bd, bb);
+      r := SpineArcTan2(td, tb) - SpineArcTan2(tc, ta) - (by - SpineArcTan2(bone.c, bone.a));
+      if r > Pi then r -= Pi * 2
+      else if r < -Pi then r += Pi * 2;
+      r := by + (r + offset_shear_y) * _ShearMix;
+      s := sqrt(bb * bb + bd * bd);
+      bone.b := cos(r) * s;
+      bone.d := sin(r) * s;
+      modified := true;
+    end;
+    if (modified) then bone.AppliedValid := False;
+  end;
+end;
+//TSpineTransformConstraint END
+
+//TSpinePathConstraint BEGIN
+function TSpinePathConstraint.GetOrder: Integer;
+begin
+  Result := _Data.Order;
+end;
+
+procedure TSpinePathConstraint.AddBeforePosition(
+  const p: Single;
+  const temp: TSpineFloatArray;
+  const i: Integer;
+  var OutVar: TSpineFloatArray;
+  const o: Integer
+);
+  var x1, y1, dx, dy, r: Single;
+begin
+  x1 := temp[i]; y1 := temp[i + 1];
+  dx := temp[i + 2] - x1;
+  dy := temp[i + 3] - y1;
+  r := SpineArcTan2(dy, dx);
+  OutVar[o] := x1 + p * Cos(r);
+  OutVar[o + 1] := y1 + p * Sin(r);
+  OutVar[o + 2] := r;
+end;
+
+procedure TSpinePathConstraint.AddAfterPosition(
+  const p: Single;
+  const temp: TSpineFloatArray;
+  const i: Integer;
+  var OutVar: TSpineFloatArray;
+  const o: Integer
+);
+  var x1, y1, dx, dy, r: Single;
+begin
+  x1 := temp[i + 2];
+  y1 := temp[i + 3];
+  dx := x1 - temp[i];
+  dy := y1 - temp[i + 1];
+  r := SpineArcTan2(dy, dx);
+  OutVar[o] := x1 + p * Cos(r);
+  OutVar[o + 1] := y1 + p * Sin(r);
+  OutVar[o + 2] := r;
+end;
+
+procedure TSpinePathConstraint.AddCurvePosition(
+  const p: Single; const x1, y1, cx1, cy1, cx2, cy2, x2, y2: Single;
+  var OutVar: TSpineFloatArray;
+  const o: Integer;
+  const Tangents: Boolean
+);
+  var vp: Single;
+  var tt, ttt, u, uu, uuu, ut, ut3, uut3, utt3, x, y: Single;
+begin
+  vp := p;
+  if (vp < SP_EPS) or SpineIsNan(vp) then vp := SP_EPS;
+  tt := vp * vp; ttt := tt * vp; u := 1 - vp; uu := u * u; uuu := uu * u;
+  ut := u * vp; ut3 := ut * 3; uut3 := u * ut3; utt3 := ut3 * vp;
+  x := x1 * uuu + cx1 * uut3 + cx2 * utt3 + x2 * ttt;
+  y := y1 * uuu + cy1 * uut3 + cy2 * utt3 + y2 * ttt;
+  OutVar[o] := x;
+  OutVar[o + 1] := y;
+  if Tangents then
+  begin
+    OutVar[o + 2] := SpineArcTan2(
+      y - (y1 * uu + cy1 * ut * 2 + cy2 * tt),
+      x - (x1 * uu + cx1 * ut * 2 + cx2 * tt)
+    );
+  end;
+end;
+
+constructor TSpinePathConstraint.Create(const AData: TSpinePathConstraintData; const ASkeleton: TSpineSkeleton);
+  var i: Integer;
+begin
+  inherited Create;
+  _Bones := TSpineBoneList.Create;
+  _Data := AData;
+  _Data.RefInc;
+  for i := 0 to _Data.Bones.Count - 1 do
+  begin
+    _Bones.Add(ASkeleton.FindBone(_Data.Bones[i].Name));
+  end;
+  _Target := ASkeleton.FindSlot(_Data.Target.Name);
+  _Position := _Data.Position;
+  _Spacing := _Data.Spacing;
+  _RotateMix := _Data.RotateMix;
+  _TranslateMix := _Data.TranslateMix;
+end;
+
+constructor TSpinePathConstraint.Create(const APathConstraint: TSpinePathConstraint; const ASkeleton: TSpineSkeleton);
+  var i: Integer;
+begin
+  inherited Create;
+  _Bones := TSpineBoneList.Create;
+  _Data := APathConstraint.Data;
+  _Data.RefInc;
+  for i := 0 to APathConstraint.Bones.Count - 1 do
+  begin
+    _Bones.Add(ASkeleton.Bones[APathConstraint.Bones[i].Data.Index]);
+  end;
+  _Target := ASkeleton.Slots[APathConstraint.Target.Data.Index];
+  _Position := APathConstraint.Position;
+  _Spacing := APathConstraint.Spacing;
+  _RotateMix := APathConstraint.RotateMix;
+  _TranslateMix := APathConstraint.TranslateMix;
+end;
+
+destructor TSpinePathConstraint.Destroy;
+begin
+  _Data.RefDec;
+  _Bones.Free;
+  inherited Destroy;
+end;
+
+procedure TSpinePathConstraint.Apply;
+begin
+  Update;
+end;
+
+procedure TSpinePathConstraint.Update;
+  var attachment: TSpineAttachment;
+  var bone: TSpineBone;
+  var translate, rotate, length_spacing, tangents, scale, tip: Boolean;
+  var i, p, spaces_count: Integer;
+  var s, l, x, y, dx, dy, bone_x, bone_y, offset_rotation, ba, bb, bc, bd, r, ss, cc: Single;
+  var world_positions: TSpineFloatArray;
+begin
+  attachment := _Target.Attachment;
+  if not (attachment is TSpinePathAttachment) then Exit;
+  translate := _TranslateMix > 0;
+  rotate := _RotateMix > 0;
+  if not (translate or rotate) then Exit;
+  //SpacingMode spacingMode = data.spacingMode;
+  length_spacing := _Data.SpacingMode = TSpinePathConstraintData.TSpacingMode.sm_length;
+  //RotateMode rotateMode = data.rotateMode;
+  tangents := _Data.RotateMode = TSpinePathConstraintData.TRotateMode.rm_tangent;
+  scale := _Data.RotateMode = TSpinePathConstraintData.TRotateMode.rm_chain_scale;
+  //int boneCount = this.bones.size;
+  if tangents then spaces_count := _Bones.Count else spaces_count := _Bones.Count + 1;
+  //Object[] bones = this.bones.items;
+  if Length(_Spaces) <> spaces_count then SetLength(_Spaces, spaces_count);
+  //float[] spaces = this.spaces.setSize(spacesCount), lengths = null;
+  //float spacing = this.spacing;
+  if scale or length_spacing then
+  begin
+    if scale and (Length(_Lengths) <> _Bones.Count) then
+    begin
+      SetLength(_Lengths, _Bones.Count);
+    end;
+    for i := 0 to spaces_count - 2 do
+    begin
+      l := _Bones[i].Data.BoneLength;
+      x := l * _Bones[i].a;
+      y := l * _Bones[i].c;
+      l := sqrt(x * x + y * y);
+      if (scale) then _Lengths[i] := l;
+      if length_spacing then _Spaces[i + 1] := SpineMax(0, l + _Spacing) else _Spaces[i + 1] := _Spacing;
+    end;
+  end
+  else
+  begin
+    for i := 1 to spaces_count - 1 do _Spaces[i] := _Spacing;
+  end;
+  world_positions := ComputeWorldPositions(
+    TSpinePathAttachment(attachment),
+    spaces_count,
+    tangents,
+    _Data.PositionMode = TSpinePathConstraintData.TPositionMode.pm_percent,
+    _Data.SpacingMode = TSpinePathConstraintData.TSpacingMode.sm_percent
+  );
+  //float[] positions = computeWorldPositions((PathAttachment)attachment, spacesCount, tangents,
+  //	  data.positionMode == PositionMode.percent, spacingMode == SpacingMode.percent);
+  bone_x := world_positions[0];
+  bone_y := world_positions[1];
+  offset_rotation := _Data.OffsetRotation;
+  if _Data.OffsetRotation = 0 then
+  begin
+    tip := _Data.RotateMode = TSpinePathConstraintData.TRotateMode.rm_chain;
+  end
+  else
+  begin
+    tip := False;
+    if _Target.Bone.a * _Target.Bone.d - _Target.Bone.b * _Target.Bone.c > 0 then
+    begin
+      offset_rotation *= SP_DEG_TO_RAD;
+    end
+    else
+    begin
+      offset_rotation *= -SP_DEG_TO_RAD;
+    end;
+  end;
+  p := 3;
+  for i := 0 to _Bones.Count - 1 do
+  begin
+    bone := _Bones[i];
+    bone.WorldX := bone.WorldX + (bone_x - bone.WorldX) * _TranslateMix;
+    bone.WorldY := bone.WorldY + (bone_y - bone.WorldY) * _TranslateMix;
+    x := world_positions[p];
+    y := world_positions[p + 1];
+    dx := x - bone_x;
+    dy := y - bone_y;
+    if scale then
+    begin
+      l := _Lengths[i];
+      if l <> 0 then
+      begin
+	s := (sqrt(dx * dx + dy * dy) / l - 1) * _RotateMix + 1;
+	bone.a := bone.a * s;
+	bone.c := bone.c * s;
+      end;
+    end;
+    bone_x := x;
+    bone_y := y;
+    if rotate then
+    begin
+      ba := bone.a; bb := bone.b; bc := bone.c; bd := bone.d;
+      if tangents then
+      begin
+        r := world_positions[p - 1];
+      end
+      else if _Spaces[i + 1] = 0 then
+      begin
+        r := world_positions[p + 2];
+      end
+      else
+      begin
+        r := SpineArcTan2(dy, dx);
+      end;
+      r -= SpineArcTan2(bc, ba);
+      if tip then
+      begin
+	cc := cos(r);
+	ss := sin(r);
+	l := bone.Data.BoneLength;
+	bone_x += (l * (cc * ba - ss * bc) - dx) * _RotateMix;
+	bone_y += (l * (ss * ba + cc * bc) - dy) * _RotateMix;
+      end
+      else
+      begin
+        r += offset_rotation;
+      end;
+      if r > Pi then r -= Pi * 2
+      else if r < -Pi then r += Pi * 2;
+      r *= _RotateMix;
+      cc := cos(r);
+      ss := sin(r);
+      bone.a := cc * ba - ss * bc;
+      bone.b := cc * bb - ss * bd;
+      bone.c := ss * ba + cc * bc;
+      bone.d := ss * bb + cc * bd;
+    end;
+    bone.AppliedValid := False;
+    Inc(p, 3);
+  end;
+end;
+
+function TSpinePathConstraint.ComputeWorldPositions(
+  const PathAttachment: TSpinePathAttachment;
+  const SpacesCount: Integer;
+  const Tangents: Boolean;
+  const PercentPosition: Boolean;
+  const PercentSpacing: Boolean
+): TSpineFloatArray;
+  var closed: Boolean;
+  var i, o, curve, segment, vertices_length, curve_count, prev_curve, w: Integer;
+  var ii: Integer;
+  var lengths: TSpineFloatArray;
+  var path_length, curve_length, l, prev: Single;
+  var pos, space, p: Single;
+  var x1, y1, x2, y2, cx1, cy1, cx2, cy2: Single;
+  var tmpx, tmpy, dddfx, dddfy, ddfx, ddfy, dfx, dfy: Single;
+begin
+  //Slot target = this.target;
+  pos := _Position;
+  //float[] spaces = this.spaces.items,
+  if (Length(_Positions) <> SpacesCount * 3 + 2) then SetLength(_Positions, SpacesCount * 3 + 2);
+  //float[] world;
+  closed := PathAttachment.Closed;
+  vertices_length := PathAttachment.WorldVerticesLength;
+  curve_count := vertices_length div 6;
+  prev_curve := NONE;
+  if not PathAttachment.ConstantSpeed then
+  begin
+    lengths := PathAttachment.Lengths;
+    if closed then curve_count -= 1 else curve_count -= 2;
+    path_length := lengths[curve_count];
+    if PercentPosition then pos *= path_length;
+    if PercentSpacing then
+    begin
+      for i := 0 to SpacesCount - 1 do _Spaces[i] *= path_length;
+    end;
+    if Length(_World) <> 8 then SetLength(_World, 8);
+    curve := 0;
+    for i := 0 to SpacesCount - 1 do
+    begin
+      o := i * 3;
+      space := _Spaces[i];
+      pos += space;
+      p := pos;
+      if closed then
+      begin
+	p := SpineModFloat(p, path_length);
+	if p < 0 then p += path_length;
+	curve := 0;
+      end
+      else if p < 0 then
+      begin
+	if prev_curve <> BEFORE then
+        begin
+	  prev_curve := BEFORE;
+	  PathAttachment.ComputeWorldVertices(_Target, 2, 4, _World, 0, 2);
+	end;
+	AddBeforePosition(p, _World, 0, _Positions, o);
+	Continue;
+      end
+      else if p > path_length then
+      begin
+	if prev_curve <> AFTER then
+        begin
+	  prev_curve := AFTER;
+	  PathAttachment.ComputeWorldVertices(_Target, vertices_length - 6, 4, _World, 0, 2);
+	end;
+	AddAfterPosition(p - path_length, _World, 0, _Positions, o);
+	Continue;
+      end;
+      while True do
+      begin
+	l := lengths[curve];
+	if p > l then Continue;
+	if curve = 0 then
+        begin
+          p := p / l;
+        end
+	else
+        begin
+	  prev := lengths[curve - 1];
+	  p := (p - prev) / (l - prev);
+	end;
+	Break;
+        Inc(curve);
+      end;
+      if curve <> prev_curve then
+      begin
+	prev_curve := curve;
+	if closed and (curve = curve_count) then
+        begin
+	  PathAttachment.ComputeWorldVertices(_Target, vertices_length - 4, 4, _World, 0, 2);
+	  PathAttachment.ComputeWorldVertices(_Target, 0, 4, _World, 4, 2);
+	end
+        else
+        begin
+	  PathAttachment.ComputeWorldVertices(_Target, curve * 6 + 2, 8, _World, 0, 2);
+        end;
+      end;
+      AddCurvePosition(
+        p, _World[0], _World[1], _World[2], _World[3], _World[4], _World[5], _World[6], _World[7],
+        _Positions, o, tangents or ((i > 0) and (space = 0))
+      );
+    end;
+    Exit(_Positions);
+  end;
+
+  // World vertices.
+  if closed then
+  begin
+    vertices_length += 2;
+    SetLength(_World, vertices_length);
+    PathAttachment.ComputeWorldVertices(_Target, 2, vertices_length - 4, _World, 0, 2);
+    PathAttachment.computeWorldVertices(_Target, 0, 2, _World, vertices_length - 4, 2);
+    _World[vertices_length - 2] := _World[0];
+    _World[vertices_length - 1] := _World[1];
+  end
+  else
+  begin
+    curve_count -= 1;
+    vertices_length -= 4;
+    SetLength(_World, vertices_length);
+    PathAttachment.ComputeWorldVertices(_Target, 2, vertices_length, _World, 0, 2);
+  end;
+
+  // Curve lengths.
+  SetLength(_Curves, curve_count);
+  path_length := 0;
+  x1 := _World[0]; y1 := _World[1];
+  cx1 := 0; cy1 := 0; cx2 := 0; cy2 := 0; x2 := 0; y2 := 0;
+  w := 2;
+  for i := 0 to curve_count - 1 do
+  begin
+    cx1 := _World[w];
+    cy1 := _World[w + 1];
+    cx2 := _World[w + 2];
+    cy2 := _World[w + 3];
+    x2 := _World[w + 4];
+    y2 := _World[w + 5];
+    tmpx := (x1 - cx1 * 2 + cx2) * 0.1875;
+    tmpy := (y1 - cy1 * 2 + cy2) * 0.1875;
+    dddfx := ((cx1 - cx2) * 3 - x1 + x2) * 0.09375;
+    dddfy := ((cy1 - cy2) * 3 - y1 + y2) * 0.09375;
+    ddfx := tmpx * 2 + dddfx;
+    ddfy := tmpy * 2 + dddfy;
+    dfx := (cx1 - x1) * 0.75 + tmpx + dddfx * 0.16666667;
+    dfy := (cy1 - y1) * 0.75 + tmpy + dddfy * 0.16666667;
+    path_length += sqrt(dfx * dfx + dfy * dfy);
+    dfx += ddfx;
+    dfy += ddfy;
+    ddfx += dddfx;
+    ddfy += dddfy;
+    path_length += sqrt(dfx * dfx + dfy * dfy);
+    dfx += ddfx;
+    dfy += ddfy;
+    path_length += sqrt(dfx * dfx + dfy * dfy);
+    dfx += ddfx + dddfx;
+    dfy += ddfy + dddfy;
+    path_length += sqrt(dfx * dfx + dfy * dfy);
+    _Curves[i] := path_length;
+    x1 := x2;
+    y1 := y2;
+    w += 6;
+  end;
+  if (PercentPosition) then _Position *= path_length;
+  if (PercentSpacing) then
+  begin
+    for i := 0 to SpacesCount - 1 do _Spaces[i] *= path_length;
+  end;
+
+  curve_length := 0;
+  o := 0;
+  curve := 0;
+  segment := 0;
+  //for (int i = 0, o = 0, curve = 0, segment = 0; i < spacesCount; i++, o += 3) {
+  for i := 0 to SpacesCount - 1 do
+  begin
+    space := _Spaces[i];
+    _Position += space;
+    p := _Position;
+    if (closed) then
+    begin
+      p := SpineModFloat(p, path_length);
+      if (p < 0) then p += path_length;
+      curve := 0;
+    end
+    else if (p < 0) then
+    begin
+      AddBeforePosition(p, _World, 0, _Positions, o);
+      Continue;
+    end
+    else if (p > path_length) then
+    begin
+      AddAfterPosition(p - path_length, _World, vertices_length - 4, _Positions, o);
+      Continue;
+    end;
+
+    // Determine curve containing position.
+    //for (;; curve++) {
+    while True do
+    begin
+      l := _Curves[curve];
+      if (p > l) then Continue;
+      if (curve = 0) then p := p / l
+      else
+      begin
+	prev := _Curves[curve - 1];
+	p := (p - prev) / (l - prev);
+      end;
+      Break;
+      curve += 1;
+    end;
+
+    // Curve segment lengths.
+    if (curve <> prev_curve) then
+    begin
+      prev_curve := curve;
+      ii := curve * 6;
+      x1 := _World[ii];
+      y1 := _World[ii + 1];
+      cx1 := _World[ii + 2];
+      cy1 := _World[ii + 3];
+      cx2 := _World[ii + 4];
+      cy2 := _World[ii + 5];
+      x2 := _World[ii + 6];
+      y2 := _World[ii + 7];
+      tmpx := (x1 - cx1 * 2 + cx2) * 0.03;
+      tmpy := (y1 - cy1 * 2 + cy2) * 0.03;
+      dddfx := ((cx1 - cx2) * 3 - x1 + x2) * 0.006;
+      dddfy := ((cy1 - cy2) * 3 - y1 + y2) * 0.006;
+      ddfx := tmpx * 2 + dddfx;
+      ddfy := tmpy * 2 + dddfy;
+      dfx := (cx1 - x1) * 0.3 + tmpx + dddfx * 0.16666667;
+      dfy := (cy1 - y1) * 0.3 + tmpy + dddfy * 0.16666667;
+      curve_length := sqrt(dfx * dfx + dfy * dfy);
+      _Segments[0] := curve_length;
+      for ii := 1 to 7 do
+      begin
+	dfx += ddfx;
+	dfy += ddfy;
+	ddfx += dddfx;
+	ddfy += dddfy;
+	curve_length += sqrt(dfx * dfx + dfy * dfy);
+	_Segments[ii] := curve_length;
+      end;
+      dfx += ddfx;
+      dfy += ddfy;
+      curve_length += sqrt(dfx * dfx + dfy * dfy);
+      _Segments[8] := curve_length;
+      dfx += ddfx + dddfx;
+      dfy += ddfy + dddfy;
+      curve_length += sqrt(dfx * dfx + dfy * dfy);
+      _Segments[9] := curve_length;
+      segment := 0;
+    end;
+
+    // Weight by segment length.
+    p *= curve_length;
+    //for (;; segment++) {
+    while True do
+    begin
+      l := _Segments[segment];
+      if (p > l) then
+      begin
+        segment += 1;
+        Continue;
+      end;
+      if (segment = 0) then p := p / l
+      else
+      begin
+	prev := _Segments[segment - 1];
+	p := segment + (p - prev) / (l - prev);
+      end;
+      Break;
+    end;
+    AddCurvePosition(p * 0.1, x1, y1, cx1, cy1, cx2, cy2, x2, y2, _Positions, o, Tangents or ((i > 0) and (space < SP_EPS)));
+    o += 3;
+  end;
+  Result := _Positions;
+end;
+//TSpinePathConstraint END
 
 //TSpineSkeleton BEGIN
 procedure TSpineSkeleton.SetIKConstraints(const Value: TSpineIKConstraintList);
@@ -1856,19 +3046,19 @@ procedure TSpineSkeleton.UpdateWorldTransform;
   var i, j, last: Integer;
   var UpdateBones: TSpineBoneList;
 begin
-  for i := 0 to _Bones.Count - 1 do
-  _Bones[i].RotationIK := _Bones[i].Rotation;
-  i := 0;
-  last := _IKConstraints.Count;
-  while True do
-  begin
-    UpdateBones := _BoneCache[i];
-    for j := 0 to UpdateBones.Count - 1 do
-    UpdateBones[j].UpdateWorldTransform;
-    if i = last then Break;
-    _IKConstraints[i].Apply;
-    Inc(i);
-  end;
+  //for i := 0 to _Bones.Count - 1 do
+  //_Bones[i].RotationIK := _Bones[i].Rotation;
+  //i := 0;
+  //last := _IKConstraints.Count;
+  //while True do
+  //begin
+  //  UpdateBones := _BoneCache[i];
+  //  for j := 0 to UpdateBones.Count - 1 do
+  //  UpdateBones[j].UpdateWorldTransform;
+  //  if i = last then Break;
+  //  _IKConstraints[i].Apply;
+  //  Inc(i);
+  //end;
 end;
 
 procedure TSpineSkeleton.SetToSetupPose;
@@ -2605,7 +3795,7 @@ end;
 
 procedure TSpineAnimationFlipXTimeline.SetFlip(const Bone: TSpineBone; const Flip: Boolean);
 begin
-  Bone.FlipX := Flip;
+  //Bone.FlipX := Flip;
 end;
 
 constructor TSpineAnimationFlipXTimeline.Create(const AFrameCount: Integer);
@@ -2650,7 +3840,7 @@ end;
 //TSpineAnimationFlipYTimeline BEGIN
 procedure TSpineAnimationFlipYTimeline.SetFlip(const Bone: TSpineBone; const Flip: Boolean);
 begin
-  Bone.FlipY := Flip;
+  //Bone.FlipY := Flip;
 end;
 //TSpineAnimationFlipYTimeline END
 
@@ -3322,9 +4512,9 @@ class procedure TSpineIKConstraint.Apply(var Bone: TSpineBone; const TargetX, Ta
 begin
   Rotation := Bone.Rotation;
   RotationIK := SpineArcTan2(TargetY - Bone.WorldY, TargetX - Bone.WorldX) * SP_RAD_TO_DEG;
-  if (Bone.WorldFlipX <> (Bone.WorldFlipY <> TSpineBone.YDown)) then RotationIK := -RotationIK;
-  if Bone.Data.InheritRotation and Assigned(Bone.Parent) then RotationIK := RotationIK - Bone.Parent.WorldRotation;
-  Bone.RotationIK := Rotation + (RotationIK - Rotation) * Alpha;
+  //if (Bone.WorldFlipX <> (Bone.WorldFlipY <> TSpineBone.YDown)) then RotationIK := -RotationIK;
+  //if Bone.Data.InheritRotation and Assigned(Bone.Parent) then RotationIK := RotationIK - Bone.Parent.WorldRotation;
+  //Bone.RotationIK := Rotation + (RotationIK - Rotation) * Alpha;
 end;
 
 class procedure TSpineIKConstraint.Apply(var Parent, Child: TSpineBone; const TargetX, TargetY, Alpha: Single; const ABendDirection: Integer);
@@ -3333,10 +4523,11 @@ class procedure TSpineIKConstraint.Apply(var Parent, Child: TSpineBone; const Ta
   var ChildAngle, ParentAngle, Adjacent, Opposite: Single;
   var Rotation: Single;
 begin
+  {
   if Alpha = 0 then
   begin
-    Child.RotationIK := Child.Rotation;
-    Parent.RotationIK := Parent.Rotation;
+    //Child.RotationIK := Child.Rotation;
+    //Parent.RotationIK := Parent.Rotation;
     Exit;
   end;
   if Assigned(Parent.Parent) then
@@ -3388,6 +4579,7 @@ begin
   if Rotation > 180 then Rotation := Rotation - 360
   else if Rotation < -180 then Rotation := Rotation + 360;
   Child.RotationIK := Child.Rotation + (Rotation + Parent.WorldRotation - Child.Parent.WorldRotation) * Alpha;
+  }
 end;
 
 constructor TSpineIKConstraint.Create(const AData: TSpineIKConstraintData; const ASkeleton: TSpineSkeleton);
@@ -3968,6 +5160,7 @@ procedure TSpineRegionAttachment.ComputeWorldVertices(const Bone: TSpineBone; va
   var m00, m01, m10, m11: Single;
   var v: TSpineRegionVertices;
 begin
+  {
   tx := Bone.Skeleton.x; ty := Bone.Skeleton.y;
   sx := Bone.Skeleton.ScaleX; sy := Bone.Skeleton.ScaleY;
   rx0 := Bone.Skeleton._RotX; ry0 := Bone.Skeleton._RotY;
@@ -3992,6 +5185,7 @@ begin
   OutWorldVertices[SP_VERTEX_Y3] := v[SP_VERTEX_X3] * rx1 + v[SP_VERTEX_Y3] * ry1 + ty;
   OutWorldVertices[SP_VERTEX_X4] := v[SP_VERTEX_X4] * rx0 + v[SP_VERTEX_Y4] * ry0 + tx;
   OutWorldVertices[SP_VERTEX_Y4] := v[SP_VERTEX_X4] * rx1 + v[SP_VERTEX_Y4] * ry1 + ty;
+  }
 end;
 
 procedure TSpineRegionAttachment.Draw(const Render: TSpineRender; const Slot: TSpineSlot);
@@ -4027,6 +5221,7 @@ procedure TSpineBoundingBoxAttachment.ComputeWorldVertices(const Bone: TSpineBon
   var x, y, m00, m01, m10, m11, px, py, sx, sy, rx0, ry0, rx1, ry1, wx, wy: Single;
   var i: Integer;
 begin
+  {
   if Length(WorldVertices) <> Length(_Vertices) then
   SetLength(WorldVertices, Length(_Vertices));
   x := Bone.Skeleton.x;
@@ -4050,6 +5245,7 @@ begin
     WorldVertices[i + 1] := wx * rx1 + wy * ry1 + y;
     Inc(i, 2);
   end;
+  }
 end;
 //TSpineBoundingBoxAttachment END
 
@@ -4112,6 +5308,7 @@ procedure TSpineMeshAttachment.ComputeWorldVertices(const Slot: TSpineSlot; var 
   var v: PSpineFloatArray;
   var i: Integer;
 begin
+  {
   Bone := Slot.Bone;
   x := Bone.Skeleton.x;
   y := Bone.Skeleton.y;
@@ -4137,6 +5334,7 @@ begin
     WorldVertices[i + 1] := wx * rx1 + wy * ry1 + y;
     Inc(i, 2);
   end;
+  }
 end;
 
 procedure TSpineMeshAttachment.Draw(const Render: TSpineRender; const Slot: TSpineSlot);
@@ -4232,6 +5430,7 @@ procedure TSpineSkinnedMeshAttachment.ComputeWorldVertices(const Slot: TSpineSlo
   var wi, vi, bi, fi, n, nn: Integer;
   var Bone: TSpineBone;
 begin
+  {
   Skeleton := Slot.Skeleton;
   x := Skeleton.x;
   y := Skeleton.y;
@@ -4290,6 +5489,7 @@ begin
       Inc(wi, 2);
     end;
   end;
+  }
 end;
 
 procedure TSpineSkinnedMeshAttachment.Draw(const Render: TSpineRender; const Slot: TSpineSlot);
@@ -4315,6 +5515,157 @@ begin
   Render.RenderPoly(_Texture, @_RenderVertices[0], @_Triangles[0], Length(_Triangles) div 3);
 end;
 //TSpineSkinnedMeshAttachment END
+
+//TSpineVertexAttachment BEGIN
+class function TSpineVertexAttachment.GetNextID: Integer;
+begin
+  Result := InterLockedIncrement(_NextID);
+end;
+
+class constructor TSpineVertexAttachment.CreateClass;
+begin
+  _NextID := 0;
+end;
+
+constructor TSpineVertexAttachment.Create(const AName: AnsiString);
+begin
+  inherited Create(AName);
+  _ID := (GetNextID and 65535) shl 11;
+end;
+
+procedure TSpineVertexAttachment.ComputeWorldVertices(
+  const Slot: TSpineSlot;
+  const Start, Count: Integer;
+  var WorldVertices: TSpineFloatArray;
+  const Offset, Stride: Integer
+);
+  var Skeleton: TSpineSkeleton;
+  var DeformArray: TSpineFloatArray;
+  var Bone: TSpineBone;
+  var x, y, a, b, c, d, vx, vy, wx, wy, weight: Single;
+  var i, cnt, v, w, skip, bi, n, f: Integer;
+begin
+  cnt := Offset + (Count shr 1) * Stride;
+  Skeleton := Slot.GetSkeleton;
+  DeformArray := Slot.GetAttachmentVerticesPtr^;
+  if (Length(_Bones) = 0) then
+  begin
+    if Length(DeformArray) > 0 then _Vertices := DeformArray;
+    Bone := Slot.Bone;
+    x := Bone.WorldX;
+    y := Bone.WorldY;
+    a := Bone.a;
+    b := Bone.b;
+    c := Bone.c;
+    d := Bone.d;
+    v := Start;
+    w := Offset;
+    while w < cnt do
+    begin
+      vx := _Vertices[v];
+      vy := _Vertices[v + 1];
+      WorldVertices[w] := vx * a + vy * b + x;
+      WorldVertices[w + 1] := vx * c + vy * d + y;
+      v += 2;
+      w += Stride;
+    end;
+    Exit;
+  end;
+  v := 0;
+  skip := 0;
+  i := 0;
+  while i < start do
+  begin
+    n := _Bones[v];
+    v += n + 1;
+    skip += n;
+    i += 2;
+  end;
+  if Length(DeformArray) = 0 then
+  begin
+    w := Offset;
+    bi := skip * 3;
+    while w < cnt do
+    begin
+      wx := 0;
+      wy := 0;
+      n := _Bones[v];
+      Inc(v);
+      n += v;
+      while v < n do
+      begin
+        Bone := Skeleton.Bones[_Bones[v]];
+	vx := _Vertices[bi];
+        vy := _Vertices[bi + 1];
+        weight := _Vertices[bi + 2];
+	wx += (vx * Bone.A + vy * Bone.B + Bone.WorldX) * weight;
+	wy += (vx * Bone.C + vy * Bone.D + Bone.WorldY) * weight;
+        Inc(v);
+        bi += 3;
+      end;
+      WorldVertices[w] := wx;
+      WorldVertices[w + 1] := wy;
+      w += Stride;
+    end;
+  end
+  else
+  begin
+    w := Offset;
+    bi := skip * 3;
+    f := skip shl 1;
+    while w < cnt do
+    begin
+      wx := 0;
+      wy := 0;
+      n := _Bones[v];
+      Inc(v);
+      n += v;
+      while v < n do
+      begin
+	Bone := Skeleton.Bones[_Bones[v]];
+	vx := _Vertices[bi] + DeformArray[f];
+        vy := _Vertices[bi + 1] + DeformArray[f + 1];
+        weight := _Vertices[bi + 2];
+	wx += (vx * Bone.A + vy * Bone.B + Bone.WorldX) * weight;
+	wy += (vx * Bone.C + vy * Bone.D + Bone.WorldY) * weight;
+        Inc(v);
+        bi += 3;
+        f += 2;
+      end;
+      WorldVertices[w] := wx;
+      WorldVertices[w + 1] := wy;
+      w += Stride;
+    end;
+  end;
+end;
+
+function TSpineVertexAttachment.ApplyDeform(
+  const SourceAttachment: TSpineVertexAttachment
+): Boolean;
+begin
+  Result := Self = SourceAttachment;
+end;
+
+procedure TSpineVertexAttachment.SetBones(const NewBones: array of Integer);
+begin
+  SetLength(_Bones, Length(NewBones));
+  Move(NewBones[0], _Bones[0], Length(_Bones) * SizeOf(Integer));
+end;
+
+procedure TSpineVertexAttachment.SetVertices(const NewVertices: array of Single);
+begin
+  SetLength(_Vertices, Length(NewVertices));
+  Move(NewVertices[0], _Vertices[0], Length(_Vertices) * SizeOf(Single));
+end;
+//TSpineVertexAttachment END
+
+//TSpinePathAttachment BEGIN
+constructor TSpinePathAttachment.Create(const AName: AnsiString);
+begin
+  inherited Create(AName);
+  _Color := SpineColor(1, 0.5, 0, 1);
+end;
+//TSpinePathAttachment END
 
 //TSpineAtlasAttachmentLoader BEGIN
 procedure TSpineAtlasAttachmentLoader.SetAtlasList(const Value: TSpineAtlasList);
@@ -5056,6 +6407,8 @@ function TSpineSkeletonBinary.ReadSkeletonData(const Provider: TSpineDataProvide
   var Name: AnsiString;
   var BoneData, Parent: TSpineBoneData;
   var ConstraintData: TSpineIKConstraintData;
+  var TransformConstraintData: TSpineTransformConstraintData;
+  var PathConstraintData: TSpinePathConstraintData;
   var SlotData: TSpineSlotData;
   var EventData: TSpineEventData;
   var DefaultSkin, Skin: TSpineSkin;
@@ -5069,25 +6422,30 @@ begin
   Result.Height := ReadFloat(Provider);
   NonEssential := ReadBool(Provider);
   if NonEssential then
-  Result.ImagePath := ReadString(Provider);
+  begin
+    Result.FPS := ReadFloat(Provider);
+    Result.ImagePath := ReadString(Provider);
+  end;
   n := ReadInt(Provider, True);
   for i := 0 to n - 1 do
   begin
     Name := ReadString(Provider);
     Parent := nil;
-    ParentIndex := ReadInt(Provider, True) - 1;
-    if ParentIndex > -1 then Parent := Result.Bones[ParentIndex];
-    BoneData := TSpineBoneData.Create(Name, Parent);
+    if i > 0 then
+    begin
+      ParentIndex := ReadInt(Provider, True) - 1;
+      if ParentIndex > -1 then Parent := Result.Bones[ParentIndex];
+    end;
+    BoneData := TSpineBoneData.Create(i, Name, Parent);
+    BoneData.Rotation := ReadFloat(Provider);
     BoneData.x := ReadFloat(Provider) * _Scale;
     BoneData.y := ReadFloat(Provider) * _Scale;
     BoneData.ScaleX := ReadFloat(Provider);
     BoneData.ScaleY := ReadFloat(Provider);
-    BoneData.Rotation := ReadFloat(Provider);
+    BoneData.ShearX := ReadFloat(Provider);
+    BoneData.ShearY := ReadFloat(Provider);
     BoneData.BoneLength := ReadFloat(Provider) * _Scale;
-    BoneData.FlipX := ReadBool(Provider);
-    BoneData.FlipY := ReadBool(Provider);
-    BoneData.InheritScale := ReadBool(Provider);
-    BoneData.InheritRotation := ReadBool(Provider);
+    BoneData.TransformMode := TSpineBoneData.TTransformMode(ReadInt(Provider, True));
     if NonEssential then ReadInt(Provider);
     Result.Bones.Add(BoneData);
     BoneData.Free;
@@ -5095,22 +6453,9 @@ begin
   n := ReadInt(Provider, True);
   for i := 0 to n - 1 do
   begin
-    ConstraintData := TSpineIKConstraintData.Create(ReadString(Provider));
-    t := ReadInt(Provider, True);
-    for j := 0 to t - 1 do
-    ConstraintData.Bones.Add(Result.Bones[ReadInt(Provider, True)]);
-    ConstraintData.Target := Result.Bones[ReadInt(Provider, True)];
-    ConstraintData.Mix := ReadFloat(Provider);
-    ConstraintData.BendDirection := ReadSByte(Provider);
-    Result.IKConstraints.Add(ConstraintData);
-    ConstraintData.Free;
-  end;
-  n := ReadInt(Provider, True);
-  for i := 0 to n - 1 do
-  begin
     Name := ReadString(Provider);
     BoneData := Result.Bones[ReadInt(Provider, True)];
-    SlotData := TSpineSlotData.Create(Name, BoneData);
+    SlotData := TSpineSlotData.Create(i, Name, BoneData);
     Color := ReadInt(Provider);
     SlotData.r := ((Color and $ff000000) shr 24) * SP_RCP_255;
     SlotData.g := ((Color and $00ff0000) shr 16) * SP_RCP_255;
@@ -5120,6 +6465,77 @@ begin
     SlotData.BlendMode := TSpineBlendMode(ReadInt(Provider, True));
     Result.Slots.Add(SlotData);
     SlotData.Free;
+  end;
+  n := ReadInt(Provider, True);
+  for i := 0 to n - 1 do
+  begin
+    ConstraintData := TSpineIKConstraintData.Create(ReadString(Provider));
+    ConstraintData.Order := ReadInt(Provider, True);
+    t := ReadInt(Provider, True);
+    for j := 0 to t - 1 do
+    begin
+      ConstraintData.Bones.Add(Result.Bones[ReadInt(Provider, True)]);
+    end;
+    ConstraintData.Target := Result.Bones[ReadInt(Provider, True)];
+    ConstraintData.Mix := ReadFloat(Provider);
+    ConstraintData.BendDirection := ReadSByte(Provider);
+    Result.IKConstraints.Add(ConstraintData);
+    ConstraintData.Free;
+  end;
+  n := ReadInt(Provider, True);
+  for i := 0 to n - 1 do
+  begin
+    TransformConstraintData := TSpineTransformConstraintData.Create(ReadString(Provider));
+    TransformConstraintData.Order := ReadInt(Provider, True);
+    t := ReadInt(Provider, True);
+    for j := 0 to t - 1 do
+    begin
+      TransformConstraintData.Bones.Add(Result.Bones[ReadInt(Provider, True)]);
+    end;
+    TransformConstraintData.Target := Result.Bones[ReadInt(Provider, True)];
+    TransformConstraintData.OffsetRotation := ReadFloat(Provider);
+    TransformConstraintData.OffsetX := ReadFloat(Provider) * _Scale;
+    TransformConstraintData.OffsetY := ReadFloat(Provider) * _Scale;
+    TransformConstraintData.OffsetScaleX := ReadFloat(Provider);
+    TransformConstraintData.OffsetScaleY := ReadFloat(Provider);
+    TransformConstraintData.OffsetShearY := ReadFloat(Provider);
+    TransformConstraintData.RotateMix := ReadFloat(Provider);
+    TransformConstraintData.TranslateMix := ReadFloat(Provider);
+    TransformConstraintData.ScaleMix := ReadFloat(Provider);
+    TransformConstraintData.ShearMix := ReadFloat(Provider);
+    Result.TransformConstraints.Add(TransformConstraintData);
+    TransformConstraintData.Free;
+  end;
+  n := ReadInt(Provider, True);
+  for i := 0 to n - 1 do
+  begin
+    PathConstraintData := TSpinePathConstraintData.Create(ReadString(Provider));
+    PathConstraintData.Order := ReadInt(Provider, True);
+    t := ReadInt(Provider, True);
+    for j := 0 to t - 1 do
+    begin
+      PathConstraintData.Bones.Add(Result.Bones[ReadInt(Provider, True)]);
+    end;
+    PathConstraintData.Target := Result.Slots[ReadInt(Provider, True)];
+    PathConstraintData.PositionMode := TSpinePathConstraintData.TPositionMode(ReadInt(Provider, True));
+    PathConstraintData.SpacingMode := TSpinePathConstraintData.TSpacingMode(ReadInt(Provider, True));
+    PathConstraintData.RotateMode := TSpinePathConstraintData.TRotateMode(ReadInt(Provider, True));
+    PathConstraintData.OffsetRotation := ReadFloat(Provider);
+    PathConstraintData.Position := ReadFloat(Provider);
+    if PathConstraintData.PositionMode = pm_fixed then
+    begin
+      PathConstraintData.Position := PathConstraintData.Position * _Scale;
+    end;
+    PathConstraintData.Spacing := ReadFloat(Provider);
+    if (PathConstraintData.SpacingMode = sm_length)
+    or (PathConstraintData.SpacingMode = sm_fixed) then
+    begin
+      PathConstraintData.Spacing := PathConstraintData.Spacing * _Scale;
+    end;
+    PathConstraintData.RotateMix := ReadFloat(Provider);
+    PathConstraintData.TranslateMix := ReadFloat(Provider);
+    Result.PathConstraints.Add(PathConstraintData);
+    PathConstraintData.Free;
   end;
   DefaultSkin := ReadSkin(Provider, 'default', NonEssential);
   if Assigned(DefaultSkin) then
@@ -5344,5 +6760,18 @@ begin
 end;
 {$Hints on}
 //TSpineList END
+
+function SpineColor(const r, g, b, a: Single): TSpineColor;
+begin
+  Result[0] := r;
+  Result[1] := g;
+  Result[2] := b;
+  Result[3] := a;
+end;
+
+function SpineIsNan(const v: Single): Boolean;
+begin
+  Result := v <> v;
+end;
 
 end.

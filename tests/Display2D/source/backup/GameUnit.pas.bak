@@ -73,7 +73,7 @@ procedure TGame.Initialize;
 begin
   Disp := TG2Display2D.Create;
   Disp.Position := G2Vec2(0, 0);
-  //Disp.ViewPort := Rect(400, 300, 800, 600);
+  Disp.ViewPort := Rect(400, 300, 800, 600);
 end;
 
 procedure TGame.Finalize;
