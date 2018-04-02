@@ -4862,7 +4862,7 @@ begin
     if node^.height <= 1 then continue;
     child1 := node^.child1;
     child2 := node^.child2;
-    balance_1 := b2_abs(tb2_int32(_nodes^[child2].height - _nodes^[child1].height);
+    balance_1 := b2_abs(tb2_int32(_nodes^[child2].height - _nodes^[child1].height));
     result := b2_max(result, balance_1);
   end;
 end;
@@ -5092,6 +5092,7 @@ procedure tb2_broad_phase.update_pairs(const callback: tb2_add_pair_callback);
     var pair_ptr: pb2_pair;
     var pair: tb2_pair;
   begin
+    if _pair_count <= 0 then Exit;
      repeat
         i := l;
         j := h;

@@ -5092,29 +5092,30 @@ procedure tb2_broad_phase.update_pairs(const callback: tb2_add_pair_callback);
     var pair_ptr: pb2_pair;
     var pair: tb2_pair;
   begin
-     repeat
-        i := l;
-        j := h;
-        pair_ptr := @_pair_buffer^[(l + h) shr 1];
-        repeat
-           while pair_less_than(_pair_buffer^[i], pair_ptr^) do inc(i);
-           while pair_less_than(pair_ptr^, _pair_buffer^[j]) do dec(j);
-           if i <= j then
-           begin
-              if i <> j then
-              begin
-                 pair := _pair_buffer^[i];
-                 _pair_buffer^[i] := _pair_buffer^[j];
-                 _pair_buffer^[j] := pair;
-              end;
-              inc(i);
-              dec(j);
-           end;
-        until i > j;
-        if l < j then
-        quick_sort_pairs(l, j);
-        l := i;
-     until i >= h;
+    if _pair_count <= 0 then Exit;
+    repeat
+      i := l;
+      j := h;
+      pair_ptr := @_pair_buffer^[(l + h) shr 1];
+      repeat
+         while pair_less_than(_pair_buffer^[i], pair_ptr^) do inc(i);
+         while pair_less_than(pair_ptr^, _pair_buffer^[j]) do dec(j);
+         if i <= j then
+         begin
+            if i <> j then
+            begin
+               pair := _pair_buffer^[i];
+               _pair_buffer^[i] := _pair_buffer^[j];
+               _pair_buffer^[j] := pair;
+            end;
+            inc(i);
+            dec(j);
+         end;
+      until i > j;
+      if l < j then
+      quick_sort_pairs(l, j);
+      l := i;
+    until i >= h;
   end;
   var i: tb2_int32;
   var fat_aabb: tb2_aabb;

@@ -66,9 +66,10 @@
       </Unit3>
       <Unit4>
         <Filename Value="Toolkit.pas"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
         <TopLine Value="22473"/>
-        <CursorPos X="42" Y="22483"/>
+        <CursorPos X="75" Y="22495"/>
         <UsageCount Value="114"/>
         <Loaded Value="True"/>
       </Unit4>
@@ -118,10 +119,9 @@
       </Unit10>
       <Unit11>
         <Filename Value="..\..\source\Gen2MP.pas"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="3"/>
-        <TopLine Value="13478"/>
-        <CursorPos Y="13498"/>
+        <TopLine Value="13487"/>
+        <CursorPos X="113" Y="13506"/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
       </Unit11>
