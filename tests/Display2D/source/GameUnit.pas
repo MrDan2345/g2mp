@@ -88,6 +88,7 @@ end;
 
 procedure TGame.Render;
 begin
+  g2.Clear($ff808080);
   Disp.PrimRect(-100, -100, 200, 200, $ff0000ff);
 end;
 

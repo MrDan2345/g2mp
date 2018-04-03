@@ -73,7 +73,8 @@ end;
 
 procedure TGame.Initialize;
   //const CharacterName = 'spineboy';
-  const CharacterName = 'raptor';
+  //const CharacterName = 'raptor';
+  const CharacterName = 'hero-mesh';
   var sb: TSpineSkeletonBinary;
   var sd: TSpineSkeletonData;
   var al: TSpineAtlasList;
@@ -129,6 +130,7 @@ begin
   SpineRender.Free;
   TSpineClass.Report('SpineReport.txt');
   Display.Free;
+  Free;
 end;
 
 procedure TGame.Update;

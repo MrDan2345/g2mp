@@ -71,11 +71,13 @@ end;
 
 procedure TGame.Initialize;
 begin
-
+  Tex := TG2Texture2D.SharedAsset('Tex.png');
+  Tex.RefInc;
 end;
 
 procedure TGame.Finalize;
 begin
+  Tex.RefDec;
   Free;
 end;
 
@@ -86,11 +88,8 @@ end;
 
 procedure TGame.Render;
 begin
-  Tex := TG2Texture2D.SharedAsset('Tex.png');
-  Tex.RefInc;
   g2.Clear($ff0080ff);
-  g2.PicRect(0, 0, $ff0080ff, Tex);
-  Tex.RefDec;
+  g2.PicRect(0, 0, $ffffffff, Tex);
 end;
 
 procedure TGame.KeyDown(const Key: Integer);

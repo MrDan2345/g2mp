@@ -8,6 +8,7 @@ uses
   {$ENDIF}{$ENDIF}
   Windows,
   Classes,
+  SysUtils,
   G2Math,
   G2DirectX9;
 
@@ -211,9 +212,12 @@ end;
 procedure CreateDevice;
   var pp: TD3DPresentParameters;
   var R: TRect;
+  var hr: HRESULT;
+  var b: LongWord;
 begin
   D3D9 := Direct3DCreate9(D3D_SDK_VERSION);
   GetClientRect(WindowHandle, R);
+  b := 1;
   ZeroMemory(@pp, SizeOf(pp));
   pp.BackBufferWidth := R.Right - R.Left;
   pp.BackBufferHeight := R.Bottom - R.Top;
@@ -221,12 +225,12 @@ begin
   pp.BackBufferCount := 1;
   pp.MultiSampleType := D3DMULTISAMPLE_NONE;
   pp.SwapEffect := D3DSWAPEFFECT_DISCARD;
-  pp.hDeviceWindow := WindowHandle;
+  pp.hDeviceWindow := LongWord(WindowHandle);
   pp.Windowed := True;
   pp.EnableAutoDepthStencil := False;
   pp.AutoDepthStencilFormat := D3DFMT_D16;
   pp.PresentationInterval := D3DPRESENT_INTERVAL_IMMEDIATE;
-  D3D9.CreateDevice(
+  hr := D3D9.CreateDevice(
     0, D3DDEVTYPE_HAL,
     WindowHandle,
     D3DCREATE_SOFTWARE_VERTEXPROCESSING or D3DCREATE_MULTITHREADED,

@@ -56,7 +56,7 @@ begin
   g2.Params.MaxFPS := 100;
   g2.Params.Width := 1024;
   g2.Params.Height := 768;
-  g2.Params.ScreenMode := smMaximized;
+  g2.Params.ScreenMode := smWindow;
 end;
 
 destructor TGame.Destroy;
@@ -81,17 +81,13 @@ procedure TGame.Initialize;
   var CircleShape: TG2Scene2DComponentCollisionShapeCircle;
   var Sprite: TG2Scene2DComponentSprite;
   var Background: TG2Scene2DComponentBackground;
-  var fs: TFileStream;
+  var fs: TG2DataManager;
   var jd: TG2Scene2DDistanceJoint;
   var jr: TG2Scene2DRevoluteJoint;
   var pm: TG2Scene2DComponentPoly;
   var varr: TG2QuickListVec2;
   var i: Integer;
 begin
-  TexBox := TG2Texture2D.Create;
-  TexBox.Load('../assets/Wall.png', tuUsage3D);
-  TexStone := TG2Texture2D.Create;
-  TexStone.Load('../assets/Stone2.png', tuUsage3D);
   Disp := TG2Display2D.Create;
   Disp.Height := 10;
   Disp.Width := Round(g2.Params.Width / g2.Params.Height) * Disp.Height;
@@ -135,10 +131,9 @@ begin
     //PolyShape.Attach(Box);
     Box1 := TG2Scene2DEntity.Create(Scene);
     Sprite := TG2Scene2DComponentSprite.Create(Scene);
-    Sprite.Texture := TexBox;
-    Sprite.TexCoords := TexBox.TexCoords;
-    Sprite.Width := TexBox.SizeTU * 0.5;
-    Sprite.Height := TexBox.SizeTV * 0.5;
+    Sprite.Picture := TG2Picture.SharedAsset('Wall.png', tu3D);
+    Sprite.Width := Sprite.Picture.TexCoords.w * 0.5;
+    Sprite.Height := Sprite.Picture.TexCoords.h * 0.5;
     Sprite.Filter := tfLinear;
     Sprite.Attach(Box1);
     Sprite.Layer := 2;
@@ -151,15 +146,14 @@ begin
     CircleShape.SetUp(G2Vec2(0, 0.25), 0.25);
     CircleShape.Attach(Box1);
     PolyShape := TG2Scene2DComponentCollisionShapeBox.Create(Scene);
-    PolyShape.SetUpBox(0.25, 0.25, G2Vec2(0.125, 0), 0);
+    PolyShape.SetUpBox(0.5, 0.5, G2Vec2(0.125, 0), 0);
     PolyShape.Attach(Box1);
 
     Box := TG2Scene2DEntity.Create(Scene);
     Sprite := TG2Scene2DComponentSprite.Create(Scene);
-    Sprite.Texture := TexBox;
-    Sprite.TexCoords := TexBox.TexCoords;
-    Sprite.Width := TexBox.SizeTU * 0.5;
-    Sprite.Height := TexBox.SizeTV * 0.5;
+    Sprite.Picture := TG2Picture.SharedAsset('Stone2.png', tu3D);
+    Sprite.Width := Sprite.Picture.TexCoords.w * 0.5;
+    Sprite.Height := Sprite.Picture.TexCoords.h * 0.5;
     Sprite.Filter := tfLinear;
     Sprite.Attach(Box);
     Sprite.Layer := 2;
@@ -170,7 +164,7 @@ begin
     RigidBody.Enabled := True;
     RigidBody.MakeDynamic;
     PolyShape := TG2Scene2DComponentCollisionShapeBox.Create(Scene);
-    PolyShape.SetUpBox(0.25, 0.25, G2Vec2(0, 0), 0);
+    PolyShape.SetUpBox(0.5, 0.5, G2Vec2(0, 0), 0);
     PolyShape.Attach(Box);
 
     //j := TG2Scene2DDistanceJoint.Create(Scene);
@@ -198,14 +192,14 @@ begin
     pm.LayerCount := 1;
     pm.Layers[0].Texture := TexBox;
     for i := 0 to pm.VertexCount - 1 do
-    pm.Layers[0].Opacity[i] := 1;
-    pm.Layers[0].Opacity[1] := 0;
+    pm.Layers[0].Color[i].a := 1;
+    pm.Layers[0].Color[1].a := 0;
     pm.Layers[0].Layer := 40;
     pm.Layers[0].Visible := True;
     pm.Layers[0].Scale.SetValue(0.5, 0.5);
     pm.Attach(Ground);
 
-    fs := TFileStream.Create('scene.g2s2d', fmCreate);
+    fs := TG2DataManager.Create('scene.g2s2d', dmWrite);
     try
       Scene.Save(fs);
     finally
@@ -214,7 +208,7 @@ begin
   end
   else
   begin
-    fs := TFileStream.Create('scene.g2s2d', fmOpenRead);
+    fs := TG2DataManager.Create('scene.g2s2d', dmAsset);
     try
       Scene.Load(fs);
     finally
@@ -227,7 +221,6 @@ end;
 
 procedure TGame.Finalize;
 begin
-  TexBox.Free;
   Scene.Free;
   Disp.Free;
 end;

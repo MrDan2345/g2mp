@@ -568,7 +568,7 @@ begin
     if b <> _DirRight then
     begin
       _DirRight := b;
-      _DirSwitchTime := 0.4;
+      _DirSwitchTime := 0.4 + Random * 0.4;
     end;
   end;
   if pd < 1.5 then
@@ -653,7 +653,7 @@ begin
   rb := TG2Scene2DComponentRigidBody.Create(Scene);
   rb.Attach(Owner);
   sc := TG2Scene2DComponentCollisionShapeCircle.Create(Scene);
-  sc.Radius := 0.2;
+  sc.Radius := 0.15;
   sc.IsSensor := True;
   sc.EventBeginContact.AddEvent(@OnHit);
   sc.Attach(Owner);
