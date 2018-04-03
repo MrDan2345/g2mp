@@ -170,6 +170,7 @@ type
     procedure Save(const dm: TG2DataManager); virtual;
     procedure Load(const dm: TG2DataManager); virtual;
   end;
+  CG2Scene2DEntity = class of TG2Scene2DEntity;
 
   TG2Scene2DJointList = specialize TG2QuickListG<TG2Scene2DJoint>;
 
@@ -378,8 +379,8 @@ type
     procedure QueryPoint(const p: TG2Vec2; var EntityList: TG2Scene2DEntityList);
     function AdjustToGrid(const v: TG2Vec2): TG2Vec2;
     function GridPos(const v: TG2Vec2): TPoint;
-    function CreatePrefab(const dm: TG2DataManager; const Transform: TG2Transform2): TG2Scene2DEntity;
-    function CreatePrefab(const PrefabName: String; const Transform: TG2Transform2): TG2Scene2DEntity;
+    function CreatePrefab(const dm: TG2DataManager; const Transform: TG2Transform2; const EntityClass: CG2Scene2DEntity = nil): TG2Scene2DEntity;
+    function CreatePrefab(const PrefabName: String; const Transform: TG2Transform2; const EntityClass: CG2Scene2DEntity = nil): TG2Scene2DEntity;
     procedure Save(const dm: TG2DataManager);
     procedure Load(const dm: TG2DataManager);
     procedure Load(const FileName: String);
@@ -2857,7 +2858,11 @@ begin
   Result.y := Round((v.y - _GridOffsetY) * _GridSizeYRcp);
 end;
 
-function TG2Scene2D.CreatePrefab(const dm: TG2DataManager; const Transform: TG2Transform2): TG2Scene2DEntity;
+function TG2Scene2D.CreatePrefab(
+  const dm: TG2DataManager;
+  const Transform: TG2Transform2;
+  const EntityClass: CG2Scene2DEntity
+): TG2Scene2DEntity;
   procedure ProcessEntity(const Entity: TG2Scene2DEntity);
     var i: Integer;
   begin
@@ -2868,11 +2873,13 @@ function TG2Scene2D.CreatePrefab(const dm: TG2DataManager; const Transform: TG2T
   end;
   var Def: array[0..3] of AnsiChar;
   var i, n: Integer;
+  var CreateClass: CG2Scene2DEntity;
 begin
+  if Assigned(EntityClass) then CreateClass := EntityClass else CreateClass := TG2Scene2DEntity;
   dm.ReadBuffer(@Def, 4);
   if Def = 'PF2D' then
   begin
-    Result := TG2Scene2DEntity.Create(Self);
+    Result := CreateClass.Create(Self);
     Result.Load(dm);
     n := dm.ReadIntS32;
     for i := 0 to n - 1 do
@@ -2888,12 +2895,16 @@ begin
   end;
 end;
 
-function TG2Scene2D.CreatePrefab(const PrefabName: String; const Transform: TG2Transform2): TG2Scene2DEntity;
+function TG2Scene2D.CreatePrefab(
+  const PrefabName: String;
+  const Transform: TG2Transform2;
+  const EntityClass: CG2Scene2DEntity
+): TG2Scene2DEntity;
   var dm: TG2DataManager;
 begin
   dm := TG2DataManager.Create(PrefabName, dmAsset);
   try
-    Result := CreatePrefab(dm, Transform);
+    Result := CreatePrefab(dm, Transform, EntityClass);
   finally
     dm.Free;
   end;
