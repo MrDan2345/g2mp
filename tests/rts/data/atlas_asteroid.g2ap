@@ -1,0 +1,11 @@
+{#g2ap
+ max_page_width = 1024
+ max_page_height = 1024
+ border_size = 2
+ transparent_borders = 1
+ force_pot = 1
+ export_format = "gen2.g2af"
+ {#folder
+  path = "E:\gen2\g2mp\tests\rts\data\asteroid"
+ #}
+#}

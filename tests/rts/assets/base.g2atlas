@@ -1,0 +1,1 @@
+{#g2af {#page  image = "base_0.png"  width = 256  height = 256  {#frame   name = "base0.png"   pos_l = 2   pos_t = 2   width = 128   height = 128  #}  {#frame   name = "relay.png"   pos_l = 2   pos_t = 136   width = 64   height = 64  #} #}#}
