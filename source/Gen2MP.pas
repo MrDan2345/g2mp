@@ -3863,7 +3863,7 @@ type
     var _RenderOrder: TG2Float;
     procedure SetEnabled(const Value: Boolean);
     procedure SetState(const Value: TG2GameState);
-    procedure SetRenderOrder(const Value: TG2Float); inline;
+    procedure SetRenderOrder(const Value: TG2Float);
     procedure Initialize;
     procedure Finalize;
     procedure Update;
@@ -21876,7 +21876,6 @@ end;
 destructor TG2GameState.Destroy;
 begin
   Finalize;
-  State := nil;
   g2.CallbackRenderRemove(@Render);
   g2.CallbackUpdateRemove(@Update);
   g2.CallbackKeyDownRemove(@KeyDown);

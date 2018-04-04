@@ -17,8 +17,70 @@
     <i18n>
       <EnableI18N LFM="False"/>
     </i18n>
-    <BuildModes Count="1" Active="Default">
+    <BuildModes Count="3" Active="Default">
       <Item1 Name="Default" Default="True"/>
+      <Item2 Name="Debug">
+        <CompilerOptions>
+          <Version Value="11"/>
+          <PathDelim Value="\"/>
+          <Target>
+            <Filename Value="g2mp_toolkit"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <OtherUnitFiles Value="..\..\source;..\..\source\box2d;..\..\source\Spine"/>
+            <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <Parsing>
+            <SyntaxOptions>
+              <IncludeAssertionCode Value="True"/>
+            </SyntaxOptions>
+          </Parsing>
+          <CodeGeneration>
+            <Checks>
+              <IOChecks Value="True"/>
+              <RangeChecks Value="True"/>
+              <OverflowChecks Value="True"/>
+              <StackChecks Value="True"/>
+            </Checks>
+            <VerifyObjMethodCallValidity Value="True"/>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <DebugInfoType Value="dsDwarf2Set"/>
+              <UseHeaptrc Value="True"/>
+              <TrashVariables Value="True"/>
+              <UseExternalDbgSyms Value="True"/>
+            </Debugging>
+          </Linking>
+        </CompilerOptions>
+      </Item2>
+      <Item3 Name="Release">
+        <CompilerOptions>
+          <Version Value="11"/>
+          <PathDelim Value="\"/>
+          <Target>
+            <Filename Value="g2mp_toolkit"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <OtherUnitFiles Value="..\..\source;..\..\source\box2d;..\..\source\Spine"/>
+            <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <CodeGeneration>
+            <SmartLinkUnit Value="True"/>
+            <Optimizations>
+              <OptimizationLevel Value="3"/>
+            </Optimizations>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <GenerateDebugInfo Value="False"/>
+            </Debugging>
+            <LinkSmart Value="True"/>
+          </Linking>
+        </CompilerOptions>
+      </Item3>
     </BuildModes>
     <PublishOptions>
       <Version Value="2"/>
@@ -52,7 +114,7 @@
       <Unit2>
         <Filename Value="res.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="15"/>
+        <EditorIndex Value="16"/>
         <TopLine Value="4924"/>
         <CursorPos X="3" Y="4956"/>
         <UsageCount Value="226"/>
@@ -66,17 +128,16 @@
       </Unit3>
       <Unit4>
         <Filename Value="Toolkit.pas"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="22473"/>
-        <CursorPos X="75" Y="22495"/>
+        <TopLine Value="32606"/>
+        <CursorPos Y="32621"/>
         <UsageCount Value="114"/>
         <Loaded Value="True"/>
       </Unit4>
       <Unit5>
         <Filename Value="C:\lazarus\components\lazutils\fileutil.pas"/>
         <UnitName Value="FileUtil"/>
-        <EditorIndex Value="7"/>
+        <EditorIndex Value="8"/>
         <TopLine Value="202"/>
         <CursorPos X="27" Y="218"/>
         <UsageCount Value="97"/>
@@ -120,8 +181,8 @@
       <Unit11>
         <Filename Value="..\..\source\Gen2MP.pas"/>
         <EditorIndex Value="3"/>
-        <TopLine Value="13487"/>
-        <CursorPos X="113" Y="13506"/>
+        <TopLine Value="9383"/>
+        <CursorPos Y="9401"/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
       </Unit11>
@@ -134,7 +195,7 @@
       </Unit12>
       <Unit13>
         <Filename Value="..\..\source\G2Types.pas"/>
-        <EditorIndex Value="14"/>
+        <EditorIndex Value="15"/>
         <TopLine Value="414"/>
         <CursorPos X="36" Y="432"/>
         <UsageCount Value="103"/>
@@ -142,7 +203,7 @@
       </Unit13>
       <Unit14>
         <Filename Value="..\..\source\G2Math.pas"/>
-        <EditorIndex Value="13"/>
+        <EditorIndex Value="14"/>
         <CursorPos X="14" Y="56"/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
@@ -163,7 +224,7 @@
       </Unit16>
       <Unit17>
         <Filename Value="..\..\source\Gen2MP.inc"/>
-        <EditorIndex Value="5"/>
+        <EditorIndex Value="6"/>
         <TopLine Value="31"/>
         <CursorPos X="7" Y="42"/>
         <UsageCount Value="100"/>
@@ -171,15 +232,15 @@
       </Unit17>
       <Unit18>
         <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <EditorIndex Value="8"/>
-        <TopLine Value="4134"/>
-        <CursorPos X="59" Y="4152"/>
+        <EditorIndex Value="9"/>
+        <TopLine Value="3144"/>
+        <CursorPos Y="3159"/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
       </Unit18>
       <Unit19>
         <Filename Value="..\..\source\box2d\box2d.pas"/>
-        <EditorIndex Value="12"/>
+        <EditorIndex Value="13"/>
         <TopLine Value="4849"/>
         <CursorPos X="83" Y="4865"/>
         <UsageCount Value="101"/>
@@ -187,10 +248,12 @@
       </Unit19>
       <Unit20>
         <Filename Value="..\..\source\G2DataManager.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="486"/>
-        <CursorPos X="29" Y="466"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="4"/>
+        <TopLine Value="323"/>
+        <CursorPos X="95" Y="337"/>
         <UsageCount Value="97"/>
+        <Loaded Value="True"/>
       </Unit20>
       <Unit21>
         <Filename Value="..\..\source\G2ImagePNG.pas"/>
@@ -220,7 +283,7 @@
       </Unit24>
       <Unit25>
         <Filename Value="..\..\source\G2MeshG2M.pas"/>
-        <EditorIndex Value="11"/>
+        <EditorIndex Value="12"/>
         <TopLine Value="990"/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
@@ -297,7 +360,7 @@
       </Unit35>
       <Unit36>
         <Filename Value="..\..\source\spine\G2Spine.pas"/>
-        <EditorIndex Value="10"/>
+        <EditorIndex Value="11"/>
         <TopLine Value="27"/>
         <CursorPos X="49" Y="42"/>
         <UsageCount Value="100"/>
@@ -305,7 +368,7 @@
       </Unit36>
       <Unit37>
         <Filename Value="..\..\source\spine\Spine.pas"/>
-        <EditorIndex Value="9"/>
+        <EditorIndex Value="10"/>
         <TopLine Value="472"/>
         <CursorPos X="24" Y="490"/>
         <UsageCount Value="100"/>
@@ -327,7 +390,7 @@
       <Unit40>
         <Filename Value="C:\lazarus\components\lazutils\utf8process.pp"/>
         <UnitName Value="UTF8Process"/>
-        <EditorIndex Value="6"/>
+        <EditorIndex Value="7"/>
         <TopLine Value="228"/>
         <CursorPos Y="247"/>
         <UsageCount Value="51"/>
@@ -349,7 +412,7 @@
       </Unit42>
       <Unit43>
         <Filename Value="..\..\source\G2OpenGL.pas"/>
-        <EditorIndex Value="4"/>
+        <EditorIndex Value="5"/>
         <TopLine Value="658"/>
         <CursorPos X="9" Y="686"/>
         <UsageCount Value="20"/>
@@ -378,119 +441,127 @@
         <Loaded Value="True"/>
       </Unit46>
     </Units>
-    <JumpHistory Count="28" HistoryIndex="27">
+    <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2391" Column="22" TopLine="2374"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="32617" TopLine="32609"/>
       </Position1>
       <Position2>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2403" Column="8" TopLine="2374"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="32618" TopLine="32609"/>
       </Position2>
       <Position3>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2595" Column="9" TopLine="2578"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="32620" TopLine="32615"/>
       </Position3>
       <Position4>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="1405" Column="3" TopLine="1388"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="32621" TopLine="32615"/>
       </Position4>
       <Position5>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="1399" Column="13" TopLine="1375"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="15868" Column="59" TopLine="15853"/>
       </Position5>
       <Position6>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="1397" Column="33" TopLine="1383"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="15870" TopLine="15853"/>
       </Position6>
       <Position7>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="5513" TopLine="5508"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="32615" TopLine="32603"/>
       </Position7>
       <Position8>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2646" Column="63" TopLine="2630"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="32621" Column="27" TopLine="32603"/>
       </Position8>
       <Position9>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2656" Column="85" TopLine="2633"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="171" Column="15" TopLine="148"/>
       </Position9>
       <Position10>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2680" Column="23" TopLine="2663"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="1840" TopLine="1820"/>
       </Position10>
       <Position11>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2687" Column="79" TopLine="2665"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="15870" TopLine="15853"/>
       </Position11>
       <Position12>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2732" TopLine="2722"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="32621" TopLine="32606"/>
       </Position12>
       <Position13>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2770" Column="23" TopLine="2753"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="1840" TopLine="1820"/>
       </Position13>
       <Position14>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2873" Column="5" TopLine="2843"/>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="32621" TopLine="32606"/>
       </Position14>
       <Position15>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2758" Column="30" TopLine="2742"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="1840" TopLine="1820"/>
       </Position15>
       <Position16>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2777" Column="23" TopLine="2760"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="3152" TopLine="3141"/>
       </Position16>
       <Position17>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2797" Column="37" TopLine="2781"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="3153" TopLine="3141"/>
       </Position17>
       <Position18>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2829" Column="35" TopLine="2812"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="3154" TopLine="3141"/>
       </Position18>
       <Position19>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="2861" Column="39" TopLine="2845"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="3155" TopLine="3141"/>
       </Position19>
       <Position20>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="5600" Column="17" TopLine="5583"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="3156" TopLine="3144"/>
       </Position20>
       <Position21>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="5636" Column="29" TopLine="5618"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="3158" TopLine="3144"/>
       </Position21>
       <Position22>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="5666" Column="9" TopLine="5649"/>
+        <Filename Value="..\..\source\G2Scene2D.pas"/>
+        <Caret Line="3159" TopLine="3144"/>
       </Position22>
       <Position23>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="6525" Column="42" TopLine="6509"/>
+        <Filename Value="..\..\source\Gen2MP.pas"/>
+        <Caret Line="10518" TopLine="10509"/>
       </Position23>
       <Position24>
-        <Filename Value="..\..\source\spine\Spine.pas"/>
-        <Caret Line="6531" Column="42" TopLine="6513"/>
+        <Filename Value="..\..\source\Gen2MP.pas"/>
+        <Caret Line="10519" TopLine="10509"/>
       </Position24>
       <Position25>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="4151" Column="23" TopLine="4134"/>
+        <Filename Value="..\..\source\Gen2MP.pas"/>
+        <Caret Line="10520" TopLine="10509"/>
       </Position25>
       <Position26>
-        <Filename Value="..\..\source\G2Scene2D.pas"/>
-        <Caret Line="4152" Column="59" TopLine="4134"/>
+        <Filename Value="..\..\source\Gen2MP.pas"/>
+        <Caret Line="10522" TopLine="10509"/>
       </Position26>
       <Position27>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="22490" Column="15" TopLine="22473"/>
+        <Filename Value="..\..\source\Gen2MP.pas"/>
+        <Caret Line="10532" TopLine="10519"/>
       </Position27>
       <Position28>
-        <Filename Value="Toolkit.pas"/>
-        <Caret Line="22483" Column="42" TopLine="22473"/>
+        <Filename Value="..\..\source\Gen2MP.pas"/>
+        <Caret Line="10533" TopLine="10519"/>
       </Position28>
+      <Position29>
+        <Filename Value="..\..\source\Gen2MP.pas"/>
+        <Caret Line="10535" TopLine="10519"/>
+      </Position29>
+      <Position30>
+        <Filename Value="..\..\source\Gen2MP.pas"/>
+        <Caret Line="9401" TopLine="9383"/>
+      </Position30>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
@@ -506,6 +577,22 @@
     </SearchPaths>
   </CompilerOptions>
   <Debugging>
+    <BreakPoints Count="2">
+      <Item1>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="..\..\source\G2Scene2D.pas"/>
+        <Line Value="2905"/>
+      </Item1>
+      <Item2>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="..\..\source\G2Scene2D.pas"/>
+        <Line Value="1840"/>
+      </Item2>
+    </BreakPoints>
     <Exceptions Count="3">
       <Item1>
         <Name Value="EAbort"/>

@@ -110,12 +110,14 @@ type
     var _UserData: Pointer;
     var _GUID: String;
     var _Tags: TG2QuickListAnsiString;
+    var _Enabled: Boolean;
     var _EventDispatchers: specialize TG2QuickListG<TG2Scene2DEventDispatcher>;
     function GetChild(const Index: TG2IntS32): TG2Scene2DEntity; inline;
     function GetChildCount: TG2IntS32; inline;
     function GetComponent(const Index: TG2IntS32): TG2Scene2DComponent; inline;
     function GetComponentCount: TG2IntS32; inline;
     function GetComponentOfType(const ComponentType: CG2Scene2DComponent): TG2Scene2DComponent; inline;
+    procedure SetEnabled(const Value: Boolean); inline;
     procedure SetTransformIsolated(const Value: TG2Transform2); inline;
     procedure SetParent(const Value: TG2Scene2DEntity); inline;
     procedure AddComponent(const Component: TG2Scene2DComponent); inline;
@@ -139,6 +141,8 @@ type
     procedure RemoveChild(const Child: TG2Scene2DEntity); virtual;
     procedure OnDebugDraw(const Display: TG2Display2D); virtual;
     procedure OnRender(const Display: TG2Display2D); virtual;
+    procedure OnEnable; virtual;
+    procedure OnDisable; virtual;
   public
     property UserData: Pointer read _UserData write _UserData;
     property GUID: String read _GUID write _GUID;
@@ -151,6 +155,7 @@ type
     property ComponentOfType[const ComponentType: CG2Scene2DComponent]: TG2Scene2DComponent read GetComponentOfType;
     property Tags[const Index: TG2IntS32]: AnsiString read GetTag;
     property TagCount: TG2IntS32 read GetTagCount;
+    property Enabled: Boolean read _Enabled write SetEnabled;
     property Name: AnsiString read _Name write _Name;
     property Transform: TG2Transform2 read _Transform write SetTransform;
     property Position: TG2Vec2 read GetPosition write SetPosition;
@@ -167,6 +172,7 @@ type
     procedure Render(const Display: TG2Display2D);
     procedure AddEvent(const EventName: String; const Event: TG2Scene2DEvent);
     procedure RemoveEvent(const EventName: String; const Event: TG2Scene2DEvent);
+    procedure StripComponents(const AllowedComponents: array of CG2Scene2DComponent);
     procedure Save(const dm: TG2DataManager); virtual;
     procedure Load(const dm: TG2DataManager); virtual;
   end;
@@ -1535,6 +1541,13 @@ begin
   Result := nil;
 end;
 
+procedure TG2Scene2DEntity.SetEnabled(const Value: Boolean);
+begin
+  if _Enabled = Value then Exit;
+  _Enabled := Value;
+  if _Enabled then OnEnable else OnDisable;
+end;
+
 procedure TG2Scene2DEntity.SetTransformIsolated(const Value: TG2Transform2);
 begin
   _Transform := Value;
@@ -1645,6 +1658,17 @@ procedure TG2Scene2DEntity.OnRender(const Display: TG2Display2D);
 begin
 
 end;
+
+procedure TG2Scene2DEntity.OnEnable;
+begin
+
+end;
+
+procedure TG2Scene2DEntity.OnDisable;
+begin
+
+end;
+
 {$Hints on}
 
 constructor TG2Scene2DEntity.Create(const OwnerScene: TG2Scene2D);
@@ -1656,8 +1680,10 @@ begin
   _Scene := OwnerScene;
   _EventDispatchers.Clear;
   _Tags.Clear;
+  _Enabled := False;
   NewGUID;
   _Scene.EntityAdd(Self);
+  Enabled := True;
 end;
 
 destructor TG2Scene2DEntity.Destroy;
@@ -1778,6 +1804,31 @@ begin
   end;
   for i := 0 to _Components.Count - 1 do
   _Components[i].RemoveEvent(EventName, Event);
+end;
+
+procedure TG2Scene2DEntity.StripComponents(
+  const AllowedComponents: array of CG2Scene2DComponent
+);
+  var IsAllowed: Boolean;
+  var i, j: TG2IntS32;
+  var c: TG2Scene2DComponent;
+begin
+  for i := _Components.Count - 1 downto 0 do
+  begin
+    IsAllowed := False;
+    c := _Components[i];
+    for j := 0 to High(AllowedComponents) do
+    if (c is AllowedComponents[j]) then
+    begin
+      IsAllowed := True;
+      Break;
+    end;
+    if not IsAllowed then
+    begin
+      c.Detach;
+      c.Free;
+    end;
+  end;
 end;
 
 procedure TG2Scene2DEntity.Save(const dm: TG2DataManager);
@@ -2762,7 +2813,10 @@ procedure TG2Scene2D.Render(const Display: TG2Display2D);
   var i: TG2IntS32;
 begin
   for i := 0 to _Entities.Count - 1 do
-  _Entities[i].Render(Display);
+  if _Entities[i].Enabled then
+  begin
+    _Entities[i].Render(Display);
+  end;
   if _SortRenderHooks then
   begin
     _RenderHooks.Sort(@CompRenderHooks);
