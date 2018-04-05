@@ -5614,8 +5614,7 @@ end;
 procedure tb2_body.set_angular_velocity(const w: tb2_float32);
 begin
   if _type = b2_static_body then exit;
-  if w * w > 0.0 then
-  set_awake(true);
+  if w * w > 0.0 then set_awake(true);
   _angular_velocity := w;
 end;
 
@@ -5641,8 +5640,7 @@ begin
   if _type <> b2_dynamic_body then exit;
   if wake and not (b2_bf_awake_flag in _flags) then
   set_awake(true);
-  if b2_bf_awake_flag in _flags then
-  _force := _force + force;
+  if b2_bf_awake_flag in _flags then _force := _force + force;
 end;
 
 procedure tb2_body.apply_torque(const torque: tb2_float32; const wake: boolean);
@@ -5650,8 +5648,7 @@ begin
   if _type <> b2_dynamic_body then exit;
   if wake and not (b2_bf_awake_flag in _flags) then
   set_awake(true);
-  if b2_bf_awake_flag in _flags then
-  _torque += torque;
+  if b2_bf_awake_flag in _flags then _torque += torque;
 end;
 
 procedure tb2_body.apply_linear_impulse(const impulse: tb2_vec2; const point: tb2_vec2; const wake: boolean);

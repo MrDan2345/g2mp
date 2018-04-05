@@ -4679,8 +4679,8 @@ begin
     _UpdateCount := _UpdateCount + TG2Float(CurTime - _UpdatePrevTime) * _TargetUPS * 0.001;
     NumUpdates := Trunc(_UpdateCount);
     if _Params.PreventUpdateOverload
-    and (NumUpdates > 1) then
-    NumUpdates := 1;
+    and (NumUpdates > 3) then
+    NumUpdates := 3;
     _UpdateCount := _UpdateCount - NumUpdates;
     for i := 0 to NumUpdates - 1 do
     begin

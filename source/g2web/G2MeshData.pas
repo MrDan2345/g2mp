@@ -157,7 +157,7 @@ type
 
   TG2MeshLoader = class
   protected
-    function CheckDataHeader(const DataManager: TG2DataManager; const Header: String): Boolean;
+    class function CheckDataHeader(const DataManager: TG2DataManager; const Header: String): Boolean;
   public
     constructor Create;
     destructor Destroy; override;
@@ -282,7 +282,7 @@ end;
 //TG2MeshData END
 
 //TG2MeshLoader BEGIN
-function TG2MeshLoader.CheckDataHeader(const DataManager: TG2DataManager; const Header: String): Boolean;
+class function TG2MeshLoader.CheckDataHeader(const DataManager: TG2DataManager; const Header: String): Boolean;
   var Pos: Integer;
   var DataHeader: String;
 begin
