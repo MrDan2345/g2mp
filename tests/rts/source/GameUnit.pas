@@ -32,7 +32,7 @@ type
     procedure OnFinalize; override;
   end;
 
-  TUIBuildMenu = class (TUIWidget)
+  TUIActionMenu = class (TUIWidget)
   public
     type TButton = class
     public
@@ -50,8 +50,19 @@ type
     procedure OnMouseDown(const Button, x, y: Integer); override;
   end;
 
-  TGameObject = class (TG2Scene2DEntity)
+  TUIGameplay = class (TUIWidget)
+  private
+    var _QueryList: TG2Scene2DEntityList;
   public
+    procedure OnMouseDown(const Button, x, y: Integer); override;
+  end;
+
+  TGameObject = class (TG2Scene2DEntity)
+  private
+    var _ActionMenu: TUIActionMenu;
+  public
+    property ActionMenu: TUIActionMenu read _ActionMenu write _ActionMenu;
+    constructor Create(const OwnerScene: TG2Scene2D); override;
   end;
 
   TBaseLink = class
@@ -61,9 +72,9 @@ type
     var Next: TBaseLink;
     var _RenderHook: TG2Scene2DRenderHook;
   public
-    var MaxDistance: TG2Float;
     var BaseA: TGameBase;
     var BaseB: TGameBase;
+    var Connected: Integer;
     class constructor CreateClass;
     class procedure CheckLinks;
     class procedure ClearLinks;
@@ -74,21 +85,42 @@ type
   end;
   TBaseLinkList = specialize TG2QuickListG<TBaseLink>;
 
+  TEntityProc = procedure (const Entity: TG2Scene2DEntity) of object;
+  TEntityDetector = class (TG2Scene2DEntity)
+  private
+    var _RigidBody: TG2Scene2DComponentRigidBody;
+    var _Shape: TG2Scene2DComponentCollisionShapeCircle;
+    var _Filter: array of CG2Scene2DEntity;
+    function GetRadius: TG2Float;
+    procedure SetRadius(const Value: TG2Float);
+  protected
+    procedure OnEnable; override;
+    procedure OnDisable; override;
+  public
+    var Detected: TG2Scene2DEntityList;
+    property Radius: TG2Float read GetRadius write SetRadius;
+    constructor Create(const OwnerScene: TG2Scene2D); override;
+    destructor Destroy; override;
+    procedure SetFilter(const FilterTypes: array of CG2Scene2DEntity);
+    procedure AddFilter(const FilterTypes: array of CG2Scene2DEntity);
+    function CheckFilter(const Entity: TG2Scene2DEntity): Boolean;
+    procedure Update;
+  end;
+
+  CGameBase = class of TGameBase;
   TGameBase = class (TGameObject)
   private
-    var _LinksTimer: TG2Float;
-    var _BaseDetectorEntity: TG2Scene2DEntity;
-    var _BaseDetectorRigidBody: TG2Scene2DComponentRigidBody;
-    var _BaseDetector: TG2Scene2DComponentCollisionShapeCircle;
+    var _Detector: TEntityDetector;
   public
     var Links: TBaseLinkList;
+    property BaseDetector: TEntityDetector read _Detector;
     class function MakeObject(const NewTransform: TG2Transform2): TGameBase; virtual; abstract;
     class function MakeBuildObject: TG2Scene2DEntity; virtual; abstract;
     constructor Create(const OwnerScene: TG2Scene2D); override;
     destructor Destroy; override;
     procedure OnUpdate; virtual;
+    function LinkDistance: TG2Float; virtual;
   end;
-  CGameBase = class of TGameBase;
 
   TGameAsteroid = class (TGameObject)
   public
@@ -97,19 +129,34 @@ type
 
   TGameBaseMothership = class (TGameBase)
   public
-    var BuildMenu: TUIBuildMenu;
     class function MakeObject(const NewTransform: TG2Transform2): TGameBase; override;
     class function MakeBuildObject: TG2Scene2DEntity; override;
     constructor Create(const OwnerScene: TG2Scene2D); override;
     destructor Destroy; override;
-    procedure OnUpdate; override;
-    procedure OnBuildRelay;
   end;
 
   TGameBaseRelay = class (TGameBase)
   public
     class function MakeObject(const NewTransform: TG2Transform2): TGameBase; override;
     class function MakeBuildObject: TG2Scene2DEntity; override;
+    constructor Create(const OwnerScene: TG2Scene2D); override;
+    destructor Destroy; override;
+  end;
+
+  TGameBaseCollector = class (TGameBase)
+  private
+    var _CollectTime: TG2Float;
+    var _CollectPoints: array of TG2Vec2;
+    var _CollectPointCount: Integer;
+    var _ResourceCollected: Boolean;
+  public
+    class function MakeObject(const NewTransform: TG2Transform2): TGameBase; override;
+    class function MakeBuildObject: TG2Scene2DEntity; override;
+    constructor Create(const OwnerScene: TG2Scene2D); override;
+    destructor Destroy; override;
+    procedure OnUpdate; override;
+    procedure OnRender(const Display: TG2Display2D); override;
+    function LinkDistance: TG2Float; override;
   end;
 
   TUIBuildPlacement = class (TUIWidget)
@@ -147,6 +194,9 @@ type
     var TargetZoom: Single;
     var UIManager: TUIManager;
     var UIBuildPlacement: TUIBuildPlacement;
+    var UIGameplay: TUIGameplay;
+    var DebugDrawEnabled: Boolean;
+    var MouseDrag: TG2Vec2;
     constructor Create;
     destructor Destroy; override;
     procedure Initialize;
@@ -160,6 +210,8 @@ type
     procedure Scroll(const y: Integer);
     procedure Print(const c: AnsiChar);
     procedure MoveCamera;
+    procedure BuildRelay;
+    procedure BuildCollector;
   end;
 
 var
@@ -167,23 +219,149 @@ var
 
 implementation
 
+procedure TEntityDetector.OnEnable;
+begin
+  inherited OnEnable;
+  if Assigned(_RigidBody) then _RigidBody.Enabled := True;
+end;
+
+procedure TEntityDetector.OnDisable;
+begin
+  inherited OnDisable;
+  if Assigned(_RigidBody) then _RigidBody.Enabled := False;
+end;
+
+procedure TEntityDetector.Update;
+  var i: Integer;
+  var contact: pb2_contact_edge;
+  var Obj: TObject;
+  var Entity: TG2Scene2DEntity;
+  var f: pb2_fixture;
+begin
+  Detected.Clear;
+  if not _Enabled then Exit;
+  if Assigned(_Shape.PhysFixture)
+  and Assigned(_Shape.PhysFixture^.get_body)then
+  begin
+    contact := _Shape.PhysFixture^.get_body^.get_contact_list;
+    while Assigned(contact) do
+    begin
+      if contact^.contact^.is_touching then
+      begin
+        if contact^.contact^.get_fixture_a = _Shape.PhysFixture then
+        begin
+          f := contact^.contact^.get_fixture_b;
+        end
+        else
+        begin
+          f := contact^.contact^.get_fixture_a;
+        end;
+        if not f^.is_sensor then
+        begin
+          Obj := TObject(contact^.other^.get_user_data);
+          if Obj is TG2Scene2DComponentRigidBody then
+          begin
+            Entity := TG2Scene2DComponentRigidBody(Obj).Owner;
+            if (Entity <> Self)
+            and (not Assigned(Self.Parent) or (Entity <> Self.Parent))
+            and (CheckFilter(TGameBase(Entity))) then
+            begin
+              Detected.Add(Entity);
+            end;
+          end;
+        end;
+      end;
+      contact := contact^.next;
+    end;
+  end;
+end;
+
+function TEntityDetector.GetRadius: TG2Float;
+begin
+  Result := _Shape.Radius;
+end;
+
+procedure TEntityDetector.SetRadius(const Value: TG2Float);
+begin
+  if Abs(_Shape.Radius - Value) > G2EPS3 then
+  begin
+    _Shape.Radius := Value;
+  end;
+end;
+
+constructor TEntityDetector.Create(const OwnerScene: TG2Scene2D);
+begin
+  inherited Create(OwnerScene);
+  _Enabled := False;
+  _RigidBody := TG2Scene2DComponentRigidBody.Create(Scene);
+  _RigidBody.Attach(Self);
+  _RigidBody.BodyType := g2_s2d_rbt_dynamic_body;
+  _RigidBody.GravityScale := 0;
+  _Shape := TG2Scene2DComponentCollisionShapeCircle.Create(Scene);
+  _Shape.Attach(Self);
+  _Shape.Radius := 1;
+  _Shape.IsSensor := True;
+  Detected.Clear;
+end;
+
+destructor TEntityDetector.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TEntityDetector.SetFilter(const FilterTypes: array of CG2Scene2DEntity);
+  var i: Integer;
+begin
+  SetLength(_Filter, Length(FilterTypes));
+  for i := 0 to High(FilterTypes) do
+  begin
+    _Filter[i] := FilterTypes[i];
+  end;
+end;
+
+procedure TEntityDetector.AddFilter(const FilterTypes: array of CG2Scene2DEntity);
+  var i, n: Integer;
+begin
+  n := Length(_Filter);
+  SetLength(_Filter, n + Length(FilterTypes));
+  for i := 0 to High(FilterTypes) do
+  begin
+    _Filter[n + i] := FilterTypes[i];
+  end;
+end;
+
+function TEntityDetector.CheckFilter(const Entity: TG2Scene2DEntity): Boolean;
+  var i: Integer;
+begin
+  for i := 0 to High(_Filter) do
+  if Entity is _Filter[i] then
+  begin
+    Result := True;
+    Exit;
+  end;
+  Result := False;
+end;
+
+constructor TGameObject.Create(const OwnerScene: TG2Scene2D);
+begin
+  inherited Create(OwnerScene);
+  _ActionMenu := nil;
+end;
+
 class constructor TBaseLink.CreateClass;
 begin
   List := nil;
 end;
 
 class procedure TBaseLink.CheckLinks;
-  var Link, Iter: TBaseLink;
+  var Iter, Link: TBaseLink;
 begin
-  Iter := TBaseLink(List);
+  Iter := List;
   while Assigned(Iter) do
   begin
     Link := Iter;
-    Iter := TBaseLink(Iter.Next);
-    if (Link.BaseA.Position - Link.BaseB.Position).LenSq > Sqr(Link.MaxDistance) then
-    begin
-      Link.Free;
-    end;
+    Iter := Iter.Next;
+    if Link.Connected <= 0 then Link.Free else Link.Connected := 0;
   end;
 end;
 
@@ -198,7 +376,7 @@ begin
   Next := List;
   if List <> nil then List.Prev := Self;
   List := Self;
-  MaxDistance := 3;
+  Connected := 1;
   BaseA := NewBaseA;
   BaseB := NewBaseB;
   BaseA.Links.Add(Self);
@@ -218,8 +396,26 @@ begin
 end;
 
 procedure TBaseLink.OnRender(const Display: TG2Display2D);
+  var p0, p1, n0, n1: TG2Vec2;
+  var c0, c1: TG2Color;
 begin
-  Display.PrimLine(BaseA.Position, BaseB.Position, $ffff0000);
+  p0 := BaseA.Position;
+  p1 := BaseB.Position;
+  if (p1 - p0).LenSq < G2EPS3 then Exit;
+  n0 := (p1 - p0).Norm * 0.05;
+  n1 := n0.Perp;
+  c0 := $80ffffff;
+  c1 := $00ffffff;
+  Display.PrimBegin(ptTriangles, bmNormal);
+  Display.PrimAdd(p0, c1); Display.PrimAdd(p0 + n0, c0); Display.PrimAdd(p0 + n0 + n1, c1);
+  Display.PrimAdd(p0, c1); Display.PrimAdd(p0 + n0, c0); Display.PrimAdd(p0 + n0 - n1, c1);
+  Display.PrimAdd(p0 + n0, c0); Display.PrimAdd(p0 + n0 + n1, c1); Display.PrimAdd(p1 - n0, c0);
+  Display.PrimAdd(p0 + n0 + n1, c1); Display.PrimAdd(p1 - n0, c0); Display.PrimAdd(p1 - n0 + n1, c1);
+  Display.PrimAdd(p0 + n0, c0); Display.PrimAdd(p0 + n0 - n1, c1); Display.PrimAdd(p1 - n0, c0);
+  Display.PrimAdd(p0 + n0 - n1, c1); Display.PrimAdd(p1 - n0, c0); Display.PrimAdd(p1 - n0 - n1, c1);
+  Display.PrimAdd(p1, c1); Display.PrimAdd(p1 - n0, c0); Display.PrimAdd(p1 - n0 + n1, c1);
+  Display.PrimAdd(p1, c1); Display.PrimAdd(p1 - n0, c0); Display.PrimAdd(p1 - n0 - n1, c1);
+  Display.PrimEnd;
 end;
 
 function TBaseLink.Compare(const OtherBaseA, OtherBaseB: TGameBase): Boolean;
@@ -234,19 +430,10 @@ constructor TGameBase.Create(const OwnerScene: TG2Scene2D);
 begin
   inherited Create(OwnerScene);
   g2.CallbackUpdateAdd(@OnUpdate);
-  _LinksTimer := 0;
-  _BaseDetectorEntity := TG2Scene2DEntity.Create(Scene);
-  _BaseDetectorEntity.Parent := Self;
-  _BaseDetectorEntity.Transform := Transform;
-  _BaseDetectorRigidBody := TG2Scene2DComponentRigidBody.Create(Scene);
-  _BaseDetectorRigidBody.Attach(_BaseDetectorEntity);
-  _BaseDetectorRigidBody.BodyType := g2_s2d_rbt_dynamic_body;
-  _BaseDetectorRigidBody.GravityScale := 0;
-  _BaseDetector := TG2Scene2DComponentCollisionShapeCircle.Create(Scene);
-  _BaseDetector.Attach(_BaseDetectorEntity);
-  _BaseDetector.Radius := 2;
-  _BaseDetector.IsSensor := True;
-  _BaseDetectorRigidBody.Enabled := True;
+  _Detector := TEntityDetector.Create(Scene);
+  _Detector.Parent := Self;
+  _Detector.SetFilter([TGameBaseMothership, TGameBaseRelay]);
+  _Detector.Radius := LinkDistance;
 end;
 
 destructor TGameBase.Destroy;
@@ -257,47 +444,36 @@ begin
 end;
 
 procedure TGameBase.OnUpdate;
-  var i: Integer;
-  var contact: pb2_contact_edge;
-  var Obj: TObject;
-  var Entity: TG2Scene2DEntity;
   var NewLink: Boolean;
+  var Entity: TG2Scene2DEntity;
+  var i, j: Integer;
 begin
-  _BaseDetectorEntity.Transform := Transform;
-  _BaseDetectorRigidBody.UpdateFromOwner;
-  _LinksTimer += g2.DeltaTimeSec;
-  if _LinksTimer >= 0.2 then
+  _Detector.Radius := LinkDistance;
+  if Assigned(ActionMenu) then ActionMenu.Position := Position;
+  _Detector.Update;
+  for j := 0 to _Detector.Detected.Count - 1 do
   begin
-    if Assigned(_BaseDetector)
-    and Assigned(_BaseDetector.PhysFixture)
-    and Assigned(_BaseDetector.PhysFixture^.get_body)then
+    Entity := _Detector.Detected[j];
+    if Entity is TGameBase then
     begin
-      contact := _BaseDetector.PhysFixture^.get_body^.get_contact_list;
-      while Assigned(contact) do
+      NewLink := True;
+      for i := 0 to Links.Count - 1 do
+      if Links[i].Compare(Self, TGameBase(Entity)) then
       begin
-        Obj := TObject(contact^.other^.get_user_data);
-        if Obj is TG2Scene2DComponentRigidBody then
-        begin
-          Entity := TG2Scene2DComponentRigidBody(Obj).Owner;
-          if Entity is TGameBase then
-          begin
-            NewLink := True;
-            for i := 0 to Links.Count - 1 do
-            if Links[i].Compare(Self, TGameBase(Entity)) then
-            begin
-              NewLink := False;
-            end;
-            if NewLink then
-            begin
-              TBaseLink.Create(Self, TGameBase(Entity));
-            end;
-          end;
-        end;
-        contact := contact^.next;
+        Links[i].Connected += 1;
+        NewLink := False;
+      end;
+      if NewLink then
+      begin
+        TBaseLink.Create(Self, TGameBase(Entity));
       end;
     end;
-    _LinksTimer := 0;
   end;
+end;
+
+function TGameBase.LinkDistance: TG2Float;
+begin
+  Result := 3;
 end;
 
 class function TGameAsteroid.MakeObject(const NewTransform: TG2Transform2): TGameAsteroid;
@@ -314,11 +490,93 @@ begin
   Result := TGameBase(Game.Scene.CreatePrefab('relay.g2prefab2d', NewTransform, TGameBaseRelay));
   rb := TG2Scene2DComponentRigidBody(Result.ComponentOfType[TG2Scene2DComponentRigidBody]);
   if Assigned(rb) then rb.Enabled := True;
+  Result.BaseDetector.Enabled := True;
 end;
 
 class function TGameBaseRelay.MakeBuildObject: TG2Scene2DEntity;
 begin
   Result := Game.Scene.CreatePrefab('relay.g2prefab2d', G2Transform2);
+end;
+
+constructor TGameBaseRelay.Create(const OwnerScene: TG2Scene2D);
+begin
+  inherited Create(OwnerScene);
+  ActionMenu := TUIActionMenu.Create;
+  ActionMenu.AddButton('button_delete', @Free);
+end;
+
+destructor TGameBaseRelay.Destroy;
+begin
+  ActionMenu.Free;
+  inherited Destroy;
+end;
+
+class function TGameBaseCollector.MakeObject(const NewTransform: TG2Transform2): TGameBase;
+  var rb: TG2Scene2DComponentRigidBody;
+begin
+  Result := TGameBase(Game.Scene.CreatePrefab('collector.g2prefab2d', NewTransform, TGameBaseCollector));
+  rb := TG2Scene2DComponentRigidBody(Result.ComponentOfType[TG2Scene2DComponentRigidBody]);
+  if Assigned(rb) then rb.Enabled := True;
+  Result.BaseDetector.Enabled := True;
+end;
+
+class function TGameBaseCollector.MakeBuildObject: TG2Scene2DEntity;
+begin
+  Result := Game.Scene.CreatePrefab('collector.g2prefab2d', G2Transform2);
+end;
+
+constructor TGameBaseCollector.Create(const OwnerScene: TG2Scene2D);
+begin
+  inherited Create(OwnerScene);
+  ActionMenu := TUIActionMenu.Create;
+  ActionMenu.AddButton('button_delete', @Free);
+  _Detector.AddFilter([TGameAsteroid]);
+  _CollectTime := 0;
+  _CollectPointCount := 0;
+end;
+
+destructor TGameBaseCollector.Destroy;
+begin
+  ActionMenu.Free;
+  inherited Destroy;
+end;
+
+procedure TGameBaseCollector.OnUpdate;
+  var i: Integer;
+begin
+  inherited OnUpdate;
+  _CollectPointCount := 0;
+  for i := 0 to _Detector.Detected.Count - 1 do
+  if _Detector.Detected[i] is TGameAsteroid then
+  begin
+    if Length(_CollectPoints) <= _CollectPointCount then
+    begin
+      SetLength(_CollectPoints, _CollectPointCount + 1);
+    end;
+    _CollectPoints[_CollectPointCount] := _Detector.Detected[i].Position;
+    Inc(_CollectPointCount);
+  end;
+  _CollectTime += g2.DeltaTimeSec;
+  if _CollectTime >= 1 then
+  begin
+    _ResourceCollected := True;
+    _CollectTime := 0;
+  end;
+end;
+
+procedure TGameBaseCollector.OnRender(const Display: TG2Display2D);
+  var i: Integer;
+begin
+  inherited OnRender(Display);
+  for i := 0 to _CollectPointCount - 1 do
+  begin
+    Display.PrimLine(Position, _CollectPoints[i], $ff0080ff);
+  end;
+end;
+
+function TGameBaseCollector.LinkDistance: TG2Float;
+begin
+  Result := 2;
 end;
 
 procedure TUIBuildPlacement.SetBuildClass(const Value: CGameBase);
@@ -359,6 +617,7 @@ function TUIBuildPlacement.CheckOverlap: Boolean;
   var i: Integer;
   var c: TG2Scene2DComponentCollisionShape;
   var contact: pb2_contact_edge;
+  var other_fixture: pb2_fixture;
 begin
   if Assigned(_BuildObject) then
   for i := 0 to _BuildObject.ComponentCount - 1 do
@@ -371,7 +630,16 @@ begin
       contact := c.PhysFixture^.get_body^.get_contact_list;
       while Assigned(contact) do
       begin
-        if contact^.contact^.is_touching then
+        if contact^.contact^.get_fixture_a = c.PhysFixture then
+        begin
+          other_fixture := contact^.contact^.get_fixture_b;
+        end
+        else
+        begin
+          other_fixture := contact^.contact^.get_fixture_a;
+        end;
+        if contact^.contact^.is_touching
+        and not other_fixture^.is_sensor then
         begin
           Result := True;
           Exit;
@@ -400,7 +668,6 @@ procedure TUIBuildPlacement.OnRender;
 begin
   inherited OnRender;
   if not Assigned(_BuildObject) then Exit;
-  _BuildObject.DebugDraw(Game.Display);
 end;
 
 procedure TUIBuildPlacement.OnUpdate;
@@ -428,17 +695,23 @@ begin
 end;
 
 procedure TUIBuildPlacement.OnMouseDown(const Button, x, y: Integer);
-  var Obj: TGameBase;
 begin
   inherited OnMouseDown(Button, x, y);
   case Button of
     G2MB_Left:
     begin
-      if Assigned(BuildClass) then
+      if not CheckOverlap then
       begin
-        Obj := BuildClass.MakeObject(G2Transform2(Game.Display.CoordToDisplay(G2Vec2(x, y)), G2Rotation2));
+        if Assigned(BuildClass) then
+        begin
+          BuildClass.MakeObject(G2Transform2(Game.Display.CoordToDisplay(G2Vec2(x, y)), G2Rotation2));
+        end;
+        Game.UIManager.Widget := Game.UIGameplay;
       end;
-      Game.UIManager.Widget := nil;
+    end;
+    G2MB_Right:
+    begin
+      Game.UIManager.Widget := Game.UIGameplay;
     end;
   end;
 end;
@@ -460,6 +733,7 @@ begin
   Result := TGameBase(Game.Scene.CreatePrefab('base0.g2prefab2d', NewTransform, TGameBaseMothership));
   rb := TG2Scene2DComponentRigidBody(Result.ComponentOfType[TG2Scene2DComponentRigidBody]);
   if Assigned(rb) then rb.Enabled := True;
+  Result.BaseDetector.Enabled := True;
 end;
 
 class function TGameBaseMothership.MakeBuildObject: TG2Scene2DEntity;
@@ -470,31 +744,18 @@ end;
 constructor TGameBaseMothership.Create(const OwnerScene: TG2Scene2D);
 begin
   inherited Create(OwnerScene);
-  BuildMenu := TUIBuildMenu.Create;
-  BuildMenu.AddButton('button_relay', @OnBuildRelay);
-  BuildMenu.AddButton('button_relay', @OnBuildRelay);
-  BuildMenu.AddButton('button_relay', @OnBuildRelay);
+  ActionMenu := TUIActionMenu.Create;
+  ActionMenu.AddButton('button_relay', @Game.BuildRelay);
+  ActionMenu.AddButton('button_collector', @Game.BuildCollector);
 end;
 
 destructor TGameBaseMothership.Destroy;
 begin
-  BuildMenu.Free;
+  ActionMenu.Free;
   inherited Destroy;
 end;
 
-procedure TGameBaseMothership.OnUpdate;
-begin
-  inherited OnUpdate;
-  BuildMenu.Position := Position;
-end;
-
-procedure TGameBaseMothership.OnBuildRelay;
-begin
-  Game.UIBuildPlacement.BuildClass := TGameBaseRelay;
-  Game.UIManager.Widget := Game.UIBuildPlacement;
-end;
-
-function TUIBuildMenu.AddButton(const FrameName: String;
+function TUIActionMenu.AddButton(const FrameName: String;
   const OnClick: TG2ProcObj): TButton;
 begin
   Result := TButton.Create;
@@ -506,14 +767,14 @@ begin
   Buttons[High(Buttons)] := Result;
 end;
 
-procedure TUIBuildMenu.OnInitialize;
+procedure TUIActionMenu.OnInitialize;
 begin
   inherited OnInitialize;
   RenderOrder := 10;
   Position := G2Vec2;
 end;
 
-procedure TUIBuildMenu.OnFinalize;
+procedure TUIActionMenu.OnFinalize;
   var i: Integer;
 begin
   for i := 0 to High(Buttons) do
@@ -523,7 +784,7 @@ begin
   inherited OnFinalize;
 end;
 
-procedure TUIBuildMenu.OnRender;
+procedure TUIActionMenu.OnRender;
   var i, n: Integer;
   var v, p: TG2Vec2;
   var r: TG2Rotation2;
@@ -537,7 +798,7 @@ begin
     Inc(n);
   end;
   r := G2Rotation2(G2TwoPi / n);
-  v := G2Vec2(0, -100);
+  v := G2Vec2(0, -50);
   p := Game.Display.CoordToScreen(Position);
   for i := 0 to n - 1 do
   if Buttons[i].Enabled then
@@ -565,7 +826,7 @@ begin
   end;
 end;
 
-procedure TUIBuildMenu.OnMouseDown(const Button, x, y: Integer);
+procedure TUIActionMenu.OnMouseDown(const Button, x, y: Integer);
   var i, n: Integer;
   var r: TG2Rotation2;
   var p, v: TG2Vec2;
@@ -574,7 +835,7 @@ begin
   case Button of
     G2MB_Left:
     begin
-      Game.UIManager.Widget := nil;
+      Game.UIManager.Widget := Game.UIGameplay;
       n := 0;
       for i := 0 to High(Buttons) do
       if Buttons[i].Enabled then
@@ -582,20 +843,44 @@ begin
         Inc(n);
       end;
       r := G2Rotation2(G2TwoPi / n);
-      v := G2Vec2(0, -100);
+      v := G2Vec2(0, -50);
       p := Game.Display.CoordToScreen(Position);
       for i := 0 to n - 1 do
-      if Buttons[i].Enabled
-      and (((p + v) - G2Vec2(x, y)).Len < 30) then
       begin
-        if Assigned(Buttons[i].OnClick) then Buttons[i].OnClick;
+        if Buttons[i].Enabled
+        and (((p + v) - G2Vec2(x, y)).Len < 30) then
+        begin
+          if Assigned(Buttons[i].OnClick) then Buttons[i].OnClick;
+          Break;
+        end;
         v := r.Transform(v);
-        Break;
       end;
     end;
     G2MB_Right:
     begin
-      Game.UIManager.Widget := nil;
+      Game.UIManager.Widget := Game.UIGameplay;
+    end;
+  end;
+end;
+
+procedure TUIGameplay.OnMouseDown(const Button, x, y: Integer);
+  var p: TG2Vec2;
+  var i: Integer;
+begin
+  inherited OnMouseDown(Button, x, y);
+  case Button of
+    G2MB_Left:
+    begin
+      _QueryList.Clear;
+      p := Game.Display.CoordToDisplay(G2Vec2(x, y));
+      Game.Scene.QueryPoint(p, _QueryList);
+      for i := 0 to _QueryList.Count - 1 do
+      if (_QueryList[i] is TGameBase)
+      and Assigned(TGameBase(_QueryList[i]).ActionMenu) then
+      begin
+        Game.UIManager.Widget := TGameBase(_QueryList[i]).ActionMenu;
+        Break;
+      end;
     end;
   end;
 end;
@@ -663,7 +948,7 @@ procedure TBackground.OnUpdate;
 begin
   for i := 0 to High(Layers) do
   begin
-    Layers[i].Position := Game.Display.Position * (1 / (0.9 + (i + 1) * 0.1));
+    Layers[i].Position := Game.Display.Position * (1 / (0.5 + (i + 1) * 0.5));
   end;
 end;
 
@@ -684,6 +969,7 @@ begin
   g2.Params.Width := 1024;
   g2.Params.Height := 768;
   g2.Params.ScreenMode := smWindow;
+  DebugDrawEnabled := False;
 end;
 
 destructor TGame.Destroy;
@@ -707,6 +993,7 @@ begin
   Display := TG2Display2D.Create;
   UIManager := TUIManager.Create;
   UIBuildPlacement := TUIBuildPlacement.Create;
+  UIGameplay := TUIGameplay.Create;
   Display.Width := 10;
   Display.Height := 10;
   Scene.Load('scene.g2s2d');
@@ -718,14 +1005,16 @@ begin
   end;
   Scene.Simulate := True;
   Scene.Gravity := G2Vec2;
-  UIManager.Widget := TGameBaseMothership(TGameBaseMothership.MakeObject(G2Transform2)).BuildMenu;
+  TGameBaseMothership.MakeObject(G2Transform2);
   TGameAsteroid.MakeObject(G2Transform2(G2Vec2(1, 1), G2Rotation2));
   TargetZoom := Display.Zoom;
   Display.Position := G2Vec2;
+  UIManager.Widget := UIGameplay;
 end;
 
 procedure TGame.Finalize;
 begin
+  UIGameplay.Free;
   UIBuildPlacement.Free;
   UIManager.Free;
   Display.Free;
@@ -743,12 +1032,14 @@ end;
 procedure TGame.Render;
 begin
   Scene.Render(Display);
-  Scene.DebugDraw(Display);
+  if DebugDrawEnabled then Scene.DebugDraw(Display);
 end;
 
 procedure TGame.KeyDown(const Key: Integer);
 begin
-
+  case Key of
+    G2K_G: DebugDrawEnabled := not DebugDrawEnabled;
+  end;
 end;
 
 procedure TGame.KeyUp(const Key: Integer);
@@ -758,7 +1049,12 @@ end;
 
 procedure TGame.MouseDown(const Button, x, y: Integer);
 begin
-
+  case Button of
+    G2MB_Middle:
+    begin
+      MouseDrag := Display.Position - Display.CoordToDisplay(G2Vec2(x, y));
+    end;
+  end;
 end;
 
 procedure TGame.MouseUp(const Button, x, y: Integer);
@@ -768,11 +1064,11 @@ end;
 
 procedure TGame.Scroll(const y: Integer);
 begin
-  if (y > 0) and (TargetZoom > 0.5) then
+  if (y < 0) and (TargetZoom > 0.5) then
   begin
     TargetZoom *= (1 / 1.1);
   end;
-  if (y < 0) and (TargetZoom < 3) then
+  if (y > 0) and (TargetZoom < 3) then
   begin
     TargetZoom *= 1.1;
   end;
@@ -788,17 +1084,39 @@ procedure TGame.MoveCamera;
   var MoveDir: TG2Vec2;
 begin
   Pos := Display.Position;
-  MoveDir := G2Vec2;
-  if g2.KeyDown[G2K_W] then MoveDir.y := MoveDir.y - 1;
-  if g2.KeyDown[G2K_A] then MoveDir.x := MoveDir.x - 1;
-  if g2.KeyDown[G2K_S] then MoveDir.y := MoveDir.y + 1;
-  if g2.KeyDown[G2K_D] then MoveDir.x := MoveDir.x + 1;
-  Pos := Pos + MoveDir * 0.1;
+  if g2.MouseDown[G2MB_Middle] then
+  begin
+    MoveDir := Display.CoordToDisplay(G2Vec2(g2.MousePos));
+    MoveDir :=  MouseDrag;
+    MouseDrag := MouseDrag - MoveDir;
+    Pos := Pos - MoveDir;
+  end
+  else
+  begin
+    MoveDir := G2Vec2;
+    if g2.KeyDown[G2K_W] then MoveDir.y := MoveDir.y - 1;
+    if g2.KeyDown[G2K_A] then MoveDir.x := MoveDir.x - 1;
+    if g2.KeyDown[G2K_S] then MoveDir.y := MoveDir.y + 1;
+    if g2.KeyDown[G2K_D] then MoveDir.x := MoveDir.x + 1;
+    Pos := Pos + MoveDir * 0.1;
+  end;
   if Pos.x < 0 then Pos.x := 0;
   if Pos.x > 50 then Pos.x := 50;
   if Pos.y < 0 then Pos.y := 0;
   if Pos.y > 50 then Pos.y := 50;
   Display.Position := Pos;
+end;
+
+procedure TGame.BuildRelay;
+begin
+  Game.UIBuildPlacement.BuildClass := TGameBaseRelay;
+  Game.UIManager.Widget := Game.UIBuildPlacement;
+end;
+
+procedure TGame.BuildCollector;
+begin
+  Game.UIBuildPlacement.BuildClass := TGameBaseCollector;
+  Game.UIManager.Widget := Game.UIBuildPlacement;
 end;
 
 //TGame END
