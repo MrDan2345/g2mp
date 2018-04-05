@@ -110,7 +110,6 @@ type
     var _UserData: Pointer;
     var _GUID: String;
     var _Tags: TG2QuickListAnsiString;
-    var _Enabled: Boolean;
     var _EventDispatchers: specialize TG2QuickListG<TG2Scene2DEventDispatcher>;
     function GetChild(const Index: TG2IntS32): TG2Scene2DEntity; inline;
     function GetChildCount: TG2IntS32; inline;
@@ -135,6 +134,7 @@ type
     var _Components: TG2Scene2DComponentList;
     var _Transform: TG2Transform2;
     var _Name: AnsiString;
+    var _Enabled: Boolean;
     function GetCurrentVersion: TG2IntU16; virtual;
     procedure SetTransform(const Value: TG2Transform2); virtual;
     procedure AddChild(const Child: TG2Scene2DEntity); virtual;
@@ -2812,11 +2812,6 @@ end;
 procedure TG2Scene2D.Render(const Display: TG2Display2D);
   var i: TG2IntS32;
 begin
-  for i := 0 to _Entities.Count - 1 do
-  if _Entities[i].Enabled then
-  begin
-    _Entities[i].Render(Display);
-  end;
   if _SortRenderHooks then
   begin
     _RenderHooks.Sort(@CompRenderHooks);
@@ -2824,6 +2819,11 @@ begin
   end;
   for i := 0 to _RenderHooks.Count - 1 do
   _RenderHooks[i].Hook(Display);
+  for i := 0 to _Entities.Count - 1 do
+  if _Entities[i].Enabled then
+  begin
+    _Entities[i].Render(Display);
+  end;
 end;
 
 procedure TG2Scene2D.EnablePhysics;

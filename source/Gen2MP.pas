@@ -3857,10 +3857,12 @@ type
     class destructor DestroyClass;
     var Next: TG2GameState;
     var Prev: TG2GameState;
+    var _Parent: TG2GameState;
     var _State: TG2GameState;
     var _Enabled: Boolean;
     var _SwitchState: TG2GameState;
     var _RenderOrder: TG2Float;
+    procedure SetParent(const Value: TG2GameState);
     procedure SetEnabled(const Value: Boolean);
     procedure SetState(const Value: TG2GameState);
     procedure SetRenderOrder(const Value: TG2Float);
@@ -3889,10 +3891,12 @@ type
     procedure OnLeave(const {%H-}NextState: TG2GameState); virtual;
   public
     property Enabled: Boolean read _Enabled write SetEnabled;
+    property Parent: TG2GameState read _Parent;
     property State: TG2GameState read _State write _SwitchState;
     property RenderOrder: TG2Float read _RenderOrder write SetRenderOrder;
     constructor Create; virtual;
     destructor Destroy; override;
+    procedure SwitchState;
   end;
 //TG2GameState END
 
@@ -21695,6 +21699,11 @@ begin
   while List <> nil do List.Free;
 end;
 
+procedure TG2GameState.SetParent(const Value: TG2GameState);
+begin
+  _Parent := Value;
+end;
+
 procedure TG2GameState.SetEnabled(const Value: Boolean);
 begin
   if _Enabled = Value then Exit;
@@ -21710,13 +21719,15 @@ begin
   begin
     _State.OnLeave(Value);
     _State.SetEnabled(False);
-  end;
-  if Value <> nil then
-  begin
-    Value.SetEnabled(True);
-    Value.OnEnter(_State);
+    _State.SetParent(nil);
   end;
   _State := Value;
+  if _State <> nil then
+  begin
+    _State.SetParent(Self);
+    _State.SetEnabled(True);
+    _State.OnEnter(_State);
+  end;
 end;
 
 procedure TG2GameState.SetRenderOrder(const Value: TG2Float);
@@ -21742,8 +21753,7 @@ end;
 
 procedure TG2GameState.Update;
 begin
-  if _SwitchState <> _State then
-  SetState(_SwitchState);
+  SwitchState;
   if _Enabled then OnUpdate;
 end;
 
@@ -21845,6 +21855,7 @@ end;
 constructor TG2GameState.Create;
 begin
   inherited Create;
+  _Parent := nil;
   _State := nil;
   _Enabled := False;
   _RenderOrder := 0;
@@ -21875,6 +21886,7 @@ end;
 
 destructor TG2GameState.Destroy;
 begin
+  if Assigned(_Parent) then _Parent.SwitchState;
   Finalize;
   g2.CallbackRenderRemove(@Render);
   g2.CallbackUpdateRemove(@Update);
@@ -21891,6 +21903,11 @@ begin
   if List = Self then
   List := Next;
   inherited Destroy;
+end;
+
+procedure TG2GameState.SwitchState;
+begin
+  if _SwitchState <> _State then SetState(_SwitchState);
 end;
 //TG2GameState END
 
