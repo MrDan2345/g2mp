@@ -17,6 +17,7 @@ uses
 type
   TGameBase = class;
   CGameBase = class of TGameBase;
+  TRequest = class;
 
   TPlayer = class
   private
@@ -94,9 +95,12 @@ type
   TPacket = class
   private
     var _Time: TG2Float;
+    var _Request: TRequest;
   public
     property Time: TG2Float read _Time write _Time;
+    property Request: TRequest read _Request write _Request;
     constructor Create;
+    destructor Destroy; override;
     function CheckTarget(const Target: TGameBase): Boolean; virtual;
   end;
   TPacketList = specialize TG2QuickListG<TPacket>;
@@ -116,12 +120,16 @@ type
 
   TRequest = class
   private
-    var _Source: String;
+    var _Source: TGameBase;
+    var _Packet: TPacket;
   public
-    property Source: String read _Source;
+    property Source: TGameBase read _Source;
+    property Packet: TPacket read _Packet write _Packet;
     constructor Create(const ASource: TGameBase);
+    destructor Destroy; override;
     function CheckTarget(const Target: TGameBase): Boolean; virtual;
   end;
+  TRequestList = specialize TG2QuickListG<TRequest>;
 
   TBaseLink = class
   private
@@ -192,9 +200,11 @@ type
     var _BuildTotal: Integer;
     var _BuildAmount: Integer;
     var _BuildTime: TG2Float;
+    var _Requests: TRequestList;
   protected
     var _Color: TColorComponent;
     procedure SetBuildAmount(const Value: Integer);
+    procedure CancelRequest(const Request: TRequest); virtual;
   public
     var Links: TBaseLinkList;
     property IsBuilt: Boolean read _Built;
@@ -220,11 +230,14 @@ type
   end;
 
   TGameBaseMothership = class (TGameBase)
+  private
+    var _RequestQueue: TRequestList;
   public
     class function MakeObject(const NewTransform: TG2Transform2): TGameBase; override;
     class function MakeBuildObject: TG2Scene2DEntity; override;
     constructor Create(const OwnerScene: TG2Scene2D); override;
     destructor Destroy; override;
+    procedure OnUpdate; override;
     procedure ReceivePacket(const Packet: TPacket); override;
     procedure ReceiveRequest(const Request: TRequest); override;
   end;
@@ -349,7 +362,16 @@ end;
 
 constructor TRequest.Create(const ASource: TGameBase);
 begin
-  _Source := ASource.GUID;
+  _Source := ASource;
+  _Packet := nil;
+  _Source._Requests.Add(Self);
+end;
+
+destructor TRequest.Destroy;
+begin
+  if Assigned(_Source) then _Source._Requests.Remove(Self);
+  if Assigned(_Packet) then _Packet.Request := nil;
+  inherited Destroy;
 end;
 
 function TRequest.CheckTarget(const Target: TGameBase): Boolean;
@@ -417,6 +439,13 @@ end;
 constructor TPacket.Create;
 begin
   _Time := 0;
+  _Request := nil;
+end;
+
+destructor TPacket.Destroy;
+begin
+  if Assigned(_Request) then _Request.Free;
+  inherited Destroy;
 end;
 
 function TPacket.CheckTarget(const Target: TGameBase): Boolean;
@@ -705,6 +734,11 @@ begin
   _BuildAmount := _BuildTotal;
 end;
 
+procedure TGameBase.CancelRequest(const Request: TRequest);
+begin
+  _Requests.Remove(Request);
+end;
+
 class constructor TGameBase.CreateClass;
 begin
   _SearchID := 0;
@@ -723,6 +757,7 @@ begin
   _PathSearchID := 0;
   _Built := False;
   _BuildTime := 0;
+  _Requests.Clear;
   SetBuildAmount(5);
 end;
 
@@ -743,7 +778,10 @@ begin
     _BuildTime += g2.DeltaTimeSec;
     if _BuildTime > 2 then
     begin
-      SendRequest(TRequest.Create(Self));
+      if (_BuildAmount - _Requests.Count > 0) then
+      begin
+        SendRequest(TRequest.Create(Self));
+      end;
       _BuildTime := 0;
     end;
     _Color.SetColor($80ffffff);
@@ -1230,6 +1268,7 @@ constructor TGameBaseMothership.Create(const OwnerScene: TG2Scene2D);
 begin
   inherited Create(OwnerScene);
   _Built := True;
+  _RequestQueue.Clear;
   ActionMenu := TUIActionMenu.Create;
   ActionMenu.AddButton('button_relay', @Game.BuildRelay);
   ActionMenu.AddButton('button_collector', @Game.BuildCollector);
@@ -1237,8 +1276,27 @@ end;
 
 destructor TGameBaseMothership.Destroy;
 begin
+  while _RequestQueue.Count > 0 do _RequestQueue.Pop.Free;
   ActionMenu.Free;
   inherited Destroy;
+end;
+
+procedure TGameBaseMothership.OnUpdate;
+  var p: TPacketPower;
+  var r: TRequest;
+begin
+  inherited OnUpdate;
+  if _RequestQueue.Count > 0 then
+  begin
+    if Game.Player.Drain(1) then
+    begin
+      r := _RequestQueue[0];
+      _RequestQueue.Delete(0);
+      p := TPacketPower.Create(r.Source.GUID);
+      p.Request := r;
+      TransferPacket(p);
+    end;
+  end;
 end;
 
 procedure TGameBaseMothership.ReceivePacket(const Packet: TPacket);
@@ -1248,14 +1306,8 @@ begin
 end;
 
 procedure TGameBaseMothership.ReceiveRequest(const Request: TRequest);
-  var p: TPacketPower;
 begin
-  if Game.Player.Drain(1) then
-  begin
-    p := TPacketPower.Create(Request.Source);
-    TransferPacket(p);
-  end;
-  inherited ReceiveRequest(Request);
+  _RequestQueue.Add(Request);
 end;
 
 function TUIActionMenu.AddButton(const FrameName: String;
@@ -1495,8 +1547,8 @@ begin
   g2.CallbackScrollAdd(@Scroll);
   g2.CallbackPrintAdd(@Print);
   g2.Params.MaxFPS := 100;
-  g2.Params.Width := 1024;
-  g2.Params.Height := 768;
+  g2.Params.Width := 1000;
+  g2.Params.Height := 600;
   g2.Params.ScreenMode := smWindow;
   DebugDrawEnabled := False;
 end;
