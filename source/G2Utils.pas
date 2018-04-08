@@ -631,6 +631,7 @@ begin
   if RangeEnd < RangeStart then Exit;
   i := RangeStart;
   j := RangeEnd;
+  if i >= j then Exit;
   pivot := _Items[(RangeStart + RangeEnd) shr 1];
   repeat
     while CmpFunc(pivot, _Items[i]) > 0 do i := i + 1;
@@ -657,6 +658,7 @@ procedure TG2QuickListG.Sort(
 begin
   i := RangeStart;
   j := RangeEnd;
+  if i >= j then Exit;
   pivot := _Items[(RangeStart + RangeEnd) shr 1];
   repeat
     while CmpFunc(pivot, _Items[i]) > 0 do i := i + 1;
