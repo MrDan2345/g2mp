@@ -9274,7 +9274,7 @@ end;
 
 function TG2Texture2DBase.GetTexture: {$ifdef G2Gfx_D3D9}IDirect3DTexture9{$else}GLUInt{$endif};
 begin
-  Result := {$ifdef G2Gfx_D3D9}IDirect3DTexture9(_Texture){$else}_Texture{$endif};
+  Result := {$ifdef G2Gfx_D3D9}(_Texture as IDirect3DTexture9){$else}_Texture{$endif};
 end;
 
 function TG2Texture2DBase.CreateImage: TG2Image;
@@ -9507,6 +9507,7 @@ function TG2Texture2D.Load(const Image: TG2Image; const TextureUsage: TG2Texture
   end;
   {$ifdef G2Gfx_D3D9}
   var SurfLock, ParSurfLock: TD3DLockedRect;
+  var TextureDest: IDirect3DTexture9;
   {$else}
   var TexData, MipData, Mip0, Mip1, Ptr: Pointer;
   var px, py, px4: TG2IntS32;
@@ -9533,8 +9534,9 @@ begin
   _Gfx.Device.CreateTexture(
     _RealWidth, _RealHeight, Levels, 0,
     D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
-    IDirect3DTexture9(_Texture), nil
+    TextureDest, nil
   );
+  _Texture := TextureDest;
   GetTexture.LockRect(0, SurfLock, nil, D3DLOCK_DISCARD);
   case _Usage of
     tuDefault, tu3D:
@@ -9846,7 +9848,9 @@ begin
 end;
 
 function TG2Texture2DRT.Make(const NewWidth, NewHeight: TG2IntS32): Boolean;
-{$ifdef G2Gfx_OGL}
+{$if defined(G2Gfx_D3D9)}
+  var TextureDest: IDirect3DTexture9;
+{$elseif defined(G2Gfx_OGL)}
 {$if defined(G2Target_Windows)}
   var pbufferiAttr: array[0..21] of TG2IntS32;
   var pbufferfAttr: array[0..3] of TG2Float;
@@ -9875,9 +9879,10 @@ begin
   _Gfx.Device.CreateTexture(
     _RealWidth, _RealHeight, 1, D3DUSAGE_RENDERTARGET,
     D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,
-    IDirect3DTexture9(_Texture), nil
+    TextureDest, nil
   );
-  IDirect3DTexture9(_Texture).GetSurfaceLevel(0, _Surface);
+  _Texture := TextureDest;
+  (_Texture as IDirect3DTexture9).GetSurfaceLevel(0, _Surface);
   {$elseif defined(G2Gfx_OGL)}
   _Gfx.ThreadAttach;
   if gl_FBO_Cap then _Mode := rtmFBO
@@ -13493,6 +13498,7 @@ procedure TG2Font.Make(const Size: TG2IntS32; const Face: AnsiString = {$ifdef G
   var CharSize: TSize;
   {$ifdef G2Gfx_D3D9}
   var lr: TD3DLockedRect;
+  var TextureDest: IDirect3DTexture9;
   {$else}
   var TextureData: Pointer;
   {$endif}
@@ -13574,9 +13580,10 @@ begin
     TexWidth, TexHeight, 1, 0,
     D3DFMT_A8R8G8B8,
     D3DPOOL_MANAGED,
-    IDirect3DTexture9(_Texture._Texture),
+    TextureDest,
     nil
   );
+  _Texture._Texture := TextureDest;
   _Texture.GetTexture.LockRect(0, lr, nil, D3DLOCK_DISCARD);
   for y := 0 to TexWidth - 1 do
   for x := 0 to TexHeight - 1 do

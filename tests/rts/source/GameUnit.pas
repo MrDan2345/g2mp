@@ -12,7 +12,8 @@ uses
   Types,
   Classes,
   SysUtils,
-  box2d;
+  box2d,
+  G2PerlinNoise;
 
 type
   TGameBase = class;
@@ -77,9 +78,11 @@ type
   TUIGameplay = class (TUIWidget)
   private
     var _QueryList: TG2Scene2DEntityList;
-    var FramePower: TG2AtlasFrame;
+    var _FramePower: TG2AtlasFrame;
+    var _BuildMenu: TUIActionMenu;
   public
     procedure OnInitialize; override;
+    procedure OnFinalize; override;
     procedure OnMouseDown(const Button, x, y: Integer); override;
     procedure OnRender; override;
   end;
@@ -96,9 +99,12 @@ type
   private
     var _Time: TG2Float;
     var _Request: TRequest;
+  protected
+    class function GetColor: TG2Color; virtual;
   public
     property Time: TG2Float read _Time write _Time;
     property Request: TRequest read _Request write _Request;
+    property Color: TG2Color read GetColor;
     constructor Create;
     destructor Destroy; override;
     function CheckTarget(const Target: TGameBase): Boolean; virtual;
@@ -106,6 +112,8 @@ type
   TPacketList = specialize TG2QuickListG<TPacket>;
 
   TPacketResource = class (TPacket)
+  protected
+    class function GetColor: TG2Color; override;
   public
     function CheckTarget(const Target: TGameBase): Boolean; override;
   end;
@@ -113,6 +121,8 @@ type
   TPacketPower = class (TPacket)
   private
     var _Target: String;
+  protected
+    class function GetColor: TG2Color; override;
   public
     constructor Create(const Target: String);
     function CheckTarget(const Target: TGameBase): Boolean; override;
@@ -180,6 +190,7 @@ type
     procedure SetFilter(const FilterTypes: array of CG2Scene2DEntity);
     procedure AddFilter(const FilterTypes: array of CG2Scene2DEntity);
     function CheckFilter(const Entity: TG2Scene2DEntity): Boolean;
+    procedure Activate;
     procedure Update;
   end;
 
@@ -205,6 +216,7 @@ type
     var _Color: TColorComponent;
     procedure SetBuildAmount(const Value: Integer);
     procedure CancelRequest(const Request: TRequest); virtual;
+    procedure ActivateDetector;
   public
     var Links: TBaseLinkList;
     property IsBuilt: Boolean read _Built;
@@ -226,7 +238,15 @@ type
 
   TGameAsteroid = class (TGameObject)
   public
-    class function MakeObject(const NewTransform: TG2Transform2): TGameAsteroid;
+    class var TotalReources: Integer;
+    var Resources: Integer;
+    var ScaleDec: TG2Float;
+    class function MakeObject(
+      const NewTransform: TG2Transform2;
+      const Scale: TG2Float = 1
+    ): TGameAsteroid;
+    constructor Create(const OwnerScene: TG2Scene2D); override;
+    procedure CollectResource;
   end;
 
   TGameBaseMothership = class (TGameBase)
@@ -260,6 +280,7 @@ type
     end;
     var _Resources: TG2QuickList;
     var _Collected: Integer;
+    var _Delay: TG2Float;
   public
     class function MakeObject(const NewTransform: TG2Transform2): TGameBase; override;
     class function MakeBuildObject: TG2Scene2DEntity; override;
@@ -308,6 +329,7 @@ type
     var UIGameplay: TUIGameplay;
     var Player: TPlayer;
     var DebugDrawEnabled: Boolean;
+    var MapBounds: TG2Rect;
     var MouseDrag: TG2Vec2;
     constructor Create;
     destructor Destroy; override;
@@ -324,6 +346,7 @@ type
     procedure MoveCamera;
     procedure BuildRelay;
     procedure BuildCollector;
+    procedure GenerateAsteroids;
   end;
 
 var
@@ -344,6 +367,11 @@ begin
   end;
 end;
 
+class function TPacketPower.GetColor: TG2Color;
+begin
+  Result := $ff00cc00;
+end;
+
 constructor TPacketPower.Create(const Target: String);
 begin
   inherited Create;
@@ -353,6 +381,11 @@ end;
 function TPacketPower.CheckTarget(const Target: TGameBase): Boolean;
 begin
   Result := Target.GUID = _Target;
+end;
+
+class function TPacketResource.GetColor: TG2Color;
+begin
+  Result := $ffcc0000;
 end;
 
 function TPacketResource.CheckTarget(const Target: TGameBase): Boolean;
@@ -431,9 +464,18 @@ begin
 end;
 
 destructor TBaseLink.TLinkSide.Destroy;
+  var i: Integer;
 begin
-  while Packets.Count > 0 do Packets.Pop.Free;
+  for i := 0 to Packets.Count - 1 do
+  begin
+    Packets[i].Free;
+  end;
   inherited Destroy;
+end;
+
+class function TPacket.GetColor: TG2Color;
+begin
+  Result := $ffffffff;
 end;
 
 constructor TPacket.Create;
@@ -576,6 +618,11 @@ begin
   Result := False;
 end;
 
+procedure TEntityDetector.Activate;
+begin
+  _RigidBody.Wake;
+end;
+
 constructor TGameObject.Create(const OwnerScene: TG2Scene2D);
 begin
   inherited Create(OwnerScene);
@@ -669,12 +716,15 @@ procedure TBaseLink.OnRender(const Display: TG2Display2D);
     var i: Integer;
     var t: TG2Float;
     var p: TG2Vec2;
+    var c: TG2Color;
   begin
     for i := 0 to Side.Packets.Count - 1 do
     begin
       t := Side.Packets[i].Time / len;
       p := G2LerpVec2(Side.Base.Position, Side.Other.Base.Position, t);
-      Display.PrimCircleCol(p, 0.1, $ffffffff, $00ffffff);
+      c := Side.Packets[i].Color;
+      c.a := 0;
+      Display.PrimCircleCol(p, 0.1, $ffffffff, c);
     end;
   end;
   var p0, p1, n0, n1: TG2Vec2;
@@ -739,6 +789,11 @@ begin
   _Requests.Remove(Request);
 end;
 
+procedure TGameBase.ActivateDetector;
+begin
+
+end;
+
 class constructor TGameBase.CreateClass;
 begin
   _SearchID := 0;
@@ -762,7 +817,12 @@ begin
 end;
 
 destructor TGameBase.Destroy;
+  var i: Integer;
 begin
+  for i := 0 to _Requests.Count - 1 do
+  begin
+    _Requests[i]._Source := nil;
+  end;
   while Links.Count > 0 do Links.Pop.Free;
   g2.CallbackUpdateRemove(@OnUpdate);
   inherited Destroy;
@@ -961,7 +1021,7 @@ begin
         if b.Links[i].SideA.Base <> b then bo := b.Links[i].SideA.Base
         else bo := b.Links[i].SideB.Base;
         d := b._PathSearchDist + (b.Position - bo.Position).Len;
-        if (bo._PathSearchID < _SearchID) then// or (d < bo._PathSearchDist) then
+        if (bo._PathSearchID < _SearchID) then
         begin
           bo._PathSearchDist := d;
           bo._PathSearchID := _SearchID;
@@ -974,12 +1034,68 @@ begin
   end;
 end;
 
-class function TGameAsteroid.MakeObject(const NewTransform: TG2Transform2): TGameAsteroid;
+class function TGameAsteroid.MakeObject(const NewTransform: TG2Transform2;
+  const Scale: TG2Float): TGameAsteroid;
   var rb: TG2Scene2DComponentRigidBody;
+  var i: Integer;
 begin
   Result := TGameAsteroid(Game.Scene.CreatePrefab('asteroid.g2prefab2d', NewTransform, TGameAsteroid));
+  TotalReources -= Result.Resources;
+  Result.Resources := Round(Result.Resources * Scale);
+  TotalReources += Result.Resources;
+  Result.ScaleDec := 1 - (1.1 / Result.Resources);
+  for i := 0 to Result.ComponentCount - 1 do
+  begin
+    if Result.Components[i] is TG2Scene2DComponentSprite then
+    begin
+      TG2Scene2DComponentSprite(Result.Components[i]).Scale := (
+        TG2Scene2DComponentSprite(Result.Components[i]).Scale * Scale
+      );
+    end
+    else if Result.Components[i] is TG2Scene2DComponentCollisionShapeCircle then
+    begin
+      TG2Scene2DComponentCollisionShapeCircle(Result.Components[i]).Radius := (
+        TG2Scene2DComponentCollisionShapeCircle(Result.Components[i]).Radius * Scale
+      );
+    end;
+  end;
   rb := TG2Scene2DComponentRigidBody(Result.ComponentOfType[TG2Scene2DComponentRigidBody]);
   if Assigned(rb) then rb.Enabled := True;
+end;
+
+constructor TGameAsteroid.Create(const OwnerScene: TG2Scene2D);
+begin
+  inherited Create(OwnerScene);
+  Resources := 50;
+  ScaleDec := 1 - (1.1 / Resources);
+  TotalReources += Resources;
+end;
+
+procedure TGameAsteroid.CollectResource;
+  var i: Integer;
+begin
+  Resources -= 1;
+  TotalReources -= 1;
+  if Resources <= 0 then
+  begin
+    Free;
+    Exit;
+  end;
+  for i := 0 to ComponentCount - 1 do
+  begin
+    if Components[i] is TG2Scene2DComponentSprite then
+    begin
+      TG2Scene2DComponentSprite(Components[i]).Scale := (
+        TG2Scene2DComponentSprite(Components[i]).Scale * ScaleDec
+      );
+    end
+    else if Components[i] is TG2Scene2DComponentCollisionShapeCircle then
+    begin
+      TG2Scene2DComponentCollisionShapeCircle(Components[i]).Radius := (
+        TG2Scene2DComponentCollisionShapeCircle(Components[i]).Radius * ScaleDec
+      );
+    end;
+  end;
 end;
 
 class function TGameBaseRelay.MakeObject(const NewTransform: TG2Transform2): TGameBase;
@@ -1031,6 +1147,7 @@ begin
   _Detector.AddFilter([TGameAsteroid]);
   _Resources.Clear;
   _Collected := 0;
+  _Delay := 0;
 end;
 
 destructor TGameBaseCollector.Destroy;
@@ -1047,8 +1164,11 @@ procedure TGameBaseCollector.OnUpdate;
 begin
   inherited OnUpdate;
   if not IsBuilt then Exit;
-  if _Collected + _Resources.Count < 5 then
+  _Delay -= g2.DeltaTimeSec;
+  if (_Collected + _Resources.Count < 5)
+  and (_Delay <= 0) then
   begin
+    _Detector.Activate;
     for i := 0 to _Detector.Detected.Count - 1 do
     if _Detector.Detected[i] is TGameAsteroid then
     begin
@@ -1067,6 +1187,9 @@ begin
         r.Time := 0;
         r.Dur := (r.Pos - Position).Len;
         _Resources.Add(r);
+        TGameAsteroid(_Detector.Detected[i]).CollectResource;
+        _Delay := 5;
+        Break;
       end;
     end;
   end;
@@ -1092,13 +1215,16 @@ procedure TGameBaseCollector.OnRender(const Display: TG2Display2D);
   var i: Integer;
   var p: TG2Vec2;
   var r: TResource;
+  var c: TG2Color;
 begin
   inherited OnRender(Display);
   for i := 0 to _Resources.Count - 1 do
   begin
     r := TResource(_Resources[i]);
     p := G2LerpVec2(r.Pos, Position, r.Time / r.Dur);
-    Display.PrimCircleCol(p, 0.1, $ffffffff, $00ffffff);
+    c := TPacketResource.GetColor;
+    c.a := 0;
+    Display.PrimCircleCol(p, 0.1, $ffffffff, c);
   end;
 end;
 
@@ -1229,7 +1355,7 @@ begin
         begin
           BuildClass.MakeObject(G2Transform2(Game.Display.CoordToDisplay(G2Vec2(x, y)), G2Rotation2));
         end;
-        Game.UIManager.Widget := Game.UIGameplay;
+        //Game.UIManager.Widget := Game.UIGameplay;
       end;
     end;
     G2MB_Right:
@@ -1422,12 +1548,22 @@ procedure TUIGameplay.OnInitialize;
 begin
   inherited OnInitialize;
   RenderOrder := 100;
-  FramePower := Atlas.FindFrame('power.png');
+  _FramePower := Atlas.FindFrame('power.png');
+  _BuildMenu := TUIActionMenu.Create;
+  _BuildMenu.AddButton('button_relay', @Game.BuildRelay);
+  _BuildMenu.AddButton('button_collector', @Game.BuildCollector);
+end;
+
+procedure TUIGameplay.OnFinalize;
+begin
+  _BuildMenu.Free;
+  inherited OnFinalize;
 end;
 
 procedure TUIGameplay.OnMouseDown(const Button, x, y: Integer);
   var p: TG2Vec2;
   var i: Integer;
+  var query_hit: Boolean;
 begin
   inherited OnMouseDown(Button, x, y);
   case Button of
@@ -1436,12 +1572,19 @@ begin
       _QueryList.Clear;
       p := Game.Display.CoordToDisplay(G2Vec2(x, y));
       Game.Scene.QueryPoint(p, _QueryList);
+      query_hit := False;
       for i := 0 to _QueryList.Count - 1 do
       if (_QueryList[i] is TGameBase)
       and Assigned(TGameBase(_QueryList[i]).ActionMenu) then
       begin
         Game.UIManager.Widget := TGameBase(_QueryList[i]).ActionMenu;
+        query_hit := True;
         Break;
+      end;
+      if not query_hit then
+      begin
+        _BuildMenu.Position := p;
+        Game.UIManager.Widget := _BuildMenu;
       end;
     end;
   end;
@@ -1453,11 +1596,11 @@ begin
   inherited OnRender;
   g2.PicRect(
     0, g2.Params.Height - 64, 64, 64,
-    FramePower.TexCoords.l,
-    FramePower.TexCoords.t,
-    FramePower.TexCoords.r,
-    FramePower.TexCoords.b,
-    $ffffff00, FramePower.Texture
+    _FramePower.TexCoords.l,
+    _FramePower.TexCoords.t,
+    _FramePower.TexCoords.r,
+    _FramePower.TexCoords.b,
+    $ffffff00, _FramePower.Texture
   );
   r := G2Rect(68, g2.Params.Height - 40, 200, 20);
   g2.PrimRect(r.l, r.t, r.w, r.h, $ff808080);
@@ -1579,6 +1722,7 @@ begin
   UIGameplay := TUIGameplay.Create;
   Display.Width := 10;
   Display.Height := 10;
+  MapBounds := G2Rect(0, 0, 50, 50);
   Scene.Load('scene.g2s2d');
   Background := TBackground.Create(Scene);
   if not Assigned(Background.Owner) then
@@ -1590,10 +1734,10 @@ begin
   Scene.Gravity := G2Vec2;
   Player := TPlayer.Create;
   TGameBaseMothership.MakeObject(G2Transform2);
-  TGameAsteroid.MakeObject(G2Transform2(G2Vec2(1, 1), G2Rotation2));
   TargetZoom := Display.Zoom;
   Display.Position := G2Vec2;
   UIManager.Widget := UIGameplay;
+  GenerateAsteroids;
 end;
 
 procedure TGame.Finalize;
@@ -1619,7 +1763,8 @@ procedure TGame.Render;
 begin
   Scene.Render(Display);
   if DebugDrawEnabled then Scene.DebugDraw(Display);
-  Font1.Print(10, 10, 'FPS: ' + IntToStr(g2.FPS));
+  Font1.Print(10, 10, 0.75, 0.75, 'FPS: ' + IntToStr(g2.FPS), bmNormal, tfLinear);
+  Font1.Print(10, 30, 0.75, 0.75, 'Resources: ' + IntToStr(TGameAsteroid.TotalReources), bmNormal, tfLinear);
 end;
 
 procedure TGame.KeyDown(const Key: Integer);
@@ -1685,10 +1830,10 @@ begin
     if g2.KeyDown[G2K_D] then MoveDir.x := MoveDir.x + 1;
     Pos := Pos + MoveDir * 0.1;
   end;
-  if Pos.x < 0 then Pos.x := 0;
-  if Pos.x > 50 then Pos.x := 50;
-  if Pos.y < 0 then Pos.y := 0;
-  if Pos.y > 50 then Pos.y := 50;
+  if Pos.x < MapBounds.l then Pos.x := MapBounds.l;
+  if Pos.x > MapBounds.r then Pos.x := MapBounds.r;
+  if Pos.y < MapBounds.t then Pos.y := MapBounds.t;
+  if Pos.y > MapBounds.b then Pos.y := MapBounds.b;
   Display.Position := Pos;
   if g2.MouseDown[G2MB_Middle] then
   begin
@@ -1706,6 +1851,31 @@ procedure TGame.BuildCollector;
 begin
   Game.UIBuildPlacement.BuildClass := TGameBaseCollector;
   Game.UIManager.Widget := Game.UIBuildPlacement;
+end;
+
+procedure TGame.GenerateAsteroids;
+  var pn: TG2PerlinNoise;
+  var i, j: Integer;
+  var n: TG2Float;
+begin
+  pn := TG2PerlinNoise.Create;
+  for j := 0 to Round(MapBounds.w) - 1 do
+  for i := 0 to Round(MapBounds.h) - 1 do
+  begin
+    n := pn.PerlinNoise2D(i * 10, j * 10, 4) * 2;
+    if n > 0.9 then
+    begin
+      TGameAsteroid.MakeObject(
+        G2Transform2(
+          G2Vec2(i + Random(10) * 0.1, j + Random(10) * 0.1),
+          G2Rotation2
+        ),
+        (n - 0.6) * 2
+        //0.3 + (Random(10) * 0.1) * 2
+      );
+    end;
+  end;
+  pn.Free;
 end;
 
 //TGame END

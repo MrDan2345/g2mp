@@ -782,6 +782,7 @@ type
     procedure ApplyForce(const Force, Point: TG2Vec2; const Wake: Boolean = True);
     procedure ApplyForceToCenter(const Force: TG2Vec2; const Wake: Boolean = True);
     procedure ApplyTorque(const Torque: TG2Float; const Wake: Boolean = True);
+    procedure Wake;
     procedure Save(const dm: TG2DataManager); override;
     procedure Load(const dm: TG2DataManager); override;
   end;
@@ -4736,6 +4737,11 @@ procedure TG2Scene2DComponentRigidBody.ApplyTorque(
 );
 begin
   if _Enabled then _Body^.apply_torque(Torque, Wake);
+end;
+
+procedure TG2Scene2DComponentRigidBody.Wake;
+begin
+  _Body^.set_awake(true);
 end;
 
 procedure TG2Scene2DComponentRigidBody.Save(const dm: TG2DataManager);
