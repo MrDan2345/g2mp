@@ -179,6 +179,8 @@ type
     var _Filter: array of CG2Scene2DEntity;
     function GetRadius: TG2Float;
     procedure SetRadius(const Value: TG2Float);
+    procedure OnBeginContact(const EventData: TG2Scene2DEventData);
+    procedure OnEndContact(const EventData: TG2Scene2DEventData);
   protected
     procedure OnEnable; override;
     procedure OnDisable; override;
@@ -190,8 +192,6 @@ type
     procedure SetFilter(const FilterTypes: array of CG2Scene2DEntity);
     procedure AddFilter(const FilterTypes: array of CG2Scene2DEntity);
     function CheckFilter(const Entity: TG2Scene2DEntity): Boolean;
-    procedure Activate;
-    procedure Update;
   end;
 
   TPath = array of TGameBase;
@@ -507,51 +507,6 @@ begin
   if Assigned(_RigidBody) then _RigidBody.Enabled := False;
 end;
 
-procedure TEntityDetector.Update;
-  var i: Integer;
-  var contact: pb2_contact_edge;
-  var Obj: TObject;
-  var Entity: TG2Scene2DEntity;
-  var f: pb2_fixture;
-begin
-  Detected.Clear;
-  if not _Enabled then Exit;
-  if Assigned(_Shape.PhysFixture)
-  and Assigned(_Shape.PhysFixture^.get_body)then
-  begin
-    contact := _Shape.PhysFixture^.get_body^.get_contact_list;
-    while Assigned(contact) do
-    begin
-      if contact^.contact^.is_touching then
-      begin
-        if contact^.contact^.get_fixture_a = _Shape.PhysFixture then
-        begin
-          f := contact^.contact^.get_fixture_b;
-        end
-        else
-        begin
-          f := contact^.contact^.get_fixture_a;
-        end;
-        if not f^.is_sensor then
-        begin
-          Obj := TObject(contact^.other^.get_user_data);
-          if Obj is TG2Scene2DComponentRigidBody then
-          begin
-            Entity := TG2Scene2DComponentRigidBody(Obj).Owner;
-            if (Entity <> Self)
-            and (not Assigned(Self.Parent) or (Entity <> Self.Parent))
-            and (CheckFilter(TGameBase(Entity))) then
-            begin
-              Detected.Add(Entity);
-            end;
-          end;
-        end;
-      end;
-      contact := contact^.next;
-    end;
-  end;
-end;
-
 function TEntityDetector.GetRadius: TG2Float;
 begin
   Result := _Shape.Radius;
@@ -563,6 +518,32 @@ begin
   begin
     _Shape.Radius := Value;
   end;
+end;
+
+procedure TEntityDetector.OnBeginContact(const EventData: TG2Scene2DEventData);
+  var Data: TG2Scene2DEventBeginContactData absolute EventData;
+  var Other: TG2Scene2DEntity;
+  function CheckParent(const ParentEntity: TG2Scene2DEntity): Boolean;
+  begin
+    if not Assigned(ParentEntity) then Exit(False);
+    if Other = ParentEntity then Exit(True);
+    if Assigned(ParentEntity.Parent) then Exit(CheckParent(ParentEntity.Parent));
+    Result := False;
+  end;
+begin
+  Other := Data.Entities[1];
+  if not CheckParent(Self.Parent)
+  and (CheckFilter(TGameBase(Other)))
+  and (Detected.Find(Data.Entities[1]) = -1) then
+  begin
+    Detected.Add(Data.Entities[1]);
+  end;
+end;
+
+procedure TEntityDetector.OnEndContact(const EventData: TG2Scene2DEventData);
+  var Data: TG2Scene2DEventEndContactData absolute EventData;
+begin
+  Detected.Remove(Data.Entities[1]);
 end;
 
 constructor TEntityDetector.Create(const OwnerScene: TG2Scene2D);
@@ -577,6 +558,8 @@ begin
   _Shape.Attach(Self);
   _Shape.Radius := 1;
   _Shape.IsSensor := True;
+  _Shape.EventBeginContact.AddEvent(@OnBeginContact);
+  _Shape.EventEndContact.AddEvent(@OnEndContact);
   Detected.Clear;
 end;
 
@@ -616,11 +599,6 @@ begin
     Exit;
   end;
   Result := False;
-end;
-
-procedure TEntityDetector.Activate;
-begin
-  _RigidBody.Wake;
 end;
 
 constructor TGameObject.Create(const OwnerScene: TG2Scene2D);
@@ -852,7 +830,6 @@ begin
   end;
   _Detector.Radius := LinkDistance;
   if Assigned(ActionMenu) then ActionMenu.Position := Position;
-  _Detector.Update;
   for j := 0 to _Detector.Detected.Count - 1 do
   begin
     Entity := _Detector.Detected[j];
@@ -982,7 +959,7 @@ begin
 end;
 
 function TGameBase.FindPath(const PathCheck: TPathCheck): TPath;
-  var b, bo: TGameBase;
+  var b, bo, found: TGameBase;
   var d: TG2Float;
   var i: Integer;
 begin
@@ -992,26 +969,13 @@ begin
   _PathSearchDist := 0;
   _PathSearchSrc := nil;
   _PathSearchList.Add(Self);
+  found := nil;
   while _PathSearchList.Count > 0 do
   begin
     b := _PathSearchList.Pop;
     if PathCheck(b) then
     begin
-      i := 0;
-      bo := b;
-      while bo <> Self do
-      begin
-        Inc(i);
-        bo := bo._PathSearchSrc;
-      end;
-      SetLength(Result, i);
-      while b <> Self do
-      begin
-        Dec(i);
-        Result[i] := b;
-        b := b._PathSearchSrc;
-      end;
-      Exit;
+      found := b;
     end
     else
     if (b = Self) or b.IsBuilt then
@@ -1021,7 +985,13 @@ begin
         if b.Links[i].SideA.Base <> b then bo := b.Links[i].SideA.Base
         else bo := b.Links[i].SideB.Base;
         d := b._PathSearchDist + (b.Position - bo.Position).Len;
-        if (bo._PathSearchID < _SearchID) then
+        if (
+          not Assigned(found)
+          or (found._PathSearchDist > d)
+        ) and (
+          (bo._PathSearchID < _SearchID)
+          or (d < bo._PathSearchDist)
+        )then
         begin
           bo._PathSearchDist := d;
           bo._PathSearchID := _SearchID;
@@ -1030,6 +1000,24 @@ begin
         end;
       end;
       _PathSearchList.Sort(@PathSearchCmp);
+    end;
+  end;
+  if Assigned(found) then
+  begin
+    i := 0;
+    b := found;
+    while b <> Self do
+    begin
+      Inc(i);
+      b := b._PathSearchSrc;
+    end;
+    SetLength(Result, i);
+    b := found;
+    while b <> Self do
+    begin
+      Dec(i);
+      Result[i] := b;
+      b := b._PathSearchSrc;
     end;
   end;
 end;
@@ -1168,7 +1156,6 @@ begin
   if (_Collected + _Resources.Count < 5)
   and (_Delay <= 0) then
   begin
-    _Detector.Activate;
     for i := 0 to _Detector.Detected.Count - 1 do
     if _Detector.Detected[i] is TGameAsteroid then
     begin
