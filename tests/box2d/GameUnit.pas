@@ -754,6 +754,13 @@ type
     procedure JointDestroyed(const joint: pb2_joint); override;
   end;
 
+  TCustomTest = class (TTest)
+  private
+  public
+    constructor Create; override;
+    procedure Draw(const Settings: TSettings); override;
+  end;
+
   TGame = class
   protected
     var tests: array of CTest;
@@ -7231,6 +7238,53 @@ begin
 end;
 //TWebTest END
 
+//TCustomTest BEGIN
+constructor TCustomTest.Create;
+  var groundBodyDef: tb2_body_def;
+  var groundBody: pb2_body;
+  var groundBox: tb2_polygon_shape;
+  var bodyDef: tb2_body_def;
+  var body: pb2_body;
+  var dynamicBox: tb2_polygon_shape;
+  var fixtureDef: tb2_fixture_def;
+begin
+  inherited Create;
+  groundBodyDef := b2_body_def;
+  groundBodyDef.position.set_value(0.0, -10.0);
+  groundBody := _world^.Create_Body(groundBodyDef);
+
+  // fixture
+  groundBox.create;
+  groundBox.Set_As_Box(50.0, 10.0);
+  groundBody^.Create_Fixture(@groundBox, 0.0);
+  groundBox.destroy;
+
+  // dynamic body
+  bodyDef := b2_body_def;
+  bodyDef.body_type := b2_dynamic_Body;
+  bodyDef.position.Set_value(0.0, 4.0);
+  bodyDef.angle := 45;
+  body := _world^.Create_Body(bodyDef);
+  dynamicBox.create;
+  dynamicBox.Set_As_Box(1.0, 1.0);
+  // fixture
+  fixtureDef := b2_fixture_def;
+  fixtureDef.shape := @dynamicBox;
+  fixtureDef.density := 1.0;
+  fixtureDef.friction := 0.3;
+  body^.Create_Fixture(fixtureDef);
+  dynamicBox.destroy;
+end;
+
+procedure TCustomTest.Draw(const Settings: TSettings);
+begin
+  inherited Draw(Settings);
+  Game.draw.draw_string(5, _text_line, 'Custom test');
+  _text_line += DRAW_STRING_NEW_LINE;
+end;
+
+//TCustomTest END
+
 //TGame BEGIN
 procedure TGame.AddTest(const TestClass: CTest);
 begin
@@ -7307,6 +7361,7 @@ begin
   AddTest(TVaryingRestitutionTest);
   AddTest(TVerticalStackTest);
   AddTest(TWebTest);
+  AddTest(TCustomTest);
 end;
 
 destructor TGame.Destroy;

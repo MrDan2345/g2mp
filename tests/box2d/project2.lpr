@@ -40,6 +40,7 @@ begin
   fixture_def.density := 1.0;
   fixture_def.friction := 0.3;
   body^.create_fixture(fixture_def);
+  box.destroy;
   time_step := 1.0 / 60.0;
   velocity_iterations := 6;
   position_iterations := 2;
