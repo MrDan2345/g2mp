@@ -1469,6 +1469,8 @@ type
   TG2AtlasPageList = specialize TG2QuickListG<TG2AtlasPage>;
 
   TG2AtlasFrame = class
+  private
+    function GetTexture: TG2Texture2DBase; inline;
   public
     Name: String;
     Page: TG2AtlasPage;
@@ -1477,7 +1479,7 @@ type
     Width: Integer;
     Height: Integer;
     TexCoords: TG2Rect;
-    property Texture: TG2Texture2DBase read Page.Texture;
+    property Texture: TG2Texture2DBase read GetTexture;
   end;
   TG2AtlasFrameList = specialize TG2QuickListG<TG2AtlasFrame>;
 
@@ -10034,6 +10036,13 @@ begin
   Result := True;
 end;
 //TG2Texture2DRT END
+
+//TG2AtlasFrame BEGIN
+function TG2AtlasFrame.GetTexture: TG2Texture2DBase;
+begin
+  Result := Page.Texture;
+end;
+//TG2AtlasFrame END
 
 //TG2Atlas BEGIN
 constructor TG2Atlas.Create;
