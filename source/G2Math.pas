@@ -2775,9 +2775,10 @@ begin
   begin
     if Abs(v[i]) < G2EPS then
     begin
-      if (lv0[i] < r.tl[i])
-      or (lv0[i] > r.br[i]) then
-      Exit(False);
+      if ((lv0[i] < r.tl[i]) or (lv0[i] > r.br[i])) then
+      Exit(False)
+      else
+      Continue;
     end;
     d := 1 / v[i];
     t0 := (r.tl[i] - lv0[i]) * d;
