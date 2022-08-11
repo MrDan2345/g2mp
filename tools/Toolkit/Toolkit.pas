@@ -26390,7 +26390,7 @@ begin
     _ExportAtlas := TG2Atlas.Create;
     _ExportAtlas.RenderAtlas(
       PG2Texture2DBase(Textures.Data), @TextureNames.Data[0], Textures.Count,
-      1024, 1024, 2, False, False, nil
+      4096, 4096, 2, False, False, nil
     );
     _ExportState := es_render;
   end
