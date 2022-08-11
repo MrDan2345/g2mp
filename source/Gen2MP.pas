@@ -352,6 +352,8 @@ type
 
   TG2TargetPlatform = (tpUndefined, tpWindows, tpLinux, tpMacOSX, tpAndroid, tpiOS);
 
+  { TG2Core }
+
   TG2Core = class
   private
     _Started: Boolean;
@@ -698,6 +700,8 @@ type
     procedure PrimQuadHollowCol(const x0, y0, x1, y1, x2, y2, x3, y3: TG2Float; const Col0, Col1, Col2, Col3: TG2Color; const BlendMode: TG2BlendModeRef = bmNormal); overload;
     procedure PrimCircleHollow(const Pos: TG2Vec2; const Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal); overload;
     procedure PrimCircleHollow(const x, y, Radius: TG2Float; const Col: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimOvalCol(const x, y, w, h: TG2Float; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal); overload;
+    procedure PrimOvalCol(const Pos, Size: TG2Vec2; const Col0, Col1: TG2Color; const Segments: TG2IntS32 = 16; const BlendMode: TG2BlendModeRef = bmNormal); overload;
     procedure PolyBegin(const PolyType: TG2PrimType; const Texture: TG2Texture2DBase; const BlendMode: TG2BlendModeRef = bmNormal; const Filter: TG2Filter = tfPoint);
     procedure PolyEnd;
     procedure PolyAdd(const x, y, u, v: TG2Float; const Color: TG2Color); inline; overload;
@@ -6300,6 +6304,40 @@ begin
   end;
   v.SetValue(c * v.x - s * v.y, s * v.x + c * v.y);
   PrimAdd(v.x + x, v.y + y, Col);
+  PrimEnd;
+end;
+
+procedure TG2Core.PrimOvalCol(
+  const x, y, w, h: TG2Float; const Col0, Col1: TG2Color;
+  const Segments: TG2IntS32; const BlendMode: TG2BlendModeRef
+);
+begin
+  PrimOvalCol(G2Vec2(x, y), G2Vec2(w, h), Col0, Col1, Segments, BlendMode);
+end;
+
+procedure TG2Core.PrimOvalCol(
+  const Pos, Size: TG2Vec2; const Col0, Col1: TG2Color;
+  const Segments: TG2IntS32; const BlendMode: TG2BlendModeRef
+);
+  var a, s, c: TG2Float;
+  var v: TG2Vec2;
+  var i: TG2IntS32;
+begin
+  a := G2TwoPi / Segments;
+  G2SinCos(a, s{%H-}, c{%H-});
+  v.SetValue(1, 0);
+  PrimBegin(ptTriangles, BlendMode);
+  PrimAdd(Pos, Col0);
+  PrimAdd(Pos + v * Size, Col1);
+  for i := 0 to Segments - 2 do
+  begin
+    v.SetValue(c * v.x - s * v.y, s * v.x + c * v.y);
+    PrimAdd(Pos + v * Size, Col1);
+    PrimAdd(Pos, Col0);
+    PrimAdd(Pos + v * Size, Col1);
+  end;
+  v.SetValue(c * v.x - s * v.y, s * v.x + c * v.y);
+  PrimAdd(Pos + v * Size, Col1);
   PrimEnd;
 end;
 

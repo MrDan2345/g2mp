@@ -4,8 +4,8 @@
 {$define G2Log}
 
 {$if not defined(G2Custom_RenderMode)}
-  {.$define G2RM_FF}
-  {$define G2RM_SM2}
+  {$define G2RM_FF}
+  {.$define G2RM_SM2}
 {$endif}
 
 {$if not defined(G2Custom_CPU)}
