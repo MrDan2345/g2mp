@@ -1122,7 +1122,7 @@ var
   glCallLists: procedure (n: TGLsizei; _type: TGLenum; const lists: PGLvoid); libdecl;
   glClear: procedure (mask: TGLbitfield); libdecl;
   glClearAccum: procedure (red: TGLfloat; green: TGLfloat; blue: TGLfloat; alpha: TGLfloat); libdecl;
-  glClearColor: procedure (red: TGLclampf; green: TGLclampf; blue: TGLclampf; alpha: TGLclampf); libdecl;
+  glClearColor: procedure (red, green, blue, alpha: TGLclampf); libdecl;
   glClearDepth: procedure (depth: TGLclampd); libdecl;
   glClearIndex: procedure (c: TGLfloat); libdecl;
   glClearStencil: procedure (s: TGLint); libdecl;

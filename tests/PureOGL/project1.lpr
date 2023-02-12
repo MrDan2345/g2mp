@@ -9,6 +9,7 @@ uses
   Windows,
   Classes,
   G2Math,
+  SysUtils,
   G2OpenGL;
 
 {$R *.res}

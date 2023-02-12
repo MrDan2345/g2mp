@@ -12,4 +12,5 @@ uses
 begin
   Game := TGame.Create;
   g2.Start;
+  Game.Free;
 end.

@@ -24,7 +24,11 @@ type
   TG2PointArr = array of TPoint;
   TG2RectArr = array of TRect;
 
-  TG2DynLib = PtrInt;//LongWord;
+{$ifdef CPU64}
+  TG2DynLib = QWord;
+{$else}
+  TG2DynLib = LongWord;
+{$endif}
 
   TG2MD5 = object
     var b: array[0..15] of Byte;
@@ -2904,9 +2908,9 @@ begin
 end;
 
 {$if defined(G2Target_Windows)}
-  function LibOpen(Name: PAnsiChar): LongWord; stdcall; external 'kernel32.dll' name 'LoadLibraryA';
-  function LibClose(Handle: LongWord): Boolean; stdcall; external 'kernel32.dll' name 'FreeLibrary';
-  function LibAddress(Handle: LongWord; ProcName: PAnsiChar): Pointer; stdcall; external 'kernel32.dll' name 'GetProcAddress';
+  function LibOpen(Name: PAnsiChar): TG2DynLib; stdcall; external 'kernel32.dll' name 'LoadLibraryA';
+  function LibClose(Handle: TG2DynLib): Boolean; stdcall; external 'kernel32.dll' name 'FreeLibrary';
+  function LibAddress(Handle: TG2DynLib; ProcName: PAnsiChar): Pointer; stdcall; external 'kernel32.dll' name 'GetProcAddress';
 {$elseif defined(G2Target_Linux) or defined(G2Target_OSX) or defined(G2Target_Android) or defined(G2Target_iOS)}
   function LibOpen(Name: PAnsiChar; Flags: LongInt): TG2DynLib; cdecl; external 'dl' name 'dlopen';
   function LibClose(Handle: TG2DynLib): LongInt; cdecl; external 'dl' name 'dlclose';

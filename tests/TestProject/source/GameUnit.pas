@@ -300,7 +300,7 @@ begin
   begin
     Bone := SpineAnimation.Skeleton.FindBone('rear_upper_arm');
     Bone.Rotation := Bone.Rotation + 45;
-    Bone.RotationIK := Bone.Rotation;
+    Bone.Rotation := Bone.Rotation;
   end;
 end;
 //TGameState0 END
