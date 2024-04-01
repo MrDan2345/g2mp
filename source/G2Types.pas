@@ -196,12 +196,15 @@ type
   TG2StrArrA = array of AnsiString;
   TG2StrArrW = array of WideString;
 
+  { TG2Color }
+
   TG2Color = packed record
     //{$if defined(G2Gfx_D3D9)}
     b, g, r, a: TG2IntU8;
     //{$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
     //r, g, b, a: TG2IntU8;
     //{$endif}
+    function AsUint32: TG2IntU32;
   end;
   PG2Color = ^TG2Color;
   PPG2Color = ^PG2Color;
@@ -318,6 +321,14 @@ begin
   else
   Result := b1;
 end;
+
+//TG2Color BEGIN
+function TG2Color.AsUint32: TG2IntU32;
+  var SelfUint32: TG2IntU32 absolute Self;
+begin
+  Result := SelfUInt32;
+end;
+//TG2Color END
 
 //TG2BlendMode BIEGN
 function TG2BlendMode.BlendEnable: Boolean;

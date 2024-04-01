@@ -1180,7 +1180,7 @@ constructor TG2Parser.Create;
 begin
   inherited Create;
   _Position := 0;
-  _Text := '';
+  _Text := nil;
   _CaseSensitive := False;
 end;
 

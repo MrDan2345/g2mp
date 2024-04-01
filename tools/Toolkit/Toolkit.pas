@@ -10772,7 +10772,7 @@ begin
     PrevPause := g2.Pause;
     try
       g2.Pause := True;
-      cd.Color := RGB(_Color.r, _Color.g, _Color.b);
+      cd.Color := _Color.AsUint32;
       if cd.Execute then
       begin
         OldColor := _Color;
@@ -11681,7 +11681,7 @@ begin
             _Selection := nil;
             _LastSelectionTime := G2Time - 300;
             cd := TColorDialog.Create(nil);
-            cd.Color := rgb(c^.Color.r, c^.Color.g, c^.Color.b);
+            cd.Color := c^.Color.AsUInt32;
             g2.Pause := True;
             try
               if cd.Execute then

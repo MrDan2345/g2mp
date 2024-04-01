@@ -1,4 +1,7 @@
-{$mode objfpc}
+{$mode objfpc}{$H+}
+{$modeswitch advancedrecords}
+{$modeswitch typehelpers}
+{$optimization autoinline}
 {.$define G2Threading}
 {.$define G2Output}
 {$define G2Log}
