@@ -12,6 +12,7 @@ uses
   {$if defined(WIN32)}
   windows,
   {$elseif defined(UNIX)}
+  linux, BaseUnix, unixtype,
   {$endif}
   math;
 
@@ -2931,40 +2932,32 @@ begin
   result := tb2_float32(_inv_frequency * (count - _start));
 end;
 {$elseif defined(UNIX)}
-type timeval = packed record
- tv_sec: tb2_uint32;
- tv_usec: tb2_uint32;
-end;
-function gettimeofday(timeval, timezone: Pointer): tb2_int32; cdecl; external 'libc';
-
 constructor tb2_timer.create;
 begin
   reset;
 end;
 
 procedure tb2_timer.reset;
-  var t: timeval;
+  var t: timespec;
 begin
-  gettimeofday(@t, nil);
+  clock_gettime(CLOCK_MONOTONIC_RAW, @t);
   _start_sec := t.tv_sec;
-  _start_usec := t.tv_usec;
+  _start_usec := t.tv_nsec;
 end;
 
 function tb2_timer.get_milliseconds: tb2_float32;
-  var t: timeval;
+  var t: timespec;
 begin
-  gettimeofday(@t, nil);
-  result := 1000.0 * (t.tv_sec - _start_sec) + 0.001 * (t.tv_usec - _start_usec);
+  clock_gettime(CLOCK_MONOTONIC_RAW, @t);
+  result := 1000.0 * (t.tv_sec - _start_sec) + 0.001 * (t.tv_nsec - _start_usec);
 end;
 {$else}
 constructor tb2_timer.create;
 begin
-
 end;
 
 procedure tb2_timer.reset;
 begin
-
 end;
 
 function tb2_timer.get_milliseconds: tb2_float32;

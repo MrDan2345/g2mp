@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <ProjectOptions>
-    <Version Value="11"/>
+    <Version Value="12"/>
     <PathDelim Value="\"/>
     <General>
       <Flags>
@@ -11,8 +11,8 @@
         <MainUnitHasTitleStatement Value="False"/>
         <SaveJumpHistory Value="False"/>
         <SaveFoldState Value="False"/>
+        <CompatibilityMode Value="True"/>
       </Flags>
-      <MainUnit Value="0"/>
       <Title Value="Testbed"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
@@ -37,6 +37,7 @@
         <Filename Value="Testbed.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="TestProject"/>
+        <IsVisibleTab Value="True"/>
         <CursorPos X="58" Y="10"/>
         <UsageCount Value="200"/>
         <Loaded Value="True"/>
@@ -54,6 +55,16 @@
       <OtherUnitFiles Value="..\..\source;..\..\source\box2d"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
+    <Linking>
+      <Debugging>
+        <DebugInfoType Value="dsDwarf3"/>
+      </Debugging>
+    </Linking>
+    <Other>
+      <ConfigFile>
+        <WriteConfigFilePath Value="$(ProjOutDir)\fpclaz.cfg"/>
+      </ConfigFile>
+    </Other>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">

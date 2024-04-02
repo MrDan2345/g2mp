@@ -4070,6 +4070,7 @@ begin
 end;
 {$elseif defined(G2Target_Linux)}
 procedure G2MessageHandler(Event: TXEvent);
+  var PrintStr: String;
 begin
   case Event._type of
     ConfigureNotify:
@@ -4084,6 +4085,19 @@ begin
     KeyPress:
     begin
       g2.Window.AddMessage(@g2.Window.OnKeyDown, Event.xkey.keycode, 0, 0);
+      if (Event.xkey.state and ShiftMask > 0)
+      or (Event.xkey.state and LockMask > 0) then
+      begin
+        PrintStr := XKeysymToString(XKeycodeToKeysym(g2.Window.Display, Event.xkey.keycode, 1));
+      end
+      else
+      begin
+        PrintStr := XKeysymToString(XKeycodeToKeysym(g2.Window.Display, Event.xkey.keycode, 0));
+      end;
+      if Length(PrintStr) = 1 then
+      begin
+        g2.Window.AddMessage(@g2.Window.OnPrint, TG2IntS32(PrintStr[1]), 0, 0);
+      end;
     end;
     KeyRelease:
     begin
