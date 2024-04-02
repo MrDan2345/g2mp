@@ -139,8 +139,8 @@
         <Filename Value="Toolkit.pas"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="11666"/>
-        <CursorPos X="43" Y="11684"/>
+        <TopLine Value="24302"/>
+        <CursorPos X="7" Y="24325"/>
         <UsageCount Value="114"/>
         <Loaded Value="True"/>
       </Unit4>
@@ -438,32 +438,29 @@
       <Unit47>
         <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\lcl\dialogs.pp"/>
         <UnitName Value="Dialogs"/>
-        <EditorIndex Value="4"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="291"/>
         <CursorPos X="24" Y="306"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit47>
       <Unit48>
         <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\lcl\graphics.pp"/>
         <UnitName Value="Graphics"/>
-        <EditorIndex Value="5"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="1896"/>
         <CursorPos X="21" Y="1921"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit48>
       <Unit49>
         <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\components\lazutils\graphtype.pp"/>
         <UnitName Value="GraphType"/>
-        <EditorIndex Value="6"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="599"/>
         <CursorPos X="20" Y="624"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit49>
     </Units>
-    <JumpHistory Count="27" HistoryIndex="26">
+    <JumpHistory Count="14" HistoryIndex="13">
       <Position1>
         <Filename Value="g2mp_toolkit.lpr"/>
         <Caret Line="23" Column="26"/>
@@ -473,105 +470,53 @@
         <Caret Line="10775" Column="20" TopLine="10759"/>
       </Position2>
       <Position3>
-        <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\lcl\dialogs.pp"/>
-        <Caret Line="306" Column="24" TopLine="291"/>
-      </Position3>
-      <Position4>
-        <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\lcl\graphics.pp"/>
-        <Caret Line="59" Column="3" TopLine="44"/>
-      </Position4>
-      <Position5>
-        <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\components\lazutils\graphtype.pp"/>
-        <Caret Line="44" Column="3" TopLine="29"/>
-      </Position5>
-      <Position6>
-        <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\components\lazutils\graphtype.pp"/>
-        <Caret Line="73" Column="12" TopLine="48"/>
-      </Position6>
-      <Position7>
-        <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\components\lazutils\graphtype.pp"/>
-        <Caret Line="108" Column="56" TopLine="83"/>
-      </Position7>
-      <Position8>
-        <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\components\lazutils\graphtype.pp"/>
-        <Caret Line="164" Column="22" TopLine="140"/>
-      </Position8>
-      <Position9>
-        <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\components\lazutils\graphtype.pp"/>
-        <Caret Line="182" Column="21" TopLine="158"/>
-      </Position9>
-      <Position10>
-        <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\components\lazutils\graphtype.pp"/>
-        <Caret Line="439" Column="56" TopLine="414"/>
-      </Position10>
-      <Position11>
-        <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\components\lazutils\graphtype.pp"/>
-        <Caret Line="573" Column="55" TopLine="548"/>
-      </Position11>
-      <Position12>
-        <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\components\lazutils\graphtype.pp"/>
-        <Caret Line="597" Column="55" TopLine="572"/>
-      </Position12>
-      <Position13>
-        <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\components\lazutils\graphtype.pp"/>
-        <Caret Line="600" Column="20" TopLine="575"/>
-      </Position13>
-      <Position14>
-        <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\components\lazutils\graphtype.pp"/>
-        <Caret Line="621" Column="55" TopLine="596"/>
-      </Position14>
-      <Position15>
-        <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\lcl\graphics.pp"/>
-        <Caret Line="59" Column="3" TopLine="44"/>
-      </Position15>
-      <Position16>
-        <Filename Value="..\..\..\..\..\..\..\home\dan\pascal\lazarus\lcl\graphics.pp"/>
-        <Caret Line="1921" Column="21" TopLine="1896"/>
-      </Position16>
-      <Position17>
         <Filename Value="Toolkit.pas"/>
         <Caret Line="10775" Column="22" TopLine="10760"/>
-      </Position17>
-      <Position18>
+      </Position3>
+      <Position4>
         <Filename Value="Toolkit.pas"/>
         <Caret Line="1394" Column="9" TopLine="1379"/>
-      </Position18>
-      <Position19>
+      </Position4>
+      <Position5>
         <Filename Value="..\..\source\G2Types.pas"/>
         <Caret Line="205" Column="17" TopLine="187"/>
-      </Position19>
-      <Position20>
+      </Position5>
+      <Position6>
         <Filename Value="..\..\source\G2Types.pas"/>
         <Caret Line="204" Column="33"/>
-      </Position20>
-      <Position21>
+      </Position6>
+      <Position7>
         <Filename Value="Toolkit.pas"/>
         <Caret Line="1394" Column="9"/>
-      </Position21>
-      <Position22>
+      </Position7>
+      <Position8>
         <Filename Value="..\..\source\G2Types.pas"/>
         <Caret Line="207" Column="18" TopLine="190"/>
-      </Position22>
-      <Position23>
+      </Position8>
+      <Position9>
         <Filename Value="..\..\source\G2Types.pas"/>
         <Caret Line="328" Column="3" TopLine="315"/>
-      </Position23>
-      <Position24>
+      </Position9>
+      <Position10>
         <Filename Value="..\..\source\G2Types.pas"/>
         <Caret Line="207" Column="14" TopLine="190"/>
-      </Position24>
-      <Position25>
+      </Position10>
+      <Position11>
         <Filename Value="..\..\source\G2Types.pas"/>
         <Caret Line="329" Column="24" TopLine="314"/>
-      </Position25>
-      <Position26>
+      </Position11>
+      <Position12>
         <Filename Value="..\..\source\G2Types.pas"/>
         <Caret Line="327" Column="28" TopLine="312"/>
-      </Position26>
-      <Position27>
+      </Position12>
+      <Position13>
         <Filename Value="Toolkit.pas"/>
         <Caret Line="10775" Column="35" TopLine="10760"/>
-      </Position27>
+      </Position13>
+      <Position14>
+        <Filename Value="Toolkit.pas"/>
+        <Caret Line="11684" Column="43" TopLine="11666"/>
+      </Position14>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>

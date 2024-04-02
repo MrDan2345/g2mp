@@ -24321,11 +24321,13 @@ begin
     CommandLine := '-jar ' + _FilePath + 'build' + G2PathSep + 'start.jar';
     ExePath := _FilePath + 'build';
     try
+      {
       ShellExecute(
         0, nil, PChar('java'),
         PChar(CommandLine),
         PChar(ExePath), 0
       );
+      //}
     except
       App.Console.AddLine('Failed to run HTML5 server.');
     end;

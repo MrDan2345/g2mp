@@ -6,3 +6,5 @@ backup/
 lib/
 bin/
 *.~*
+
+G2Log.txt
