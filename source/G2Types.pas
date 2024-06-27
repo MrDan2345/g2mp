@@ -205,6 +205,7 @@ type
     //r, g, b, a: TG2IntU8;
     //{$endif}
     function AsUint32: TG2IntU32;
+    function ScaleRGB(const s: TG2Float): TG2Color;
   end;
   PG2Color = ^TG2Color;
   PPG2Color = ^PG2Color;
@@ -290,6 +291,7 @@ type
   operator + (c0, c1: TG2Color) cr: TG2Color;
   operator - (c0, c1: TG2Color) cr: TG2Color;
   operator * (c0, c1: TG2Color) cr: TG2Color;
+  operator * (c: TG2Color; f: TG2Float): TG2Color;
   operator := (bm: TG2BlendMode) bmr: TG2IntU32;
   operator := (bm: TG2IntU32) bmr: TG2BLendMode;
   operator = (bm0, bm1: TG2BlendMode) r: Boolean;
@@ -327,6 +329,16 @@ function TG2Color.AsUint32: TG2IntU32;
   var SelfUint32: TG2IntU32 absolute Self;
 begin
   Result := SelfUInt32;
+end;
+
+function TG2Color.ScaleRGB(const s: TG2Float): TG2Color;
+  var cs: TG2Float;
+begin
+  if s < 0 then cs := 0 else if s > 1 then cs := 1 else cs := s;
+  Result.r := Round((r * G2Rcp255 * cs) * $ff);
+  Result.g := Round((g * G2Rcp255 * cs) * $ff);
+  Result.b := Round((b * G2Rcp255 * cs) * $ff);
+  Result.a := a;
 end;
 //TG2Color END
 
@@ -542,6 +554,16 @@ begin
   Result.g := Round((c0.g * G2Rcp255 * c1.g * G2Rcp255) * $ff);
   Result.b := Round((c0.b * G2Rcp255 * c1.b * G2Rcp255) * $ff);
   Result.a := Round((c0.a * G2Rcp255 * c1.a * G2Rcp255) * $ff);
+end;
+
+operator * (c: TG2Color; f: TG2Float): TG2Color;
+  var cf: TG2Float;
+begin
+  if f < 0 then cf := 0 else if f > 1 then cf := 1 else cf := f;
+  Result.r := Round((c.r * G2Rcp255 * cf) * $ff);
+  Result.g := Round((c.g * G2Rcp255 * cf) * $ff);
+  Result.b := Round((c.b * G2Rcp255 * cf) * $ff);
+  Result.a := c.a;
 end;
 
 operator := (bm: TG2BlendMode) bmr: TG2IntU32;

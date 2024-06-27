@@ -469,6 +469,7 @@ function G2Vec2CatmullRom(const v0, v1, v2, v3: TG2Vec2; const t: TG2Float): TG2
 function G2Vec3CatmullRom(const v0, v1, v2, v3: TG2Vec3; const t: TG2Float): TG2Vec3; inline;
 function G2Vec2Bezier(const v0, v1, v2, v3: TG2Vec2; const t: TG2Float): TG2Vec2; inline;
 
+function G2Sign(const v: TG2Float): Int32; inline;
 function G2CoTan(const x: TG2Float): TG2Float; inline;
 function G2ArcCos(const x: TG2Float): TG2Float;
 function G2ArcTan2(const y, x: TG2Float): TG2Float;
@@ -2542,6 +2543,11 @@ begin
   t2 := t * t;
   t3 := t2 * t;
   Result := t3 * v3 + (3 * t2 - 3 * t3) * v2 + (3 * t3 - 6 * t2 + 3 * t) * v1 + (3 * t2 - t3 - 3 * t + 1) * v0;
+end;
+
+function G2Sign(const v: TG2Float): Int32;
+begin
+  if v < 0 then Result := -1 else Result := 1;
 end;
 
 function G2CoTan(const x: TG2Float): TG2Float;

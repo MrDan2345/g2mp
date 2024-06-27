@@ -4119,6 +4119,24 @@ begin
         3: g2.Window.AddMessage(@g2.Window.OnMouseUp, G2MB_Right, Event.xbutton.x, Event.xbutton.y);
       end;
     end;
+    Expose:
+    begin
+      {g2.Window.AddMessage(
+        @g2.Window.OnResize,
+        TG2IntS32(g2.Params.ScreenMode),
+        Event.xexpose.width,
+        Event.xexpose.height
+      );}
+    end;
+    ResizeRequest:
+    begin
+      {g2.Window.AddMessage(
+        @g2.Window.OnResize,
+        TG2IntS32(g2.Params.ScreenMode),
+        Event.xresizerequest.width,
+        Event.xresizerequest.height
+      );}
+    end;
   end;
 end;
 {$elseif defined(G2Target_OSX)}
@@ -6742,6 +6760,10 @@ begin
     1: g2.Params.ScreenMode := smMaximized;
   end;
   g2.Params.Apply;
+  {$else if defined(G2Target_Linux)}
+  g2.Params.Width := NewWidth;
+  g2.Params.Height := NewHeight;
+  g2.Params.Apply;
   {$endif}
 end;
 
@@ -7140,7 +7162,8 @@ begin
     ButtonReleaseMask or
     KeyPressMask or
     KeyReleaseMask or
-    PointerMotionMask
+    PointerMotionMask or
+    ResizeRedirectMask
   );
   WndValueMask := CWColormap or CWEventMask or CWOverrideRedirect or CWBorderPixel or CWBackPixel;
   case g2.Params.ScreenMode of
