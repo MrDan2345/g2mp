@@ -80,11 +80,13 @@ type
   end;
 
   generic TG2QuickSortListG<T> = object
-  private
-    _Items: array of record
+  public
+    type TItem = record
       Data: T;
       Order: TG2Float;
     end;
+  private
+    _Items: array of TItem;
     var _ItemCount: TG2IntS32;
     procedure SetItem(const Index: TG2IntS32; const Value: T); inline;
     function GetItem(const Index: TG2IntS32): T; inline;
