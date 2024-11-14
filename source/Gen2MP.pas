@@ -69,21 +69,7 @@ uses
   {$if defined(G2Gfx_D3D9)}
     G2DirectX9,
   {$elseif defined(G2Gfx_OGL)}
-    G2OpenGL,
-  {$elseif defined(G2Gfx_GLES)}
-    {$if defined(G2RM_FF)}
-      {$if defined(G2Target_Android)}
-        G2OpenGLES11,
-      {$elseif defined(G2Target_iOS)}
-        OpenGLES11_iOS,
-      {$endif}
-    {$elseif defined(G2RM_SM2)}
-      {$if defined(G2Target_Android)}
-        G2OpenGLES20,
-      {$elseif defined(G2Target_iOS)}
-        OpenGLES20_iOS,
-      {$endif}
-    {$endif}
+    PasOpenGL,
   {$endif}
   {$if defined(G2Snd_OAL)}
     {$ifdef G2Target_Android}
@@ -1440,20 +1426,8 @@ type
     {$if defined(G2Gfx_D3D9)}
     _Surface: IDirect3DSurface9;
     {$elseif defined(G2Gfx_OGL)}
-    _Mode: TG2TexRTMode;
     _FrameBuffer: GLuint;
     _RenderBuffer: GLuint;
-    {$if defined(G2Target_Windows)}
-    _PBufferHandle: HPBuffer;
-    _PBufferDC: HDC;
-    _PBufferRC: HGLRC;
-    {$elseif defined(G2Target_Linux)}
-    _PBufferContext: GLXContext;
-    _PBuffer: GLXPBuffer;
-    {$elseif defined(G2Target_OSX)}
-    _PBufferContext: TAGLContext;
-    _PBuffer: TAGLPBuffer;
-    {$endif}
     {$elseif defined(G2Gfx_GLES)}
     _FrameBuffer: GLuint;
     _RenderBuffer: GLuint;
@@ -2198,7 +2172,7 @@ type
     Prog: IDirect3DVertexShader9;
     Params: TG2ShaderParams;
     {$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
-    Prog: GLHandle;
+    Prog: GLuint;
     {$endif}
   end;
   PG2VertexShader = ^TG2VertexShader;
@@ -2209,7 +2183,7 @@ type
     Prog: IDirect3DPixelShader9;
     Params: TG2ShaderParams;
     {$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
-    Prog: GLHandle;
+    Prog: GLuint;
     {$endif}
   end;
   PG2PixelShader = ^TG2PixelShader;
@@ -2219,7 +2193,7 @@ type
     VertexShader: PG2VertexShader;
     PixelShader: PG2PixelShader;
     {$if defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
-    ShaderProgram: GLHandle;
+    ShaderProgram: GLuint;
     {$endif}
   end;
 
@@ -8267,59 +8241,21 @@ begin
   begin
     if (_RenderTarget <> nil) then
     begin
-      RTMode := _RenderTarget._Mode;
-      if RTMode = rtmFBO then
-      begin
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-      end
-      else if RTMode = rtmPBuffer then
-      begin
-        glBindTexture(GL_TEXTURE_2D, _RenderTarget._Texture);
-        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, _RenderTarget.RealWidth, _RenderTarget.RealHeight);
-        {$ifdef G2Target_OSX}
-        aglSwapBuffers(_RenderTarget._PBufferContext);
-        {$endif}
-      end;
-    end
-    else
-    RTMode := rtmNone;
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    end;
     _RenderTarget := Value;
     if _RenderTarget = nil then
     begin
-      if RTMode = rtmFBO then
-      SetDefaults
-      else if RTMode = rtmPBuffer then
-      {$if defined(G2Target_Windows)}
-      wglMakeCurrent(_DC, _Context);
-      {$elseif defined(G2Target_Linux)}
-      glXMakeCurrent(g2.Window.Display, g2.Window.Handle, _Context);
-      {$elseif defined(G2Target_OSX)}
-      aglSetCurrentContext(_Context);
-      {$endif}
+      SetDefaults;
       SizeRT.x := g2.Params.Width;
       SizeRT.y := g2.Params.Height;
     end
     else
     begin
-      if _RenderTarget._Mode = rtmFBO then
-      begin
-        glBindFramebuffer(GL_FRAMEBUFFER, _RenderTarget._FrameBuffer);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _RenderTarget._Texture, 0);
-        SetDefaults;
-      end
-      else if _RenderTarget._Mode = rtmPBuffer then
-      begin
-        {$if defined(G2Target_Windows)}
-        wglMakeCurrent(_RenderTarget._PBufferDC, _RenderTarget._PBufferRC);
-        {$elseif defined(G2Target_Linux)}
-        glXMakeCurrent(g2.Window.Display, _RenderTarget._PBuffer, _RenderTarget._PBufferContext);
-        {$elseif defined(G2Target_OSX)}
-        aglSetCurrentContext(_RenderTarget._PBufferContext);
-        aglSetPBuffer(_RenderTarget._PBufferContext, _RenderTarget._PBuffer, 0, 0, aglGetVirtualScreen(_Context));
-        {$endif}
-        SetDefaults;
-      end;
+      glBindFramebuffer(GL_FRAMEBUFFER, _RenderTarget._FrameBuffer);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _RenderTarget._Texture, 0);
+      SetDefaults;
       SizeRT.x := _RenderTarget.RealWidth;
       SizeRT.y := _RenderTarget.RealHeight;
     end;
@@ -8443,7 +8379,7 @@ procedure TG2GfxOGL.SetDepthWriteEnable(const Value: Boolean);
 begin
   if Value = _DepthWriteEnable then Exit;
   _DepthWriteEnable := Value;
-  glDepthMask(_DepthWriteEnable);
+  glDepthMask(GLboolean(_DepthWriteEnable));
 end;
 
 procedure TG2GfxOGL.SetVertexBuffer(const Value: TG2VertexBuffer);
@@ -8557,7 +8493,6 @@ begin
   {$endif}
   {$endif}
   ThreadAttach;
-  InitOpenGL;
   SetDefaults;
   ThreadDetach;
   SizeRT.x := g2.Params.Width;
@@ -8582,7 +8517,6 @@ begin
   aglSetCurrentContext(0);
   {$endif}
   {$endif}
-  UnInitOpenGL;
   {$if defined(G2Target_Windows)}
   wglDeleteContext(_Context);
   ReleaseDC(g2.Window.Handle, _DC);
@@ -9865,57 +9799,9 @@ begin
   SafeRelease(_Surface);
   {$elseif defined(G2Gfx_OGL)}
   _Gfx.ThreadAttach;
-  case _Mode of
-    rtmFBO:
-    begin
-      glDeleteRenderbuffers(1, @_RenderBuffer);
-      glDeleteFramebuffers(1, @_FrameBuffer);
-    end;
-    rtmPBuffer:
-    begin
-      {$if defined(G2Target_Windows)}
-      if (_PBufferRC <> 0) then
-      begin
-        wglDeleteContext(_PBufferRC);
-        _PBufferRC := 0;
-      end;
-      if (_PBufferDC <> 0) then
-      begin
-        wglReleasePbufferDC(_PBufferHandle, _PBufferDC);
-        _PBufferDC := 0;
-      end;
-      if (_PBufferHandle <> 0) then
-      begin
-        wglDestroyPbuffer(_PBufferHandle);
-        _PBufferHandle := 0;
-      end;
-      {$elseif defined(G2Target_Linux)}
-      if (_PBufferContext <> nil) then
-      begin
-        glXDestroyContext(g2.Window.Display, _PBufferContext);
-        _PBufferContext := nil;
-      end;
-      if (_PBuffer <> 0) then
-      begin
-        glXDestroyPBuffer(g2.Window.Display, _PBuffer);
-        _PBuffer := 0;
-      end;
-      {$elseif defined(G2Target_OSX)}
-      if (_PBufferContext <> nil) then
-      begin
-        aglDestroyContext(_PBufferContext);
-        _PBufferContext := nil;
-      end;
-      if (_PBuffer <> nil) then
-      begin
-        aglDestroyPBuffer(_PBuffer);
-        _PBuffer := nil;
-      end;
-      {$endif}
-    end;
-  end;
+  glDeleteRenderbuffers(1, @_RenderBuffer);
+  glDeleteFramebuffers(1, @_FrameBuffer);
   _Gfx.ThreadDetach;
-  _Mode := rtmNone;
   {$elseif defined(G2Gfx_GLES)}
   _Gfx.ThreadAttach;
   glDeleteRenderbuffers(1, @_RenderBuffer);
@@ -9962,121 +9848,6 @@ begin
   (_Texture as IDirect3DTexture9).GetSurfaceLevel(0, _Surface);
   {$elseif defined(G2Gfx_OGL)}
   _Gfx.ThreadAttach;
-  if gl_FBO_Cap then _Mode := rtmFBO
-  else if gl_PBuffer_Cap then _Mode := rtmPBuffer
-  else _Mode := rtmNone;
-  if (_Mode <> rtmNone) then
-  begin
-    glGenTextures(1, @_Texture);
-    if _Texture = 0 then Exit;
-    glBindTexture(GL_TEXTURE_2D, _Texture);
-    glTexImage2D(
-      GL_TEXTURE_2D,
-      0,
-      GL_RGBA,
-      _RealWidth,
-      _RealHeight,
-      0,
-      GL_RGBA,
-      GL_UNSIGNED_BYTE,
-      nil
-    );
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  end;
-  if _Mode = rtmFBO then
-  begin
-    glGenFramebuffers(1, @_FrameBuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, _FrameBuffer);
-    glGenRenderbuffers(1, @_RenderBuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, _RenderBuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, _RealWidth, _RealHeight);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, _RealWidth, _RealHeight);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _RenderBuffer);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  end
-  else if (_Mode = rtmPBuffer) then
-  begin
-    {$if defined(G2Target_Windows)}
-    FillChar(pbufferiAttr, SizeOf(pbufferiAttr), 0);
-    FillChar(pbufferfAttr, SizeOf(pbufferfAttr), 0);
-    pbufferiAttr[0] := WGL_DRAW_TO_PBUFFER; pbufferiAttr[1] := 1;
-    pbufferiAttr[2] := WGL_DOUBLE_BUFFER; pbufferiAttr[3] := 1;
-    pbufferiAttr[4] := WGL_COLOR_BITS; pbufferiAttr[5] := 32;
-    pbufferiAttr[6] := WGL_RED_BITS; pbufferiAttr[7] := 8;
-    pbufferiAttr[8] := WGL_GREEN_BITS; pbufferiAttr[9] := 8;
-    pbufferiAttr[10] := WGL_BLUE_BITS; pbufferiAttr[11] := 8;
-    pbufferiAttr[12] := WGL_ALPHA_BITS; pbufferiAttr[13] := 8;
-    pbufferiAttr[14] := WGL_DEPTH_BITS; pbufferiAttr[15] := 16;
-    pbufferiAttr[16] := WGL_STENCIL_BITS; pbufferiAttr[17] := 0;
-    if not wglChoosePixelFormat(_Gfx.DC, @pbufferiAttr, @pbufferfAttr, 1, @pixelFormat, @nPixelFormat) then Exit;
-    _PBufferHandle := wglCreatePbuffer(_Gfx.DC, pixelFormat, _RealWidth, _RealHeight, nil);
-    if _PBufferHandle = 0 then Exit;
-    _PBufferDC := wglGetPbufferDC(_PBufferHandle);
-    _PBufferRC := wglCreateContext(_PBufferDC);
-    wglShareLists(_Gfx.Context, _PBufferRC);
-    {$elseif defined(G2Target_Linux)}
-    FillChar(PBufferAttr, SizeOf(PBufferAttr), 0);
-    FillChar(FBConfigAttr, SizeOf(FBConfigAttr), 0);
-    FBConfigAttr[0] := GLX_DRAWABLE_TYPE;
-    FBConfigAttr[1] := GLX_PBUFFER_BIT;
-    FBConfigAttr[2] := GLX_DOUBLEBUFFER;
-    FBConfigAttr[3] := 1;
-    FBConfigAttr[4] := GLX_RENDER_TYPE;
-    FBConfigAttr[5] := GLX_RGBA_BIT;
-    FBConfigAttr[6] := GLX_RED_SIZE;
-    FBConfigAttr[7] := 8;
-    FBConfigAttr[8] := GLX_GREEN_SIZE;
-    FBConfigAttr[9] := 8;
-    FBConfigAttr[10] := GLX_BLUE_SIZE;
-    FBConfigAttr[11] := 8;
-    FBConfigAttr[12] := GLX_ALPHA_SIZE;
-    FBConfigAttr[13] := 8;
-    FBConfigAttr[14] := GLX_DEPTH_SIZE;
-    FBConfigAttr[15] := 16;
-    AttrCount := 16;
-    FBConfig := glXChooseFBConfig(g2.Window.Display, 0, @FBConfigAttr, @AttrCount);
-    PBufferAttr[0] := GLX_PBUFFER_WIDTH;
-    PBufferAttr[1] := _RealWidth;
-    PBufferAttr[2] := GLX_PBUFFER_HEIGHT;
-    PBufferAttr[3] := _RealHeight;
-    PBufferAttr[4] := GLX_PRESERVED_CONTENTS;
-    PBufferAttr[5] := 1;
-    PBufferAttr[6] := GLX_LARGEST_PBUFFER;
-    PBufferAttr[7] := 1;
-    _PBuffer := glXCreatePBuffer(g2.Window.Display, PG2IntS32(FBConfig)^, @PBufferAttr);
-    VisualInfo := glXGetVisualFromFBConfig(g2.Window.Display, PG2IntS32(FBConfig)^);
-    _PBufferContext := glXCreateContext(g2.Window.Display, VisualInfo, _Gfx.Context, True);
-    XFree(FBConfig);
-    XFree(VisualInfo);
-    {$elseif defined(G2Target_OSX)}
-    FillChar(PBufferAttr, SizeOf(PBufferAttr), 0);
-    PBufferAttr[0] := AGL_DOUBLEBUFFER;
-    PBufferAttr[1] := AGL_RGBA;
-    PBufferAttr[2] := 1;
-    PBufferAttr[3] := AGL_RED_SIZE;
-    PBufferAttr[4] := 8;
-    PBufferAttr[5] := AGL_GREEN_SIZE;
-    PBufferAttr[6] := 8;
-    PBufferAttr[7] := AGL_BLUE_SIZE;
-    PBufferAttr[8] := 8;
-    PBufferAttr[9] := AGL_ALPHA_SIZE;
-    PBufferAttr[10] := 8;
-    PBufferAttr[11] := AGL_DEPTH_SIZE;
-    PBufferAttr[12] := 16;
-    DMGetGDeviceByDisplayID(DisplayIDType(kCGDirectMainDisplay), Device, False);
-    PixelFormat := aglChoosePixelFormat(@Device, 1, @PBufferAttr);
-    _PBufferContext := aglCreateContext(PixelFormat, _Gfx.Context);
-    aglDestroyPixelFormat(PixelFormat);
-    aglCreatePBuffer(_RealWidth, _RealHeight, GL_TEXTURE_2D, GL_RGBA, 0, @_PBuffer);
-    {$endif}
-  end;
-  _Gfx.ThreadDetach;
-  {$elseif defined(G2Gfx_GLES)}
-  _Gfx.ThreadAttach;
   glGenTextures(1, @_Texture);
   if _Texture = 0 then Exit;
   glBindTexture(GL_TEXTURE_2D, _Texture);
@@ -10096,15 +9867,14 @@ begin
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glGenFramebuffers(1, @_FrameBuffer);
-  glBindFramebuffer(GL_FRAMEBUFFER_OES, _FrameBuffer);
+  glBindFramebuffer(GL_FRAMEBUFFER, _FrameBuffer);
   glGenRenderbuffers(1, @_RenderBuffer);
-  glBindRenderbuffer(GL_RENDERBUFFER_OES, _RenderBuffer);
-  glRenderbufferStorage(GL_RENDERBUFFER_OES, GL_RGBA, _RealWidth, _RealHeight);
-  glRenderbufferStorage(GL_RENDERBUFFER_OES, GL_DEPTH_COMPONENT16_OES, _RealWidth, _RealHeight);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER_OES, GL_DEPTH_ATTACHMENT_OES, GL_RENDERBUFFER_OES, _RenderBuffer);
-  glFramebufferTexture2D(GL_FRAMEBUFFER_OES, GL_COLOR_ATTACHMENT0_OES, GL_TEXTURE_2D, 0, 0);
-  glBindFramebuffer(GL_FRAMEBUFFER_OES, 0);
-  _Gfx.ThreadDetach;
+  glBindRenderbuffer(GL_RENDERBUFFER, _RenderBuffer);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, _RealWidth, _RealHeight);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, _RealWidth, _RealHeight);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _RenderBuffer);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
   {$endif}
   _SizeTU := _Width / _RealWidth;
   _SizeTV := _Height / _RealHeight;
@@ -12934,19 +12704,19 @@ begin
       vbPosition:
       begin
         glEnableClientState(GL_VERTEX_ARRAY);
-        glVertexPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, PGLVoid(BufferPos));
+        glVertexPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, Pointer(BufferPos));
         Inc(BufferPos, _Decl[i].Count * 4);
       end;
       vbNormal:
       begin
         glEnableClientState(GL_NORMAL_ARRAY);
-        glNormalPointer(GL_FLOAT, _VertexSize, PGLVoid(BufferPos));
+        glNormalPointer(GL_FLOAT, _VertexSize, Pointer(BufferPos));
         Inc(BufferPos, _Decl[i].Count * 4);
       end;
       vbDiffuse:
       begin
         glEnableClientState(GL_COLOR_ARRAY);
-        glColorPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, PGLVoid(BufferPos));
+        glColorPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, Pointer(BufferPos));
         Inc(BufferPos, _Decl[i].Count * 4);
       end;
       vbTexCoord:
@@ -12954,7 +12724,7 @@ begin
         glClientActiveTexture(CurTexture);
         Inc(CurTexture);
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glTexCoordPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, PGLVoid(BufferPos));
+        glTexCoordPointer(_Decl[i].Count, GL_FLOAT, _VertexSize, Pointer(BufferPos));
         Inc(BufferPos, _Decl[i].Count * 4);
       end;
       else
@@ -12974,7 +12744,7 @@ end;
       Result := -1;
       Exit;
     end;
-    Result := glGetAttribLocation(_Gfx.ShaderMethod^.ShaderProgram, PAnsiChar(Attrib));
+    Result := glGetAttribLocation(_Gfx.ShaderMethod^.ShaderProgram, PGLchar(Attrib));
   end;
   var i: TG2IntS32;
   var VBPos: TG2IntU32;
@@ -13001,7 +12771,7 @@ begin
       begin
         _BoundAttribs.Add(ai);
         glEnableVertexAttribArray(ai);
-        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, False, _VertexSize, Pointer(VBPos));
+        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, GLboolean(False), _VertexSize, Pointer(VBPos));
       end;
       Inc(IndPosition);
       Inc(VBPos, _Decl[i].Count * 4);
@@ -13013,7 +12783,7 @@ begin
       begin
         _BoundAttribs.Add(ai);
         glEnableVertexAttribArray(ai);
-        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, False, _VertexSize, Pointer(VBPos));
+        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, GLboolean(False), _VertexSize, Pointer(VBPos));
       end;
       Inc(IndPosition);
       Inc(VBPos, _Decl[i].Count * 4);
@@ -13025,7 +12795,7 @@ begin
       begin
         _BoundAttribs.Add(ai);
         glEnableVertexAttribArray(ai);
-        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, False, _VertexSize, Pointer(VBPos));
+        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, GLboolean(False), _VertexSize, Pointer(VBPos));
       end;
       Inc(IndTexCoord);
       Inc(VBPos, _Decl[i].Count * 4);
@@ -13037,7 +12807,7 @@ begin
       begin
         _BoundAttribs.Add(ai);
         glEnableVertexAttribArray(ai);
-        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, False, _VertexSize, Pointer(VBPos));
+        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, GLboolean(False), _VertexSize, Pointer(VBPos));
       end;
       Inc(IndNormal);
       Inc(VBPos, _Decl[i].Count * 4);
@@ -13049,7 +12819,7 @@ begin
       begin
         _BoundAttribs.Add(ai);
         glEnableVertexAttribArray(ai);
-        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, False, _VertexSize, Pointer(VBPos));
+        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, GLboolean(False), _VertexSize, Pointer(VBPos));
       end;
       Inc(IndBinormal);
       Inc(VBPos, _Decl[i].Count * 4);
@@ -13061,7 +12831,7 @@ begin
       begin
         _BoundAttribs.Add(ai);
         glEnableVertexAttribArray(ai);
-        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, False, _VertexSize, Pointer(VBPos));
+        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, GLboolean(False), _VertexSize, Pointer(VBPos));
       end;
       Inc(IndTangent);
       Inc(VBPos, _Decl[i].Count * 4);
@@ -13073,7 +12843,7 @@ begin
       begin
         _BoundAttribs.Add(ai);
         glEnableVertexAttribArray(ai);
-        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, False, _VertexSize, Pointer(VBPos));
+        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, GLboolean(False), _VertexSize, Pointer(VBPos));
       end;
       Inc(IndBlendWeight);
       Inc(VBPos, _Decl[i].Count * 4);
@@ -13085,7 +12855,7 @@ begin
       begin
         _BoundAttribs.Add(ai);
         glEnableVertexAttribArray(ai);
-        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, False, _VertexSize, Pointer(VBPos));
+        glVertexAttribPointer(ai, _Decl[i].Count, GL_FLOAT, GLboolean(False), _VertexSize, Pointer(VBPos));
       end;
       Inc(IndBlendIndex);
       Inc(VBPos, _Decl[i].Count * 4);
@@ -14236,7 +14006,7 @@ end;
 {$elseif defined(G2Gfx_OGL) or defined(G2Gfx_GLES)}
 function TG2ShaderGroup.Param(const Name: AnsiString): GLInt;
 begin
-  Result := glGetUniformLocation(PG2ShaderMethod(_Methods[_Method])^.ShaderProgram, PAnsiChar(Name));
+  Result := glGetUniformLocation(PG2ShaderMethod(_Methods[_Method])^.ShaderProgram, PGLchar(Name));
 end;
 {$endif}
 {$endif}
@@ -14424,7 +14194,7 @@ begin
     glAttachShader(MTD^.ShaderProgram, MTD^.PixelShader^.Prog);
     glLinkProgram(MTD^.ShaderProgram);
     SetLength(Errors, 2048);
-    glGetProgramInfoLog(MTD^.ShaderProgram, 2048, n, PAnsiChar(Errors));
+    glGetProgramInfoLog(MTD^.ShaderProgram, 2048, @n, PGLchar(Errors));
     {$endif}
     _Methods.Add(MTD);
   end;
@@ -14634,7 +14404,7 @@ procedure TG2ShaderGroup.UniformMatrix4x4(const Name: AnsiString; const m: TG2Ma
 begin
   shid := Param(Name);
   if shid > -1 then
-  glUniformMatrix4fv(shid, 1, True, @m);
+  glUniformMatrix4fv(shid, 1, GLboolean(True), @m);
 end;
 
 procedure TG2ShaderGroup.UniformMatrix4x4Arr(const Name: AnsiString; const m: PG2Mat; const ArrPos, Count: TG2IntS32);
@@ -14642,7 +14412,7 @@ procedure TG2ShaderGroup.UniformMatrix4x4Arr(const Name: AnsiString; const m: PG
 begin
   shid := Param(Name + '[' + IntToStr(ArrPos) + ']');
   if shid > -1 then
-  glUniformMatrix4fv(shid, Count, True, PG2Float(m));
+  glUniformMatrix4fv(shid, Count, GLboolean(True), PG2Float(m));
 end;
 
 procedure TG2ShaderGroup.UniformMatrix4x3(const Name: AnsiString; const m: TG2Mat);
@@ -14727,7 +14497,7 @@ end;
 function TG2ShaderGroup.Attribute(const Name: AnsiString): GLInt;
 begin
   if _Method > -1 then
-  Result := glGetAttribLocation(PG2ShaderMethod(_Methods[_Method])^.ShaderProgram, Name)
+  Result := glGetAttribLocation(PG2ShaderMethod(_Methods[_Method])^.ShaderProgram, PGLchar(Name))
   else
   Result := -1;
 end;
@@ -15265,7 +15035,7 @@ begin
     glDrawElements(
       PrimTypeRemap[Ord(BufferData^.PrimType)],
       BufferData^.PrimCount * 3, GL_UNSIGNED_SHORT,
-      PGLvoid(BufferData^.IndexStart * 2)
+      Pointer(BufferData^.IndexStart * 2)
     );
   end
   else
@@ -15450,7 +15220,7 @@ begin
       GL_TRIANGLES,
       p^.Groups[g].PrimCount * 3,
       GL_UNSIGNED_SHORT,
-      PGLVoid(p^.Groups[g].IndexStart * 2)
+      Pointer(p^.Groups[g].IndexStart * 2)
     );
   end;
   p^.IndexBuffer.Unbind;
@@ -15506,7 +15276,7 @@ begin
       GL_TRIANGLES,
       p^.Groups[g].PrimCount * 3,
       GL_UNSIGNED_SHORT,
-      PGLVoid(p^.Groups[g].IndexStart * 2)
+      Pointer(p^.Groups[g].IndexStart * 2)
     );
   end;
   if BuffersBound then
@@ -20534,7 +20304,7 @@ begin
           GL_TRIANGLES,
           Geom^.Groups[m].FaceCount * 3,
           GL_UNSIGNED_SHORT,
-          PGLVoid(Geom^.Groups[m].FaceStart * 6)
+          GLvoid(Geom^.Groups[m].FaceStart * 6)
         );
       end;
       Geom^.IB.Unbind;
@@ -20653,7 +20423,7 @@ begin
           GL_TRIANGLES,
           Geom^.Groups[m].FaceCount * 3,
           GL_UNSIGNED_SHORT,
-          PGLVoid(Geom^.Groups[m].FaceStart * 6)
+          Pointer(Geom^.Groups[m].FaceStart * 6)
         );
         VB.Unbind;
       end;

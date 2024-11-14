@@ -79,21 +79,20 @@ procedure TGame.Initialize;
   var str: String;
   var dm: TG2DataManager;
 begin
-  //g2.Log.WriteLn('TGame.Initialize');
-  //g2.Log.WriteLn('g2.Gfx = ' + IntToStr(LongWord(g2.Gfx)));
-  //Tex := TG2Texture2D.Create;
-  //Tex.Load('TestCharA.png', tu2D);
-  //Font1 := TG2Font.Create;
-  //Font1.Make(32);
+  g2.Log.WriteLn('TGame.Initialize');
+  Tex := TG2Texture2D.Create;
+  Tex.Load('TestCharA.png', tu2D);
+  Font1 := TG2Font.Create;
+  Font1.Make(32);
   //Scene := TG2Scene2D.Create;
   //Scene.Load('Scene0.g2s2d');
   //Scene.Simulate := True;
   //Scene.EnablePhysics;
-  //Display := TG2Display2D.Create;
-  //Display.Width := 10;
-  //Display.Height := 10;
-  //Display.Position := G2Vec2(0, 0);
-  //PickList.Clear;
+  Display := TG2Display2D.Create;
+  Display.Width := 10;
+  Display.Height := 10;
+  Display.Position := G2Vec2(0, 0);
+  PickList.Clear;
   //AndroidBinding.ResetTitle;
   //SetLength(str, 4);
   //dm := TG2DataManager.Create('test.txt', dmAsset);
@@ -107,10 +106,10 @@ end;
 
 procedure TGame.Finalize;
 begin
-  //Tex.Free;
-  //Display.Free;
+  Tex.Free;
+  Display.Free;
   //Scene.Free;
-  //Font1.Free;
+  Font1.Free;
   Free;
 end;
 
@@ -123,12 +122,12 @@ procedure TGame.Render;
 begin
   g2.Clear($ffffc0c0);
   //Scene.Render(Display);
-  //g2.PrimRect(
-  //  10, 10, 100, 100, $ffff0000
-  //);
-  ////g2.PicRect(200, 10, $ffffffff, Tex);
-  //Font1.Print(20, 20, 1, 1, $ff000000, 'FPS: ' + IntToStr(g2.FPS), bmNormal, tfPoint);
-  //Font1.Print(20, 50, 1, 1, $ff000000, IntToStr(g2.Params.Width) + 'x' + IntToStr(g2.Params.Height), bmNormal, tfPoint);
+  g2.PrimRect(
+    10, 10, 100, 100, $ffff0000
+  );
+  g2.PicRect(200, 10, $ffffffff, Tex);
+  Font1.Print(20, 20, 1, 1, $ff000000, 'FPS: ' + IntToStr(g2.FPS), bmNormal, tfPoint);
+  Font1.Print(20, 50, 1, 1, $ff000000, IntToStr(g2.Params.Width) + 'x' + IntToStr(g2.Params.Height), bmNormal, tfPoint);
 end;
 
 procedure TGame.KeyDown(const Key: Integer);

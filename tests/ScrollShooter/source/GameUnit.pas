@@ -504,6 +504,7 @@ end;
 
 procedure TGame.Render;
 begin
+  g2.Clear($ff000000);
   Scene.Render(Display);
   //Scene.DebugDraw(Display);
 end;

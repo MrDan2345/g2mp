@@ -7,8 +7,8 @@
 {$define G2Log}
 
 {$if not defined(G2Custom_RenderMode)}
-  {$define G2RM_FF}
-  {.$define G2RM_SM2}
+  {.$define G2RM_FF}
+  {$define G2RM_SM2}
 {$endif}
 
 {$if not defined(G2Custom_CPU)}
@@ -40,10 +40,7 @@
 {$endif}
 
 {$if not defined(G2Custom_Gfx)}
-  {$if defined(G2Target_Windows)}
-    {.$define G2Gfx_D3D9}
-    {$define G2Gfx_OGL}
-  {$elseif defined(G2Target_Android)}
+  {$if defined(G2Target_Android)}
     {$define G2Gfx_GLES}
   {$elseif defined(G2Target_iOS)}
     {$define G2Gfx_GLES}
