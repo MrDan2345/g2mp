@@ -37,8 +37,7 @@
         <Filename Value="Testbed.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="TestProject"/>
-        <IsVisibleTab Value="True"/>
-        <CursorPos X="58" Y="10"/>
+        <CursorPos X="13" Y="9"/>
         <UsageCount Value="200"/>
         <Loaded Value="True"/>
       </Unit0>
@@ -60,11 +59,6 @@
         <DebugInfoType Value="dsDwarf3"/>
       </Debugging>
     </Linking>
-    <Other>
-      <ConfigFile>
-        <WriteConfigFilePath Value="$(ProjOutDir)\fpclaz.cfg"/>
-      </ConfigFile>
-    </Other>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">
