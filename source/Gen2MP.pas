@@ -4095,21 +4095,21 @@ begin
     end;
     Expose:
     begin
-      {g2.Window.AddMessage(
+      g2.Window.AddMessage(
         @g2.Window.OnResize,
         TG2IntS32(g2.Params.ScreenMode),
         Event.xexpose.width,
         Event.xexpose.height
-      );}
+      );
     end;
     ResizeRequest:
     begin
-      {g2.Window.AddMessage(
+      g2.Window.AddMessage(
         @g2.Window.OnResize,
         TG2IntS32(g2.Params.ScreenMode),
         Event.xresizerequest.width,
         Event.xresizerequest.height
-      );}
+      );
     end;
   end;
 end;
@@ -8471,7 +8471,7 @@ begin
   SetPixelFormat(_DC, pf, @pfd);
   _Context := wglCreateContext(_DC);
   {$elseif defined(G2Target_Linux)}
-  _Context := glXCreateContext(g2.Window.Display, g2.Window.VisualInfo, nil, True);
+  _Context := glXCreateContext(g2.Window.Display, g2.Window.VisualInfo, nil, TBool(True));
   {$elseif defined(G2Target_OSX)}
   OglAttribs[0] := AGL_RGBA;
   OglAttribs[1] := AGL_DOUBLEBUFFER;
