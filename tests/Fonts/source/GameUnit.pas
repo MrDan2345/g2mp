@@ -91,6 +91,7 @@ end;
 
 procedure TGame.Render;
   var i, j, b, Ind, n: Int32;
+  var CharId: UInt32;
   var c: TG2Color;
   var r: TG2Float;
   var Glyph: TUTrueTypeFont.TGlyph;
@@ -99,7 +100,9 @@ procedure TGame.Render;
   var Bounds: TUBounds2f;
 begin
   g2.Clear($ff8080ff);
-  i := (G2Time div 5000) mod Length(Font.Ptr.Glyphs);
+  //i := (G2Time div 5000) mod Length(Font.Ptr.Glyphs);
+  CharId := UStrUTF8ToUTF32('я', n);
+  i := Font.Ptr.FindGlyph(CharId);
   Glyph := Font.Ptr.Glyphs[i];
   Scale := [0.5, 0.5];
   Bounds := [Glyph.Bounds.Min * Scale, Glyph.Bounds.Max * Scale];
