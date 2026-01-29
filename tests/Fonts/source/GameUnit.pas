@@ -74,8 +74,20 @@ end;
 
 procedure TGame.Initialize;
   var Path: String;
+  //const FontName = 'FreeMono.ttf';
+  //const FontName = 'FreeMonoBold.ttf';
+  //const FontName = 'FreeMonoBoldOblique.ttf';
+  //const FontName = 'FreeMonoOblique.ttf';
+  //const FontName = 'FreeSans.ttf';
+  //const FontName = 'FreeSansBold.ttf';
+  //const FontName = 'FreeSansBoldOblique.ttf';
+  //const FontName = 'FreeSansOblique.ttf';
+  const FontName = 'FreeSerif.ttf';
+  //const FontName = 'FreeSerifBold.ttf';
+  //const FontName = 'FreeSerifBoldItalic.ttf';
+  //const FontName = 'FreeSerifItalic.ttf';
 begin
-  Path := ExpandFileName(ExtractFileDir(ParamStr(0)) + '/../assets/fonts/FreeSerifBold.ttf');
+  Path := ExpandFileName(ExtractFileDir(ParamStr(0)) + '/../assets/fonts/' + FontName);
   Font := TUTrueTypeFont.Create(Path);
 end;
 
@@ -96,19 +108,29 @@ procedure TGame.Render;
   var r: TG2Float;
   var Glyph: TUTrueTypeFont.TGlyph;
   var p, np, p0, p1, p2: TUVec2;
-  var Scale, Offset: TUVec2;
+  var Scale, Offset, Pos: TUVec2;
   var Bounds: TUBounds2f;
 begin
   g2.Clear($ff8080ff);
   //i := (G2Time div 5000) mod Length(Font.Ptr.Glyphs);
-  CharId := UStrUTF8ToUTF32('я', n);
+  CharId := UStrUTF8ToUTF32('й', n);
   i := Font.Ptr.FindGlyph(CharId);
+  //i := 8090;
+  //i := 998;
   Glyph := Font.Ptr.Glyphs[i];
-  Scale := [0.5, 0.5];
-  Bounds := [Glyph.Bounds.Min * Scale, Glyph.Bounds.Max * Scale];
-  Offset := [100 - Bounds.Min.x, Glyph.Bounds.Size.y * Scale.y + 100 + Bounds.Min.y];
+  Scale := TUVec2.Make(0.1, 0.1);
+  Pos := TUVec2.Make(400, 400);
+  Bounds := TUBounds2f.Make(Glyph.Bounds.Min * Scale, Glyph.Bounds.Max * Scale);
+  Offset := TUVec2.Make(
+    Pos.x - Bounds.Min.x,
+    Glyph.Bounds.Size.y * Scale.y + Pos.y + Bounds.Min.y
+  );
   Scale.y := -Scale.y;
-  g2.PrimRect(100, 100, Glyph.Bounds.Size.x * Scale.x, Glyph.Bounds.Size.y * Abs(Scale.y), $ff404040);
+  g2.PrimRect(
+    Pos.x, Pos.y,
+    Glyph.Bounds.Size.x * Scale.x,
+    Glyph.Bounds.Size.y * Abs(Scale.y), $ff404040
+  );
   for i := 0 to High(Glyph.Contours) do
   for j := 0 to High(Glyph.Contours[i]) do
   begin

@@ -37,8 +37,8 @@
       <Unit0>
         <Filename Value="Fonts.lpr"/>
         <IsPartOfProject Value="True"/>
-        <CursorPos X="8" Y="11"/>
-        <UsageCount Value="208"/>
+        <CursorPos X="33" Y="10"/>
+        <UsageCount Value="224"/>
         <Loaded Value="True"/>
       </Unit0>
     </Units>
@@ -47,11 +47,11 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="bin\Fonts"/>
+      <Filename Value="bin/Fonts"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="\media\dan\Data\Workspace\g2mp\source\;\media\dan\Data\Workspace\g2mp\source\box2d\;\media\dan\Data\Workspace\g2mp\source\spine\;source;..\..\..\PasUtils"/>
+      <OtherUnitFiles Value="G:\Workspace\g2mp\source\;G:\Workspace\g2mp\source\box2d\;G:\Workspace\g2mp\source\spine\;source;..\..\..\PasUtils"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>
@@ -64,11 +64,6 @@
         </Win32>
       </Options>
     </Linking>
-    <Other>
-      <ConfigFile>
-        <WriteConfigFilePath Value="$(ProjOutDir)\fpclaz.cfg"/>
-      </ConfigFile>
-    </Other>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">
